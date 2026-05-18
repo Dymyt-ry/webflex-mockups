@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Caffe Diem · Kavárna a pražírna v Plzni</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #121413;
+      --bg-soft: #181b19;
+      --surface: #f7f5ef;
+      --surface-2: #ffffff;
+      --fg: #f6f4ee;
+      --ink: #171916;
+      --muted: #b9b3a8;
+      --muted-dark: #615d56;
+      --hairline: rgba(246, 244, 238, 0.12);
+      --hairline-dark: rgba(23, 25, 22, 0.12);
+      --accent: #206040;
+      --accent-dark: #174b31;
+      --coffee: #5a3825;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Hanken Grotesk", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --s-1: 4px;
+      --s-2: 8px;
+      --s-3: 16px;
+      --s-4: 24px;
+      --s-5: 48px;
+      --s-6: 64px;
+      --s-7: 96px;
+      --s-8: 128px;
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+      --gutter: clamp(20px, 4vw, 56px);
+      --container: 1240px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; text-wrap: pretty; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+    main, header, footer { position: relative; z-index: 1; }
+
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .section { padding-block: clamp(var(--s-6), 10vw, var(--s-8)); }
+    .section-light { background: var(--surface); color: var(--ink); }
+    .section-dark { background: var(--bg); color: var(--fg); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .section-light .eyebrow { color: var(--accent); }
+    .lead {
+      font-size: clamp(18px, 1.6vw, 22px);
+      line-height: 1.5;
+      color: var(--muted);
+      max-width: 58ch;
+    }
+    .section-light .lead { color: var(--muted-dark); }
+
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: color-mix(in oklch, var(--bg) 80%, transparent);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(18px);
+    }
+    .topnav-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s-4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .wordmark::before {
+      content: "";
+      width: 13px;
+      height: 13px;
+      background: var(--accent);
+      transform: rotate(45deg);
+    }
+    .nav-links { display: flex; align-items: center; gap: clamp(18px, 3vw, 36px); }
+    .nav-links a {
+      color: var(--muted);
+      font-size: 14px;
+      transition: color 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--fg); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      gap: 10px;
+      padding: 11px 18px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--fg);
+      outline-offset: 3px;
+    }
+    .section-light .btn:focus-visible, .section-light a:focus-visible, .section-light summary:focus-visible { outline-color: var(--accent); }
+    .btn-primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn-outline { background: transparent; color: #ffffff; border-color: rgba(255,255,255,0.45); }
+    .btn-outline:hover { border-color: #ffffff; background: rgba(255,255,255,0.08); }
+    .section-light .btn-outline { color: var(--ink); border-color: currentColor; }
+    .section-light .btn-outline:hover { background: rgba(23,25,22,0.06); }
+
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      padding-top: 96px;
+      padding-bottom: var(--s-6);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(18,20,19,0.92) 0%, rgba(18,20,19,0.72) 42%, rgba(18,20,19,0.2) 100%);
+      z-index: 1;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.72) saturate(0.82);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+      display: grid;
+      gap: var(--s-4);
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.98;
+      letter-spacing: -0.025em;
+      font-weight: 500;
+      max-width: 10ch;
+    }
+    .hero .lead { color: rgba(246,244,238,0.84); max-width: 48ch; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
+    .hero-meta {
+      margin-top: clamp(var(--s-5), 8vw, var(--s-7));
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid rgba(255,255,255,0.18);
+      max-width: 760px;
+    }
+    .hero-meta div {
+      padding: var(--s-4) var(--s-4) 0 0;
+      display: grid;
+      gap: var(--s-2);
+    }
+    .hero-meta strong {
+      font-family: var(--font-mono);
+      font-size: clamp(24px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 500;
+    }
+    .hero-meta span { color: rgba(246,244,238,0.7); font-size: 14px; }
+
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 0.75fr 1.25fr;
+      gap: clamp(var(--s-5), 8vw, var(--s-7));
+      align-items: start;
+    }
+    .intro-title {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.6vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .service-list { border-top: 1px solid var(--hairline-dark); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: var(--s-4);
+      padding: var(--s-4) 0;
+      border-bottom: 1px solid var(--hairline-dark);
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+    }
+    .service-row h3 {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1.08;
+      letter-spacing: -0.015em;
+      font-weight: 600;
+      margin-bottom: var(--s-2);
+    }
+    .service-row p { color: var(--muted-dark); max-width: 62ch; }
+
+    .photo-band {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: var(--s-3);
+      padding-inline: var(--gutter);
+      padding-bottom: var(--s-7);
+      background: var(--surface);
+    }
+    .photo-card {
+      position: relative;
+      min-height: 360px;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 12px;
+      background: var(--bg-soft);
+    }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.86) contrast(1.03);
+      transition: transform 280ms var(--ease);
+    }
+    .photo-card:hover img { transform: scale(1.025); }
+    .photo-card small {
+      position: absolute;
+      left: var(--s-3);
+      bottom: var(--s-3);
+      padding: 7px 10px;
+      border-radius: 5px;
+      background: rgba(18,20,19,0.72);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-6);
+      align-items: center;
+    }
+    .proof-copy { display: grid; gap: var(--s-4); }
+    .proof-copy h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+    .stats {
+      display: grid;
+      gap: var(--s-3);
+    }
+    .stat {
+      display: grid;
+      grid-template-columns: minmax(110px, 0.45fr) 1fr;
+      gap: var(--s-4);
+      align-items: end;
+      padding: var(--s-4);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.035);
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .stat:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.28); }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95;
+      font-weight: 500;
+      color: var(--fg);
+    }
+    .stat span { color: var(--muted); max-width: 24ch; }
+
+    .feature-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-6);
+      align-items: stretch;
+    }
+    .feature-panel {
+      border: 1px solid var(--hairline-dark);
+      border-radius: 12px;
+      padding: clamp(var(--s-4), 4vw, var(--s-5));
+      display: grid;
+      align-content: start;
+      gap: var(--s-4);
+      min-height: 420px;
+    }
+    .feature-panel.dark {
+      background: var(--bg);
+      color: var(--fg);
+      border-color: var(--hairline);
+    }
+    .feature-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+    }
+    .feature-panel p { color: var(--muted-dark); max-width: 54ch; }
+    .feature-panel.dark p { color: var(--muted); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: auto; }
+    .tag {
+      display: inline-flex;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+    }
+    .feature-panel.dark .tag { color: var(--fg); border-color: rgba(255,255,255,0.3); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 0.88fr 1.12fr;
+      gap: var(--s-5);
+      align-items: start;
+    }
+    .contact-card {
+      background: var(--surface-2);
+      color: var(--ink);
+      border: 1px solid var(--hairline-dark);
+      border-radius: 12px;
+      padding: clamp(var(--s-4), 4vw, var(--s-5));
+      display: grid;
+      gap: var(--s-4);
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.5vw, 60px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+    }
+    .hours { display: grid; border-top: 1px solid var(--hairline-dark); }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s-3);
+      padding: 13px 0;
+      border-bottom: 1px solid var(--hairline-dark);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row.today { color: var(--accent); font-weight: 600; }
+    .contact-links { display: grid; gap: var(--s-2); }
+    .contact-links a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+      transition: color 180ms var(--ease);
+    }
+    .contact-links a:hover { color: var(--accent); }
+    #map {
+      height: 420px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--hairline-dark);
+      background: var(--surface-2);
+    }
+
+    .faq-list { max-width: 920px; margin-inline: auto; border-top: 1px solid var(--hairline); }
+    .faq-head {
+      max-width: 920px;
+      margin: 0 auto var(--s-5);
+      display: grid;
+      gap: var(--s-3);
+    }
+    .faq-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      font-weight: 500;
+    }
+    details { border-bottom: 1px solid var(--hairline); }
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: var(--s-4) 0;
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s-4);
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; font-family: var(--font-mono); color: var(--muted); }
+    details[open] summary::after { content: "-"; }
+    details p { color: var(--muted); padding: 0 0 var(--s-4); max-width: 68ch; }
+
+    .final {
+      text-align: center;
+      padding-block: clamp(var(--s-7), 13vw, 160px);
+      background: var(--surface);
+      color: var(--ink);
+    }
+    .final .container { max-width: 760px; }
+    .final h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 6vw, 76px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      font-weight: 600;
+    }
+    .final p { margin: var(--s-3) auto var(--s-5); color: var(--muted-dark); max-width: 52ch; }
+    .final-actions { display: flex; justify-content: center; gap: var(--s-3); flex-wrap: wrap; }
+
+    .pagefoot {
+      padding-block: var(--s-6);
+      border-top: 1px solid var(--hairline);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .foot-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s-4);
+      flex-wrap: wrap;
+      margin-bottom: var(--s-4);
+    }
+    .disclaimer {
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: var(--s-4);
+      color: var(--muted);
+      line-height: 1.6;
+      background: rgba(255,255,255,0.025);
+    }
+    .disclaimer strong { color: var(--fg); }
+    .disclaimer a {
+      color: var(--fg);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 180ms var(--ease);
+    }
+    .disclaimer a:hover { color: #ffffff; }
+    .disclaimer-meta {
+      margin-top: var(--s-3);
+      padding-top: var(--s-3);
+      border-top: 1px solid var(--hairline);
+      display: flex;
+      gap: var(--s-3);
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: 820px; }
+      .hero::after { background: linear-gradient(180deg, rgba(18,20,19,0.9), rgba(18,20,19,0.68)); }
+      .hero-meta, .intro-grid, .proof-grid, .feature-split, .contact-grid, .photo-band { grid-template-columns: 1fr; }
+      .photo-band { padding-bottom: var(--s-6); }
+      .service-row { grid-template-columns: 1fr; gap: var(--s-2); }
+      .stat { grid-template-columns: 1fr; }
+      .feature-panel { min-height: auto; }
+    }
+    @media (max-width: 560px) {
+      .topnav-inner { min-height: 64px; }
+      .hero-meta { gap: var(--s-3); }
+      .hero-meta div { padding-top: var(--s-3); }
+      .btn { width: 100%; }
+      .final-actions { display: grid; }
+      .photo-card { min-height: 260px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a href="#top" class="wordmark">Caffe Diem</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kavarna">Kavárna</a>
+        <a href="#prazirna">Pražírna</a>
+        <a href="#kurzy">Kurzy</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="mailto:info@caffediem.cz">Rezervovat stůl</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <img class="hero-bg" src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      <div class="container">
+        <div class="hero-content">
+          <p class="eyebrow">Pražská 31, Plzeň</p>
+          <h1>Kavárna a pražírna</h1>
+          <p class="lead">Výběrová káva, vlastní pražení a kávové kurzy v centru Plzně. Přijďte posedět, objednejte kávu k vyzvednutí nebo se přihlaste na kurz.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="mailto:info@caffediem.cz">Napsat rezervaci</a>
+            <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div>
+              <strong>4,9</strong>
+              <span>hodnocení Google</span>
+            </div>
+            <div>
+              <strong>623</strong>
+              <span>recenzí hostů</span>
+            </div>
+            <div>
+              <strong>8-18</strong>
+              <span>pondělí až pátek</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarna" class="section section-light" data-od-id="services">
+      <div class="container intro-grid">
+        <div>
+          <p class="eyebrow">Caffe Diem</p>
+          <h2 class="intro-title">Víc než jen káva.</h2>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Kavárna na Pražské</h3>
+              <p>Espresso, filtrovaná káva a klidné místo pro schůzku nebo pauzu během dne. Pondělí až pátek od 8:00 do 18:00.</p>
+            </div>
+          </article>
+          <article class="service-row" id="prazirna">
+            <span class="num">02</span>
+            <div>
+              <h3>Čerstvě pražená výběrová káva</h3>
+              <p>Kávy si můžete objednat online a vyzvednout přímo v kavárně. Pražírna je o víkendech otevřená pro pražení a kurzy.</p>
+            </div>
+          </article>
+          <article class="service-row" id="kurzy">
+            <span class="num">03</span>
+            <div>
+              <h3>Kávové kurzy</h3>
+              <p>Latte art, baristický kurz a domácí příprava pro V60, French press, Aeropress i Chemex. V nabídce je také dárkový poukaz.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="photo-band" data-od-id="gallery">
+      <figure class="photo-card">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere." loading="lazy">
+        <small>Kavárna · posezení</small>
+      </figure>
+      <figure class="photo-card">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere." loading="lazy">
+        <small>Večer · rezervace</small>
+      </figure>
+    </div>
+
+    <section class="section section-dark" data-od-id="proof">
+      <div class="container proof-grid">
+        <div class="proof-copy">
+          <p class="eyebrow">Hosté a důvěra</p>
+          <h2>Známé místo pro kávu v Plzni.</h2>
+          <p class="lead">Hosté oceňují atmosféru, kávu i místo v centru Plzně. Pro rychlé rozhodnutí máte po ruce hodnocení, adresu i čas, kdy je otevřeno.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,9</strong>
+            <span>průměrné hodnocení na Google</span>
+          </div>
+          <div class="stat">
+            <strong>623</strong>
+            <span>veřejných recenzí hostů</span>
+          </div>
+          <div class="stat">
+            <strong>31</strong>
+            <span>Pražská 31, Plzeň</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-light" data-od-id="courses">
+      <div class="container feature-split">
+        <article class="feature-panel">
+          <p class="eyebrow">Domů i do práce</p>
+          <h2>Objednejte online, vyzvedněte v kavárně.</h2>
+          <p>Čerstvě praženou výběrovou kávu si můžete připravit doma nebo vzít jako dárek. Vyzvednutí probíhá přímo v Caffe Diem na Pražské.</p>
+          <div class="tag-list" aria-label="Metody přípravy">
+            <span class="tag">V60</span>
+            <span class="tag">French press</span>
+            <span class="tag">Aeropress</span>
+            <span class="tag">Chemex</span>
+          </div>
+        </article>
+        <article class="feature-panel dark">
+          <p class="eyebrow">Kurzy a poukazy</p>
+          <h2>Naučte se připravit kávu s jistotou.</h2>
+          <p>Vyberte kurz latte art, baristický kurz nebo kurz domácí přípravy. Pro někoho blízkého můžete objednat dárkový poukaz.</p>
+          <div class="tag-list" aria-label="Kávové kurzy">
+            <span class="tag">Latte art</span>
+            <span class="tag">Baristický kurz</span>
+            <span class="tag">Domácí příprava</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt" class="section section-light" data-od-id="contact">
+      <div class="container contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Pražská 59/31</h2>
+          <p>301 00 Plzeň 3, Východní Předměstí</p>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hours-row today"><span>Pondělí</span><span>8:00-18:00</span></div>
+            <div class="hours-row"><span>Úterý</span><span>8:00-18:00</span></div>
+            <div class="hours-row"><span>Středa</span><span>8:00-18:00</span></div>
+            <div class="hours-row"><span>Čtvrtek</span><span>8:00-18:00</span></div>
+            <div class="hours-row"><span>Pátek</span><span>8:00-18:00</span></div>
+            <div class="hours-row"><span>Sobota a neděle</span><span>pražírna & kurzy</span></div>
+          </div>
+          <div class="contact-links">
+            <a href="mailto:info@caffediem.cz">info@caffediem.cz</a>
+            <a href="https://www.caffediem.cz/kontakt/">caffediem.cz/kontakt</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Caffe Diem v Plzni"></div>
+      </div>
+    </section>
+
+    <section class="section section-dark" data-od-id="faq">
+      <div class="container">
+        <div class="faq-head">
+          <p class="eyebrow">Než dorazíte</p>
+          <h2>Praktické informace.</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Je možné si udělat rezervaci?</summary>
+            <p>Ano. Napište na e-mail info@caffediem.cz s datem, preferovaným časem a počtem osob.</p>
+          </details>
+          <details>
+            <summary>Kdy je otevřená kavárna?</summary>
+            <p>Kavárna je otevřená od pondělí do pátku, 8:00 až 18:00. V sobotu a neděli probíhá pražírna a kurzy.</p>
+          </details>
+          <details>
+            <summary>Jaké kurzy nabízíte?</summary>
+            <p>V nabídce jsou kurzy latte art, baristický kurz a kurz domácí přípravy kávy.</p>
+          </details>
+          <details>
+            <summary>Lze kávu vyzvednout osobně?</summary>
+            <p>Ano. Kávu objednáte online a vyzvednete v kavárně na Pražské 31 v Plzni.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" data-od-id="final-cta">
+      <div class="container">
+        <h2>Uvidíme se na kávě.</h2>
+        <p>Rezervujte si stůl, domluvte kurz nebo si vyzvedněte čerstvě praženou kávu přímo v kavárně.</p>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="mailto:info@caffediem.cz">Napsat do Caffe Diem</a>
+          <a class="btn btn-outline" href="#kontakt">Najít adresu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container">
+      <div class="foot-top">
+        <span class="wordmark">Caffe Diem</span>
+        <span>Pražská 59/31, Plzeň</span>
+      </div>
+      <div class="disclaimer">
+        <strong>Webflex&nbsp;s.r.o.</strong> vytvořil tento jednostránkový náhled na základě veřejně dostupných informací o&nbsp;podniku Caffe Diem. Nejde o&nbsp;oficiální web společnosti Caffe Diem a&nbsp;společnost Caffe Diem si jeho vytvoření neobjednala. Pokud si nepřejete, aby byl tento náhled dostupný, můžete jej okamžitě odstranit.
+        <div class="disclaimer-meta">
+          <a href="https://webflex.cz/api/n/nuz3ica/delete">Smazat tento náhled okamžitě</a>
+          <a href="https://webflex.cz/gdpr">Zásady zpracování OÚ</a>
+          <span>webflex.cz</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.381674400000001, 49.746730899999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#206040' })
+      .setLngLat([13.381674400000001, 49.746730899999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
