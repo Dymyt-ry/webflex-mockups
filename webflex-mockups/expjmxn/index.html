@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Cavino Plzeň | Káva, brunch, tapas a víno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #141010;
+      --bg-deep: #0d0b0b;
+      --surface: #1d1717;
+      --surface-2: #241b1b;
+      --fg: #faf7f2;
+      --muted: #b9aaa2;
+      --dim: #756862;
+      --paper: #faf7f2;
+      --paper-ink: #180f0f;
+      --paper-muted: #635653;
+      --border: rgba(250, 247, 242, 0.12);
+      --border-strong: rgba(250, 247, 242, 0.24);
+      --accent: #200000;
+      --font-display: 'Geist', 'Manrope', system-ui, sans-serif;
+      --font-body: 'Manrope', 'Geist', system-ui, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --container: 1240px;
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(rgba(250,247,242,0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(250,247,242,0.055) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; text-wrap: pretty; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+    main, header, footer { position: relative; z-index: 1; }
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .section { padding-block: clamp(64px, 9vw, 128px); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.3;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 56px);
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.04;
+    }
+    .lead { color: var(--muted); font-size: clamp(17px, 1.7vw, 21px); max-width: 62ch; }
+
+    .topnav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 30;
+      background: linear-gradient(to bottom, rgba(13,11,11,0.86), rgba(13,11,11,0.34), transparent);
+      backdrop-filter: blur(14px);
+    }
+    .topnav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      display: block;
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: rgba(250,247,242,0.76); font-size: 14px; }
+    .nav-links a, .top-action, .btn, .photo-link, .faq-item, .contact-link {
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease), opacity 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--fg); }
+    .nav-links a:focus-visible, .top-action:focus-visible, .btn:focus-visible, .photo-link:focus-visible, .faq-item:focus-visible, .contact-link:focus-visible {
+      outline: 2px solid var(--fg);
+      outline-offset: 3px;
+    }
+    .top-action {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.45);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .top-action:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+    .top-action:active, .btn:active, .photo-link:active, .contact-link:active { transform: translateY(1px); }
+
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-deep);
+      padding-block: 120px 64px;
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.72;
+      filter: saturate(0.9) contrast(1.08);
+    }
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(13,11,11,0.92) 0%, rgba(13,11,11,0.62) 44%, rgba(13,11,11,0.28) 100%),
+        linear-gradient(0deg, rgba(13,11,11,0.94) 0%, rgba(13,11,11,0.1) 48%, rgba(13,11,11,0.82) 100%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+    }
+    h1 {
+      margin-top: 24px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+    .hero .lead { margin-top: 24px; color: rgba(250,247,242,0.82); max-width: 58ch; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    .btn-primary { background: var(--paper); color: var(--accent); border-color: var(--paper); }
+    .btn-primary:hover { background: #ffffff; border-color: #ffffff; transform: translateY(-1px); }
+    .btn-secondary { background: transparent; color: #fff; border-color: rgba(255,255,255,0.45); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.72); transform: translateY(-1px); }
+    .hero-strip {
+      position: relative;
+      z-index: 1;
+      margin-top: 64px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-strip div { padding: 16px 24px; border-right: 1px solid var(--border); }
+    .hero-strip div:last-child { border-right: 0; }
+    .hero-strip strong { display: block; font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg); }
+    .hero-strip span { display: block; margin-top: 4px; color: rgba(250,247,242,0.62); font-size: 13px; }
+
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(32px, 6vw, 96px);
+      align-items: start;
+    }
+    .service-list { border-top: 1px solid var(--border); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 32px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .service-row .meta { font-family: var(--font-mono); color: var(--dim); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .service-row h3 { font-size: clamp(22px, 2.3vw, 32px); line-height: 1.15; font-weight: 500; letter-spacing: -0.015em; }
+    .service-row p { color: var(--muted); margin-top: 8px; max-width: 58ch; }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .paper-band .eyebrow, .paper-band .lead { color: var(--paper-muted); }
+    .event-panel {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+      align-items: stretch;
+    }
+    .event-copy {
+      border-top: 1px solid rgba(24,15,15,0.16);
+      padding-top: 32px;
+    }
+    .price-table {
+      background: #fff;
+      border: 1px solid rgba(24,15,15,0.16);
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+    }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(24,15,15,0.12);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .price-line:last-child { border-bottom: 0; }
+    .price-note { color: var(--paper-muted); font-size: 14px; margin-top: 24px; }
+
+    .stats-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 48px;
+      align-items: end;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.025);
+    }
+    .stat-card b { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 56px); line-height: 1; font-weight: 500; letter-spacing: -0.04em; }
+    .stat-card span { color: var(--muted); font-size: 14px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 48px;
+    }
+    .photo-link {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      min-height: 320px;
+      background: var(--surface);
+    }
+    .photo-link:nth-child(2) { margin-top: 48px; min-height: 380px; }
+    .photo-link img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; filter: saturate(0.88); }
+    .photo-link:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+    .photo-link::after {
+      content: attr(aria-label);
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      color: rgba(250,247,242,0.78);
+      font-size: 12px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .photo-link:hover::after { opacity: 1; transform: translateY(0); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 0.88fr 1.12fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+    }
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .contact-link:hover { color: var(--fg); border-color: var(--border-strong); transform: translateX(2px); }
+    .contact-link span:first-child { color: var(--muted); }
+    .hours { margin-top: 32px; border-top: 1px solid var(--border); }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row.today { color: var(--fg); background: rgba(255,255,255,0.04); padding-inline: 10px; margin-inline: -10px; }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .faq-layout {
+      display: grid;
+      grid-template-columns: 0.7fr 1.3fr;
+      gap: 48px;
+    }
+    .faq-list { border-top: 1px solid var(--border); }
+    .faq-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:hover { border-color: var(--border-strong); transform: translateX(2px); }
+    .faq-item h3 { font-size: 20px; font-weight: 500; }
+    .faq-item p { color: var(--muted); margin-top: 8px; max-width: 62ch; }
+    .faq-item .plus { font-family: var(--font-mono); color: var(--dim); }
+
+    .final-cta {
+      padding-block: clamp(80px, 12vw, 160px);
+      text-align: center;
+      background:
+        linear-gradient(rgba(20,16,16,0.82), rgba(20,16,16,0.92)),
+        url("https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940") center / cover;
+    }
+    .final-cta h2 {
+      max-width: 820px;
+      margin-inline: auto;
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      overflow-wrap: anywhere;
+    }
+    .final-cta .lead { margin: 24px auto 32px; color: rgba(250,247,242,0.8); }
+
+    .pagefoot {
+      border-top: 1px solid var(--border);
+      padding-block: 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pagefoot .row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .pagefoot p { max-width: 760px; }
+    .pagefoot a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: 860px; }
+      .hero-strip, .intro-grid, .event-panel, .stats-wrap, .stats, .gallery, .contact-grid, .faq-layout { grid-template-columns: 1fr; }
+      .hero-strip div { border-right: 0; border-bottom: 1px solid var(--border); }
+      .hero-strip div:last-child { border-bottom: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .gallery { gap: 12px; }
+      .photo-link, .photo-link:nth-child(2) { margin-top: 0; min-height: 260px; }
+      .contact-card { padding: 24px; }
+    }
+    @media (max-width: 560px) {
+      .topnav-inner { min-height: 68px; }
+      .brand img { max-height: 34px; }
+      .hero { padding-top: 96px; min-height: 800px; }
+      .hero-cta .btn { width: 100%; }
+      .contact-link, .hours-row, .price-line { flex-direction: column; gap: 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a class="brand" href="#top" aria-label="Cavino Plzeň">
+        <img src="https://static.wixstatic.com/media/ddf88b_d262d0c90b2c4e51ba1de8df7c77fb2c~mv2.png/v1/fill/w_227,h_71,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/N%C3%A1vrh%20bez%20n%C3%A1zvu%20(4).png" alt="Cavino Plzeň">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="top-action" href="tel:+420739631661">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <div class="hero-media" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      </div>
+      <div class="container">
+        <div class="hero-content">
+          <p class="eyebrow">Sedláčkova 109/21 · Plzeň</p>
+          <h1>Ráno káva, večer víno.</h1>
+          <p class="lead">Přijďte na brunch, týdenní polední menu, dezert od cukrářky Margarity nebo tapas s vínem z Moravy a Evropy.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="tel:+420739631661">Rezervovat telefonicky</a>
+            <a class="btn btn-secondary" href="#menu">Co si dáte</a>
+          </div>
+        </div>
+        <div class="hero-strip" aria-label="Základní informace">
+          <div><strong class="num">4,6 / 5</strong><span>hodnocení podle 499 recenzí</span></div>
+          <div><strong class="num">Po, Út 8:00-21:00</strong><span>dnes otevřeno podle rozpisu</span></div>
+          <div><strong class="num">+420 739 631 661</strong><span>rezervace a dotazy</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="menu" data-od-id="services">
+      <div class="container intro-grid">
+        <div>
+          <p class="eyebrow">Co si u nás můžete dát</p>
+          <h2 class="h2" style="margin-top:16px;">Den v Cavinu má vlastní tempo.</h2>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="meta">08:00</span>
+            <div>
+              <h3>Brunch</h3>
+              <p>Začněte den bez spěchu s vůní kávy a čerstvého chleba. Kuchyně pracuje s poctivými farmářskými surovinami.</p>
+            </div>
+          </article>
+          <article class="service-row">
+            <span class="meta">11:00</span>
+            <div>
+              <h3>Oběd</h3>
+              <p>Každý týden chystáme nové polední menu. Startujeme v 11:00 a jídlo si u nás můžete vychutnat klidně až do večera.</p>
+            </div>
+          </article>
+          <article class="service-row">
+            <span class="meta">Káva</span>
+            <div>
+              <h3>Výběrová káva a dezert</h3>
+              <p>Na mlýnku je Dos Mundos. K tomu dezerty, které pro Vás peče cukrářka Margarita.</p>
+            </div>
+          </article>
+          <article class="service-row">
+            <span class="meta">Večer</span>
+            <div>
+              <h3>Tapas a vína</h3>
+              <p>Malý hlad nebo chuť na skleničku. Vyberte si tapas a vína z Moravy i Evropy.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section paper-band" id="akce" data-od-id="event">
+      <div class="container event-panel">
+        <div class="event-copy">
+          <p class="eyebrow">Tapas Night · 28. 5. od 18:00</p>
+          <h2 class="h2" style="margin-top:16px;">Cavino X Vakuum</h2>
+          <p class="lead" style="margin-top:24px;">Degustační menu vzniká ve spolupráci s plzeňským pop-up projektem Vakuum. Část menu přijde z grillu na terase, část z kuchyně.</p>
+          <p style="margin-top:20px;color:var(--paper-muted);max-width:62ch;">O párování vín se postarají Mladí vinaři v čele s Libuší Vrbovou z vinařství U Vrbů, která vína osobně představí.</p>
+        </div>
+        <aside class="price-table" aria-label="Ceny Tapas Night">
+          <div>
+            <div class="price-line"><span>Menu bez vína</span><strong>1 499 Kč</strong></div>
+            <div class="price-line"><span>Menu s párováním</span><strong>1 999 Kč</strong></div>
+            <div class="price-line"><span>Kapacita</span><strong>omezená</strong></div>
+          </div>
+          <p class="price-note">Pro místo u stolu volejte Cavino nebo napište na e-mail. Menu bude zveřejněné na sociálních sítích Cavina.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="trust">
+      <div class="container stats-wrap">
+        <div>
+          <p class="eyebrow">Důvěra hostů</p>
+          <h2 class="h2" style="margin-top:16px;">Místo, kam se v centru vrací.</h2>
+        </div>
+        <div class="stats">
+          <div class="stat-card"><b class="num">4,6</b><span>průměrné Google hodnocení</span></div>
+          <div class="stat-card"><b class="num">499</b><span>recenzí od hostů</span></div>
+          <div class="stat-card"><b class="num">7</b><span>dní v týdnu otevřeno</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="gallery">
+      <div class="container">
+        <div style="max-width:760px;">
+          <p class="eyebrow">Atmosféra</p>
+          <h2 class="h2" style="margin-top:16px;">Stůl, sklenka, světlo.</h2>
+        </div>
+        <div class="gallery">
+          <a class="photo-link" href="#kontakt" aria-label="Večeře a víno">
+            <img loading="lazy" src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </a>
+          <a class="photo-link" href="#kontakt" aria-label="Večerní posezení">
+            <img loading="lazy" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </a>
+          <a class="photo-link" href="#kontakt" aria-label="Barová nálada">
+            <img loading="lazy" src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section paper-band" id="kontakt" data-od-id="contact">
+      <div class="container contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2 class="h2" style="margin-top:16px;">Cavino Plzeň</h2>
+          <div style="margin-top:32px;">
+            <a class="contact-link" href="tel:+420739631661"><span>Telefon</span><strong class="num">+420 739 631 661</strong></a>
+            <a class="contact-link" href="mailto:info@cavino.cz"><span>E-mail</span><strong>info@cavino.cz</strong></a>
+            <a class="contact-link" href="https://www.cavino.cz/"><span>Web</span><strong>cavino.cz</strong></a>
+            <div class="contact-link" aria-label="Adresa"><span>Adresa</span><strong>Sedláčkova 109/21, 301 00 Plzeň 3</strong></div>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hours-row today"><span>Po, Út</span><strong>8:00 - 21:00</strong></div>
+            <div class="hours-row"><span>St, Čt</span><strong>8:00 - 22:00</strong></div>
+            <div class="hours-row"><span>Pá</span><strong>8:00 - 0:00</strong></div>
+            <div class="hours-row"><span>So</span><strong>9:00 - 0:00</strong></div>
+            <div class="hours-row"><span>Ne</span><strong>9:00 - 20:00</strong></div>
+          </div>
+        </div>
+        <div>
+          <div id="map" aria-label="Mapa Cavino Plzeň"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="faq">
+      <div class="container faq-layout">
+        <div>
+          <p class="eyebrow">Než dorazíte</p>
+          <h2 class="h2" style="margin-top:16px;">Prakticky.</h2>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item" tabindex="0">
+            <div><h3>Dá se rezervovat stůl?</h3><p>Ano. Pro jistý stůl zavolejte na číslo +420 739 631 661.</p></div><span class="plus">+</span>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <div><h3>Kdy začíná oběd?</h3><p>Polední menu startuje v 11:00 a podle Cavina si ho můžete dát klidně až do večera.</p></div><span class="plus">+</span>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <div><h3>Jakou kávu podáváte?</h3><p>Cavino uvádí výběrovou kávu Dos Mundos.</p></div><span class="plus">+</span>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <div><h3>Je Tapas Night s vínem?</h3><p>Můžete zvolit menu bez vína za 1 499 Kč nebo menu s párováním za 1 999 Kč.</p></div><span class="plus">+</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" data-od-id="final-cta">
+      <div class="container">
+        <h2>Ať máte svůj stůl jistý.</h2>
+        <p class="lead">Zavolejte Cavinu a domluvte si brunch, oběd, večerní sklenku nebo místo na Tapas Night.</p>
+        <a class="btn btn-primary" href="tel:+420739631661">Zavolat +420 739 631 661</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container row">
+      <strong>Cavino Plzeň</strong>
+      <p>Tuto prezentační stránku připravil Webflex. Pokud si nepřejete její další zobrazení, můžete ji odstranit na adrese <a href="https://www.webflex.cz/remove/expjmxn">webflex.cz/remove/expjmxn</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3752855, 49.747534599999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#200000' })
+      .setLngLat([13.3752855, 49.747534599999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
