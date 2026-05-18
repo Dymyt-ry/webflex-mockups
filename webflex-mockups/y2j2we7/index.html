@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kavárna Dáma a Král · Plzeň</title>
+  <meta name="description" content="Kavárna Dáma a Král na adrese Františkánská 4 v Plzni. Káva, klidné posezení a večerní program v elegantním prostředí." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: #fffdfa;
+      --surface-2: #eee8df;
+      --fg: #25231d;
+      --muted: #6f6a60;
+      --border: oklab(0.263084 -0.00230259 0.0124794 / 0.1);
+      --accent: #A0C0E0;
+      --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --font-display: 'Archivo', 'Arial Narrow', system-ui, sans-serif;
+      --font-body: 'Literata', Georgia, serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      --fs-h1: clamp(40px, 6vw, 88px);
+      --fs-h2: clamp(32px, 4.6vw, 64px);
+      --fs-h3: clamp(20px, 2vw, 28px);
+      --fs-lead: clamp(18px, 1.7vw, 22px);
+      --fs-body: 16px;
+      --fs-meta: 13px;
+      --gap-xs: 8px;
+      --gap-sm: 12px;
+      --gap-md: 20px;
+      --gap-lg: 32px;
+      --gap-xl: 56px;
+      --gap-2xl: 96px;
+      --container: 1180px;
+      --gutter: clamp(20px, 4vw, 40px);
+      --radius: 8px;
+      --radius-lg: 16px;
+      --shadow-ambient: 0 34px 90px rgba(49, 45, 38, 0.08), 0 12px 34px rgba(49, 45, 38, 0.045);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.58;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; text-wrap: pretty; }
+    h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
+    h1, h2, .display {
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .95;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    h1 { font-size: var(--fs-h1); max-width: 720px; }
+    h2 { font-size: var(--fs-h2); }
+    h3 { font-family: var(--font-display); font-size: var(--fs-h3); line-height: 1.05; letter-spacing: 0; text-transform: uppercase; }
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .section { padding-block: clamp(56px, 8vw, var(--gap-2xl)); }
+    .section.tight { padding-block: clamp(40px, 6vw, 72px); }
+    .section.cream { background: var(--surface-2); }
+    .stack { display: flex; flex-direction: column; gap: var(--gap-md); }
+    .row { display: flex; align-items: center; gap: var(--gap-md); }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--gap-md); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-xl); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap-lg); align-items: stretch; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap-md); align-items: stretch; }
+    .grid-2-1 { display: grid; grid-template-columns: 1.35fr .65fr; gap: var(--gap-xl); align-items: start; }
+    .lead { font-size: var(--fs-lead); line-height: 1.5; color: var(--muted); max-width: 58ch; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: color-mix(in oklch, var(--fg) 72%, var(--accent));
+      margin-bottom: var(--gap-md);
+    }
+    .meta, .num { font-family: var(--font-mono); font-size: var(--fs-meta); font-variant-numeric: tabular-nums; color: var(--muted); }
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: color-mix(in oklch, var(--bg) 92%, transparent);
+      backdrop-filter: blur(14px);
+    }
+    .topnav-inner { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: var(--gap-lg); }
+    .logo { font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0; line-height: .9; }
+    .topnav .logo { font-size: 18px; max-width: 190px; }
+    .topnav nav { display: flex; gap: var(--gap-lg); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .topnav nav a:hover { color: var(--fg); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      gap: 8px;
+      padding: 12px 19px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1;
+      text-transform: uppercase;
+      transition: transform .08s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .btn:focus-visible { outline: 3px solid color-mix(in oklch, var(--accent) 50%, transparent); outline-offset: 3px; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #17202a; box-shadow: 0 20px 50px rgba(49, 45, 38, .1); }
+    .btn-primary:hover { box-shadow: 0 28px 70px rgba(49, 45, 38, .14); }
+    .btn-secondary { background: rgba(255,255,255,.48); color: var(--fg); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--surface); }
+    .hero-split {
+      min-height: calc(100dvh - 72px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(40%, 1.06fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 84px);
+      padding-block: clamp(56px, 8vw, 112px);
+    }
+    .hero-copy { justify-self: center; width: 100%; max-width: 720px; }
+    .hero-cta { display: flex; gap: var(--gap-sm); flex-wrap: wrap; margin-top: 30px; }
+    .hero-photo, .float-card, .photo-card, .contact-panel {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-ambient);
+    }
+    .hero-photo { position: relative; min-height: 560px; overflow: hidden; }
+    .hero-photo img { width: 100%; height: 100%; min-height: 560px; object-fit: cover; filter: saturate(.82) contrast(.96); }
+    .hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(247,243,236,0) 35%, rgba(247,243,236,.28)); pointer-events: none; }
+    .float-card {
+      position: absolute;
+      left: clamp(16px, 4vw, 34px);
+      bottom: clamp(16px, 4vw, 34px);
+      width: min(320px, calc(100% - 32px));
+      padding: 18px;
+      background: rgba(255,253,250,.84);
+      backdrop-filter: blur(12px);
+    }
+    .float-card strong { display: block; font-family: var(--font-display); text-transform: uppercase; font-size: 26px; line-height: .96; }
+    .quick-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap-sm); margin-top: 34px; max-width: 620px; }
+    .fact { padding-top: 14px; border-top: 1px solid var(--border); }
+    .fact strong { display: block; font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+    .fact span { display: block; color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .section-head { max-width: 820px; margin-bottom: clamp(34px, 6vw, 62px); }
+    .feature { min-height: 100%; padding-top: 26px; border-top: 1px solid color-mix(in oklch, var(--fg) 22%, transparent); }
+    .feature-mark { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 22px; color: var(--fg); }
+    .feature-mark svg { width: 24px; height: 24px; stroke-width: 1.55; }
+    .feature p { color: var(--muted); margin-top: 12px; font-size: 16px; }
+    .stat-band { display: grid; grid-template-columns: 1fr 1.3fr; gap: var(--gap-xl); align-items: end; }
+    .rating {
+      font-family: var(--font-display);
+      font-size: clamp(84px, 13vw, 178px);
+      line-height: .78;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .quote-panel { padding: clamp(28px, 5vw, 54px); background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-ambient); }
+    .quote-panel blockquote { margin: 0; font-size: clamp(24px, 3vw, 38px); line-height: 1.28; text-wrap: balance; }
+    .menu-lines { display: grid; gap: 0; }
+    .menu-line { display: grid; grid-template-columns: 1fr auto; gap: 18px; padding: 18px 0; border-top: 1px solid var(--border); align-items: baseline; }
+    .menu-line h3 { font-size: clamp(19px, 2vw, 25px); }
+    .menu-line p { color: var(--muted); margin-top: 6px; }
+    .gallery { display: grid; grid-template-columns: 1.1fr .8fr 1.1fr; gap: var(--gap-md); align-items: stretch; }
+    .photo-card { overflow: hidden; min-height: 280px; }
+    .photo-card.tall { min-height: 460px; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(.95); }
+    .faq-list { display: grid; gap: 1px; background: var(--border); }
+    .faq-item { background: var(--bg); padding: 24px 0; display: grid; grid-template-columns: .8fr 1.2fr; gap: var(--gap-lg); }
+    .faq-item h3 { font-size: 22px; }
+    .faq-item p { color: var(--muted); }
+    .contact-panel { padding: clamp(24px, 4vw, 42px); }
+    .contact-list { display: grid; gap: 18px; margin-top: 30px; }
+    .contact-row { display: grid; grid-template-columns: 92px 1fr; gap: 18px; align-items: baseline; padding-top: 16px; border-top: 1px solid var(--border); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-ambient); }
+    .final-cta { text-align: center; }
+    .final-cta .container { max-width: 760px; }
+    .photo-credit { font-size: 11px; color: color-mix(in oklch, var(--muted) 85%, transparent); margin-top: 10px; }
+    .photo-credit a { text-decoration: underline; text-underline-offset: 3px; }
+    .pagefoot { padding-block: var(--gap-xl); color: var(--muted); font-size: 13px; }
+    .footer-disclaimer {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .footer-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .topnav nav { display: none; }
+      .hero-split, .grid-2, .grid-3, .grid-4, .grid-2-1, .stat-band, .gallery { grid-template-columns: 1fr; }
+      .hero-split { min-height: auto; }
+      .hero-photo, .hero-photo img { min-height: 420px; }
+      .quick-facts { grid-template-columns: 1fr; }
+      .faq-item { grid-template-columns: 1fr; gap: var(--gap-sm); }
+    }
+    @media (max-width: 620px) {
+      .topnav .btn { display: none; }
+      .topnav-inner { min-height: 64px; }
+      .hero-photo, .hero-photo img { min-height: 360px; }
+      .hero-cta .btn { width: 100%; }
+      .contact-row { grid-template-columns: 1fr; gap: 4px; }
+      .menu-line { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a class="logo" href="#top" aria-label="Kavárna Dáma a Král">Dáma a Král</a>
+      <nav aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#program">Program</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420777068840">Zavolat 777 068 840</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="container hero-split" data-od-id="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Františkánská 4 · Plzeň</p>
+        <h1>Káva ve stylu dámy a krále</h1>
+        <p class="lead" style="margin-top: 24px;">Vítejte v kavárně Dáma a Král, kde se spojuje elegance, luxus a skvělá káva. Přijďte na klidné posezení v centru Plzně nebo na večerní program.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="tel:+420777068840">Zavolat 777 068 840</a>
+          <a class="btn btn-secondary" href="#kontakt">Najít na mapě</a>
+        </div>
+        <div class="quick-facts" aria-label="Základní informace">
+          <div class="fact"><strong>4,9</strong><span>hodnocení Google</span></div>
+          <div class="fact"><strong>108</strong><span>recenzí</span></div>
+          <div class="fact"><strong>100 %</strong><span>doporučuje z Facebooku</span></div>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        <figcaption class="float-card">
+          <span class="meta">Kavárna · Plzeň 3</span>
+          <strong>Dáma a Král</strong>
+          <p style="color: var(--muted); margin-top: 10px;">Místo pro kávu, setkání a malé kulturní večery.</p>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="section tight" id="nabidka" data-od-id="services">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Co Vás čeká</p>
+          <h2>Klidný stůl, měkké světlo, dobrá káva.</h2>
+        </div>
+        <div class="grid-3">
+          <article class="feature">
+            <div class="feature-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 8h10v5a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V8Z"/><path d="M16 9h2.2a2.3 2.3 0 0 1 0 4.6H16"/><path d="M4 20h15"/></svg>
+            </div>
+            <h3>Káva a posezení</h3>
+            <p>Pro odpolední zastavení, schůzku ve dvou i chvíli, kdy chcete v centru města jen zpomalit.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 17h16"/><path d="M6 17a6 6 0 0 1 12 0"/><path d="M12 7V4"/><path d="M8.5 8.5 6.5 6.5"/><path d="m15.5 8.5 2-2"/></svg>
+            </div>
+            <h3>Elegantní atmosféra</h3>
+            <p>Prostor staví na tichém luxusu, teplém světle a pocitu, že se u stolu nikam nespěchá.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+            </div>
+            <h3>Večerní program</h3>
+            <p>Na Facebooku kavárna zve hosty i na kulturní večery, například vystoupení skupiny Kérmideretvár.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cream" data-od-id="trust">
+      <div class="container stat-band">
+        <div>
+          <p class="eyebrow">Ohlasy hostů</p>
+          <div class="rating num">4,9</div>
+          <p class="lead" style="margin-top: 22px;">Hodnocení Google vychází ze 108 recenzí. Na Facebooku kavárnu doporučuje 100 % z uvedených recenzí.</p>
+        </div>
+        <div class="quote-panel">
+          <blockquote>Dobrá kavárna se nepozná jen podle šálku. Pozná se podle toho, že u něj chcete zůstat ještě chvíli.</blockquote>
+          <p class="meta" style="margin-top: 24px;">Dáma a Král · Františkánská 4</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="program" data-od-id="menu-program">
+      <div class="container grid-2-1">
+        <div>
+          <p class="eyebrow">Rytmus návštěvy</p>
+          <h2>Od kávy po večer s hudbou.</h2>
+        </div>
+        <div class="menu-lines">
+          <article class="menu-line">
+            <div>
+              <h3>Odpolední zastavení</h3>
+              <p>Káva, rozhovor a stůl, u kterého se dá zůstat déle než na jednu zprávu v telefonu.</p>
+            </div>
+            <span class="meta">Kavárna</span>
+          </article>
+          <article class="menu-line">
+            <div>
+              <h3>Setkání v centru</h3>
+              <p>Adresa Františkánská 4 je praktická pro schůzku před prací, po ní i při cestě městem.</p>
+            </div>
+            <span class="meta">Plzeň 3</span>
+          </article>
+          <article class="menu-line">
+            <div>
+              <h3>Pátek 11. 9. 2026</h3>
+              <p>Od 17:00 je oznámené vystoupení skupiny Kérmideretvár.</p>
+            </div>
+            <span class="meta">17:00</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tight" data-od-id="gallery">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Prostor</p>
+          <h2>Teplo interiéru místo hlasité dekorace.</h2>
+        </div>
+        <div class="gallery">
+          <figure class="photo-card tall">
+            <img loading="lazy" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="photo-card">
+            <img loading="lazy" src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="photo-card tall">
+            <img loading="lazy" src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+        <p class="photo-credit">Foto: <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>, <a href="https://www.pexels.com/@zaktech90">Zain Ali</a>, <a href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Việt Anh Nguyễn</a> / Pexels</p>
+      </div>
+    </section>
+
+    <section class="section cream" data-od-id="faq">
+      <div class="container grid-2-1">
+        <div>
+          <p class="eyebrow">Prakticky</p>
+          <h2>Než vyrazíte.</h2>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Kde kavárnu najdu?</h3>
+            <p>Na adrese Františkánská 4, 301 00 Plzeň 3. Mapu najdete níže v kontaktní části.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dá se zavolat předem?</h3>
+            <p>Ano, volejte na číslo <a href="tel:+420777068840">+420 777 068 840</a>.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde sledovat akce?</h3>
+            <p>Aktuální příspěvky a pozvánky kavárna zveřejňuje na své facebookové stránce.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt" data-od-id="contact-map">
+      <div class="container grid-2">
+        <div class="contact-panel">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Františkánská 4, Plzeň.</h2>
+          <div class="contact-list">
+            <div class="contact-row">
+              <span class="meta">Telefon</span>
+              <a href="tel:+420777068840">+420 777 068 840</a>
+            </div>
+            <div class="contact-row">
+              <span class="meta">E-mail</span>
+              <a href="mailto:plzen@europapersonal.cz">plzen@europapersonal.cz</a>
+            </div>
+            <div class="contact-row">
+              <span class="meta">Adresa</span>
+              <span>Františkánská 4, 301 00 Plzeň 3</span>
+            </div>
+            <div class="contact-row">
+              <span class="meta">Facebook</span>
+              <a href="https://www.facebook.com/kavarnaDamaaKral">facebook.com/kavarnaDamaaKral</a>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou kavárny Dáma a Král"></div>
+      </div>
+    </section>
+
+    <section class="section final-cta cream" data-od-id="final-cta">
+      <div class="container">
+        <p class="eyebrow">Vaše místo u stolu</p>
+        <h2>Zastavte se na kávu v centru Plzně.</h2>
+        <p class="lead" style="margin: 22px auto 34px;">Pro rezervaci nebo dotaz zavolejte přímo do kavárny.</p>
+        <a class="btn btn-primary" href="tel:+420777068840">Zavolat 777 068 840</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container">
+      <div class="row-between">
+        <span class="logo">Dáma a Král</span>
+        <span class="meta">Františkánská 4 · Plzeň 3 · <a href="mailto:plzen@europapersonal.cz">plzen@europapersonal.cz</a></span>
+      </div>
+      <div class="footer-disclaimer">
+        Tento Webflex koncept je nezávazná prezentační stránka vytvořená pro vlastníka podniku Kavárna Dáma a Král. Prohlédněte si <a href="https://webflex.cz/portfolio">portfolio</a>, zásady <a href="https://webflex.cz/ochrana-osobnich-udaju">GDPR</a>, nebo požádejte o smazání přes <a href="https://webflex.cz/delete/y2j2we7">tento odkaz</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.377815, 49.745910599999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0C0E0' }).setLngLat([13.377815, 49.745910599999995]).addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
