@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Kavárna K | Plzeň-Bolevec</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfb;
+      --surface: #ffffff;
+      --surface-soft: #f3f6f4;
+      --ink: rgba(7, 22, 20, 0.88);
+      --muted: rgba(7, 22, 20, 0.60);
+      --faint: rgba(7, 22, 20, 0.08);
+      --accent: #204040;
+      --accent-strong: #173331;
+      --accent-soft: #e3eded;
+      --white: #ffffff;
+      --shadow: 0 34px 90px rgba(13, 42, 38, 0.09), 0 2px 8px rgba(13, 42, 38, 0.04);
+      --shadow-soft: 0 22px 70px rgba(13, 42, 38, 0.07);
+      --font-display: "Archivo Black", Impact, system-ui, sans-serif;
+      --font-body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --container: 1180px;
+      --gutter: clamp(20px, 4vw, 48px);
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(32, 64, 64, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32, 64, 64, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img, svg { display: block; max-width: 100%; }
+    img { height: auto; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+    .section { padding: clamp(70px, 9vw, 128px) 0; }
+    .section-tight { padding: clamp(48px, 7vw, 88px) 0; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; opacity: 0.6; }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.98;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      max-width: 720px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+    }
+    h3 { font-size: 21px; line-height: 1.25; letter-spacing: -0.01em; }
+    .lead { color: var(--muted); font-size: clamp(18px, 1.55vw, 21px); line-height: 1.58; max-width: 60ch; }
+    .meta { color: var(--muted); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.02em; }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 251, 0.86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(32, 64, 64, 0.08);
+    }
+    .topnav-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: -0.01em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: var(--muted); font-size: 14px; }
+    .nav-links a, .text-link, .footer-link {
+      transition: color 180ms var(--ease), transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+    }
+    .nav-links a:hover, .text-link:hover, .footer-link:hover { color: var(--accent); }
+    .nav-links a:focus-visible, .btn:focus-visible, .text-link:focus-visible, .footer-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 8px;
+    }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border-radius: 50px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      transition: transform 160ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+    .btn-primary { background: var(--accent); color: var(--white); box-shadow: 0 14px 34px rgba(32, 64, 64, 0.18); }
+    .btn-primary:hover { background: var(--accent-strong); box-shadow: 0 18px 44px rgba(32, 64, 64, 0.22); }
+    .btn-secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn-secondary:hover { background: rgba(32, 64, 64, 0.05); }
+    .btn-light { background: var(--white); color: var(--accent); border-color: var(--white); }
+    .btn-outline-light { background: transparent; color: var(--white); border-color: rgba(255,255,255,0.52); }
+    .btn-outline-light:hover { background: rgba(255,255,255,0.08); }
+
+    .hero { padding: clamp(64px, 9vw, 118px) 0 clamp(52px, 8vw, 96px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.82fr);
+      gap: clamp(36px, 5vw, 68px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy h1 { margin-top: 22px; }
+    .hero-copy .lead { margin-top: 24px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+    .signal-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+    .signal {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.78);
+      box-shadow: 0 14px 40px rgba(13, 42, 38, 0.06);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .signal strong { color: var(--ink); font-family: var(--font-mono); font-weight: 600; margin-right: 6px; }
+    .photo-shell {
+      padding: 10px;
+      border-radius: 28px;
+      background: rgba(255,255,255,0.62);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--surface-soft);
+    }
+    .hero-photo img, .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(7,22,20,0.38));
+      pointer-events: none;
+    }
+    .photo-badge {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 1;
+      max-width: calc(100% - 36px);
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.90);
+      color: var(--ink);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+    }
+    .photo-badge span { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    .services-wrap {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+      gap: clamp(36px, 6vw, 76px);
+      align-items: start;
+    }
+    .service-list { display: grid; gap: 0; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 18px;
+      padding: 26px 0;
+      border-top: 1px solid var(--faint);
+    }
+    .service-row:last-child { border-bottom: 1px solid var(--faint); }
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .mark svg { width: 20px; height: 20px; stroke-width: 1.7; }
+    .service-row p { color: var(--muted); margin-top: 7px; }
+
+    .trust-band {
+      background: var(--accent);
+      color: var(--white);
+      border-radius: 28px;
+      padding: clamp(28px, 5vw, 56px);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: clamp(28px, 5vw, 64px);
+      align-items: center;
+    }
+    .trust-band .lead { color: rgba(255,255,255,0.76); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .stat-card {
+      min-height: 148px;
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.10);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-num {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 52px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 600;
+    }
+    .stat-card p { color: rgba(255,255,255,0.72); font-size: 14px; hyphens: none; }
+
+    .gallery-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.25fr 0.82fr 0.82fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      position: relative;
+      min-height: 320px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card.tall { min-height: 420px; }
+    .gallery-card figcaption {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      color: var(--white);
+      font-size: 14px;
+      text-shadow: 0 1px 18px rgba(0,0,0,0.55);
+    }
+    .gallery-card::after {
+      content: "";
+      position: absolute;
+      inset: 40% 0 0;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.56));
+    }
+    .gallery-card figcaption { z-index: 1; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.86fr) minmax(0, 1.14fr);
+      gap: clamp(28px, 5vw, 58px);
+      align-items: stretch;
+    }
+    .contact-card, .hours-card {
+      background: rgba(255,255,255,0.76);
+      border-radius: 24px;
+      padding: clamp(24px, 4vw, 38px);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card { display: flex; flex-direction: column; justify-content: space-between; gap: 34px; }
+    .contact-list { display: grid; gap: 18px; margin-top: 28px; }
+    .contact-item span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 2px; }
+    .contact-item a, .contact-item strong { font-size: 18px; font-weight: 700; }
+    .hours { width: 100%; border-collapse: collapse; margin-top: 22px; font-size: 15px; }
+    .hours td { padding: 12px 0; border-bottom: 1px solid var(--faint); }
+    .hours td:last-child { text-align: right; font-family: var(--font-mono); color: var(--ink); }
+    .hours tr.today td { color: var(--accent); font-weight: 700; }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: 0.72fr 1.28fr;
+      gap: clamp(32px, 5vw, 72px);
+    }
+    .faq-list { display: grid; gap: 14px; }
+    details {
+      background: rgba(255,255,255,0.74);
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(13,42,38,0.055);
+      padding: 0 20px;
+    }
+    summary {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      font-family: var(--font-mono);
+      color: var(--accent);
+      transition: transform 180ms var(--ease);
+    }
+    details[open] summary::after { transform: rotate(45deg); }
+    details p { color: var(--muted); padding: 0 0 20px; }
+
+    .cta-strip {
+      background: var(--accent);
+      color: var(--white);
+      text-align: center;
+      border-radius: 30px;
+      padding: clamp(42px, 7vw, 78px) clamp(22px, 5vw, 64px);
+      box-shadow: var(--shadow);
+    }
+    .cta-strip h2 { max-width: 780px; margin: 0 auto; }
+    .cta-strip p { max-width: 58ch; margin: 18px auto 30px; color: rgba(255,255,255,0.76); }
+    .cta-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+    .pagefoot {
+      padding: 44px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 28px;
+      align-items: start;
+      border-top: 1px solid var(--faint);
+      padding-top: 26px;
+    }
+    .disclaimer {
+      color: rgba(7,22,20,0.52);
+      line-height: 1.55;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .hero-grid, .services-wrap, .trust-band, .contact-grid, .faq, .footer-grid { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card.tall { min-height: 300px; }
+      .nav-links { display: none; }
+      .stats { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .topnav-inner { min-height: 64px; }
+      .topnav .btn { display: none; }
+      .hero-actions .btn, .cta-actions .btn { width: 100%; }
+      .photo-shell { padding: 7px; border-radius: 22px; }
+      .hero-photo { border-radius: 16px; }
+      .gallery-head { display: block; }
+      .gallery-head .meta { margin-top: 14px; }
+      #map { height: 340px; min-height: 340px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a class="wordmark" href="#top" aria-label="Kavárna K">Kavárna K</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#sluzby">Služby</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420725708817">Zavolat 725 708 817</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Plzeň-Bolevec · Krašovská 14a</p>
+          <h1>Káva po celý den</h1>
+          <p class="lead">Zastavte se na posezení uvnitř i venku, vezměte si jídlo s sebou nebo přijďte s dětmi. Otevřeno je každý den od 08:30 do 21:00.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420725708817">Zavolat 725 708 817</a>
+            <a class="btn btn-secondary" href="#kontakt">Najít Kavárnu K</a>
+          </div>
+          <div class="signal-row" aria-label="Rychlé informace">
+            <span class="signal"><strong>4,5</strong> hodnocení Google</span>
+            <span class="signal"><strong>128</strong> recenzí</span>
+            <span class="signal"><strong>08:30-21:00</strong> denně</span>
+          </div>
+        </div>
+        <div class="photo-shell" aria-label="Atmosféra kavárny">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+            <div class="photo-badge">
+              V klidu, bez spěchu
+              <span>Wi-fi, venkovní posezení, domácí mazlíčci vítáni</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-tight" id="nabidka" data-od-id="services">
+      <div class="container services-wrap">
+        <div>
+          <p class="eyebrow">Naše nabídka</p>
+          <h2 style="margin-top: 18px;">Pro kávu, setkání i chvíli venku.</h2>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 8h11v5a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5V8Z"/><path d="M16 9h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M7 5h7"/></svg></div>
+            <div>
+              <h3>Kavárna a posezení</h3>
+              <p>Teplá atmosféra pro dopolední kávu, odpolední schůzku i klidné posezení po cestě přes Bolevec.</p>
+            </div>
+          </article>
+          <article class="service-row">
+            <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 11h16"/><path d="M6 11l1 8h10l1-8"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+            <div>
+              <h3>Jídlo s sebou</h3>
+              <p>Když se nechcete zdržet, objednávku si vezmete s sebou. Zaplatíte hotově, kartou Mastercard nebo VISA.</p>
+            </div>
+          </article>
+          <article class="service-row">
+            <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 19c0-2.2 1.8-4 4-4s4 1.8 4 4"/><circle cx="12" cy="9" r="3"/><path d="M4 19c0-1.6 1-3 2.5-3.7"/><path d="M20 19c0-1.6-1-3-2.5-3.7"/></svg></div>
+            <div>
+              <h3>Děti i mazlíčci vítáni</h3>
+              <p>Dětský koutek, bezplatná wi-fi, venkovní posezení a parkoviště bez obsluhy přímo u kavárny.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-tight" data-od-id="trust">
+      <div class="container">
+        <div class="trust-band">
+          <div>
+            <p class="eyebrow" style="color: rgba(255,255,255,0.82);">Důvěra hostů</p>
+            <h2 style="margin-top: 18px;">Místo, kam se dá vracet.</h2>
+            <p class="lead" style="margin-top: 18px;">Kavárna K stojí na jednoduchých jistotách: denní otevírací době, dostupném kontaktu a službách, které návštěvníci skutečně využijí.</p>
+          </div>
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-num">4,5</div>
+              <p>hodnocení na Google</p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">128</div>
+              <p>veřejných recenzí</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="gallery">
+      <div class="container">
+        <div class="gallery-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2 style="margin-top: 18px;">Teplo světel, dřeva a skla.</h2>
+          </div>
+          <p class="meta">Vybrané fotografie: Pexels · sladěné teplé interiéry</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card tall">
+            <img loading="lazy" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <figcaption>Stůl připravený na delší posezení</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img loading="lazy" src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Večerní světlo a klidnější nálada</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img loading="lazy" src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>Interiér pro schůzku i odpočinek</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-tight" id="kontakt" data-od-id="contact">
+      <div class="container contact-grid">
+        <aside class="contact-card">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2 style="margin-top: 18px;">Krašovská 14a, Plzeň.</h2>
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420725708817">+420 725 708 817</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:zachovaosvc@email.cz">zachovaosvc@email.cz</a>
+              </div>
+              <div class="contact-item">
+                <span>Adresa</span>
+                <strong>Krašovská 1728/14, 323 00 Plzeň 1-Bolevec</strong>
+              </div>
+            </div>
+          </div>
+          <div class="hours-card" style="padding: 0; background: transparent; box-shadow: none;">
+            <p class="meta">Otevírací doba</p>
+            <table class="hours" aria-label="Otevírací doba Kavárny K">
+              <tbody>
+                <tr class="today"><td>Pondělí</td><td>08:30-21:00</td></tr>
+                <tr><td>Úterý</td><td>08:30-21:00</td></tr>
+                <tr><td>Středa</td><td>08:30-21:00</td></tr>
+                <tr><td>Čtvrtek</td><td>08:30-21:00</td></tr>
+                <tr><td>Pátek</td><td>08:30-21:00</td></tr>
+                <tr><td>Sobota</td><td>08:30-21:00</td></tr>
+                <tr><td>Neděle</td><td>08:30-21:00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </aside>
+        <div id="map" aria-label="Mapa s polohou Kavárny K"></div>
+      </div>
+    </section>
+
+    <section class="section-tight" id="sluzby" data-od-id="faq">
+      <div class="container faq">
+        <div>
+          <p class="eyebrow">Prakticky</p>
+          <h2 style="margin-top: 18px;">Než se vydáte na cestu.</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Má Kavárna K venkovní posezení?</summary>
+            <p>Ano, podle uvedené nabídky je k dispozici venkovní posezení.</p>
+          </details>
+          <details>
+            <summary>Dá se přijít s dětmi?</summary>
+            <p>Ano, součástí služeb je dětský koutek.</p>
+          </details>
+          <details>
+            <summary>Jaké platby přijímáte?</summary>
+            <p>Zaplatíte hotově, bezkontaktně, kartou Mastercard nebo VISA.</p>
+          </details>
+          <details>
+            <summary>Mohu si vzít objednávku s sebou?</summary>
+            <p>Ano, Kavárna K uvádí jídlo s sebou mezi dostupnými službami.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-tight" data-od-id="cta">
+      <div class="container">
+        <div class="cta-strip">
+          <h2>Rezervaci nebo dotaz vyřešíte telefonem.</h2>
+          <p>Ozvěte se přímo do Kavárny K, nebo dorazte na Krašovskou v otevírací době.</p>
+          <div class="cta-actions">
+            <a class="btn btn-light" href="tel:+420725708817">Zavolat 725 708 817</a>
+            <a class="btn btn-outline-light" href="mailto:zachovaosvc@email.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="wordmark" href="#top">Kavárna K</a>
+        <p class="meta" style="margin-top: 12px;">Krašovská 1728/14 · Plzeň 1-Bolevec</p>
+      </div>
+      <div class="disclaimer">
+        Tato stránka byla vytvořena společností Webflex pro majitele podniku. Nejde o oficiální web Kavárny K. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit přes
+        <a class="footer-link" href="https://webflex.cz/delete/3o05jha">tento odkaz</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.357005899999999, 49.7767537],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204040' })
+      .setLngLat([13.357005899999999, 49.7767537])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
