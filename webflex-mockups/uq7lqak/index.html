@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GIMMI lounge cafe | Kavárna v Brně-Králově Poli</title>
+  <meta name="description" content="GIMMI lounge cafe na Slovanském náměstí v Brně. Výběrová káva, snídaně po celý den, vlastní dezerty, káva s sebou a nekuřácká zahrádka.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Fraunces:opsz,wght@9..144,600&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: #fffdf8;
+      --surface-soft: #eee6da;
+      --ink: #181512;
+      --muted: #675d52;
+      --line: rgba(24, 21, 18, .12);
+      --line-strong: rgba(24, 21, 18, .22);
+      --accent: #C0A080;
+      --accent-deep: #876847;
+      --accent-soft: #ead9c5;
+      --coffee: #2b170c;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-accent: "Fraunces", Georgia, serif;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(24,21,18,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,21,18,.026) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 800;
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--coffee);
+      color: #fffaf4;
+      border: 1px solid var(--coffee);
+    }
+    .btn.primary:hover { background: #3a2112; border-color: #3a2112; }
+    .btn.secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(24,21,18,.05); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 243, 236, .88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: #554b41;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(430px, .78fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #51483f;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, .72);
+      border: 1px solid var(--line);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,253,248,.86);
+      color: var(--ink);
+      border: 1px solid rgba(24,21,18,.12);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 480px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list { border-top: 1px solid var(--line-strong); }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, 1fr) minmax(260px, 420px);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .offer-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-deep);
+      font-size: 13px;
+      padding-top: 5px;
+    }
+    .offer-row p { max-width: 38rem; }
+
+    .trust {
+      background: var(--coffee);
+      color: #fff8ef;
+      border-block: 1px solid rgba(255,255,255,.12);
+    }
+    .trust h2,
+    .trust h3 { color: #fff8ef; }
+    .trust p { color: rgba(255,248,239,.72); }
+    .trust .eyebrow { color: var(--accent-soft); }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s4);
+      background: #2b170c;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: .95;
+      letter-spacing: -.01em;
+      color: var(--accent-soft);
+    }
+    .stat span {
+      color: rgba(255,248,239,.74);
+      font-weight: 600;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .9fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .daily-card {
+      border-top: 1px solid var(--line-strong);
+    }
+    .daily-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: var(--s4);
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .daily-row dt {
+      margin: 0;
+      font-family: var(--font-mono);
+      color: var(--accent-deep);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .daily-row dd {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .gallery {
+      padding-top: 0;
+    }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .9fr .9fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .gallery-item:first-child { min-height: 460px; }
+
+    .hours-contact {
+      background: var(--surface);
+      border-block: 1px solid var(--line);
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: var(--s4);
+      background: #fffaf2;
+    }
+    .contact-card {
+      display: grid;
+      gap: var(--s4);
+      align-content: start;
+    }
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+    .label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent-deep);
+    }
+    .contact-line strong,
+    .contact-line a {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--s4);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-table th,
+    .hours-table td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    .hours-table td { text-align: right; color: var(--muted); }
+    .hours-table tr.today th,
+    .hours-table tr.today td {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .faq-item {
+      min-height: 170px;
+      padding: var(--s4);
+      background: var(--bg);
+    }
+    .faq-item h3 {
+      margin-bottom: 12px;
+      font-size: 21px;
+    }
+
+    .final {
+      padding: var(--s8) 0;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: var(--s5);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--coffee);
+      color: #fff8ef;
+    }
+    .final-panel h2 { color: #fff8ef; }
+    .final-panel p { color: rgba(255,248,239,.72); margin-top: 14px; max-width: 620px; }
+    .final-panel .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #1d130b;
+    }
+    .final-panel .btn.secondary {
+      color: #fff8ef;
+      border-color: rgba(255,255,255,.45);
+    }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--s3);
+    }
+
+    .footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: start;
+    }
+    .disclaimer {
+      max-width: 760px;
+    }
+    .disclaimer a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .photo-credit {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo {
+        width: 100%;
+        min-width: 0;
+      }
+      .offer-row {
+        grid-template-columns: 56px 1fr;
+      }
+      .offer-row p { grid-column: 2; }
+      .trust-grid,
+      .gallery-strip,
+      .faq-list {
+        grid-template-columns: 1fr;
+      }
+      .gallery-item,
+      .gallery-item:first-child {
+        min-height: 280px;
+      }
+      .final-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .hero { padding: var(--s5) 0 var(--s6); }
+      .hero-actions,
+      .final-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .daily-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .contact-line strong,
+      .contact-line a {
+        font-size: 18px;
+      }
+      .final-panel,
+      .contact-card,
+      .hours-card {
+        border-radius: 20px;
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="GIMMI lounge cafe">GIMMI lounge cafe</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Brno-Královo Pole · Slovanské náměstí</div>
+          <h1>Káva, snídaně, klid v Králově Poli</h1>
+          <p class="hero-lead">Stylová brněnská kavárna s výběrovou kávou, snídaněmi po celý den a vlastními dezerty. Zastavte se na chvíli pro sebe, pracovní schůzku nebo kávu s sebou.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420774575066">Zavolat do kavárny</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">Po-Pá 7:30-19:00</span>
+            <span class="meta-pill">So 8:30-16:00</span>
+            <span class="meta-pill">Hodnocení 4,8 · 678 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-label">GIMMI · lounge cafe</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka kavárny</div>
+            <h2>Co si u nás dáte</h2>
+          </div>
+          <p>Na dvou mlýncích držíme dva druhy kávy, k tomu chystáme snídaně po celý den a dezerty z vlastní výroby.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva</h3>
+            <p>Espresso, filtr i káva s sebou pro cestu přes Slovanské náměstí. O novinkách z kavárny dáváme vědět na Facebooku a Instagramu.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">02</span>
+            <h3>Snídaně po celý den</h3>
+            <p>Ráno, dopoledne i odpoledne. Snídaňové talíře si můžete dát podle vlastního tempa, bez hlídání krátkého ranního okna.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">03</span>
+            <h3>Vlastní dezerty</h3>
+            <p>Sladké ke kávě připravované přímo pro kavárnu. V nabídce najdete stálice i sezónní kousky podle aktuálního dne.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">04</span>
+            <h3>Zahrádka, tisk, Wi-Fi</h3>
+            <p>Nekuřácká zahrádka, denní tisk a Wi-Fi zdarma pro chvíle, kdy chcete posedět déle nebo v klidu vyřídit práci.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Proč se vracet</div>
+            <h2>Kavárna pro všední den</h2>
+          </div>
+          <p>GIMMI stojí na jednoduchých věcech: dobrá káva, příjemné místo, jasná otevírací doba a obsluha, která ví, co má na mlýnku.</p>
+        </div>
+        <div class="trust-grid">
+          <div class="stat">
+            <strong>4,8</strong>
+            <span>hodnocení hostů na Googlu</span>
+          </div>
+          <div class="stat">
+            <strong>678</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>2</strong>
+            <span>mlýnky pro dva druhy kávy</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div>
+          <div class="eyebrow">Jak u nás plyne den</div>
+          <h2>Od ranní kávy po odpolední dezert</h2>
+          <dl class="daily-card">
+            <div class="daily-row">
+              <dt>Ráno</dt>
+              <dd>Káva do ruky, snídaně a klidný start dne v Králově Poli.</dd>
+            </div>
+            <div class="daily-row">
+              <dt>Dopoledne</dt>
+              <dd>Posezení u denního tisku, práce na notebooku nebo krátká schůzka.</dd>
+            </div>
+            <div class="daily-row">
+              <dt>Odpoledne</dt>
+              <dd>Dezert z vlastní výroby, druhá káva a zahrádka, když počasí dovolí.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" class="gallery" aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, dřevo, čas na kávu</h2>
+          </div>
+          <p>V kavárně je místo pro rychlé espresso i pomalejší posezení. Interiér drží lounge náladu, zahrádka přidává vzduch v teplejších dnech.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="hours-contact">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Slovanském náměstí</h2>
+          </div>
+          <p>GIMMI lounge cafe sídlí v Brně-Králově Poli. Zavolejte nám, napište e-mail nebo se rovnou zastavte podle otevírací doby.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span class="label">Adresa</span>
+              <strong>1, Slovanské nám. 2237, 612 00 Brno-Královo Pole</strong>
+            </div>
+            <div class="contact-line">
+              <span class="label">Telefon</span>
+              <a href="tel:+420774575066">+420 774 575 066</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">E-mail</span>
+              <a href="mailto:info@gimmicafe.cz">info@gimmicafe.cz</a>
+            </div>
+            <div class="hours-card">
+              <div class="eyebrow">Otevírací doba</div>
+              <table class="hours-table" aria-label="Otevírací doba">
+                <tbody>
+                  <tr>
+                    <th>Po-Pá</th>
+                    <td>7:30-19:00</td>
+                  </tr>
+                  <tr>
+                    <th>So</th>
+                    <td>8:30-16:00</td>
+                  </tr>
+                  <tr>
+                    <th>Ne</th>
+                    <td>zavřeno</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div id="map" role="img" aria-label="Mapa s polohou GIMMI lounge cafe"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prakticky</div>
+            <h2>Než vyrazíte</h2>
+          </div>
+          <p>Krátké odpovědi na věci, které hosté řeší nejčastěji před návštěvou kavárny.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Dáte si u nás snídani i později?</h3>
+            <p>Ano. Snídaně připravujeme po celý den, takže nemusíte spěchat jen na ráno.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je možné vzít kávu s sebou?</h3>
+            <p>Ano. Kávu vám rádi připravíme i s sebou.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Má kavárna zahrádku?</h3>
+            <p>Ano. K dispozici je nekuřácká zahrádka.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dá se u vás pracovat?</h3>
+            <p>Ano. V kavárně je Wi-Fi zdarma a k posezení také denní tisk.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Rezervace a kontakt">
+      <div class="wrap final-panel">
+        <div>
+          <div class="eyebrow">Dnes na kávu</div>
+          <h2>Zastavte se v GIMMI</h2>
+          <p>Slovanské náměstí, výběrová káva, vlastní dezerty a snídaně po celý den. Pro aktuální nabídku volejte do kavárny.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420774575066">+420 774 575 066</a>
+          <a class="btn secondary" href="mailto:info@gimmicafe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <p class="disclaimer">Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/uq7lqak">webflex.cz/delete/uq7lqak</a>.</p>
+      <p class="photo-credit">Foto: Pexels</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const rows = Array.from(document.querySelectorAll('.hours-table tbody tr'));
+    const day = new Date().getDay();
+    if (day >= 1 && day <= 5) rows[0].classList.add('today');
+    if (day === 6) rows[1].classList.add('today');
+    if (day === 0) rows[2].classList.add('today');
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.592619, 49.223019],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([16.592619, 49.223019])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
