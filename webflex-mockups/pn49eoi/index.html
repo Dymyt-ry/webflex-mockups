@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Cavino Plzeň | Káva, víno, brunch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #12110f;
+      --bg-soft: #181612;
+      --surface: #f5f1ea;
+      --surface-2: #ebe4d9;
+      --ink: #f8f4ec;
+      --ink-dark: #211b15;
+      --muted: rgba(248, 244, 236, 0.68);
+      --muted-dark: rgba(33, 27, 21, 0.66);
+      --border: rgba(248, 244, 236, 0.14);
+      --border-dark: rgba(33, 27, 21, 0.14);
+      --accent: #3D6B4F;
+      --accent-strong: #578568;
+      --accent-soft: rgba(61, 107, 79, 0.16);
+      --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
+      --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      --container: 1180px;
+      --gutter: clamp(20px, 4vw, 48px);
+      --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(248,244,236,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(248,244,236,0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; text-wrap: pretty; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+      z-index: 30;
+    }
+
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .section { padding-block: clamp(72px, 9vw, 132px); }
+    .section.tight { padding-block: clamp(52px, 7vw, 92px); }
+    .cream { background: var(--surface); color: var(--ink-dark); }
+    .cream + .cream { border-top: 1px solid var(--border-dark); }
+    .dark-rule { border-top: 1px solid var(--border); }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(18, 17, 15, 0.84);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo img {
+      height: 42px;
+      width: auto;
+      max-width: 180px;
+      object-fit: contain;
+    }
+    .nav-links { display: flex; align-items: center; gap: 30px; color: var(--muted); font-size: 14px; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible, .btn:focus-visible, .frap:focus-visible, .maplibregl-ctrl button:focus-visible {
+      outline: 2px solid var(--accent-strong);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px) scale(0.98); }
+    .btn-primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+    .btn-secondary { background: transparent; color: #ffffff; border-color: rgba(255,255,255,0.45); }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.78); background: rgba(255,255,255,0.06); }
+    .cream .btn-secondary { color: var(--ink-dark); border-color: currentColor; }
+    .cream .btn-secondary:hover { background: rgba(33,27,21,0.05); }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.4;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+    .cream .eyebrow { color: var(--accent); }
+
+    .hero { padding-block: clamp(54px, 7vw, 96px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.8fr);
+      gap: clamp(42px, 6vw, 78px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    h1 {
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.98;
+      letter-spacing: -0.025em;
+      font-weight: 600;
+      max-width: 10ch;
+    }
+    .hero-lead {
+      max-width: 56ch;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 21px);
+      line-height: 1.6;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-note span {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,0.03);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(18,17,15,0.68));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 16px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.82);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: 46px;
+    }
+    h2 {
+      margin-top: 12px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 64px);
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .section-copy { color: var(--muted-dark); font-size: 18px; line-height: 1.65; max-width: 60ch; }
+    .service-list { border-top: 1px solid var(--border-dark); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(240px, 0.55fr);
+      gap: 28px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border-dark);
+      align-items: start;
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .service-row h3 {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 2.4vw, 36px);
+      line-height: 1.08;
+      letter-spacing: -0.015em;
+      font-weight: 600;
+    }
+    .service-row p { color: var(--muted-dark); font-size: 16px; max-width: 56ch; }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(320px, 0.52fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: stretch;
+    }
+    .rating-panel {
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 34px 0;
+    }
+    .rating-number {
+      font-family: var(--font-mono);
+      font-size: clamp(76px, 13vw, 154px);
+      line-height: 0.88;
+      letter-spacing: -0.06em;
+      color: var(--ink);
+    }
+    .rating-caption { color: var(--muted); max-width: 42ch; font-size: 17px; }
+    .event-card {
+      min-height: 420px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px;
+      background: rgba(255,255,255,0.035);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .event-card h3 {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3vw, 44px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+    }
+    .event-card p { color: var(--muted); }
+    .price-lines {
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: rgba(255,255,255,0.86);
+    }
+    .price-lines div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border-dark);
+      background: var(--surface-2);
+    }
+    .gallery-strip img {
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      object-fit: cover;
+      transition: transform 420ms var(--ease);
+    }
+    .gallery-strip figure:hover img { transform: scale(1.035); }
+    .gallery-strip figcaption {
+      padding: 12px 14px;
+      color: var(--muted-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      border-top: 1px solid var(--border-dark);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.7fr) minmax(0, 1fr);
+      gap: clamp(30px, 5vw, 62px);
+      align-items: start;
+    }
+    .contact-card {
+      border: 1px solid var(--border-dark);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.36);
+      padding: 28px;
+    }
+    .contact-card h2 { font-size: clamp(30px, 3.8vw, 52px); }
+    .contact-lines { display: grid; gap: 14px; margin-top: 24px; }
+    .contact-lines a, .contact-lines span {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-dark);
+      color: var(--ink-dark);
+    }
+    .contact-lines small {
+      font-family: var(--font-mono);
+      color: var(--muted-dark);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hours { margin-top: 28px; border-top: 1px solid var(--border-dark); }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 18px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border-dark);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row.today {
+      color: #ffffff;
+      background: var(--accent);
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-radius: 10px;
+      border-bottom: 0;
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border-dark);
+      background: var(--surface-2);
+    }
+
+    .faq-wrap {
+      display: grid;
+      grid-template-columns: 0.65fr 1fr;
+      gap: clamp(32px, 6vw, 84px);
+    }
+    .faq-list { border-top: 1px solid var(--border); }
+    .faq-item { padding: 24px 0; border-bottom: 1px solid var(--border); }
+    .faq-item h3 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+    .faq-item p { color: var(--muted); }
+
+    .final-cta { text-align: center; }
+    .final-cta .container { max-width: 780px; }
+    .final-cta p { margin: 18px auto 30px; color: var(--muted); font-size: 19px; max-width: 58ch; }
+
+    .pagefoot {
+      position: relative;
+      z-index: 2;
+      padding-block: 42px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pagefoot .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .pagefoot a { text-decoration: underline; text-underline-offset: 3px; }
+
+    .frap {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 21;
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.18);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    .frap:hover { transform: translateY(-2px); background: var(--accent-strong); }
+    .frap:active { transform: scale(0.95); }
+
+    @media (max-width: 940px) {
+      .hero-grid, .section-head, .proof-grid, .contact-grid, .faq-wrap { grid-template-columns: 1fr; }
+      .hero-photo { max-width: 680px; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 560px) {
+      .topnav-inner { min-height: 68px; }
+      .brand-logo img { height: 34px; max-width: 146px; }
+      .hero-actions, .final-cta .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .photo-caption { display: none; }
+      .contact-lines a, .contact-lines span { flex-direction: column; gap: 4px; }
+      .frap { right: 16px; bottom: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="container topnav-inner">
+      <a class="brand-logo" href="#top" aria-label="Cavino Plzeň">
+        <img src="https://static.wixstatic.com/media/ddf88b_d262d0c90b2c4e51ba1de8df7c77fb2c~mv2.png/v1/fill/w_227,h_71,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/N%C3%A1vrh%20bez%20n%C3%A1zvu%20(4).png" alt="Cavino Plzeň">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Co si dáte</a>
+        <a href="#akce">Tapas Night</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420739631661">Zavolat 739 631 661</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Sedláčkova 109/21 · Plzeň</p>
+          <h1>Ráno káva, večer víno</h1>
+          <p class="hero-lead">Brunch z farmářských surovin, polední menu od 11:00, výběrová káva Dos Mundos, dezerty od Margarity a tapas s víny z Moravy i Evropy.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420739631661">Rezervovat telefonicky</a>
+            <a class="btn btn-secondary" href="#kontakt">Najít podnik</a>
+          </div>
+          <div class="hero-note" aria-label="Základní informace">
+            <span>Po, Út 8:00-21:00</span>
+            <span>498 recenzí</span>
+            <span>4.6 Google</span>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-caption">
+            <span>Cavino atmosféra</span>
+            <span>káva · oběd · víno</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cream" id="menu" data-od-id="services">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co si u nás můžete dát</p>
+            <h2>Od pomalého rána po skleničku po práci.</h2>
+          </div>
+          <p class="section-copy">Menu se mění podle dne a sezony. Přes den u nás najdete jídlo bez spěchu, večer menší talíře ke sdílení a vína vybraná k posezení u stolu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Brunch</h3>
+            <p>Začněte den s vůní kávy, čerstvým chlebem a poctivými farmářskými surovinami.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Oběd</h3>
+            <p>Každý týden nové polední menu. Start v 11:00, jídlo si můžete vychutnat i později během dne.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Káva &amp; dezert</h3>
+            <p>Výběrová káva Dos Mundos a dezerty, které pro Cavino peče cukrářka Margarita.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <h3>Tapas &amp; vína</h3>
+            <p>Malý hlad, večerní stůl nebo chuť na skleničku. Tapas doplňují vína z Moravy a Evropy.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark-rule" id="akce" data-od-id="trust-event">
+      <div class="container proof-grid">
+        <div class="rating-panel">
+          <div>
+            <p class="eyebrow">Google hodnocení</p>
+            <div class="rating-number">4.6</div>
+          </div>
+          <p class="rating-caption">Hodnocení z 498 recenzí pomáhá hostům rozhodnout se, kam v centru Plzně zajít na kávu, oběd nebo víno.</p>
+        </div>
+        <article class="event-card">
+          <div>
+            <p class="eyebrow">28.5. od 18:00</p>
+            <h3>Tapas Night Cavino X Vakuum</h3>
+            <p style="margin-top: 16px;">Degustační menu s částí připravenou na grillu na terase a částí v kuchyni. O párování vín se starají Mladí vinaři v čele s Libuší Vrbovou z vinařství U Vrbů.</p>
+          </div>
+          <div class="price-lines" aria-label="Ceny Tapas Night">
+            <div><span>bez vína</span><strong>1 499 Kč</strong></div>
+            <div><span>s párováním</span><strong>1 999 Kč</strong></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cream" data-od-id="gallery">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">U stolu</p>
+            <h2>Teplé světlo, malé talíře, dlouhé hovory.</h2>
+          </div>
+          <p class="section-copy">Cavino je místo pro ranní schůzku, oběd ve všední den i večerní zastavení s vínem. Fotografie drží stejnou tlumenou, vínovou atmosféru.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure>
+            <img loading="lazy" src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>víno a večerní světlo</figcaption>
+          </figure>
+          <figure>
+            <img loading="lazy" src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <figcaption>interiér pro posezení</figcaption>
+          </figure>
+          <figure>
+            <img loading="lazy" src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+            <figcaption>káva u okna</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cream" id="kontakt" data-od-id="contact-map">
+      <div class="container contact-grid">
+        <aside class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Sedláčkova 109/21</h2>
+          <div class="contact-lines">
+            <a href="tel:+420739631661"><small>telefon</small><strong>+420 739 631 661</strong></a>
+            <a href="mailto:info@cavino.cz"><small>email</small><strong>info@cavino.cz</strong></a>
+            <span><small>adresa</small><strong>Sedláčkova 109/21, 301 00 Plzeň 3</strong></span>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hours-row"><span>Po</span><span>8:00 - 21:00</span></div>
+            <div class="hours-row today"><span>Út</span><span>8:00 - 21:00</span></div>
+            <div class="hours-row"><span>St</span><span>8:00 - 22:00</span></div>
+            <div class="hours-row"><span>Ct</span><span>8:00 - 22:00</span></div>
+            <div class="hours-row"><span>Pa</span><span>8:00 - 0:00</span></div>
+            <div class="hours-row"><span>So</span><span>9:00 - 0:00</span></div>
+            <div class="hours-row"><span>Ne</span><span>9:00 - 20:00</span></div>
+          </div>
+        </aside>
+        <div>
+          <div id="map" aria-label="Mapa Cavino Plzeň"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark-rule" data-od-id="faq">
+      <div class="container faq-wrap">
+        <div>
+          <p class="eyebrow">Před návštěvou</p>
+          <h2>Prakticky, bez hledání.</h2>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Kdy začíná oběd?</h3>
+            <p>Polední menu startuje v 11:00. Podle informací Cavina si ho můžete dát i později během dne.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Máte výběrovou kávu?</h3>
+            <p>Ano, Cavino podává kávu Dos Mundos. K ní najdete dezerty od cukrářky Margarity.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co je Tapas Night?</h3>
+            <p>Večerní degustační menu s víny. Nejbližší uvedená akce je 28.5. od 18:00 s projektem Vakuum.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak si zajistit stůl?</h3>
+            <p>Nejsnazší cesta je zavolat na +420 739 631 661. U akcí s omezenou kapacitou se vyplatí ozvat včas.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section final-cta" data-od-id="final-cta">
+      <div class="container">
+        <p class="eyebrow">Cavino Plzeň</p>
+        <h2>Stůl v centru Plzně máte na dosah.</h2>
+        <p>Ozvěte se Cavinu a domluvte si brunch, oběd, kávu s dezertem nebo večer u tapas a vína.</p>
+        <div class="hero-actions" style="justify-content: center;">
+          <a class="btn btn-primary" href="tel:+420739631661">Zavolat 739 631 661</a>
+          <a class="btn btn-secondary" href="mailto:info@cavino.cz">Napsat email</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <a class="frap" href="tel:+420739631661" aria-label="Zavolat Cavino Plzeň">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6.6 4.8 8.9 4c.7-.2 1.4.1 1.7.8l1 2.2c.2.6.1 1.2-.3 1.6l-1.1 1.1c.8 1.7 2.2 3.1 3.9 3.9l1.1-1.1c.4-.4 1-.5 1.6-.3l2.2 1c.7.3 1 1 .8 1.7l-.8 2.3c-.2.6-.8 1-1.4 1C10.9 18.2 5.8 13.1 5.8 6.4c0-.6.4-1.2.8-1.6Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container row">
+      <span>Cavino Plzeň · Sedláčkova 109/21 · 301 00 Plzeň 3</span>
+      <span>Tuto jednorázovou HTML prezentaci připravilo Webflex. <a href="https://webflex.cz/remove/pn49eoi">Odstranit z kampaně</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3752855, 49.747534599999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#3D6B4F' })
+      .setLngLat([13.3752855, 49.747534599999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
