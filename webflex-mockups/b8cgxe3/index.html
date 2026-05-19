@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Schovaná Kavárna | Zbrojnická 6, Plzeň</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101314;
+      --bg-soft: #15191a;
+      --surface: #f7f8f5;
+      --surface-soft: #eef2ee;
+      --fg: #f6f8f4;
+      --fg-muted: #aab4b0;
+      --ink: #162020;
+      --ink-muted: #5d6864;
+      --hairline: rgba(246, 248, 244, 0.12);
+      --hairline-dark: rgba(22, 32, 32, 0.1);
+      --accent: #60A0A0;
+      --accent-deep: #477c7c;
+      --accent-soft: rgba(96, 160, 160, 0.16);
+      --shadow-soft: 0 34px 100px rgba(0, 0, 0, 0.18), 0 10px 36px rgba(0, 0, 0, 0.08);
+      --shadow-float: 0 28px 90px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+      --gutter: clamp(18px, 4vw, 56px);
+      --container: 1180px;
+      --section: clamp(72px, 10vw, 132px);
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 6%, rgba(96, 160, 160, 0.18), transparent 28%),
+        linear-gradient(180deg, var(--bg), #0d0f10 62%, #121616);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(180deg, black, transparent 72%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    p { text-wrap: pretty; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+    main, header, footer { position: relative; z-index: 2; }
+
+    .container {
+      width: min(100%, var(--container));
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 19, 20, 0.78);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .topnav-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 36px);
+      color: var(--fg-muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-links a {
+      transition: color 180ms var(--ease);
+    }
+
+    .nav-links a:hover { color: var(--fg); }
+
+    .btn {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 12px 18px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      transition: transform 90ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 220ms var(--ease);
+    }
+
+    .btn:focus-visible,
+    .nav-links a:focus-visible,
+    .brand:focus-visible,
+    .menu-link:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn:active,
+    .menu-link:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #081010;
+      box-shadow: 0 16px 42px rgba(96, 160, 160, 0.26);
+    }
+
+    .btn-primary:hover {
+      background: #73b1b1;
+      transform: translateY(-1px);
+      box-shadow: 0 20px 52px rgba(96, 160, 160, 0.32);
+    }
+
+    .btn-secondary {
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.45);
+      background: transparent;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.06);
+      transform: translateY(-1px);
+    }
+
+    .arrow-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(8, 16, 16, 0.14);
+      transition: transform 220ms var(--ease);
+    }
+
+    .btn:hover .arrow-dot { transform: translateX(2px); }
+
+    .eyebrow {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .hero {
+      padding-block: clamp(58px, 8vw, 108px) clamp(72px, 9vw, 124px);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.96fr) minmax(440px, 0.86fr);
+      gap: clamp(40px, 6vw, 84px);
+      align-items: center;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+    }
+
+    .hero h1 {
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      font-weight: 400;
+      max-width: 11ch;
+    }
+
+    .hero-lead {
+      margin: 22px 0 0;
+      max-width: 56ch;
+      color: var(--fg-muted);
+      font-size: clamp(18px, 1.8vw, 22px);
+      line-height: 1.48;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 38px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: var(--fg-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .photo-shell {
+      width: 100%;
+      padding: 8px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.06);
+      box-shadow: var(--shadow-float);
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      background: var(--bg-soft);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.9) contrast(1.02);
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 46%, rgba(0,0,0,0.48));
+      pointer-events: none;
+    }
+
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+    }
+
+    .photo-note strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+    }
+
+    .photo-note span {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .section {
+      padding-block: var(--section);
+    }
+
+    .light-section {
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.74fr) minmax(280px, 0.55fr);
+      gap: clamp(28px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: clamp(36px, 6vw, 72px);
+    }
+
+    .section-head h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 18px;
+      line-height: 1.55;
+      max-width: 52ch;
+    }
+
+    .menu-board {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .menu-card,
+    .hours-card,
+    .faq-card {
+      background: rgba(255,255,255,0.78);
+      border-radius: 22px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .menu-card {
+      padding: clamp(22px, 4vw, 38px);
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .menu-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--hairline-dark);
+    }
+
+    .menu-topline h3 {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      font-weight: 400;
+    }
+
+    .menu-price {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    .menu-list {
+      display: grid;
+      gap: 0;
+      margin-top: 12px;
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(22,32,32,0.08);
+    }
+
+    .menu-row:last-child { border-bottom: 0; }
+
+    .menu-row strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .menu-row span {
+      display: block;
+      color: var(--ink-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .menu-row .num {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      padding-top: 2px;
+      white-space: nowrap;
+    }
+
+    .visual-card {
+      min-height: 100%;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+      background: var(--bg-soft);
+    }
+
+    .visual-card img {
+      width: 100%;
+      height: 100%;
+      min-height: 460px;
+      object-fit: cover;
+      filter: saturate(0.9);
+    }
+
+    .visual-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.58));
+    }
+
+    .visual-caption {
+      position: absolute;
+      z-index: 2;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      color: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .visual-caption strong {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      max-width: 10ch;
+    }
+
+    .visual-caption span {
+      max-width: 38ch;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .trust-section {
+      padding-block: clamp(70px, 9vw, 116px);
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 0.85fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .stat-block {
+      min-height: 240px;
+      padding: clamp(24px, 4vw, 38px);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 220ms var(--ease), background 220ms var(--ease);
+    }
+
+    .stat-block:hover {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: clamp(58px, 8vw, 98px);
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+      font-weight: 400;
+      color: var(--fg);
+      overflow-wrap: anywhere;
+    }
+
+    .stat-label {
+      margin: 18px 0 0;
+      color: var(--fg-muted);
+      max-width: 28ch;
+    }
+
+    .quote-block {
+      min-height: 240px;
+      padding: clamp(24px, 4vw, 38px);
+      border-radius: 22px;
+      background: var(--accent-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--fg);
+    }
+
+    .quote-block p {
+      margin: 0;
+      font-size: clamp(22px, 2.7vw, 32px);
+      line-height: 1.18;
+      letter-spacing: -0.01em;
+      max-width: 18ch;
+    }
+
+    .quote-block span {
+      margin-top: 28px;
+      color: var(--fg-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .gallery {
+      overflow: hidden;
+      padding-block: clamp(58px, 8vw, 96px);
+      background: #0d1011;
+    }
+
+    .gallery-track {
+      display: grid;
+      grid-template-columns: 0.9fr 1.18fr 0.86fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .gallery-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      background: var(--bg-soft);
+      box-shadow: var(--shadow-float);
+    }
+
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      object-fit: cover;
+      aspect-ratio: 16 / 10;
+      filter: saturate(0.88) contrast(1.02);
+      transition: transform 420ms var(--ease);
+    }
+
+    .gallery-card:hover img { transform: scale(1.035); }
+
+    .gallery-card.tall img { aspect-ratio: 4 / 3; }
+
+    .info-section {
+      background: var(--surface);
+      color: var(--ink);
+      padding-block: var(--section);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: minmax(290px, 0.7fr) minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 64px);
+      align-items: start;
+    }
+
+    .hours-card {
+      padding: clamp(22px, 4vw, 34px);
+      position: sticky;
+      top: 98px;
+    }
+
+    .hours-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      margin-bottom: 24px;
+      overflow-wrap: anywhere;
+    }
+
+    .hours-table {
+      display: grid;
+      gap: 0;
+      margin-top: 18px;
+    }
+
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(22,32,32,0.08);
+      font-size: 15px;
+    }
+
+    .hours-row strong { font-weight: 700; }
+    .hours-row span:last-child {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .today {
+      color: var(--accent-deep);
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .contact-list a,
+    .contact-list span {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 48px;
+      padding: 12px 0;
+      border-top: 1px solid rgba(22,32,32,0.08);
+      color: var(--ink);
+    }
+
+    .contact-list small {
+      font-family: var(--font-mono);
+      color: var(--ink-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .map-shell {
+      padding: 8px;
+      border-radius: 24px;
+      background: rgba(22,32,32,0.06);
+      box-shadow: var(--shadow-soft);
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-soft);
+    }
+
+    .faq-section {
+      background: #f1f4f1;
+      color: var(--ink);
+      padding-block: clamp(70px, 9vw, 116px);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 0.72fr 1fr;
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+    }
+
+    .faq-title h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      margin-top: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .faq-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .faq-card {
+      padding: 24px;
+    }
+
+    .faq-card h3 {
+      font-size: 20px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .faq-card p {
+      margin: 0;
+      color: var(--ink-muted);
+    }
+
+    .cta-strip {
+      padding-block: clamp(84px, 12vw, 150px);
+      text-align: center;
+    }
+
+    .cta-strip h2 {
+      margin: 0 auto;
+      max-width: 780px;
+      font-family: var(--font-display);
+      font-size: clamp(38px, 6vw, 78px);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      font-weight: 400;
+      overflow-wrap: anywhere;
+    }
+
+    .cta-strip p {
+      margin: 22px auto 32px;
+      color: var(--fg-muted);
+      max-width: 48ch;
+      font-size: 18px;
+    }
+
+    .footer {
+      padding-block: 42px 34px;
+      background: #0c0f10;
+      border-top: 1px solid var(--hairline);
+      color: var(--fg-muted);
+      font-size: 13px;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .footer-logo img {
+      max-height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .footer-contact {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .disclaimer {
+      border-top: 1px solid var(--hairline);
+      padding-top: 22px;
+      display: grid;
+      gap: 12px;
+      max-width: 920px;
+    }
+
+    .disclaimer-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .footer a {
+      transition: color 180ms var(--ease);
+    }
+
+    .footer a:hover { color: var(--fg); }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .menu-board,
+      .section-head,
+      .trust-grid,
+      .info-grid,
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy { max-width: 100%; }
+      .hero h1 { max-width: 12ch; }
+      .hours-card { position: static; }
+      .visual-card img { min-height: 360px; }
+    }
+
+    @media (max-width: 760px) {
+      .nav-links a:not(.btn) { display: none; }
+      .topnav-inner { min-height: 66px; }
+      .brand img { max-height: 38px; }
+      .hero { padding-top: 44px; }
+      .hero-grid { gap: 34px; }
+      .hero h1 { max-width: 9.5ch; }
+      .photo-note { align-items: start; flex-direction: column; }
+      .gallery-track { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 6px; }
+      .menu-row .num { padding-top: 0; }
+      .cta-strip { text-align: left; }
+      .cta-strip h2, .cta-strip p { margin-inline: 0; }
+      .cta-strip .hero-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 520px) {
+      .hero-actions,
+      .cta-strip .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn { width: 100%; }
+      .chip { width: 100%; justify-content: center; }
+      .menu-topline { align-items: start; flex-direction: column; }
+      .contact-list a,
+      .contact-list span { align-items: start; flex-direction: column; }
+      #map { height: 360px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a class="brand" href="#top" aria-label="Schovaná Kavárna">
+        <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=768,fit=crop,q=95/AwvM1279rbtPB3Vr/banner_logo-A85wjKkb3ZcjGMJL.png" alt="Schovaná Kavárna">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420732699441">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Zbrojnická 6 · Plzeň</p>
+          <h1>Schovejte si chvilku pro sebe</h1>
+          <p class="hero-lead">Dorty, slané svačinky a celodenní brunche v kavárně, kam si můžete odskočit na espresso, domácí limonádu nebo pomalé odpoledne.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420732699441">Zavolat +420 732 699 441 <span class="arrow-dot">›</span></a>
+            <a class="btn btn-secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="chip">Po-So 9-19</span>
+            <span class="chip">Ne 10-18</span>
+            <span class="chip">4,8 · 780 recenzí</span>
+          </div>
+        </div>
+
+        <div class="photo-shell">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+            <div class="photo-note">
+              <strong>Na skok i na dlouho.</strong>
+              <span>Plzeň 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu" class="section light-section" data-od-id="menu">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Schované menu</p>
+            <h2>Sladké, slané, brunch.</h2>
+          </div>
+          <p>Vyberte si kávu, něco studeného, domácí limonádu nebo talíř na delší posezení. Ceny níže jsou přímo z nabídky kavárny.</p>
+        </div>
+
+        <div class="menu-board">
+          <article class="menu-card">
+            <div class="menu-topline">
+              <h3>Káva a nápoje</h3>
+              <span class="menu-price">Kč · 0,3 l u limonády</span>
+            </div>
+            <div class="menu-list">
+              <div class="menu-row">
+                <div><strong>Espresso</strong><span>Také ve variantě doppio.</span></div>
+                <div class="num">66 / 86</div>
+              </div>
+              <div class="menu-row">
+                <div><strong>Flat white</strong><span>Ovesná nebo bezlaktózová alternativa mléka zdarma.</span></div>
+                <div class="num">97</div>
+              </div>
+              <div class="menu-row">
+                <div><strong>Domácí limonáda</strong><span>Vyráběná z ovoce přímo v kavárně.</span></div>
+                <div class="num">84</div>
+              </div>
+              <div class="menu-row">
+                <div><strong>Matcha latte</strong><span>Teplá i studená varianta.</span></div>
+                <div class="num">95</div>
+              </div>
+              <div class="menu-row">
+                <div><strong>Kombucha VIGO</strong><span>Original, Acerola a zázvor BIO nebo Rose BIO.</span></div>
+                <div class="num">84 / 89</div>
+              </div>
+              <div class="menu-row">
+                <div><strong>Schorle</strong><span>Nebílovský mošt a soda v poměru 1:1.</span></div>
+                <div class="num">71</div>
+              </div>
+            </div>
+          </article>
+
+          <aside class="visual-card" aria-label="Posezení ve Schované kavárně">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <div class="visual-caption">
+              <strong>Schovaná rezervace</strong>
+              <span>Na brunch, dorty nebo klidné setkání se ozvěte telefonicky.</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-section" data-od-id="trust">
+      <div class="container">
+        <div class="trust-grid">
+          <div class="stat-block">
+            <div class="stat-num">4,8</div>
+            <p class="stat-label">Hodnocení na Google profilu.</p>
+          </div>
+          <div class="stat-block">
+            <div class="stat-num">780</div>
+            <p class="stat-label">Veřejných recenzí od hostů.</p>
+          </div>
+          <div class="quote-block">
+            <p>Neschováváme se, rádi vám zodpovíme vaše dotazy.</p>
+            <span>Kontakt kavárny</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" class="gallery" data-od-id="gallery">
+      <div class="container">
+        <div class="section-head" style="color: var(--fg); margin-bottom: 46px;">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Teplé světlo, klidný stůl.</h2>
+          </div>
+          <p style="color: var(--fg-muted);">Místo pro rychlou kávu i delší odpočinek v centru Plzně.</p>
+        </div>
+        <div class="gallery-track">
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="info-section" data-od-id="contact">
+      <div class="container info-grid">
+        <aside class="hours-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Zbrojnická 6, Plzeň 3</h2>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="hours-row today"><strong>Po-So</strong><span>9-19</span></div>
+            <div class="hours-row"><strong>Ne</strong><span>10-18</span></div>
+          </div>
+          <div class="contact-list">
+            <a href="tel:+420732699441"><small>Mobil</small><strong>+420 732 699 441</strong></a>
+            <a href="mailto:info@schovanakavarna.cz"><small>Email</small><strong>info@schovanakavarna.cz</strong></a>
+            <span><small>Adresa</small><strong>Zbrojnická 6, 301 00 Plzeň 3</strong></span>
+          </div>
+        </aside>
+        <div class="map-shell">
+          <div id="map" aria-label="Mapa umístění Schované Kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" data-od-id="faq">
+      <div class="container faq-grid">
+        <div class="faq-title">
+          <p class="eyebrow">Než vyrazíte</p>
+          <h2>Krátké odpovědi.</h2>
+        </div>
+        <div class="faq-list">
+          <article class="faq-card">
+            <h3>Kde kavárnu najdu?</h3>
+            <p>Na adrese Zbrojnická 6, 301 00 Plzeň 3.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Kdy je otevřeno?</h3>
+            <p>Od pondělí do soboty 9-19, v neděli 10-18.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Co si můžu dát?</h3>
+            <p>V nabídce jsou sladké dorty, slané svačinky, celodenní brunche, káva, domácí limonáda, kombucha, matcha latte a schorle.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Jak se zeptám na rezervaci?</h3>
+            <p>Zavolejte na +420 732 699 441 nebo napište na info@schovanakavarna.cz.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-strip" data-od-id="cta">
+      <div class="container">
+        <h2>Přijďte si schovat chvíli.</h2>
+        <p>Jsme na Zbrojnické 6 v Plzni. Na otázky a rezervace odpovíme telefonicky i e-mailem.</p>
+        <div class="hero-actions" style="justify-content: center;">
+          <a class="btn btn-primary" href="tel:+420732699441">Zavolat +420 732 699 441 <span class="arrow-dot">›</span></a>
+          <a class="btn btn-secondary" href="mailto:info@schovanakavarna.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <a href="#top" class="footer-logo" aria-label="Schovaná Kavárna">
+          <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=768,fit=crop,q=95/AwvM1279rbtPB3Vr/banner_logo-A85wjKkb3ZcjGMJL.png" alt="Schovaná Kavárna">
+        </a>
+        <div class="footer-contact">
+          <a href="tel:+420732699441">+420 732 699 441</a>
+          <span>·</span>
+          <a href="mailto:info@schovanakavarna.cz">info@schovanakavarna.cz</a>
+          <span>·</span>
+          <span>Zbrojnická 6, Plzeň</span>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <p style="margin: 0;">
+          <strong>Tento návrh je orientační koncept</strong> připravený firmou
+          <strong>Webflex&nbsp;s.r.o.</strong> na základě veřejných informací z&nbsp;Vašeho
+          Google profilu a&nbsp;webu schovanakavarna.cz. Žádný obsah nebyl publikován jinde a tato stránka se po 30 dnech automaticky maže.
+        </p>
+        <div class="disclaimer-meta">
+          <a href="https://webflex.cz/api/n/b8cgxe3/delete">Smazat tento návrh okamžitě</a>
+          <span>·</span>
+          <a href="https://webflex.cz/gdpr">Zásady zpracování OÚ</a>
+          <span>·</span>
+          <span>webflex.cz</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3789536, 49.7462058],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#60A0A0' })
+      .setLngLat([13.3789536, 49.7462058])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
