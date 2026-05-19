@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jörđ Cafe | Výběrová káva v Brně</title>
+  <meta name="description" content="Jörđ Cafe na Kounicově 2 v Brně. Výběrová káva, snídaně a klidné posezení ve všední dny i v sobotu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --bg-deep: #0f0f10;
+      --fg: #f7f4ef;
+      --muted: rgba(247, 244, 239, 0.68);
+      --line: rgba(247, 244, 239, 0.14);
+      --panel: #22201e;
+      --paper: #f6f1ea;
+      --paper-ink: #171412;
+      --accent: #e0c0c0;
+      --accent-strong: #c99a9a;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .16;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, #000, transparent 68%);
+      z-index: 10;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.05;
+    }
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #151313;
+      border: 1px solid var(--accent);
+    }
+    .btn.primary:hover { background: #ead0d0; border-color: #ead0d0; }
+    .btn.secondary {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn.secondary:hover { border-color: var(--accent); background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to bottom, rgba(15,15,16,.86), rgba(15,15,16,.32), transparent);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--fg);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      font-size: 14px;
+      color: rgba(255,255,255,.78);
+    }
+    .nav-links a {
+      transition: color 180ms var(--ease);
+    }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      background: var(--bg-deep);
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.08);
+    }
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(10,10,10,.88) 0%, rgba(10,10,10,.62) 46%, rgba(10,10,10,.24) 100%),
+        linear-gradient(to top, var(--bg) 0%, transparent 32%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 132px 0 var(--s8);
+      max-width: 760px;
+    }
+    .hero-lead {
+      max-width: 560px;
+      margin-top: var(--s4);
+      font-size: clamp(18px, 2vw, 22px);
+      color: rgba(255,255,255,.82);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s6);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .meta-pill {
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(0,0,0,.22);
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 480px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list {
+      border-top: 1px solid var(--line);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, 1fr) minmax(260px, 420px);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .offer-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      padding-top: 5px;
+    }
+
+    .trust {
+      background: #111112;
+      border-block: 1px solid var(--line);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .trust-item {
+      min-height: 178px;
+      padding: var(--s4);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-item strong {
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 72px);
+      font-weight: 600;
+      line-height: .9;
+      color: var(--fg);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .trust-item span {
+      color: var(--muted);
+      max-width: 240px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .photo-card {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 0;
+      border: 1px solid var(--line);
+      background: #111;
+    }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .details-stack {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .detail {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(255,255,255,.78);
+    }
+    .detail b {
+      font-family: var(--font-body);
+      color: var(--fg);
+      font-size: 16px;
+    }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .paper-band p { color: rgba(23,20,18,.68); }
+    .paper-band .eyebrow { color: #8b5757; }
+    .hours-card {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+      gap: var(--s6);
+      align-items: start;
+    }
+    .hours-table {
+      border: 1px solid rgba(23,20,18,.16);
+      background: #fffaf4;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      padding: var(--s3) var(--s4);
+      border-bottom: 1px solid rgba(23,20,18,.12);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today {
+      background: var(--accent);
+      color: #151313;
+      font-weight: 600;
+    }
+    .contact-lines {
+      margin-top: var(--s4);
+      display: grid;
+      gap: var(--s2);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .contact-lines a {
+      color: var(--paper-ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: #8b5757; }
+
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(23,20,18,.16);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 320px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #111;
+      position: relative;
+    }
+    .gallery-strip figure:nth-child(2) { margin-top: var(--s5); }
+    .gallery-strip img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 600ms var(--ease);
+    }
+    .gallery-strip figure:hover img { transform: scale(1.035); }
+    .gallery-strip figcaption {
+      position: absolute;
+      left: var(--s3);
+      bottom: var(--s3);
+      right: var(--s3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: rgba(255,255,255,.76);
+      text-shadow: 0 1px 18px rgba(0,0,0,.7);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
+      gap: var(--s6);
+      align-items: start;
+    }
+    .qa-list {
+      border-top: 1px solid var(--line);
+    }
+    .qa {
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .qa h3 {
+      margin-bottom: var(--s2);
+      font-size: 21px;
+    }
+
+    .final-cta {
+      padding: var(--s8) 0;
+      background: #0f0f10;
+      border-top: 1px solid var(--line);
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .cta-box h2 { max-width: 760px; }
+
+    footer {
+      padding: var(--s5) 0;
+      color: rgba(255,255,255,.56);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      background: #0b0b0c;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      align-items: center;
+    }
+    .footer-grid a {
+      color: rgba(255,255,255,.78);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    @media (max-width: 860px) {
+      .nav-links { display: none; }
+      .hero-content { padding-top: 120px; }
+      .section-head,
+      .offer-row,
+      .split,
+      .hours-card,
+      .faq,
+      .cta-box,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .trust-grid,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-strip figure:nth-child(2) { margin-top: 0; }
+      .offer-row { gap: var(--s3); }
+      section { padding: var(--s6) 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Jörđ Cafe">Jörđ Cafe</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#snidane">Snídaně</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="hero-media" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+      </div>
+      <div class="wrap">
+        <div class="hero-content">
+          <div class="eyebrow">Kounicova 2 · Brno-střed</div>
+          <h1>Výběrová káva na Kounicově</h1>
+          <p class="hero-lead">Kavárna pro ranní espresso, snídani ve městě a klidné zastavení mezi prací, školou a centrem Brna.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420602547710">Zavolat</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="meta-pill">Po-Pá 7:30-20:00</span>
+            <span class="meta-pill">So 9:30-16:30</span>
+            <span class="meta-pill">Hodnocení 5,0 · 244 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Na baru</div>
+            <h2>Káva, snídaně, městský klid.</h2>
+          </div>
+          <p>Jörđ Cafe drží jednoduchý rytmus: výběrová káva přes den, snídaně pro začátek dopoledne a příjemné místo v Brně-střed.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva</h3>
+            <p>Espresso, filtr a kávové nápoje pro rychlé zastavení i delší posezení u stolu.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">02</span>
+            <h3>Snídaně ve všední den</h3>
+            <p>Ranní nabídka pro ty, kdo začínají den v centru Brna nebo na Kounicově.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">03</span>
+            <h3>Posezení a nákup s sebou</h3>
+            <p>Jídlo v kavárně i možnost vzít si kávu cestou dál po městě.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="trust-grid">
+          <div class="trust-item">
+            <strong>5,0</strong>
+            <span>Aktuální Google hodnocení z dodaných dat.</span>
+          </div>
+          <div class="trust-item">
+            <strong>244</strong>
+            <span>Recenzí od hostů, kteří Jörđ Cafe hodnotili.</span>
+          </div>
+          <div class="trust-item">
+            <strong>$$</strong>
+            <span>Cenová kategorie podle veřejného profilu kavárny.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="snidane">
+      <div class="wrap split">
+        <div>
+          <div class="eyebrow">Ráno v Jördu</div>
+          <h2>Snídaně před městem.</h2>
+          <p class="hero-lead">Když začínáte den v Brně-střed, stavte se na kávu a snídani bez spěchu. Přes týden otevíráme už v 7:30.</p>
+          <div class="details-stack">
+            <div class="detail"><b>Všední dny</b><span>7:30-20:00</span></div>
+            <div class="detail"><b>Sobota</b><span>9:30-16:30</span></div>
+            <div class="detail"><b>Neděle</b><span>Zavřeno</span></div>
+          </div>
+        </div>
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section class="paper-band" id="kontakt">
+      <div class="wrap hours-card">
+        <div>
+          <div class="eyebrow">Kontakt</div>
+          <h2>Kounicova 2, Brno.</h2>
+          <p style="margin-top: 24px;">Ozvěte se telefonicky, napište e-mail nebo přijďte rovnou na Kounicovu 2 v Brně-střed.</p>
+          <div class="contact-lines">
+            <a href="tel:+420602547710">+420 602 547 710</a>
+            <a href="mailto:jordcafebrno@gmail.com">jordcafebrno@gmail.com</a>
+            <span>Kounicova 2, 602 00 Brno-střed</span>
+          </div>
+        </div>
+        <div>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="hours-row"><span>Pondělí</span><span>7:30-20:00</span></div>
+            <div class="hours-row today"><span>Úterý</span><span>7:30-20:00</span></div>
+            <div class="hours-row"><span>Středa</span><span>7:30-20:00</span></div>
+            <div class="hours-row"><span>Čtvrtek</span><span>7:30-20:00</span></div>
+            <div class="hours-row"><span>Pátek</span><span>7:30-20:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>9:30-16:30</span></div>
+            <div class="hours-row"><span>Neděle</span><span>Zavřeno</span></div>
+          </div>
+          <div id="map" style="margin-top: 24px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplo světel, dřevo, šálek.</h2>
+          </div>
+          <p>Vybrané snímky drží tlumenou, večerní linku: měkké světlo, stůl a kavárenský detail bez rušivých dekorací.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Kávový bar</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <figcaption>Večerní světlo</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl u kávy</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" aria-label="Časté dotazy">
+      <div class="wrap faq">
+        <div>
+          <div class="eyebrow">Prakticky</div>
+          <h2>Než vyrazíte.</h2>
+        </div>
+        <div class="qa-list">
+          <article class="qa">
+            <h3>Kde kavárnu najdu?</h3>
+            <p>Na adrese Kounicova 2, 602 00 Brno-střed.</p>
+          </article>
+          <article class="qa">
+            <h3>Máte otevřeno o víkendu?</h3>
+            <p>V sobotu ano, od 9:30 do 16:30. V neděli je zavřeno.</p>
+          </article>
+          <article class="qa">
+            <h3>Dá se přijít na snídani?</h3>
+            <p>Ano, Jörđ Cafe uvádí snídaně jako součást aktuální nabídky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-box">
+        <div>
+          <div class="eyebrow">Dnes na Kounicově</div>
+          <h2>Zastavte se na kávu.</h2>
+        </div>
+        <a class="btn primary" href="tel:+420602547710">+420 602 547 710</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>Tuto stránku připravil Webflex pro Jörđ Cafe. Pokud ji nechcete zobrazovat, smažete ji zde: <a href="https://app.webflex.cz/delete/lobqiw2">odstranit stránku</a>.</div>
+      <div>Foto: Pexels</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6053255, 49.199981],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#e0c0c0' })
+      .setLngLat([16.6053255, 49.199981])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
