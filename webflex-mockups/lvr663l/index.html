@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rebelbean Vlněna | Káva v Brně</title>
+  <meta name="description" content="Rebelbean Vlněna v Brně. Výběrová káva, kávové produkty, příslušenství, degustace, poukazy a kavárna na Přízově 5.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111111;
+      --panel: #181818;
+      --panel-2: #202020;
+      --ink: #f7f4ef;
+      --muted: rgba(247, 244, 239, .68);
+      --dim: rgba(247, 244, 239, .48);
+      --line: rgba(247, 244, 239, .14);
+      --line-strong: rgba(247, 244, 239, .26);
+      --accent: #CC1A1A;
+      --accent-dark: #a91212;
+      --paper: #f5f1ea;
+      --paper-ink: #161616;
+      --paper-muted: #67605a;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 500;
+      line-height: .96;
+      letter-spacing: 0;
+      color: var(--ink);
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.6vw, 64px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 600;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent);
+    }
+    .btn.primary:hover {
+      background: #e12a2a;
+      border-color: #e12a2a;
+    }
+    .btn.secondary {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+      background: rgba(255,255,255,.03);
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.1); }
+
+    .site-header {
+      position: fixed;
+      z-index: 30;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17, 17, 17, .78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 178px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      padding: 116px 0 var(--s7);
+      background: #0e0e0e;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(14,14,14,.94) 0%, rgba(14,14,14,.74) 46%, rgba(14,14,14,.28) 100%),
+        linear-gradient(0deg, rgba(14,14,14,.92) 0%, rgba(14,14,14,.08) 50%, rgba(14,14,14,.72) 100%);
+      z-index: 1;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.08);
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+    }
+    .hero-lead {
+      margin-top: var(--s4);
+      max-width: 610px;
+      color: rgba(255,255,255,.78);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .meta-pill {
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(0,0,0,.28);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 450px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .product-rows {
+      border-top: 1px solid var(--line);
+    }
+    .product-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 340px) 120px;
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .product-row p { margin-top: 6px; }
+    .price {
+      font-family: var(--font-mono);
+      color: var(--ink);
+      text-align: right;
+      font-weight: 600;
+    }
+    .tag {
+      justify-self: start;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .photo-strip {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(280px, 36%);
+      gap: var(--s3);
+      overflow-x: auto;
+      padding-bottom: var(--s2);
+      scroll-snap-type: x mandatory;
+    }
+    .photo-card {
+      position: relative;
+      min-height: 390px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      scroll-snap-align: start;
+      background: var(--panel);
+    }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.04);
+      transition: transform 420ms var(--ease);
+    }
+    .photo-card:hover img { transform: scale(1.035); }
+    .photo-card span {
+      position: absolute;
+      left: var(--s3);
+      bottom: var(--s3);
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(0,0,0,.38);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .trust {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .trust h2, .trust h3 { color: var(--paper-ink); }
+    .trust p { color: var(--paper-muted); }
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid rgba(22,22,22,.16);
+      background: rgba(255,255,255,.42);
+    }
+    .stat {
+      min-height: 170px;
+      padding: var(--s4);
+      border-right: 1px solid rgba(22,22,22,.14);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: .95;
+      color: var(--paper-ink);
+      letter-spacing: 0;
+    }
+    .stat span {
+      color: var(--paper-muted);
+      font-weight: 600;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(360px, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-copy {
+      display: grid;
+      gap: var(--s4);
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .line-list {
+      border-top: 1px solid var(--line);
+    }
+    .line-list div {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .line-list b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .menu-table {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: var(--s4);
+      padding: var(--s4);
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row p { margin-top: 4px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: var(--s5);
+      display: grid;
+      align-content: start;
+      gap: var(--s4);
+    }
+    .contact-row {
+      display: grid;
+      gap: 4px;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+    .contact-row span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .final {
+      padding: var(--s8) 0;
+      background: #0c0c0c;
+      border-top: 1px solid var(--line);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final p {
+      margin-top: var(--s3);
+      max-width: 560px;
+    }
+
+    footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .credits {
+      max-width: 680px;
+    }
+    .credits a, .disclaimer a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+    .disclaimer {
+      margin-top: var(--s3);
+      color: rgba(247,244,239,.54);
+    }
+
+    @media (max-width: 860px) {
+      .nav-links { display: none; }
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .product-row {
+        grid-template-columns: 1fr;
+        gap: var(--s2);
+      }
+      .price { text-align: left; }
+      .stat-strip { grid-template-columns: 1fr; }
+      .stat {
+        border-right: 0;
+        border-bottom: 1px solid rgba(22,22,22,.14);
+      }
+      .stat:last-child { border-bottom: 0; }
+      .line-list div { grid-template-columns: 1fr; gap: var(--s2); }
+      .hero { min-height: 760px; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .hero { padding-top: 104px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .photo-strip { grid-auto-columns: 84%; }
+      .menu-row { grid-template-columns: 1fr; }
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="Rebelbean Vlněna">
+        <img src="https://cdn.myshoptet.com/usr/www.rebelbean.cz/user/logos/rebelbean-logo-cervene.svg" alt="Rebelbean Vlněna">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#kavarna">Kavárna</a>
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Rebelbean Vlněna">
+      <img class="hero-bg" src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+      <div class="wrap">
+        <div class="hero-inner">
+          <div class="eyebrow">Brno-střed · Přízova 5</div>
+          <h1>Kafe bez servítek</h1>
+          <p class="hero-lead">Výběrová káva, produkty z kávy a kavárna ve Vlněně pro lidi, kteří tvoří, hledají vlastní cestu a chtějí šálek s jasným charakterem.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#nabidka">Prohlédnout nabídku</a>
+            <a class="btn secondary" href="mailto:shop@rebelbean.cz">Napsat do Rebelbean</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="meta-pill">4,6 Google</span>
+            <span class="meta-pill">1054 hodnocení</span>
+            <span class="meta-pill">shop@rebelbean.cz</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Právě pražíme</div>
+            <h2>Chuťové profily, které nejdou okolo.</h2>
+          </div>
+          <p>Vyberte si z aktuálních káv, produktů z kávy a příslušenství pro domácí přípravu. Ceny uvádíme stejně přímo jako kávu samotnou.</p>
+        </div>
+        <div class="product-rows">
+          <article class="product-row">
+            <div>
+              <h3>Colombia Los Nogales</h3>
+              <p>Mango Lassi · limitovaná edice plná manga, ananasu a citrusů.</p>
+            </div>
+            <span class="tag">Limitovaná edice</span>
+            <div class="price">450 Kč</div>
+          </article>
+          <article class="product-row">
+            <div>
+              <h3>Burundi Kibingo</h3>
+              <p>Apple Crumble · sladký profil pro čistý filtr i ranní rituál.</p>
+            </div>
+            <span class="tag">Nově pražíme</span>
+            <div class="price">od 350 Kč</div>
+          </article>
+          <article class="product-row">
+            <div>
+              <h3>My Daily Mix</h3>
+              <p>Sweet &amp; Balanced · káva pro každý den bez kompromisu v chuti.</p>
+            </div>
+            <span class="tag">Blend</span>
+            <div class="price">od 350 Kč</div>
+          </article>
+          <article class="product-row">
+            <div>
+              <h3>The Underdog</h3>
+              <p>Strong &amp; Reliable · výraznější káva pro fanoušky pevného těla.</p>
+            </div>
+            <span class="tag">Silnější profil</span>
+            <div class="price">od 290 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarna">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kavárna</div>
+            <h2>Místo, kde začínají příběhy.</h2>
+          </div>
+          <p>Vlněna je zastávka na espresso, filtr, setkání i práci mezi schůzkami. Každá kavárna Rebelbean má vlastní tempo, společná je energie kolem kávy.</p>
+        </div>
+        <div class="photo-strip" aria-label="Atmosféra kavárny">
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <span>Stůl</span>
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+            <span>Večer</span>
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <span>Interiér</span>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hodnocení</div>
+            <h2>Brno už ví, kam na kafe.</h2>
+          </div>
+          <p>Reálná zpětná vazba hostů je jednoduchý filtr: vracejí se tam, kde káva drží chuť a obsluha drží rytmus.</p>
+        </div>
+        <div class="stat-strip">
+          <div class="stat">
+            <strong>4,6</strong>
+            <span>Google hodnocení</span>
+          </div>
+          <div class="stat">
+            <strong>1054</strong>
+            <span>Veřejných hodnocení</span>
+          </div>
+          <div class="stat">
+            <strong>5</strong>
+            <span>Přízova, Brno-střed</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="split-copy">
+          <div class="eyebrow">Rebelství v šálku</div>
+          <h2>Káva pro lidi, kteří se nebojí změny.</h2>
+          <p>Rebelbean staví na kávě pro ty, kdo tvoří, zpochybňují a hledají vlastní cestu. V šálku proto čekejte jasný profil, ne uhlazenou nudu.</p>
+          <div class="line-list">
+            <div>
+              <b>Káva</b>
+              <p>Aktuálně pražené jednodruhové kávy, blendy a limitované edice.</p>
+            </div>
+            <div>
+              <b>Degustace</b>
+              <p>Setkání pro ty, kdo chtějí poznat chuť kávy hlouběji.</p>
+            </div>
+            <div>
+              <b>Poukazy</b>
+              <p>Dárek pro někoho, kdo si rád vybírá šálek podle nálady.</p>
+            </div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Další produkty</div>
+            <h2>Domácí příprava a chuť navíc.</h2>
+          </div>
+          <p>Od cascary přes sirupy až po vybavení na filtr. Všechny položky níže vycházejí z aktuální nabídky Rebelbean.</p>
+        </div>
+        <div class="menu-table">
+          <article class="menu-row">
+            <div>
+              <h3>Cascara Colombia Finca Alcatraz</h3>
+              <p>Sweet &amp; Fruity · produkt z kávy pro lehčí ovocný šálek.</p>
+            </div>
+            <div class="price">170 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Limonáda Slupka</h3>
+              <p>Cascarová limonáda nabitá kofeinem.</p>
+            </div>
+            <div class="price">72 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Cascarový sirup</h3>
+              <p>Dopřát si cascaru každý den jde jednodušeji.</p>
+            </div>
+            <div class="price">od 150 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>AeroPress</h3>
+              <p>Pro skvělou kávu kdekoliv.</p>
+            </div>
+            <div class="price">799 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Fellow Aiden kávovar černý</h3>
+              <p>Překapávač pro soustředěný zážitek z přípravy.</p>
+            </div>
+            <div class="price">9 899 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás ve Vlněně.</h2>
+          </div>
+          <p>Zastavte se na Přízově 5 v Brně-střed. Na dotazy k e-shopu, kávě nebo poukazům pište na uvedený e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-row">
+              <span>Adresa</span>
+              <strong>Přízova 5, 602 00 Brno-Brno-střed</strong>
+            </div>
+            <div class="contact-row">
+              <span>E-mail</span>
+              <a href="mailto:shop@rebelbean.cz">shop@rebelbean.cz</a>
+            </div>
+            <div class="contact-row">
+              <span>Web</span>
+              <a href="https://www.rebelbean.cz/">www.rebelbean.cz</a>
+            </div>
+            <div class="contact-row">
+              <span>Souřadnice</span>
+              <strong>49.189631, 16.6164146</strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Rebelbean Vlněna"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Rebelbean Vlněna</div>
+          <h2>Dejte si šálek v centru Brna.</h2>
+          <p>Káva, cascara, příslušenství a kavárenský stůl na Přízově 5.</p>
+        </div>
+        <a class="btn primary" href="mailto:shop@rebelbean.cz">shop@rebelbean.cz</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>Rebelbean Vlněna · Přízova 5, Brno-střed</div>
+        <div class="credits">
+          Fotografie: Jennifer Cher, Daniil Kondrashin, Nathan J Hilton, NGUYỄN THÀNH NHƠN, Janko Ferlic přes Pexels.
+        </div>
+      </div>
+      <div class="disclaimer">
+        Neoficiální prezentační stránka vytvořená studiem Webflex. Nejste-li správce podniku, ignorujte ji. <a href="https://webflex.cz/remove?token=lvr663l">Odstranit stránku</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6164146, 49.189631],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#CC1A1A' })
+      .setLngLat([16.6164146, 49.189631])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
