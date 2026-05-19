@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coffee Trail / Lidická | Výběrová káva v Brně</title>
+  <meta name="description" content="Coffee Trail / Lidická na adrese Lidická 46 v Brně. Výběrová káva, domácí dorty, snídaně, řemeslné pečivo, sladké na objednávku, catering, kurzy a poukazy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: #fffaf4;
+      --surface-2: #eee3d8;
+      --ink: #211812;
+      --muted: #6c5c51;
+      --soft: #9a887c;
+      --line: rgba(44, 30, 20, .14);
+      --line-strong: rgba(44, 30, 20, .25);
+      --accent: #C4917A;
+      --accent-ink: #2f1c13;
+      --accent-deep: #9e6c55;
+      --dark: #16110d;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(44,30,20,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(44,30,20,.026) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border: 1px solid var(--accent);
+    }
+    .btn.primary:hover { background: #d3a38e; border-color: #d3a38e; }
+    .btn.secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(44, 30, 20, .07); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 243, 236, .88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(420px, .82fr);
+      gap: clamp(32px, 6vw, 84px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      color: #5d4b3f;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .34);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface-2);
+    }
+    .hero-photo img,
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.03);
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 8px 11px;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 999px;
+      background: rgba(33, 24, 18, .58);
+      color: #fffaf4;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .menu-rows {
+      border-top: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.18);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) minmax(260px, 440px);
+      gap: var(--s4);
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .menu-row .num {
+      padding-top: 5px;
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .menu-row p { color: #6a5748; }
+
+    .trust-band {
+      padding: var(--s6) 0;
+      border-block: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .trust-item {
+      min-height: 150px;
+      padding: var(--s4);
+      background: var(--surface);
+    }
+    .trust-number {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 5vw, 54px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .trust-item p { margin-top: var(--s3); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .story-card {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .22);
+      padding: var(--s5);
+      border-radius: 18px;
+    }
+    .story-card p + p { margin-top: var(--s3); }
+    .origin-list {
+      border-top: 1px solid var(--line-strong);
+    }
+    .origin-list li {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: var(--s4);
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      list-style: none;
+    }
+    .origin-list ul { margin: 0; padding: 0; }
+    .label {
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card {
+      position: relative;
+      min-height: 280px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface-2);
+    }
+    .gallery-card:first-child { min-height: 420px; }
+    .caption {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 999px;
+      background: rgba(22, 17, 13, .55);
+      color: #fffaf4;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(310px, .72fr) minmax(0, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: var(--s5);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+    }
+    .contact-list {
+      display: grid;
+      gap: var(--s4);
+      margin-top: var(--s5);
+    }
+    .contact-list a,
+    .contact-list span {
+      display: block;
+      width: fit-content;
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .contact-list a:hover {
+      color: var(--accent-deep);
+      transform: translateY(-1px);
+    }
+    .contact-list strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-2);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .faq article {
+      min-height: 180px;
+      padding: var(--s4);
+      background: rgba(255, 250, 244, .82);
+    }
+    .faq p { margin-top: var(--s3); }
+
+    .final {
+      padding: var(--s7) 0 var(--s8);
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: var(--s6);
+      border: 1px solid var(--line-strong);
+      border-radius: 20px;
+      background: var(--dark);
+      color: #fffaf4;
+    }
+    .final-panel h2 { color: #fffaf4; }
+    .final-panel p {
+      max-width: 560px;
+      margin-top: var(--s3);
+      color: rgba(255,250,244,.72);
+    }
+    .final-panel .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .final-panel .btn.secondary:hover { background: rgba(255,255,255,.1); }
+
+    .site-footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer {
+      max-width: 760px;
+    }
+    .webflex-disclaimer a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .menu-row {
+        grid-template-columns: 52px 1fr;
+      }
+      .menu-row p { grid-column: 2; }
+      .trust-grid,
+      .faq,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-card,
+      .gallery-card:first-child {
+        min-height: 300px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: var(--s5); }
+      .hero-actions,
+      .final-panel .hero-actions {
+        flex-direction: column;
+      }
+      .btn { width: 100%; }
+      .story-card,
+      .contact-card,
+      .final-panel {
+        padding: var(--s4);
+      }
+      .origin-list li {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Coffee Trail / Lidická">Coffee Trail / Lidická</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420770197088">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Lidická 46 · Brno-střed</p>
+          <h1 id="hero-title">Káva, dorty, Lidická.</h1>
+          <p class="hero-lead">Místo, kde se potkává výběrová káva, domácí sladké, snídaně a řemeslné pečivo od brněnských pekáren.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420770197088">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#kontakt">Najít kavárnu</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4,7 Google</span>
+            <span class="meta-pill">824 recenzí</span>
+            <span class="meta-pill">lidicka@coffeetrail.cz</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-note">Coffee Trail · Lidická</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co si dát</p>
+            <h2 id="menu-title">Od ranní kávy po dort na objednávku.</h2>
+          </div>
+          <p>Na Lidické najdete kávu z lokálních i zahraničních pražíren, sladké z vlastní výroby a pečivo od Mamastella a Breadguy.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva</h3>
+            <p>Espresso, filtr i kávové chvilky pro zastavení uprostřed Brna.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <h3>Domácí dorty a sladké</h3>
+            <p>Dorty a další sladké pochází z vlastní výroby Coffee Trail.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <h3>Snídaně a jídlo</h3>
+            <p>Káva, domácí dezerty, skvělé jídlo a řemeslné pečivo na jednom místě.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">04</span>
+            <h3>Kurzy, catering, poukazy</h3>
+            <p>Coffee Trail Courses, Coffee Trail Catering a poukazy online pro chvíle mimo běžnou návštěvu kavárny.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-band" aria-label="Důvěra hostů">
+      <div class="wrap trust-grid">
+        <article class="trust-item">
+          <div class="trust-number">4,7</div>
+          <p>Hodnocení na Googlu pro Coffee Trail / Lidická.</p>
+        </article>
+        <article class="trust-item">
+          <div class="trust-number">824</div>
+          <p>Recenzí od hostů, kteří se vrací za kávou, sladkým a atmosférou.</p>
+        </article>
+        <article class="trust-item">
+          <div class="trust-number">2019</div>
+          <p>Rok, kdy se Coffee Trail rozšířil na adresu Lidická 46.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pribeh" aria-labelledby="story-title">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">Trail rodina</p>
+          <h2 id="story-title">Z Baru na Lidickou.</h2>
+        </div>
+        <div class="story-card">
+          <p>Příběh Coffee Trail začal v květnu 2018 na Štefánikově. O rok později vznikla pobočka na Lidické 46 jako místo pro mnoho chutí, lásku k pečení a výběrovou kávu.</p>
+          <p>Za barem stojí parta mladých nadšenců, momentálně nadšenkyň, které mají rády kvalitní suroviny, dobrou kávu a plní si své sny.</p>
+          <div class="origin-list" aria-label="Suroviny a spolupráce">
+            <ul>
+              <li><span class="label">Káva</span><span>Lokální i zahraniční pražírny</span></li>
+              <li><span class="label">Pečivo</span><span>Mamastella a Breadguy</span></li>
+              <li><span class="label">Sladké</span><span>Dorty a dezerty z vlastní výroby</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2 id="gallery-title">Teplé světlo, stůl, klid.</h2>
+          </div>
+          <p>Na kávu po cestě, na snídani ve dvou i na chvíli s dortem, která se nikam nespěchá.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <figcaption class="caption">Stůl pro malé zastavení</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption class="caption">Sladké, káva, pohoda</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            <figcaption class="caption">Brno-střed večer</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2 id="contact-title">Najdete nás na Lidické.</h2>
+          </div>
+          <p>Kousek od centra Brna, na adrese Lidická 46. Pro rezervace, dorty a dotazy volejte nebo napište na pobočku.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <h3>Coffee Trail / Lidická</h3>
+            <div class="contact-list">
+              <span><strong>Adresa</strong>Lidická 46, 602 00 Brno-Brno-střed</span>
+              <a href="tel:+420770197088"><strong>Telefon</strong>+420 770 197 088</a>
+              <a href="mailto:lidicka@coffeetrail.cz"><strong>E-mail</strong>lidicka@coffeetrail.cz</a>
+              <a href="https://www.coffeetrail.cz/"><strong>Web</strong>coffeetrail.cz</a>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa Coffee Trail / Lidická"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Než dorazíte</p>
+            <h2 id="faq-title">Prakticky a stručně.</h2>
+          </div>
+          <p>Nejčastější situace kolem Lidické: káva, sladké, objednávky a větší příležitosti.</p>
+        </div>
+        <div class="faq">
+          <article>
+            <h3>Děláte sladké na objednávku?</h3>
+            <p>Ano, Coffee Trail nabízí sladké na objednávku a dorty z vlastní výroby.</p>
+          </article>
+          <article>
+            <h3>Máte i catering?</h3>
+            <p>Ano, pro akce je k dispozici Coffee Trail Catering.</p>
+          </article>
+          <article>
+            <h3>Pořádáte kurzy?</h3>
+            <p>Ano, v nabídce jsou Coffee Trail Courses.</p>
+          </article>
+          <article>
+            <h3>Lze koupit poukaz?</h3>
+            <p>Ano, poukazy jsou dostupné online přes Coffee Trail.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-panel">
+        <div>
+          <p class="eyebrow">Lidická 46</p>
+          <h2 id="final-title">Stavte se na kávu.</h2>
+          <p>Výběrová káva, domácí dorty, snídaně a řemeslné pečivo v Coffee Trail / Lidická.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420770197088">Zavolat</a>
+          <a class="btn secondary" href="mailto:lidicka@coffeetrail.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>© Coffee Trail / Lidická</span>
+      <p class="webflex-disclaimer">Prezentační stránku připravil Webflex. Pokud si nepřejete její další zobrazování, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/sip1cyn">webflex.cz/delete/sip1cyn</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6070983, 49.2037426],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#C4917A' })
+      .setLngLat([16.6070983, 49.2037426])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
