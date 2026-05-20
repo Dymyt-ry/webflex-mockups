@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Park Lane Cafe | Kavárna u Lužánek v Brně</title>
+  <meta name="description" content="Park Lane Cafe v Brně u Lužáneckého parku. Výběrová káva, domácí dezerty, snídaně, brunch, saláty, sendviče, quiche, limonády a letní zahrádka.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --panel: #202020;
+      --panel-2: #f7f5f0;
+      --ink: #f7f4ef;
+      --ink-dark: #171413;
+      --muted: #bcb4aa;
+      --muted-dark: #625955;
+      --line: rgba(247, 244, 239, .13);
+      --line-strong: rgba(247, 244, 239, .25);
+      --accent: #604040;
+      --accent-bright: #8a5a5a;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 720px; font-size: clamp(40px, 6vw, 88px); }
+    h2 { font-size: clamp(34px, 4.2vw, 60px); }
+    h3 { font-size: 23px; line-height: 1.08; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+    .eyebrow {
+      color: #d9c6bf;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid #d9c6bf;
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: linear-gradient(rgba(15,15,15,.82), rgba(15,15,15,.34), transparent);
+    }
+    .nav { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      color: #fff;
+    }
+    .nav-links { display: flex; align-items: center; gap: 24px; color: rgba(255,255,255,.78); font-size: 14px; font-weight: 600; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: end;
+      padding: 128px 0 96px;
+      overflow: hidden;
+      background: #101010;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.83) 0%, rgba(0,0,0,.58) 38%, rgba(0,0,0,.18) 74%),
+        linear-gradient(0deg, #181818 0%, rgba(24,24,24,.18) 36%, transparent 68%),
+        url("https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940") center / cover;
+      transform: scale(1.02);
+    }
+    .hero-inner { position: relative; z-index: 1; max-width: 760px; }
+    .hero-lead { max-width: 610px; margin-top: 24px; color: rgba(255,255,255,.78); font-size: clamp(18px, 2vw, 22px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 48px; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 48px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: rgba(255,255,255,.72); }
+    .meta-pill { padding: 8px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.28); backdrop-filter: blur(14px); }
+
+    section { padding: 96px 0; border-top: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: minmax(0, .8fr) minmax(280px, .44fr); gap: 48px; align-items: end; margin-bottom: 48px; }
+    .section-head p { font-size: 18px; max-width: 560px; }
+    .service-list { border-top: 1px solid var(--line-strong); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr) 180px;
+      gap: 32px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row .code { color: #d9c6bf; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .service-row p { max-width: 710px; margin-top: 10px; }
+    .tag { justify-self: end; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    .light-band {
+      color: var(--ink-dark);
+      background: var(--panel-2);
+      border-top: 0;
+    }
+    .light-band p { color: var(--muted-dark); }
+    .light-band .eyebrow { color: var(--accent); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid rgba(23,20,19,.16); background: #fffdf8; align-items: stretch; }
+    .stat { min-height: 190px; padding: 28px; border-right: 1px solid rgba(23,20,19,.13); display: flex; flex-direction: column; justify-content: space-between; }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; color: var(--ink-dark); }
+    .stat span { color: var(--muted-dark); font-weight: 600; }
+
+    .split { display: grid; grid-template-columns: minmax(0, .82fr) minmax(380px, .68fr); gap: 64px; align-items: center; }
+    .split-photo { aspect-ratio: 16 / 10; overflow: hidden; border-radius: 8px; border: 1px solid var(--line); background: #111; }
+    .split-photo img, .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.9) contrast(1.06); }
+    .notes { margin-top: 32px; border-top: 1px solid var(--line); }
+    .note { display: grid; grid-template-columns: 94px 1fr; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+    .note b { color: #d9c6bf; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+
+    .gallery-strip { display: grid; grid-template-columns: 1.1fr .9fr 1fr; gap: 16px; align-items: stretch; }
+    .gallery-item { min-height: 310px; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; border: 1px solid var(--line); background: #111; }
+    .gallery-item.tall { aspect-ratio: 4 / 5; }
+
+    .menu-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(300px, .45fr);
+      gap: 48px;
+      padding: 48px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .menu-lines { display: grid; align-content: start; }
+    .menu-line { display: flex; justify-content: space-between; gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+    .menu-line span:first-child { font-weight: 700; }
+    .menu-line span:last-child { color: var(--muted); font-family: var(--font-mono); font-size: 13px; text-align: right; }
+
+    .contact-grid { display: grid; grid-template-columns: minmax(320px, .45fr) minmax(0, .8fr); gap: 24px; align-items: stretch; }
+    .contact-card { padding: 32px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    .contact-card h2 { font-size: clamp(30px, 3.2vw, 48px); margin: 10px 0 24px; }
+    .contact-lines { display: grid; gap: 16px; }
+    .contact-line { padding-top: 16px; border-top: 1px solid var(--line); }
+    .contact-line span { display: block; margin-bottom: 5px; color: #d9c6bf; font-family: var(--font-mono); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+    #map { height: 420px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+
+    .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .qa { padding: 24px; min-height: 160px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .qa h3 { font-size: 20px; margin-bottom: 12px; }
+
+    .final { padding: 72px 0; }
+    .final-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 34px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
+    .final h2 { max-width: 760px; }
+    footer { padding: 28px 0 38px; color: #8f8880; font-size: 13px; }
+    .credits { margin-top: 10px; font-size: 12px; }
+    .credits a, .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+    .disclaimer { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { padding: 112px 0 72px; min-height: 720px; }
+      .section-head, .service-row, .split, .menu-panel, .contact-grid { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      .stats, .faq, .gallery-strip { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid rgba(23,20,19,.13); min-height: 150px; }
+      .stat:last-child { border-bottom: 0; }
+      .final-inner { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Park Lane Cafe">Park Lane Cafe</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kava">O kávě</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Park Lane Cafe">
+      <div class="wrap">
+        <div class="hero-inner">
+          <div class="eyebrow">Brno-střed · u Lužáneckého parku</div>
+          <h1>Kavárna u Lužánek</h1>
+          <p class="hero-lead">Výběrová káva, domácí dezerty, snídaně, brunch a letní zahrádka na adrese Lužánecká 1885/4a.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420725022033">Rezervovat stůl</a>
+            <a class="btn secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">+420 725 022 033</span>
+            <span class="meta-pill">Hodnocení 4,7 · 869 recenzí</span>
+            <span class="meta-pill">Lužánecká 1885/4a</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka kavárny</div>
+            <h2>Od espressa po brunch.</h2>
+          </div>
+          <p>Park Lane Cafe staví na kvalitních surovinách pro kávu, dezerty, snídaně i lehká jídla během dne.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="code">01 · KÁVA</div>
+            <div>
+              <h3>Espresso směs ze 100% arabiky</h3>
+              <p>Směs připravená s místní pražírnou IGNÁC tak, aby fungovala v espressu, cappuccinu i latte macchiatu.</p>
+            </div>
+            <span class="tag">Lokální pražírna</span>
+          </article>
+          <article class="service-row">
+            <div class="code">02 · JÍDLO</div>
+            <div>
+              <h3>Snídaně, brunch a domácí dezerty</h3>
+              <p>V nabídce najdete domácí dezerty, saláty, sendviče a quiche pro klidné posezení i rychlou zastávku u parku.</p>
+            </div>
+            <span class="tag">Domácí příprava</span>
+          </article>
+          <article class="service-row">
+            <div class="code">03 · NÁPOJE</div>
+            <div>
+              <h3>Limonády, fresh džusy, vína a rumy</h3>
+              <p>Studené i teplé nápoje doplňuje výběr kvalitních vín a exotických rumů pro odpolední i večerní návštěvu.</p>
+            </div>
+            <span class="tag">Teplé i studené</span>
+          </article>
+          <article class="service-row">
+            <div class="code">04 · VENKU</div>
+            <div>
+              <h3>Letní zahrádka u Lužánek</h3>
+              <p>Příjemné posezení u jednoho z nejznámějších brněnských parků, když chcete kávu, dezert nebo snídani venku.</p>
+            </div>
+            <span class="tag">Sezónní posezení</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="light-band" aria-label="Hodnocení">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <strong>4,7</strong>
+            <span>průměrné hodnocení hostů</span>
+          </div>
+          <div class="stat">
+            <strong>869</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>100%</strong>
+            <span>arabika v espresso směsi</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap split">
+        <div class="split-copy">
+          <div class="eyebrow">O naší kávě</div>
+          <h2>Pražená na chuť Park Lane.</h2>
+          <p>Dodavatele kávy si kavárna vybírala podle čerstvosti, stabilní kvality, lokálního původu a možnosti upražit směs na míru.</p>
+          <div class="notes">
+            <div class="note"><b>Směs</b><p>Espresso ze 100% arabiky namíchané s Danielem Vincensem z pražírny IGNÁC.</p></div>
+            <div class="note"><b>Filtr</b><p>Pro kávové labužníky bývá na filtru jednodruhová 100% arabika z lokálních i zahraničních pražíren.</p></div>
+            <div class="note"><b>Chuť</b><p>Profil je laděný pro espresso i nejžádanější mléčné nápoje.</p></div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Fotogalerie</div>
+            <h2>Teplé světlo, klidný stůl.</h2>
+          </div>
+          <p>Interiér, káva a večerní atmosféra ladí k návštěvě po procházce parkem i k delšímu setkání.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-item"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></div>
+          <div class="gallery-item tall"><img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance."></div>
+          <div class="gallery-item"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Přehled nabídky">
+      <div class="wrap">
+        <div class="menu-panel">
+          <div>
+            <div class="eyebrow">Co si dát</div>
+            <h2>Ranní káva, lehké jídlo, večerní sklenka.</h2>
+          </div>
+          <div class="menu-lines">
+            <div class="menu-line"><span>Výběrová káva</span><span>espresso · filtr · mléčné nápoje</span></div>
+            <div class="menu-line"><span>Domácí dezerty</span><span>sladké ke kávě</span></div>
+            <div class="menu-line"><span>Snídaně a brunch</span><span>během dne</span></div>
+            <div class="menu-line"><span>Saláty, sendviče, quiche</span><span>lehké jídlo</span></div>
+            <div class="menu-line"><span>Limonády, fresh džusy</span><span>studené nápoje</span></div>
+            <div class="menu-line"><span>Vína a rumy</span><span>večerní posezení</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás u parku.</h2>
+          </div>
+          <p>Pro rezervaci stolu volejte přímo do kavárny. Na mapě je vyznačena adresa Lužánecká 1885/4a v Brně-středu.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="eyebrow">Park Lane Cafe</div>
+            <h2>Rezervace a adresa</h2>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420725022033">+420 725 022 033</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:info@parklanecafe.cz">info@parklanecafe.cz</a></div>
+              <div class="contact-line"><span>Adresa</span>Lužánecká 1885/4a, 602 00 Brno-Brno-střed</div>
+              <div class="contact-line"><span>Web</span><a href="https://www.parklanecafe.cz/">www.parklanecafe.cz</a></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Park Lane Cafe"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Dobré vědět</div>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p>Krátké odpovědi k nabídce, kávě a posezení.</p>
+        </div>
+        <div class="faq">
+          <article class="qa"><h3>Máte filtrovanou kávu?</h3><p>Ano, pro milovníky kávy bývá na filtru jednodruhová 100% arabika z různých pražíren.</p></article>
+          <article class="qa"><h3>Dá se přijít na snídani?</h3><p>Ano, kavárna nabízí snídaně, brunch, domácí dezerty i lehká jídla.</p></article>
+          <article class="qa"><h3>Je možné sedět venku?</h3><p>Park Lane Cafe má letní zahrádku s posezením u Lužáneckého parku.</p></article>
+          <article class="qa"><h3>Jak rezervovat stůl?</h3><p>Pro rezervaci volejte přímo na číslo +420 725 022 033.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <h2>Zastavte se na kávu u Lužánek.</h2>
+        <a class="btn primary" href="tel:+420725022033">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>© Park Lane Cafe · Lužánecká 1885/4a, Brno-střed · <a href="mailto:info@parklanecafe.cz">info@parklanecafe.cz</a></div>
+      <div class="credits">Fotografie: Zain Ali, Jennifer Cher, Daniil Kondrashin, NGUYỄN THÀNH NHƠN, Janko Ferlic / Pexels.</div>
+      <div class="disclaimer">Neoficiální prezentační stránka připravená službou Webflex z veřejně dostupných informací. Nejste-li oprávněným zástupcem podniku, můžete požádat o odstranění: <a href="https://webflex.cz/remove?token=gclps6e" rel="nofollow">webflex.cz/remove?token=gclps6e</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.608461, 49.204277999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#604040' })
+      .setLngLat([16.608461, 49.204277999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
