@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Industra Coffee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf6;
+      --paper: #f4f1ea;
+      --ink: #11110f;
+      --muted: #68645c;
+      --line: rgba(17,17,15,.18);
+      --line-strong: rgba(17,17,15,.42);
+      --accent: #E0E020;
+      --accent-ink: #161600;
+      --charcoal: #181816;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --gutter: clamp(18px, 4vw, 58px);
+      --section: clamp(72px, 10vw, 132px);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(17,17,15,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,15,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    .wrap { width: min(1440px, 100%); margin: 0 auto; padding-inline: var(--gutter); }
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(251,250,246,.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 2px solid var(--ink);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .brand img { width: auto; max-height: 38px; object-fit: contain; }
+    .links { display: flex; align-items: center; gap: clamp(16px, 3vw, 34px); font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
+    .links a { border-bottom: 1px solid transparent; transition: border-color .2s ease, color .2s ease; }
+    .links a:hover { border-color: currentColor; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 46px; padding: 12px 18px;
+      border: 1px solid var(--ink);
+      background: transparent; color: var(--ink);
+      font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-transform: uppercase;
+      transition: transform .2s cubic-bezier(.16,1,.3,1), background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); background: var(--ink); color: var(--bg); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+    .btn.primary:hover { background: var(--ink); color: var(--accent); box-shadow: 3px 3px 0 var(--accent); }
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid; grid-template-columns: minmax(0, .9fr) minmax(40%, 1fr);
+      align-items: center; gap: clamp(36px, 6vw, 92px);
+      padding-block: clamp(54px, 8vw, 112px);
+      border-bottom: 2px solid var(--ink);
+    }
+    .stamp {
+      display: inline-flex; align-items: center; gap: 12px;
+      padding: 8px 10px; margin-bottom: 22px;
+      background: var(--ink); color: var(--accent);
+      font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 640px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 25px);
+      line-height: 1.22;
+      font-weight: 600;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      background: var(--charcoal);
+      box-shadow: 12px 12px 0 var(--accent);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.12) brightness(.86); }
+    .hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(224,224,32,.24), transparent 45%); mix-blend-mode: screen; }
+    .ticker {
+      border-bottom: 2px solid var(--ink);
+      overflow: hidden; background: var(--accent); color: var(--accent-ink);
+      font-family: var(--font-display); text-transform: uppercase; white-space: nowrap;
+      font-size: clamp(24px, 4vw, 54px); line-height: 1;
+    }
+    .ticker span { display: inline-block; padding: 18px 0; animation: roll 24s linear infinite; }
+    @keyframes roll { to { transform: translateX(-50%); } }
+    section { padding-block: var(--section); }
+    .section-head {
+      display: grid; grid-template-columns: 120px 1fr minmax(260px, 430px);
+      gap: 32px; align-items: end; margin-bottom: 42px;
+    }
+    .num { font-family: var(--font-display); font-size: clamp(58px, 8vw, 112px); line-height: .8; color: var(--accent); -webkit-text-stroke: 1px var(--ink); }
+    h2 { font-family: var(--font-display); font-size: clamp(34px, 5vw, 70px); line-height: .95; text-transform: uppercase; overflow-wrap: anywhere; }
+    .section-head p { color: var(--muted); font-size: 18px; }
+    .menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--ink); }
+    .menu-card {
+      min-height: 260px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 26px;
+      border-right: 2px solid var(--ink); background: rgba(244,241,234,.8);
+      transition: transform .2s cubic-bezier(.16,1,.3,1), background .2s ease;
+    }
+    .menu-card:last-child { border-right: 0; }
+    .menu-card:hover { transform: translateY(-2px); background: #fff; }
+    .menu-card small, .row small, .meta { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--muted); }
+    .menu-card h3 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 38px); line-height: 1; text-transform: uppercase; }
+    .split {
+      display: grid; grid-template-columns: 1fr 1fr; border-block: 2px solid var(--ink);
+      padding-block: var(--section); gap: clamp(32px, 6vw, 84px); align-items: center;
+    }
+    .split-img { border: 2px solid var(--ink); aspect-ratio: 16 / 10; overflow: hidden; background: var(--charcoal); }
+    .split-img img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.08); }
+    .rows { border-top: 2px solid var(--ink); margin-top: 32px; }
+    .row { display: grid; grid-template-columns: 82px 1fr; gap: 22px; padding: 18px 0; border-bottom: 1px solid var(--line-strong); }
+    .stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; border: 2px solid var(--ink); background: var(--ink); gap: 2px;
+    }
+    .stat { min-height: 220px; padding: 26px; background: var(--bg); display: flex; flex-direction: column; justify-content: space-between; }
+    .stat strong { font-family: var(--font-display); font-size: clamp(52px, 8vw, 108px); line-height: .8; }
+    .gallery { display: grid; grid-template-columns: 1.25fr .8fr .95fr; gap: 16px; align-items: stretch; }
+    .gallery figure { margin: 0; border: 2px solid var(--ink); background: var(--charcoal); min-height: 300px; overflow: hidden; }
+    .gallery figure:nth-child(1) { min-height: 520px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.1); transition: transform .35s cubic-bezier(.16,1,.3,1); }
+    .gallery figure:hover img { transform: scale(1.035); }
+    .locations { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border: 2px solid var(--ink); }
+    .place { min-height: 245px; padding: 24px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); display: grid; gap: 18px; align-content: start; background: var(--paper); }
+    .place:nth-child(2n) { border-right: 0; }
+    .place:nth-last-child(-n+2) { border-bottom: 0; }
+    .place h3 { font-family: var(--font-display); font-size: 30px; text-transform: uppercase; line-height: 1; }
+    .hours { font-family: var(--font-mono); font-size: 13px; }
+    .contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 20px; align-items: stretch; }
+    .contact-card { border: 2px solid var(--ink); background: var(--accent); color: var(--accent-ink); padding: 28px; display: grid; align-content: space-between; gap: 44px; }
+    .contact-card h2 { font-size: clamp(38px, 5vw, 74px); }
+    .contact-lines { display: grid; gap: 14px; font-family: var(--font-mono); }
+    #map { height: 420px; border: 2px solid var(--ink); overflow: hidden; background: var(--paper); }
+    .final { background: var(--ink); color: var(--bg); border-top: 0; }
+    .final .inner { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; }
+    .final h2 { color: var(--accent); }
+    .final .btn { border-color: rgba(255,255,255,.45); color: #fff; }
+    .final .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: none; }
+    footer { padding: 26px var(--gutter); background: #0d0d0d; color: rgba(255,255,255,.72); font: 12px/1.5 var(--font-body); }
+    footer a { color: #fff; text-decoration: underline; }
+    @media (max-width: 980px) {
+      .hero, .split, .contact-grid, .final .inner { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; }
+      .menu-grid, .stats, .gallery, .locations { grid-template-columns: 1fr; }
+      .menu-card, .place { border-right: 0; border-bottom: 2px solid var(--ink); }
+      .menu-card:last-child, .place:last-child { border-bottom: 0; }
+      .links a:not(.btn) { display: none; }
+      .hero-photo { box-shadow: 8px 8px 0 var(--accent); }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Industra Coffee">
+        <img src="https://industra.coffee/wp-content/themes/industra/dist/images/industra_4fffd27e.svg" alt="Industra Coffee">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#mista">Kavárny</a>
+        <a href="#kontakt" class="btn primary">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="stamp">Praha Nusle · Oldřichova 427/31</div>
+        <h1>Káva v plném provozu</h1>
+        <p class="lead">Kavárna, pražírna, kurzy a výběrová káva od týmu, který kávou žije od roku 2013.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420601334350">Zavolat</a>
+          <a class="btn" href="mailto:info@industra.coffee">Napsat e-mail</a>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+      </div>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+      <span>Espresso · Filtr · E-shop · Předplatné · Kurzy · Catering · Velkoobchod · Espresso · Filtr · E-shop · Předplatné · Kurzy · Catering · Velkoobchod · </span>
+    </div>
+
+    <section id="kava" class="wrap">
+      <div class="section-head">
+        <div class="num">01</div>
+        <h2>Co u nás najdete</h2>
+        <p>Servírujeme kávu v Praze a Brně, pražíme vlastní zrna a pro zájemce otevíráme cestu k pražení i přípravě.</p>
+      </div>
+      <div class="menu-grid">
+        <article class="menu-card">
+          <small>Na baru</small>
+          <h3>Espresso a filtr</h3>
+          <p>Šálek na místě, káva s sebou a výběr z aktuálně pražených zrn.</p>
+        </article>
+        <article class="menu-card">
+          <small>Domů</small>
+          <h3>Čerstvě upraženo</h3>
+          <p>Mexiko Juba espresso, Kolumbie Demetrio Sánchez filtr a Peru El Zorro filtr.</p>
+        </article>
+        <article class="menu-card">
+          <small>Pro skupiny</small>
+          <h3>Kurzy a workshopy</h3>
+          <p>Pražící workshopy v pražské kavárně na Oldřichově po předchozí domluvě.</p>
+        </article>
+        <article class="menu-card">
+          <small>Pro firmy</small>
+          <h3>Catering a velkoobchod</h3>
+          <p>Káva pro akce, provozy a týmy, které chtějí Industra Coffee podávat pravidelně.</p>
+        </article>
+      </div>
+    </section>
+
+    <div class="wrap split">
+      <div class="split-img">
+        <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+      </div>
+      <div>
+        <div class="meta">02 · Kavárna / pražení / učení</div>
+        <h2>Továrna plná kávy</h2>
+        <div class="rows">
+          <div class="row"><small>01</small><p>Kafe servírujeme v několika kavárnách v Praze a Brně.</p></div>
+          <div class="row"><small>02</small><p>O kávě učíme na kurzech a pražících workshopech.</p></div>
+          <div class="row"><small>03</small><p>Teď pro vás pražíme to, co si myslíme, že umíme nejlépe.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div class="num">03</div>
+        <h2>Důvěra hostů</h2>
+        <p>Hodnocení a počet recenzí vychází z veřejného firemního profilu pro Industra Coffee.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><small class="meta">Google hodnocení</small><strong>4.9</strong><p>z 5</p></div>
+        <div class="stat"><small class="meta">Recenze</small><strong>145</strong><p>veřejných ohlasů</p></div>
+        <div class="stat"><small class="meta">Od roku</small><strong>2013</strong><p>kávou žijeme přes 12 let</p></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div class="num">04</div>
+        <h2>Atmosféra na místě</h2>
+        <p>Káva, bar a večerní světlo v prostoru, kde se dá zastavit na espresso, filtr i chvíli klidu.</p>
+      </div>
+      <div class="gallery">
+        <figure><img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design."></figure>
+        <figure><img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere."></figure>
+        <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+      </div>
+    </section>
+
+    <section id="mista" class="wrap">
+      <div class="section-head">
+        <div class="num">05</div>
+        <h2>Kde ochutnáte naši kávu</h2>
+        <p>Aktuální přehled kaváren a pražírny z veřejných informací Industra Coffee.</p>
+      </div>
+      <div class="locations">
+        <article class="place"><small class="meta">Praha Nusle</small><h3>Oldřichova 427/31</h3><p>Kavárna Praha 2 - Nusle</p><p class="hours">po - ne 11 - 19</p></article>
+        <article class="place"><small class="meta">Praha Holešovice</small><h3>Veletržní 404/6</h3><p>Espresso bar v Praze</p><p class="hours">po - pá 7:30 - 18:30<br>so - ne 9 - 18</p></article>
+        <article class="place"><small class="meta">Brno</small><h3>Nová Zbrojovka</h3><p>Industriální budova u řeky naproti Zet.Office za hřišti</p><p class="hours">po - pá 13 - 19<br>so - ne 10 - 18</p></article>
+        <article class="place"><small class="meta">Pražírna Brno</small><h3>Industra.Coffee</h3><p>Nová Zbrojovka</p><p class="hours">exkurze po předchozí domluvě</p></article>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div>
+            <div class="meta">06 · Kontakt</div>
+            <h2>Zastavte se v Nuslích</h2>
+          </div>
+          <div class="contact-lines">
+            <a href="tel:+420601334350">+420 601 334 350</a>
+            <a href="mailto:info@industra.coffee">info@industra.coffee</a>
+            <span>Oldřichova 427/31, 128 00 Praha 2-Nusle</span>
+            <span>po - ne 11 - 19</span>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Industra Coffee Praha Nusle"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap inner">
+        <h2>Přijďte na šálek</h2>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420601334350">Zavolat</a>
+          <a class="btn" href="mailto:info@industra.coffee">info@industra.coffee</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Nezávazná prezentační stránka vytvořená studiem Webflex. Pokud si nepřejete tuto stránku zobrazovat, smažete ji zde:
+    <a href="https://webflex.cz/remove/1zfwoxx">https://webflex.cz/remove/1zfwoxx</a>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.428529999999999, 50.0659785],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#E0E020' })
+      .setLngLat([14.428529999999999, 50.0659785])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
