@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Café La Fée | Kavárna v Ostružnické ulici</title>
+  <meta name="description" content="Café La Fée v Olomouci. Francouzské toasty, káva, posezení v Ostružnické 13 a otevřeno každý den.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --bg-deep: #0f0f10;
+      --surface: #202020;
+      --surface-2: #262626;
+      --paper: #f7f4ee;
+      --ink: #f8f8f4;
+      --muted: rgba(248, 248, 244, .68);
+      --dim: rgba(248, 248, 244, .44);
+      --line: rgba(248, 248, 244, .12);
+      --line-strong: rgba(248, 248, 244, .22);
+      --accent: #da291c;
+      --accent-deep: #a91d14;
+      --paper-ink: #171717;
+      --paper-muted: #5e5a55;
+      --paper-line: rgba(23, 23, 23, .14);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px, 32px 32px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      text-wrap: balance;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.5vw, 64px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 23px; line-height: 1.08; }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+    .btn.secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+    .paper .btn.secondary, .contact-panel .btn.secondary {
+      color: var(--paper-ink);
+      border-color: currentColor;
+    }
+    .paper .btn.secondary:hover, .contact-panel .btn.secondary:hover { background: rgba(23,23,23,.06); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(24,24,24,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 72px);
+      display: grid;
+      align-items: stretch;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(.52) saturate(.86) contrast(1.05);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(15,15,16,.92) 0%, rgba(15,15,16,.72) 44%, rgba(15,15,16,.32) 100%),
+        linear-gradient(0deg, var(--bg) 0%, rgba(24,24,24,0) 34%);
+    }
+    .hero-inner {
+      min-height: calc(100svh - 72px);
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(320px, 1fr);
+      gap: var(--s6);
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      color: rgba(255,255,255,.78);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.72);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .hero-card {
+      justify-self: end;
+      width: min(420px, 100%);
+      background: rgba(24,24,24,.68);
+      border: 1px solid rgba(255,255,255,.16);
+      padding: var(--s4);
+      backdrop-filter: blur(20px);
+      display: grid;
+      gap: var(--s3);
+    }
+    .hero-card strong {
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 600;
+    }
+    .hero-card p { color: rgba(255,255,255,.72); }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      padding-top: var(--s3);
+      border-top: 1px solid rgba(255,255,255,.14);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(255,255,255,.82);
+    }
+    .price-row b { color: #fff; font-weight: 600; }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-list {
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      transition: background 220ms var(--ease), padding-inline 220ms var(--ease);
+    }
+    .menu-row:hover {
+      background: rgba(255,255,255,.035);
+      padding-inline: var(--s3);
+    }
+    .menu-kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .menu-row h3 { color: #fff; }
+    .menu-row p { margin-top: 6px; max-width: 650px; }
+    .menu-price {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .paper {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .paper p { color: var(--paper-muted); }
+    .paper .eyebrow { color: var(--accent-deep); }
+    .paper h2, .paper h3 { color: var(--paper-ink); }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 180px;
+      padding: var(--s4);
+      border: 1px solid var(--paper-line);
+      background: #fffaf2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease);
+    }
+    .trust-card:hover { transform: translateY(-2px); border-color: rgba(23,23,23,.3); }
+    .trust-number {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1;
+      color: var(--paper-ink);
+    }
+    .trust-card p { margin-top: var(--s3); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(380px, .78fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .feature-lines {
+      margin-top: var(--s5);
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+    .feature-line {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: var(--s3);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-line span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+    }
+    .feature-line b { display: block; margin-bottom: 3px; color: #fff; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      position: relative;
+      min-height: 310px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .gallery-item:nth-child(2) { margin-top: var(--s5); }
+    .gallery-item::after {
+      content: attr(data-label);
+      position: absolute;
+      left: var(--s3);
+      bottom: var(--s3);
+      padding: 8px 10px;
+      background: rgba(15,15,16,.72);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(420px, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-panel {
+      background: var(--paper);
+      color: var(--paper-ink);
+      padding: var(--s5);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .contact-panel p { color: var(--paper-muted); }
+    .contact-panel h2 { color: var(--paper-ink); }
+    .contact-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s4);
+    }
+    .hours {
+      margin-top: var(--s5);
+      display: grid;
+      border-top: 1px solid var(--paper-line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      padding: 11px 0;
+      border-bottom: 1px solid var(--paper-line);
+    }
+    .hours-row.today {
+      color: var(--accent-deep);
+      font-weight: 600;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .final {
+      padding: var(--s8) 0;
+      background: var(--bg-deep);
+      text-align: center;
+    }
+    .final h2 {
+      max-width: 860px;
+      margin-inline: auto;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .final p {
+      max-width: 620px;
+      margin: var(--s4) auto 0;
+      color: rgba(255,255,255,.72);
+      font-size: 20px;
+    }
+    .final .hero-actions { justify-content: center; }
+
+    .site-footer {
+      border-top: 1px solid var(--line);
+      padding: var(--s4) 0;
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer {
+      margin-top: var(--s3);
+      padding-top: var(--s3);
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(248,248,244,.48);
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-inner,
+      .section-head,
+      .split,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-card { justify-self: start; }
+      .trust-grid, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item:nth-child(2) { margin-top: 0; }
+      .menu-row { grid-template-columns: 1fr; gap: var(--s2); }
+      .menu-price { justify-self: start; }
+      #map { height: 420px; }
+    }
+    @media (max-width: 560px) {
+      section { padding: var(--s6) 0; }
+      .hero-inner { padding: var(--s5) 0 var(--s6); }
+      .hero-card, .contact-panel { padding: var(--s4); }
+      .btn { width: 100%; }
+      .hero-actions, .contact-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Café La Fée">Café La Fée</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420737147006">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="hero-bg">
+        <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      </div>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">Ostružnická 13 · Olomouc</div>
+          <h1>Káva ve světle La Fée</h1>
+          <p class="hero-lead">Zastavte se na kávu, francouzské toasty a klidné posezení přímo v centru Olomouce. Otevřeno je každý den.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420737147006">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4.6 Google</span>
+            <span class="meta-pill">1382 recenzí</span>
+            <span class="meta-pill">Po-Pá 08:00-21:00</span>
+          </div>
+        </div>
+        <aside class="hero-card" aria-label="Doporučení">
+          <span class="eyebrow">Doporučujeme</span>
+          <strong>Francouzské toasty</strong>
+          <p>Sladká zastávka ke kávě, na kterou se v nabídce chodí cíleně.</p>
+          <div class="price-row">
+            <span>Cena v menu</span>
+            <b>170 Kč</b>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Menu</div>
+            <h2>Na šálek i delší zastávku.</h2>
+          </div>
+          <p>Café La Fée drží jednoduchý rytmus kavárny: káva, snídaně, něco sladkého a místo, kde se dá v klidu domluvit další část dne.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <div class="menu-kicker">01</div>
+            <div>
+              <h3>Káva</h3>
+              <p>Espresso, mléčné varianty a šálek na cestu městem.</p>
+            </div>
+            <div class="menu-price">denně</div>
+          </article>
+          <article class="menu-row">
+            <div class="menu-kicker">02</div>
+            <div>
+              <h3>Francouzské toasty</h3>
+              <p>Doporučená položka z nabídky pro sladkou snídani nebo odpolední pauzu.</p>
+            </div>
+            <div class="menu-price">170 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div class="menu-kicker">03</div>
+            <div>
+              <h3>Posezení v kavárně</h3>
+              <p>Stůl pro setkání, pracovní pauzu i pomalý víkend v Ostružnické ulici.</p>
+            </div>
+            <div class="menu-price">Ostružnická 13</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hosté</div>
+            <h2>Místo, které lidé v Olomouci hodnotí.</h2>
+          </div>
+          <p>Veřejné hodnocení pomáhá rychle poznat, že nejde o anonymní podnik na mapě, ale o kavárnu s pravidelnou návštěvností.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <div class="trust-number">4.6</div>
+            <p>Hodnocení na Googlu.</p>
+          </article>
+          <article class="trust-card">
+            <div class="trust-number">1382</div>
+            <p>Recenzí od hostů.</p>
+          </article>
+          <article class="trust-card">
+            <div class="trust-number">7</div>
+            <p>Dní v týdnu otevřeno.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div>
+          <div class="eyebrow">Atmosféra</div>
+          <h2>Večer má kavárna vlastní tempo.</h2>
+          <p class="hero-lead">Teplé světlo, sklenice, malé stoly a centrum Olomouce za okny. La Fée funguje na krátkou kávu i delší rozhovor.</p>
+          <div class="feature-lines">
+            <div class="feature-line">
+              <span>01</span>
+              <div><b>Centrum města</b><p>Adresa Ostružnická 13, 779 00 Olomouc.</p></div>
+            </div>
+            <div class="feature-line">
+              <span>02</span>
+              <div><b>Kontakt přímo</b><p>Telefon +420 737 147 006 a e-mail kavarna.cafelafee@seznam.cz.</p></div>
+            </div>
+            <div class="feature-line">
+              <span>03</span>
+              <div><b>Každý den</b><p>V týdnu od 08:00, o víkendu od 09:00.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše fotky</div>
+            <h2>Teplo světel, dřevo, sklo.</h2>
+          </div>
+          <p>Výběr nálady pro kavárnu, kde hlavní roli nehrají efekty, ale stůl, šálek a čas.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item" data-label="večerní stůl">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-item" data-label="světlo">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-item" data-label="bar">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-panel">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Najdete nás v Ostružnické.</h2>
+          <p style="margin-top: 18px;">Ostružnická 13, 779 00 Olomouc-Olomouc 9</p>
+          <div class="contact-actions">
+            <a class="btn primary" href="tel:+420737147006">+420 737 147 006</a>
+            <a class="btn secondary" href="mailto:kavarna.cafelafee@seznam.cz">Napsat e-mail</a>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hours-row"><span>Pondělí</span><span>08:00 - 21:00</span></div>
+            <div class="hours-row"><span>Úterý</span><span>08:00 - 21:00</span></div>
+            <div class="hours-row today"><span>Středa</span><span>08:00 - 21:00</span></div>
+            <div class="hours-row"><span>Čtvrtek</span><span>08:00 - 21:00</span></div>
+            <div class="hours-row"><span>Pátek</span><span>08:00 - 21:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>09:00 - 21:00</span></div>
+            <div class="hours-row"><span>Neděle</span><span>09:00 - 19:00</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Café La Fée"></div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Rezervace">
+      <div class="wrap">
+        <div class="eyebrow">Dnes otevřeno</div>
+        <h2>Stůl, šálek, Ostružnická.</h2>
+        <p>Zavolejte před cestou, nebo se zastavte podle otevírací doby.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420737147006">Zavolat do kavárny</a>
+          <a class="btn secondary" href="https://cafelafee.com/">Přejít na cafelafee.com</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>Café La Fée · Ostružnická 13, Olomouc</span>
+        <span>+420 737 147 006 · kavarna.cafelafee@seznam.cz</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto stránku připravil Webflex. Pro odstranění použijte <a href="https://app.webflex.cz/delete/921ko87">https://app.webflex.cz/delete/921ko87</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.2526697, 49.594844699999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#da291c' })
+      .setLngLat([17.2526697, 49.594844699999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
