@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mamacoffee Londýnská | Kavárna u Náměstí Míru</title>
+  <meta name="description" content="mamacoffee Londýnská na Praze 2. Výběrová káva, menu, rezervace, kurzy, předplatné a kontakt na kavárnu u Náměstí Míru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111311;
+      --surface: rgba(250, 250, 246, .075);
+      --surface-strong: rgba(250, 250, 246, .12);
+      --paper: #f6f4ee;
+      --ink: #f7f6ef;
+      --muted: rgba(247, 246, 239, .70);
+      --soft: rgba(247, 246, 239, .52);
+      --line: rgba(247, 246, 239, .12);
+      --accent: #606040;
+      --accent-light: #b7bd8b;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .28);
+      --font-display: "Archivo Black", Impact, system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(96, 96, 64, .34), transparent 30%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 62px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: clamp(22px, 2vw, 30px);
+      line-height: 1.02;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-light);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--paper);
+      color: #141510;
+      border: 1px solid var(--paper);
+    }
+    .btn.primary:hover { background: #ffffff; border-color: #ffffff; }
+    .btn.secondary {
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(17, 19, 17, .78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: 190px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--soft);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 64px 0 92px;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(430px, .8fr);
+      gap: clamp(38px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 36px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 36px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-light);
+    }
+    .pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery-card img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.03);
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(17,19,17,.66);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { font-size: 18px; }
+    .soft-panel {
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: 0 22px 90px rgba(0, 0, 0, .20);
+    }
+
+    .offer-list { overflow: hidden; }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(220px, .42fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-size: 13px;
+    }
+    .offer-row p { max-width: 680px; }
+    .offer-row a {
+      justify-self: end;
+      color: var(--ink);
+      font-weight: 800;
+      border-bottom: 1px solid rgba(255,255,255,.42);
+      transition: color 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .offer-row a:hover { color: var(--accent-light); border-color: var(--accent-light); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 6vw, 72px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, .9fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .split-photo {
+      min-height: 460px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .story {
+      padding: clamp(28px, 5vw, 56px);
+      display: grid;
+      align-content: center;
+      gap: 22px;
+    }
+    .story p { font-size: 18px; }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, .9fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 28px;
+    }
+    .contact-card h3 { margin-bottom: 22px; }
+    .info-line {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 16px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .info-line:last-child { border-bottom: 0; }
+    .info-line span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-light);
+      text-transform: uppercase;
+    }
+    .info-line span:last-child, .info-line a {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.08fr .72fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 320px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .gallery-card.tall { min-height: 430px; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .qa {
+      padding: 28px;
+      min-height: 180px;
+    }
+    .qa h3 {
+      font-family: var(--font-body);
+      font-size: 20px;
+      line-height: 1.25;
+      text-transform: none;
+      margin-bottom: 12px;
+    }
+
+    .final {
+      padding-bottom: 110px;
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 60px);
+      background: var(--paper);
+      color: #151611;
+      border-radius: 34px;
+      box-shadow: 0 34px 100px rgba(0, 0, 0, .32);
+    }
+    .cta-panel h2, .cta-panel p { color: #151611; }
+    .cta-panel p {
+      max-width: 620px;
+      margin-top: 14px;
+      opacity: .72;
+    }
+    .cta-panel .btn.primary {
+      background: #151611;
+      color: #fff;
+      border-color: #151611;
+      white-space: nowrap;
+    }
+
+    .site-footer {
+      padding: 34px 0;
+      color: rgba(255,255,255,.48);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-inner {
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 820px;
+      color: rgba(255,255,255,.48);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-grid, .section-head, .split, .hours-contact, .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo, .split-photo { min-width: 0; }
+      .offer-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .offer-row a { justify-self: start; }
+      .stats, .faq, .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-card, .gallery-card.tall { min-height: 280px; }
+      section { padding: 64px 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .info-line { grid-template-columns: 1fr; gap: 4px; }
+      h1 { font-size: clamp(40px, 15vw, 66px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="mamacoffee">
+        <img src="https://cdn.myshoptet.com/usr/www.mamacoffee.cz/user/logos/logo_mamacoffee_white-2.png" alt="mamacoffee">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#kavarna">Kavárna</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420773263333">Rezervace</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Londýnská 49 · Náměstí Míru</div>
+          <h1>Káva na Vinohradech</h1>
+          <p class="hero-lead">mamacoffee na Londýnské je klidné místo pro šálek výběrové kávy, schůzku u stolu i rezervaci v srdci Prahy 2.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420773263333">Rezervovat stůl</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="pill">Po-pá 8:00-19:00</span>
+            <span class="pill">So-ne 10:00-18:00</span>
+            <span class="pill">4.6 · 727 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-caption">Praha 2 · Londýnská</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co tu najdete</div>
+            <h2>Kavárna, menu, kurzy</h2>
+          </div>
+          <p>Vyberte si posezení na Londýnské, podívejte se na menu nebo navazující části mamacoffee pro domácí přípravu a spolupráci.</p>
+        </div>
+        <div class="offer-list soft-panel">
+          <div class="offer-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Kavárna Londýnská</h3>
+              <p>Adresa u Náměstí Míru, rezervace po telefonu a provozní kontakt přímo na kavárnu.</p>
+            </div>
+            <a href="tel:+420773263333">+420 773 263 333</a>
+          </div>
+          <div class="offer-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Menu</h3>
+              <p>Aktuální nabídka kavárny pro návštěvu během týdne i o víkendu.</p>
+            </div>
+            <a href="#kontakt">Zeptat se na menu</a>
+          </div>
+          <div class="offer-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Kurzy a předplatné</h3>
+              <p>mamacoffee propojuje kavárny, e-shop, kurzy, předplatné a velkoobchod.</p>
+            </div>
+            <a href="https://www.mamacoffee.cz/londynska/">Navštívit web</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap stats">
+        <div class="stat soft-panel">
+          <strong>4.6</strong>
+          <span>Hodnocení návštěvníků</span>
+        </div>
+        <div class="stat soft-panel">
+          <strong>727</strong>
+          <span>Veřejných recenzí</span>
+        </div>
+        <div class="stat soft-panel">
+          <strong>49</strong>
+          <span>Londýnská, Praha 2</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarna">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="story soft-panel">
+          <div class="eyebrow">Vinohradský rytmus</div>
+          <h2>Na kávu i schůzku</h2>
+          <p>Londýnská je praktická adresa mezi každodenním provozem města a chvílí u stolu. Přijďte ráno na kávu, odpoledne na setkání nebo si domluvte rezervaci předem.</p>
+          <p>Provozní kavárny je Anna Filipova. V případě dotazu k provozu pište na anna.filipova@mamacoffee.cz.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Londýnská 122/49</h2>
+          </div>
+          <p>Kavárnu najdete na Vinohradech, Praha 2. Pro rezervace volejte přímo na číslo kavárny.</p>
+        </div>
+        <div class="hours-contact">
+          <div class="contact-card soft-panel">
+            <h3>Otevírací doba</h3>
+            <div class="info-line"><span>Po-pá</span><span>8:00-19:00</span></div>
+            <div class="info-line"><span>So-ne</span><span>10:00-18:00</span></div>
+            <div class="info-line"><span>Rezervace</span><a href="tel:+420773263333">+420 773 263 333</a></div>
+            <div class="info-line"><span>Provozní</span><span>Anna Filipova</span></div>
+            <div class="info-line"><span>E-mail</span><a href="mailto:anna.filipova@mamacoffee.cz">anna.filipova@mamacoffee.cz</a></div>
+            <div class="info-line"><span>Adresa</span><span>Londýnská 122/49, Vinohrady, 120 00 Praha 2</span></div>
+          </div>
+          <div id="map" aria-label="Mapa kavárny mamacoffee Londýnská"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kavárny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, klidný stůl</h2>
+          </div>
+          <p>Fotografie drží stejnou náladu: měkké světlo, tmavší tóny a prostor, který nechává vyniknout kávu i rozhovor.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté dotazy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Před návštěvou</div>
+            <h2>Praktické informace</h2>
+          </div>
+          <p>Krátké odpovědi pro rychlé rozhodnutí před cestou na Londýnskou.</p>
+        </div>
+        <div class="faq">
+          <div class="qa soft-panel">
+            <h3>Je možné rezervovat místo?</h3>
+            <p>Ano, pro rezervaci volejte přímo kavárnu na čísle +420 773 263 333.</p>
+          </div>
+          <div class="qa soft-panel">
+            <h3>Kdy je otevřeno o víkendu?</h3>
+            <p>V sobotu a v neděli je otevřeno od 10:00 do 18:00.</p>
+          </div>
+          <div class="qa soft-panel">
+            <h3>Kde najdu mamacoffee Londýnská?</h3>
+            <p>Na adrese Londýnská 122/49, Vinohrady, Praha 2, poblíž Náměstí Míru.</p>
+          </div>
+          <div class="qa soft-panel">
+            <h3>Na koho se obrátit kvůli provozu?</h3>
+            <p>Provozní kavárny je Anna Filipova, kontakt anna.filipova@mamacoffee.cz.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <h2>Stůl na Londýnské</h2>
+            <p>Zavolejte kavárně a domluvte si návštěvu v čase, který Vám sedí.</p>
+          </div>
+          <a class="btn primary" href="tel:+420773263333">Volat rezervace</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" data-disclaimer="webflex">
+    <div class="wrap footer-inner">
+      <span>mamacoffee · Londýnská 122/49 · Praha 2</span>
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správnou kontaktní osobou, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/f702l82">webflex.cz/delete/f702l82</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4337904, 50.074053199999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([14.4337904, 50.074053199999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
