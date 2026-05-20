@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vídeňka Café | Kavárna na Vídeňské v Brně</title>
+  <meta name="description" content="Vídeňka Café na Vídeňské 15 v Brně. Snídaně od 7.00, káva Varesina, výběrová káva z lokálních pražíren, domácí limonády, víno a čepovaná Plzeň.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: #ffffff;
+      --surface-soft: #f1f1ed;
+      --ink: #151612;
+      --muted: #62645a;
+      --line: rgba(21, 22, 18, .09);
+      --line-strong: rgba(21, 22, 18, .18);
+      --accent: #A0A080;
+      --accent-deep: #696b50;
+      --accent-soft: #e8e8dc;
+      --shadow: 0 34px 90px rgba(39, 42, 30, .09);
+      --shadow-soft: 0 24px 70px rgba(39, 42, 30, .07);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(21,22,18,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,22,18,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.08;
+    }
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      color: #11120e;
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      box-shadow: 0 16px 38px rgba(160, 160, 128, .28);
+    }
+    .btn.primary:hover { background: #b1b193; border-color: #b1b193; }
+    .btn.secondary {
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid currentColor;
+    }
+    .btn.secondary:hover { background: rgba(21,22,18,.05); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 248, .86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: #55584f;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(430px, .8fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #54564d;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.84);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      backdrop-filter: blur(14px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .45fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-rows {
+      display: grid;
+      gap: var(--s2);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: center;
+      padding: 22px 24px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-row span:first-child,
+    .menu-row strong:last-child {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-deep);
+    }
+    .menu-row h3 { font-size: 24px; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 170px;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card .num {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 54px);
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    .trust-card p { margin-top: var(--s3); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(390px, .82fr) minmax(0, 1fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .coffee-list {
+      margin-top: var(--s5);
+      display: grid;
+      gap: 1px;
+      background: var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .coffee-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: var(--s4);
+      padding: 20px 22px;
+      background: rgba(255,255,255,.84);
+    }
+    .coffee-item span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    .gallery {
+      overflow: hidden;
+      padding-bottom: var(--s4);
+    }
+    .gallery-track {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 270px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-item.tall { min-height: 390px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .62fr) minmax(380px, .78fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 32px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hours {
+      margin-top: var(--s4);
+      display: grid;
+      gap: 10px;
+    }
+    .hour-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hour-row.today {
+      margin-inline: -14px;
+      padding-inline: 14px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      border-bottom-color: transparent;
+    }
+    .contact-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+
+    .final {
+      padding: var(--s7) 0 var(--s8);
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 32px;
+      background: #1a1b16;
+      color: #fbfbf8;
+      box-shadow: 0 40px 100px rgba(21,22,18,.18);
+    }
+    .final-panel h2 { color: #fbfbf8; }
+    .final-panel p {
+      max-width: 640px;
+      margin-top: var(--s3);
+      color: rgba(251,251,248,.74);
+    }
+    .final-panel .btn.secondary {
+      color: #ffffff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      justify-content: flex-end;
+    }
+
+    .site-footer {
+      padding: 28px 0 34px;
+      border-top: 1px solid var(--line);
+      color: #686a60;
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      margin-top: var(--s3);
+      max-width: 900px;
+      color: #77796f;
+      font-size: 12px;
+    }
+    .disclaimer a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .trust-strip,
+      .gallery-track {
+        grid-template-columns: 1fr;
+      }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 16px; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: var(--s6) 0; }
+      .hero { padding: var(--s5) 0 var(--s6); }
+      .menu-row,
+      .coffee-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .trust-card,
+      .contact-card {
+        padding: 24px;
+      }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#">Vídeňka Café</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kava">Káva</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420725688317">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Vídeňská 15 · Brno-střed</p>
+          <h1 id="hero-title">Vaše kavárna na Vídeňské</h1>
+          <p class="hero-lead">Ráno snídaně od 7.00, přes den rychlý snack a po práci sklenka vína nebo čepovaná Plzeň. Kávu Vám připravíme u stolu i s sebou.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn secondary" href="tel:+420725688317">+420 725 688 317</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="meta-pill">Po-Pá 7.00-19.00</span>
+            <span class="meta-pill">So-Ne 13.00-19.00</span>
+            <span class="meta-pill">Wi-Fi free</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">Snídaně · káva · večer</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="nabidka-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Nabídka během dne</p>
+            <h2 id="nabidka-title">Od ranní kávy po Plzeň</h2>
+          </div>
+          <p>Vídeňka stojí na jednoduchém rytmu všedního dne: něco dobrého k snídani, šálek kávy, domácí limonáda a večerní zastavení po práci.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span>07.00</span>
+            <div>
+              <h3>Snídaně</h3>
+              <p>Míchaná vejce Vídeňka a ranní káva pro začátek dne.</p>
+            </div>
+            <strong>Po-Pá</strong>
+          </article>
+          <article class="menu-row">
+            <span>S sebou</span>
+            <div>
+              <h3>Coffee take away</h3>
+              <p>Espresso, cappuccino i aktuální výběrová káva připravená na cestu.</p>
+            </div>
+            <strong>Každý den</strong>
+          </article>
+          <article class="menu-row">
+            <span>Osvěžení</span>
+            <div>
+              <h3>Domácí limonády</h3>
+              <p>Ovocné limonády včetně malinové pro horké dny.</p>
+            </div>
+            <strong>Sezónně</strong>
+          </article>
+          <article class="menu-row">
+            <span>Večer</span>
+            <div>
+              <h3>Víno a čepovaná Plzeň</h3>
+              <p>Klidné posezení po práci, když se den překlápí do večera.</p>
+            </div>
+            <strong>Do 19.00</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Hosté a místo</p>
+            <h2 id="duvera-title">Známá adresa v Brně</h2>
+          </div>
+          <p>Kavárna na Vídeňské 15 je otevřená přes týden už od rána a o víkendu odpoledne. Hosté oceňují atmosféru, kávu i dostupnost v Brně-středu.</p>
+        </div>
+        <div class="trust-strip">
+          <article class="trust-card">
+            <div class="num">4,5</div>
+            <p>Hodnocení hostů podle dostupných údajů.</p>
+          </article>
+          <article class="trust-card">
+            <div class="num">494</div>
+            <p>Recenzí u záznamu kavárny.</p>
+          </article>
+          <article class="trust-card">
+            <div class="num">7.00</div>
+            <p>Začátek všedního dne pro snídani a první kávu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava" aria-labelledby="kava-title">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </figure>
+        <div>
+          <p class="eyebrow">Káva s láskou</p>
+          <h2 id="kava-title">Šálek, který pohladí</h2>
+          <p class="hero-lead">V nabídce najdete italskou Varesina Caffé i výběrové kávy z lokálních pražíren. Druhy se mění podle aktuální nabídky a rádi Vám poradíme s výběrem.</p>
+          <div class="coffee-list">
+            <div class="coffee-item">
+              <span>Varesina</span>
+              <p>Tradiční italská káva servírovaná od roku 1919.</p>
+            </div>
+            <div class="coffee-item">
+              <span>Lokální</span>
+              <p>Výběrová zrna z předních lokálních pražíren.</p>
+            </div>
+            <div class="coffee-item">
+              <span>Take away</span>
+              <p>Káva s sebou, když spěcháte dál městem.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery" aria-labelledby="atmosfera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2 id="atmosfera-title">Měkké světlo, klidný stůl</h2>
+          </div>
+          <p>Přijďte na krátkou zastávku u kávy, pracovní schůzku nebo večerní sklenku. Vídeňka drží příjemné tempo po celý den.</p>
+        </div>
+        <div class="gallery-track">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2 id="kontakt-title">Zastavte se na Vídeňské 15</h2>
+          </div>
+          <p>Najdete nás v Brně-středu. Pro rychlý dotaz nebo domluvu volejte přímo do kavárny.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <h3>Vídeňka Café</h3>
+            <p style="margin-top: 12px;">Vídeňská 15, 639 00 Brno-střed</p>
+            <p style="margin-top: 6px;">info@videnkacafe.cz</p>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hour-row today"><span>Dnes · pondělí-pátek</span><strong>7.00-19.00</strong></div>
+              <div class="hour-row"><span>Sobota-neděle</span><strong>13.00-19.00</strong></div>
+            </div>
+            <div class="contact-actions">
+              <a class="btn primary" href="tel:+420725688317">Zavolat</a>
+              <a class="btn secondary" href="mailto:info@videnkacafe.cz">Napsat e-mail</a>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa s polohou Vídeňka Café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-panel">
+        <div>
+          <p class="eyebrow" style="color: #cacaad;">Vídeňka Café · Brno</p>
+          <h2 id="final-title">Káva čeká na Vídeňské</h2>
+          <p>Přijďte ráno na snídani, přes den na kávu s sebou nebo večer na sklenku po práci.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420725688317">+420 725 688 317</a>
+          <a class="btn secondary" href="#kontakt">Jak se k nám dostanete</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-row">
+        <span>© Vídeňka Café s.r.o.</span>
+        <span>IČO: 198 90 753 · Krajský soud v Brně, oddíl C, vložka 136497</span>
+      </div>
+      <p class="disclaimer">Tato prezentační stránka byla připravena službou Webflex jako nezávazná vizuální ukázka pro provozovatele podniku. Pro odstranění použijte <a href="https://www.webflex.cz/remove/xoy15vl">tento odkaz</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5952558, 49.1839422],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0A080' })
+      .setLngLat([16.5952558, 49.1839422])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
