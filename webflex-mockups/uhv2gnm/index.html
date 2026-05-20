@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Truhlárna | Výběrová káva ve Františkánské zahradě</title>
+  <meta name="description" content="Café Truhlárna ve Františkánské zahradě: výběrová káva, buchty, koláče, dorty, víno, sendviče a klidné posezení v centru Prahy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f3f1ed;
+      --ink: #191716;
+      --muted: #6a625c;
+      --hairline: rgba(25, 23, 22, .08);
+      --accent: #A02020;
+      --accent-dark: #751818;
+      --cream: #f7f2ea;
+      --shadow: 0 34px 90px rgba(31, 24, 18, .10);
+      --soft-shadow: 0 18px 70px rgba(31, 24, 18, .08);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(25,23,22,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,23,22,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: 12px;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: #fff;
+      transform: translateY(-150%);
+      z-index: 30;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .78);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(25, 23, 22, .76);
+    }
+    .nav-links a {
+      padding: 10px 12px;
+      border-radius: 999px;
+      transition: background .22s var(--ease), color .22s var(--ease), transform .22s var(--ease);
+    }
+    .nav-links a:hover { background: rgba(160, 32, 32, .08); color: var(--accent); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active, .soft-link:active, .gallery-card:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 16px 36px rgba(160, 32, 32, .20);
+    }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(25, 23, 22, .05); transform: translateY(-1px); }
+
+    .hero {
+      padding: 64px 0 74px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, 1.05fr);
+      gap: clamp(34px, 5vw, 78px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-note {
+      margin-top: 26px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(25, 23, 22, .66);
+    }
+    .hero-note span {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .74);
+      box-shadow: var(--soft-shadow);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .floating-hours {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(310px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .88);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 60px rgba(25, 23, 22, .14);
+    }
+    .floating-hours strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .floating-hours p {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(260px, .28fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4.2vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .menu-list {
+      display: grid;
+      gap: 12px;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .76);
+      box-shadow: var(--soft-shadow);
+    }
+    .menu-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .menu-row h3 {
+      font-family: var(--font-body);
+      font-size: 24px;
+      line-height: 1.05;
+      font-weight: 800;
+    }
+    .menu-row p { margin: 6px 0 0; color: var(--muted); }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(40%, 1.1fr);
+      gap: 44px;
+      align-items: center;
+    }
+    .soft-panel {
+      padding: clamp(26px, 4vw, 46px);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .soft-panel h2 { font-size: clamp(34px, 4.2vw, 62px); }
+    .soft-panel p { color: var(--muted); font-size: 19px; }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .fact {
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--cream);
+      min-height: 116px;
+    }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(24px, 3vw, 38px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .fact span { display: block; margin-top: 9px; font-size: 14px; color: var(--muted); }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 250px;
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--soft-shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+    .step h3 {
+      font-family: var(--font-body);
+      font-size: 23px;
+      line-height: 1.05;
+      font-weight: 800;
+      margin-top: 26px;
+    }
+    .step p { margin: 14px 0 0; color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .gallery-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; }
+    .gallery-stack {
+      display: grid;
+      gap: 16px;
+    }
+    .gallery-stack img { aspect-ratio: 16 / 10; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(40%, 1.1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(24px, 4vw, 42px);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { font-size: clamp(34px, 4vw, 58px); }
+    .contact-lines {
+      margin-top: 28px;
+      display: grid;
+      gap: 14px;
+    }
+    .contact-line {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .contact-line span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-line a, .contact-line p {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .hours-table {
+      margin-top: 26px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .hours-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .hours-table .today {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    #map {
+      height: 100%;
+      min-height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .qa {
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--soft-shadow);
+      min-height: 170px;
+    }
+    .qa h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+    .qa p { margin: 12px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 80px 0;
+    }
+    .cta-panel {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(32px, 6vw, 70px);
+      border-radius: 34px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta-panel:before {
+      content: "";
+      position: absolute;
+      inset: auto -80px -140px auto;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: rgba(160, 32, 32, .58);
+      filter: blur(70px);
+    }
+    .cta-panel h2 {
+      position: relative;
+      font-size: clamp(34px, 4.6vw, 70px);
+    }
+    .cta-panel p {
+      position: relative;
+      max-width: 620px;
+      color: rgba(255,255,255,.72);
+      margin: 18px 0 0;
+      font-size: 19px;
+    }
+    .cta-actions {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .cta-panel .btn-outline {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .cta-panel .btn-outline:hover { background: rgba(255,255,255,.08); }
+
+    .site-footer {
+      padding: 34px 0 44px;
+      color: rgba(25,23,22,.62);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 18px;
+      border-top: 1px solid var(--hairline);
+      padding-top: 22px;
+    }
+    .webflex-disclaimer {
+      max-width: 780px;
+    }
+    .webflex-disclaimer a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero-grid, .split, .contact-grid, .gallery-strip, .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-top: 42px; }
+      .section-head {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .timeline, .faq { grid-template-columns: 1fr 1fr; }
+      .facts { grid-template-columns: 1fr; }
+      .cta-actions { justify-content: flex-start; }
+      #map { height: 420px; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 26px, 1180px); }
+      section { padding: 52px 0; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .tag { white-space: normal; }
+      .timeline, .faq { grid-template-columns: 1fr; }
+      .floating-hours {
+        position: static;
+        width: auto;
+        margin: -86px 14px 14px;
+      }
+      .hero-photo { display: flex; flex-direction: column; justify-content: flex-end; }
+      .hero-photo img { position: absolute; inset: 0; }
+      .hero-actions .btn { width: 100%; }
+      .contact-line a, .contact-line p { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Přejít na obsah</a>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#" aria-label="Café Truhlárna">
+        <img src="https://www.cafetruhlarna.cz/wp-content/uploads/2022/11/truhlarna_logo-2.png" alt="Café Truhlárna">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#zahrada">Zahrada</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420603239290">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="kicker">Františkánská zahrada · Praha 1</p>
+          <h1 id="hero-title">Klid mezi šálky</h1>
+          <p class="lead">Výběrová káva, buchty, koláče, dorty, víno a sendviče v bývalé františkánské truhlárně přímo u zahrady.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Najít kavárnu</a>
+            <a class="btn btn-outline" href="mailto:info@cafetruhlarna.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note" aria-label="Rychlé informace">
+            <span>Po-Pá 8:30-20:00</span>
+            <span>So-Ne 10:00-20:00</span>
+            <span>Hodnocení 4,6 z 1417 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="floating-hours">
+            <strong>Posezení i s sebou</strong>
+            <p>Káva a občerstvení pro schůzku, cestu přes zahradu i pomalé odpoledne.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Co si dát</p>
+            <h2 id="menu-title">Od kávy po večerní sklenku.</h2>
+          </div>
+          <p>Nabídka drží kavárenský rytmus celý den: ráno šálek a něco sladkého, přes den sendvič, později víno a klidné posezení.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Výběrová káva</h3>
+              <p>Espresso i káva s sebou pro každého, kdo prochází Františkánskou zahradou.</p>
+            </div>
+            <span class="tag">šálek / take away</span>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Buchty, koláče a dorty</h3>
+              <p>Sladké pečení ke kávě, od rychlé zastávky po delší setkání u stolu.</p>
+            </div>
+            <span class="tag">sladké</span>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Sendviče a slaný quiche</h3>
+              <p>Lehká volba na oběd, pracovní pauzu nebo odpolední hlad.</p>
+            </div>
+            <span class="tag">slané</span>
+          </article>
+          <article class="menu-row">
+            <span class="num">04</span>
+            <div>
+              <h3>Víno</h3>
+              <p>Večernější tempo pro chvíle, kdy se z krátkého posezení stane delší rozhovor.</p>
+            </div>
+            <span class="tag">večer</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="zahrada" aria-labelledby="garden-title">
+      <div class="wrap split">
+        <div class="soft-panel">
+          <p class="kicker">Místo</p>
+          <h2 id="garden-title">Více než 600 let klidu.</h2>
+          <p>Café Truhlárna sídlí ve zrekonstruovaném objektu bývalé františkánské truhlárny. Zahrádka přirozeně navazuje na Františkánskou zahradu, takže centrum Prahy tady zní o poznání tišeji.</p>
+          <div class="facts">
+            <div class="fact">
+              <strong>4,6</strong>
+              <span>hodnocení hostů</span>
+            </div>
+            <div class="fact">
+              <strong>1417</strong>
+              <span>veřejných recenzí</span>
+            </div>
+            <div class="fact">
+              <strong>600+</strong>
+              <span>let starý klášter</span>
+            </div>
+          </div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="visit-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Jak přijít</p>
+            <h2 id="visit-title">Snadno mezi programem.</h2>
+          </div>
+          <p>Schůzka v zahradě, cesta do práce, klidná pauza nebo káva do ruky. Stačí projít na Jungmannovo náměstí.</p>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <b>01</b>
+            <div>
+              <h3>Projít zahradou</h3>
+              <p>Adresa je Františkánská zahrada, Jungmannovo nám. 751/19.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>02</b>
+            <div>
+              <h3>Vybrat tempo</h3>
+              <p>Na místě si sednete, nebo vám připravíme kávu a občerstvení s sebou.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>03</b>
+            <div>
+              <h3>Zůstat ve stínu</h3>
+              <p>Zahrádka navazuje na park, takže se dá zpomalit i uprostřed dne.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>04</b>
+            <div>
+              <h3>Vrátit se večer</h3>
+              <p>Do 20:00 je čas na sladké, sendvič i sklenku vína.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Atmosféra</p>
+            <h2 id="gallery-title">Teplo dřeva, světlo, zahrada.</h2>
+          </div>
+          <p>Interiér drží měkké světlo a zahrádka dodává prostoru vzduch. Je to místo pro ranní zastávku, pracovní schůzku i pomalé odpoledne.</p>
+        </div>
+        <div class="gallery-strip">
+          <a class="gallery-card" href="#kontakt" aria-label="Zobrazit kontakt">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </a>
+          <div class="gallery-stack">
+            <a class="gallery-card" href="#kontakt" aria-label="Zobrazit kontakt">
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            </a>
+            <a class="gallery-card" href="#kontakt" aria-label="Zobrazit kontakt">
+              <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="kicker">Kontakt</p>
+          <h2 id="contact-title">Jsme v zahradě.</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <p>Františkánská zahrada, Jungmannovo nám. 751/19, 110 00 Praha 1-Nové Město</p>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420603239290">+420 603 239 290</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@cafetruhlarna.cz">info@cafetruhlarna.cz</a>
+            </div>
+          </div>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="today"><span>Léto 15.4.-30.9. Po-Pá</span><span>8:30-20:00</span></div>
+            <div><span>Léto 15.4.-30.9. So-Ne</span><span>10:00-20:00</span></div>
+            <div><span>Zima 1.10.-14.4. Po-Pá</span><span>8:30-19:00</span></div>
+            <div><span>Zima 1.10.-14.4. So-Ne</span><span>10:00-19:00</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Café Truhlárna"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Dobré vědět</p>
+            <h2 id="faq-title">Krátké odpovědi před cestou.</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Dá se vzít káva s sebou?</h3>
+            <p>Ano. Kávu a občerstvení vám rádi připravíme i na cestu přes zahradu.</p>
+          </article>
+          <article class="qa">
+            <h3>Je kavárna přímo v centru?</h3>
+            <p>Ano, najdete nás u Františkánské zahrady na adrese Jungmannovo nám. 751/19 v Praze 1.</p>
+          </article>
+          <article class="qa">
+            <h3>Co kromě kávy nabízíte?</h3>
+            <p>Buchty, koláče, dorty, sendviče, slaný quiche a víno.</p>
+          </article>
+          <article class="qa">
+            <h3>Kdy máte otevřeno o víkendu?</h3>
+            <p>V sobotu a neděli otevíráme v 10:00. V letní sezóně zavíráme ve 20:00, v zimní v 19:00.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="cta-title">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <h2 id="cta-title">Zastavte se dnes.</h2>
+            <p>Na šálek kávy, něco sladkého, sendvič nebo sklenku vína v tiché části centra Prahy.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420603239290">Zavolat</a>
+            <a class="btn btn-outline" href="https://www.cafetruhlarna.cz/">Oficiální stránky</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div>
+        <strong>Café Truhlárna</strong><br>
+        Jungmannovo nám. 751/19, Praha 1
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální prezentaci. Nejste-li správný příjemce nebo si přejete stránku odstranit, použijte <a href="https://webflex.cz/remove/uhv2gnm">odkaz pro odstranění</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.423192699999998, 50.0824276],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A02020' })
+      .setLngLat([14.423192699999998, 50.0824276])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
