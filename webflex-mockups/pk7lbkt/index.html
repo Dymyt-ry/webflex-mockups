@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MAMA KAFE | Kavárna s herničkou v Brně</title>
+  <meta name="description" content="MAMA KAFE na Úvoze v Brně. Výběrová káva, domácí dortíky, limonády, mošty, dětská hernička a víkendové oslavy po rezervaci.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #151412;
+      --bg-deep: #0f0e0d;
+      --surface: #1f1d19;
+      --surface-2: #29261f;
+      --paper: #f7f3ec;
+      --paper-2: #ebe3d6;
+      --ink: #f7f4ed;
+      --ink-dark: #171512;
+      --muted: #c7beb0;
+      --muted-dark: #63594d;
+      --line: rgba(247, 244, 237, .13);
+      --line-dark: rgba(23, 21, 18, .14);
+      --accent: #606040;
+      --accent-2: #8e8c60;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      color: inherit;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fffef8;
+    }
+    .btn.primary:hover { background: #74744e; border-color: #74744e; }
+    .btn.secondary {
+      border-color: rgba(255,255,255,.45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.72); }
+    .paper .btn.secondary,
+    .contact .btn.secondary {
+      color: var(--ink-dark);
+      border-color: currentColor;
+    }
+    .paper .btn.secondary:hover,
+    .contact .btn.secondary:hover { background: rgba(23,21,18,.06); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: rgba(15, 14, 13, .72);
+      border-bottom: 1px solid rgba(255,255,255,.11);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand-logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.78);
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      background: var(--bg-deep);
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.08) brightness(.62);
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 74% 48%, rgba(96,96,64,.2), transparent 34%),
+        linear-gradient(90deg, rgba(15,14,13,.92) 0%, rgba(15,14,13,.68) 46%, rgba(15,14,13,.34) 100%),
+        linear-gradient(0deg, rgba(15,14,13,.9), transparent 40%);
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      padding: 132px 0 80px;
+    }
+    .hero-copy {
+      max-width: 700px;
+    }
+    .hero h1 {
+      color: #fff;
+      text-shadow: 0 18px 70px rgba(0,0,0,.42);
+    }
+    .hero-lead {
+      max-width: 590px;
+      margin-top: var(--s4);
+      color: rgba(255,255,255,.82);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s2);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.78);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.07);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 470px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list {
+      border-top: 1px solid var(--line);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 78px minmax(0, .8fr) minmax(280px, 1fr);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .offer-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-2);
+      font-size: 13px;
+      padding-top: 5px;
+    }
+    .offer-row p { max-width: 40rem; }
+
+    .paper {
+      color: var(--ink-dark);
+      background: var(--paper);
+      border-block: 1px solid var(--line-dark);
+    }
+    .paper p { color: var(--muted-dark); }
+    .paper .eyebrow { color: var(--accent); }
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .signal {
+      min-height: 190px;
+      padding: var(--s4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--line-dark);
+      background: #fffaf2;
+    }
+    .signal strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 54px);
+      line-height: 1;
+      color: var(--ink-dark);
+      font-weight: 500;
+    }
+    .signal span {
+      color: var(--muted-dark);
+      font-size: 15px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(400px, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .detail-list {
+      margin-top: var(--s5);
+      border-top: 1px solid var(--line);
+    }
+    .detail-item {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .detail-item b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .gallery-item.tall { aspect-ratio: 3 / 4; }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .faq-item {
+      padding: var(--s4);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s3);
+    }
+
+    .contact {
+      background: var(--paper);
+      color: var(--ink-dark);
+      padding-bottom: var(--s6);
+    }
+    .contact p { color: var(--muted-dark); }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(0, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      padding: var(--s4);
+      background: #fffaf2;
+      border: 1px solid var(--line-dark);
+    }
+    .contact-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s4);
+    }
+    .contact-line {
+      display: grid;
+      gap: var(--s1);
+    }
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+    }
+    .contact-line a,
+    .contact-line strong {
+      font-size: 21px;
+      line-height: 1.15;
+      color: var(--ink-dark);
+    }
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--s3);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-table td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line-dark);
+    }
+    .hours-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+    .today td {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .map-panel {
+      min-height: 420px;
+      border: 1px solid var(--line-dark);
+      background: #ddd5c8;
+    }
+    #map {
+      height: 420px;
+      overflow: hidden;
+    }
+
+    .final-cta {
+      padding: var(--s7) 0;
+      background: var(--bg-deep);
+      border-top: 1px solid var(--line);
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .cta-panel p { margin-top: var(--s3); max-width: 560px; }
+
+    .site-footer {
+      padding: var(--s4) 0;
+      background: #090908;
+      color: rgba(255,255,255,.62);
+      border-top: 1px solid rgba(255,255,255,.11);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      gap: var(--s3);
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .footer-inner a {
+      color: rgba(255,255,255,.82);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .section-head,
+      .offer-row,
+      .split,
+      .contact-grid,
+      .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .signal-grid,
+      .faq-list,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero-inner { padding-top: 120px; }
+      section { padding: var(--s6) 0; }
+      .offer-row { gap: var(--s2); }
+      .offer-row .num { padding-top: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero-actions,
+      .final-cta .hero-actions {
+        flex-direction: column;
+      }
+      .btn { width: 100%; }
+      .detail-item { grid-template-columns: 1fr; gap: var(--s2); }
+      .contact-line a,
+      .contact-line strong { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand-logo" href="#top" aria-label="MAMA KAFE">
+        <img src="https://f6dc69e3bc.clvaw-cdnwnd.com/4d3fc8f7e9081e65be2751dd46b15e48/200000004-d6946d6948/Mama_Kafe_logo_hneda.png?ph=f6dc69e3bc" alt="MAMA KAFE">
+      </a>
+      <nav class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#hernicka">Hernička</a>
+        <a href="#oslavy">Oslavy</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+      </div>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">Úvoz 525/21 · Brno-střed</div>
+          <h1 id="hero-title">Káva, klid a hernička.</h1>
+          <p class="hero-lead">Místo, kde si dáte výběrovou kávu, domácí dortík a děti si zatím vyhrají s hračkami z přírodních materiálů.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420530340635">Zavolat kvůli místu</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">Po-Ne 9:00-18:00</span>
+            <span class="meta-pill">4,5 / 5 · 195 recenzí</span>
+            <span class="meta-pill">Víkend po rezervaci</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si u nás dáte</div>
+            <h2>Dobroty pro dospělé i děti.</h2>
+          </div>
+          <p>Nabídka stojí na kávě MAMA KAFE připravené ve spolupráci s RITUALE CAFFE, domácích dortících a nápojích vhodných i pro malé hosty.</p>
+        </div>
+
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva MAMA KAFE</h3>
+            <p>Pečlivě vybraná káva pod značkou MAMA KAFE, připravovaná pro chvíli, kdy si rodiče mohou opravdu sednout.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">02</span>
+            <h3>Domácí dortíky</h3>
+            <p>Sladké kousky z kvalitních surovin pro odpoledne s kamarádkou, rodinnou zastávku i malou oslavu.</p>
+          </article>
+          <article class="offer-row">
+            <span class="num">03</span>
+            <h3>Limonády a mošty</h3>
+            <p>Limonáda z kopanic a výběr moštů z Ovocnářství Mezice pro děti i dospělé.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper" aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Proč se vracet</div>
+            <h2 id="duvera-title">Přehledně, bez spěchu.</h2>
+          </div>
+          <p>Před návštěvou doporučujeme zavolat kvůli rezervaci i aktuální obsazenosti, ať máte jistotu volného místa.</p>
+        </div>
+        <div class="signal-grid">
+          <div class="signal">
+            <strong>4,5</strong>
+            <span>hodnocení hostů na profilu podniku</span>
+          </div>
+          <div class="signal">
+            <strong>195</strong>
+            <span>recenzí od návštěvníků MAMA KAFE</span>
+          </div>
+          <div class="signal">
+            <strong>9-18</strong>
+            <span>otevřeno každý den, víkendy po předchozí rezervaci</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="hernicka">
+      <div class="wrap split">
+        <div>
+          <div class="eyebrow">Aktivity pro děti</div>
+          <h2>Hernička z přírodních materiálů.</h2>
+          <p style="margin-top: 24px;">Děti u nás najdou hračky převážně z přírodních materiálů, průlezky české společnosti Antonie Emma a výběr hraček z dílny Little Dutch.</p>
+          <div class="detail-list">
+            <div class="detail-item">
+              <b>Hračky</b>
+              <p>Přírodní materiály, kvalitní zpracování a pravidelná péče o čistotu i funkčnost.</p>
+            </div>
+            <div class="detail-item">
+              <b>Prolézání</b>
+              <p>Průlezky Antonie Emma pro pohyb, objevování a přirozenou dětskou hru.</p>
+            </div>
+            <div class="detail-item">
+              <b>Rezervace</b>
+              <p>Kvůli obsazenosti je lepší zavolat předem, zejména o víkendu.</p>
+            </div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section id="oslavy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Víkendové oslavy</div>
+            <h2>Dětská oslava v kavárně.</h2>
+          </div>
+          <p>O víkendu nabízíme možnost uspořádání dětských oslav. Pro domluvu termínu napište e-mail nebo zavolejte.</p>
+        </div>
+        <div class="gallery-strip" aria-label="Atmosféra MAMA KAFE">
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </div>
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Než dorazíte</div>
+            <h2 id="faq-title">Praktické informace.</h2>
+          </div>
+          <p>Krátký přehled pro rodiče, kteří chtějí spojit kávu, dětskou hru a jistotu volného stolu.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Je potřeba rezervace?</h3>
+            <p>Doporučujeme zavolat kvůli aktuální obsazenosti. O víkendu funguje návštěva po předchozí rezervaci.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co je v herničce?</h3>
+            <p>Hračky převážně z přírodních materiálů, průlezky Antonie Emma a hračky Little Dutch.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Pořádáte oslavy?</h3>
+            <p>Ano, dětské oslavy domlouváme na víkendy. Stačí napsat na info@mamakafe.cz nebo zavolat.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde vás najdeme?</h3>
+            <p>Na adrese Úvoz 525/21, 602 00 Brno-střed-Staré Brno.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Stůl si raději ověřte předem.</h2>
+          </div>
+          <p>Na mapách upravujeme aktuální otevírací dobu. Kvůli rezervaci i obsazenosti nám zavolejte.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Úvoz 525/21, 602 00 Brno-střed-Staré Brno</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420530340635">+420 530 340 635</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@mamakafe.cz">info@mamakafe.cz</a>
+            </div>
+            <div class="hours-card">
+              <h3>Otevírací doba</h3>
+              <table class="hours-table" aria-label="Otevírací doba">
+                <tbody>
+                  <tr><td>Pondělí</td><td>9:00-18:00</td></tr>
+                  <tr><td>Úterý</td><td>9:00-18:00</td></tr>
+                  <tr class="today"><td>Středa</td><td>9:00-18:00</td></tr>
+                  <tr><td>Čtvrtek</td><td>9:00-18:00</td></tr>
+                  <tr><td>Pátek</td><td>9:00-18:00</td></tr>
+                  <tr><td>Sobota</td><td>po rezervaci</td></tr>
+                  <tr><td>Neděle</td><td>po rezervaci</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="map-panel">
+            <div id="map" aria-label="Mapa s polohou MAMA KAFE"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-panel">
+        <div>
+          <div class="eyebrow">MAMA KAFE · Staré Brno</div>
+          <h2>Máte chuť dorazit?</h2>
+          <p>Zavolejte nám kvůli místu v kavárně, domluvě víkendové oslavy nebo aktuální obsazenosti herničky.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420530340635">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@mamakafe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>Tato prezentační stránka byla vytvořena službou Webflex pro vlastníka podniku MAMA KAFE.</span>
+      <a href="https://webflex.cz/remove/pk7lbkt" rel="nofollow">Požádat o odstranění</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.594254, 49.195800299999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([16.594254, 49.195800299999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
