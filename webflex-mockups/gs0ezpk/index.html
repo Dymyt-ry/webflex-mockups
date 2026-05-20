@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>La Bohème Café | Výběrová káva ve Vinohradech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --paper: #ffffff;
+      --paper-soft: #f3f2ec;
+      --ink: #161713;
+      --muted: #686a5f;
+      --quiet: #a9aa9f;
+      --line: rgba(22, 23, 19, 0.09);
+      --line-strong: rgba(22, 23, 19, 0.16);
+      --accent: #7B8D2E;
+      --accent-dark: #53601f;
+      --gold: #BCAA3A;
+      --shadow: 0 32px 90px rgba(30, 33, 25, 0.10);
+      --shadow-soft: 0 22px 70px rgba(30, 33, 25, 0.07);
+      --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+      --font-body: 'Inter Tight', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 144px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(22, 23, 19, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22, 23, 19, 0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.65'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; }
+    main, header, footer { position: relative; z-index: 1; }
+    .container { width: min(100% - (var(--gutter) * 2), 1240px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1420px); margin-inline: auto; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; opacity: 0.55; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 248, 0.78);
+      backdrop-filter: blur(22px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      padding-block: 16px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links { display: flex; align-items: center; gap: 30px; color: var(--muted); font-size: 14px; font-weight: 600; }
+    .nav-links a, .link, .btn, .photo-card, .product-row {
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease), opacity 220ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); transform: translateY(-1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 13px 19px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 18px 38px rgba(123, 141, 46, 0.22); }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 24px 46px rgba(123, 141, 46, 0.28); }
+    .btn-outline { background: transparent; border: 1px solid currentColor; color: var(--ink); }
+    .btn-outline:hover { background: var(--paper-soft); transform: translateY(-1px); }
+    .btn:active, .nav-links a:active, .link:active, .photo-card:active, .product-row:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible, .product-row:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .hero { padding-block: clamp(52px, 7vw, 104px) clamp(64px, 8vw, 112px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.96fr) minmax(40%, 0.86fr);
+      gap: clamp(42px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero h1 {
+      margin-top: 22px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      max-width: 9.4ch;
+      overflow-wrap: anywhere;
+    }
+    .hero-lead {
+      margin-top: 26px;
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: clamp(18px, 1.7vw, 22px);
+      line-height: 1.45;
+      font-weight: 500;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .meta-box {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-box b { display: block; font-family: var(--font-mono); font-size: 20px; line-height: 1; color: var(--ink); }
+    .meta-box span { display: block; margin-top: 9px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .hero-visual {
+      position: relative;
+      min-width: 0;
+    }
+    .photo-shell {
+      position: relative;
+      overflow: hidden;
+      border-radius: 30px;
+      aspect-ratio: 4 / 3;
+      box-shadow: 0 45px 110px rgba(32, 30, 22, 0.18);
+      background: var(--paper-soft);
+    }
+    .photo-shell img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.92) contrast(1.02); }
+    .float-card {
+      position: absolute;
+      left: clamp(-22px, -2vw, -12px);
+      bottom: 28px;
+      width: min(270px, 72%);
+      padding: 18px 19px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+    .float-card strong { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.05; letter-spacing: 0; }
+    .float-card span { display: block; margin-top: 9px; color: var(--muted); font-size: 13px; font-weight: 600; }
+
+    section { padding-block: var(--section); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.52fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-head h2, .split h2, .final h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 70px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .section-head p, .split p { color: var(--muted); font-size: 18px; line-height: 1.55; font-weight: 500; }
+    .product-list {
+      display: grid;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.78);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .product-row {
+      display: grid;
+      grid-template-columns: 80px 1.1fr 1.4fr auto;
+      gap: 22px;
+      align-items: center;
+      padding: clamp(18px, 2.6vw, 30px);
+      border-bottom: 1px solid var(--line);
+    }
+    .product-row:last-child { border-bottom: 0; }
+    .product-row:hover { background: rgba(123,141,46,0.055); }
+    .num { font-family: var(--font-mono); color: var(--quiet); font-size: 13px; font-weight: 600; }
+    .product-row h3 { font-size: clamp(22px, 3vw, 38px); line-height: 1; font-family: var(--font-display); overflow-wrap: anywhere; }
+    .product-row p { color: var(--muted); max-width: 54ch; }
+    .price { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 600; white-space: nowrap; }
+
+    .trust {
+      background: linear-gradient(180deg, transparent 0%, rgba(243,242,236,0.72) 100%);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: clamp(26px, 5vw, 64px);
+      align-items: center;
+    }
+    .rating-card {
+      padding: clamp(28px, 5vw, 56px);
+      border-radius: 34px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .rating-number {
+      font-family: var(--font-display);
+      font-size: clamp(82px, 12vw, 152px);
+      line-height: 0.8;
+      letter-spacing: 0;
+      color: var(--accent);
+    }
+    .stars { margin-top: 22px; color: var(--gold); letter-spacing: 5px; font-size: 22px; }
+    .rating-card p { margin-top: 18px; color: var(--muted); font-size: 18px; font-weight: 600; }
+    .proof-list { display: grid; gap: 14px; }
+    .proof-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.70);
+      box-shadow: var(--shadow-soft);
+    }
+    .dot {
+      width: 13px;
+      height: 13px;
+      margin-top: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 9px rgba(123,141,46,0.10);
+    }
+    .proof-item h3 { font-size: 20px; }
+    .proof-item p { color: var(--muted); margin-top: 5px; }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: minmax(40%, 0.95fr) minmax(0, 1fr);
+      gap: clamp(32px, 5vw, 76px);
+      align-items: center;
+    }
+    .split-media {
+      display: grid;
+      grid-template-columns: 1fr 0.7fr;
+      gap: 16px;
+      align-items: end;
+    }
+    .split-media .photo-card {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .photo-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-card.tall { aspect-ratio: 4 / 3; }
+    .photo-card.small { aspect-ratio: 4 / 3; margin-bottom: 34px; }
+    .split-copy { display: grid; gap: 24px; }
+    .quote {
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(255,255,255,0.78);
+      box-shadow: var(--shadow-soft);
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .shop-band {
+      padding-block: var(--section);
+    }
+    .shop-panel {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 36px;
+      background: #171812;
+      color: #fbfbf8;
+      box-shadow: 0 36px 110px rgba(23,24,18,0.22);
+    }
+    .shop-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .shop-panel p { color: rgba(251,251,248,0.72); font-size: 18px; margin-top: 22px; }
+    .shop-points { display: grid; gap: 12px; }
+    .shop-point {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.07);
+    }
+    .shop-point b { color: #fff; }
+    .shop-point span { display: block; color: rgba(251,251,248,0.70); margin-top: 4px; }
+    .shop-panel .btn-outline { color: #fff; border-color: rgba(255,255,255,0.45); }
+    .shop-panel .btn-outline:hover { background: rgba(255,255,255,0.10); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 260px;
+    }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-strip figure:nth-child(2) { transform: translateY(34px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(40%, 1.2fr);
+      gap: clamp(28px, 5vw, 64px);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(26px, 4vw, 44px);
+      border-radius: 32px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 24px;
+      align-content: start;
+    }
+    .contact-card h2 { font-family: var(--font-display); font-size: clamp(32px, 4vw, 56px); line-height: 1; }
+    .contact-lines { display: grid; gap: 12px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding-block: 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .contact-lines b { color: var(--ink); font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px; }
+    #map {
+      height: 420px;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+
+    .final {
+      padding-block: clamp(74px, 10vw, 138px);
+      text-align: center;
+    }
+    .final-inner {
+      width: min(100%, 980px);
+      margin-inline: auto;
+      display: grid;
+      justify-items: center;
+      gap: 24px;
+    }
+    .final p { color: var(--muted); font-size: 20px; max-width: 58ch; font-weight: 500; }
+    .final-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
+
+    footer {
+      padding: 34px var(--gutter);
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: min(100%, 1240px);
+      margin-inline: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 760px;
+    }
+    .disclaimer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero-grid, .trust-grid, .split-grid, .shop-panel, .contact-grid, .section-head { grid-template-columns: 1fr; }
+      .hero-copy { max-width: none; }
+      .hero h1 { max-width: 11ch; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .product-row { grid-template-columns: 1fr; gap: 10px; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { transform: none; }
+      .shop-panel { border-radius: 28px; }
+    }
+    @media (max-width: 620px) {
+      .hero { padding-top: 36px; }
+      .hero h1 { font-size: clamp(40px, 15vw, 64px); }
+      .float-card { position: static; width: auto; margin-top: 14px; }
+      .split-media { grid-template-columns: 1fr; }
+      .photo-card.small { margin-bottom: 0; }
+      .btn { width: 100%; }
+      #map { height: 340px; border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="La Bohème Café">
+        <img src="https://labohemecafe.cz/cdn/shop/files/logo-1200x1200-png_12856929-a684-4ae3-a010-4f77bb5394f5.png?v=1738147955" alt="La Bohème Café">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#obchod">Obchod</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420730126990">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wide hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Praha 2 · Vinohrady</span>
+          <h1>Výběrová káva s příběhem</h1>
+          <p class="hero-lead">Od farmáře až po Váš šálek. La Bohème Café praží denně kávy s čistým profilem, jemnou sladkostí a původem, který znáte jménem.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kava">Vybrat kávu</a>
+            <a class="btn btn-outline" href="#kontakt">Kde nás najdete</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-box"><b>4,5</b><span>hodnocení Google</span></div>
+            <div class="meta-box"><b>2626</b><span>recenzí zákazníků</span></div>
+            <div class="meta-box"><b>2005</b><span>pražíme od roku</span></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="photo-shell">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </div>
+          <div class="float-card">
+            <strong>Pražíme denně</strong>
+            <span>Čerstvá káva balená a odesílaná každý den.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava" class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Výběr z pražírny</span>
+          <h2>Jednodruhové kávy pro různé chutě</h2>
+        </div>
+        <p>V nabídce najdete espresso, kávu bez kofeinu, bio kávu i sezónní loty s ovocnými a sladkými tóny.</p>
+      </div>
+      <div class="product-list">
+        <a class="product-row" href="https://labohemecafe.cz/">
+          <span class="num">01</span>
+          <h3>Indonésie Kerinci Washed</h3>
+          <p>Čistý a vyvážený šálek s tóny černého čaje, černého rybízu a svěží limetky.</p>
+          <span class="price">Od 339 Kč</span>
+        </a>
+        <a class="product-row" href="https://labohemecafe.cz/">
+          <span class="num">02</span>
+          <h3>Brazílie Caochoria da Grama</h3>
+          <p>Jemně sladká chuť, krémové tělo, meruňka, marcipán a karamel.</p>
+          <span class="price">Od 299 Kč</span>
+        </a>
+        <a class="product-row" href="https://labohemecafe.cz/">
+          <span class="num">03</span>
+          <h3>Etiopie Hamasho Kebena</h3>
+          <p>Výrazná jednodruhová káva pro ty, kteří hledají aromatický a živý profil.</p>
+          <span class="price">Od 399 Kč</span>
+        </a>
+        <a class="product-row" href="https://labohemecafe.cz/">
+          <span class="num">04</span>
+          <h3>Keňa Kamwangi AA</h3>
+          <p>Pečlivě vybraný lot z kategorie výběrové kávy, pražený pro plný chuťový zážitek.</p>
+          <span class="price">Od 379 Kč</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="trust">
+      <div class="container trust-grid">
+        <div class="rating-card">
+          <span class="eyebrow">Důvěra hostů</span>
+          <div class="rating-number">4,5</div>
+          <div class="stars" aria-label="Hodnocení">★★★★★</div>
+          <p>Hodnocení z 2626 recenzí. Místo pro kávu, nákup domů i chvíli ve Vinohradech.</p>
+        </div>
+        <div class="proof-list">
+          <div class="proof-item">
+            <span class="dot"></span>
+            <div><h3>Denní pražení</h3><p>Pražírna drží čerstvost jako základ každého balení kávy.</p></div>
+          </div>
+          <div class="proof-item">
+            <span class="dot"></span>
+            <div><h3>Doručení po Evropě</h3><p>Káva se balí a odesílá denně, nejen po Praze.</p></div>
+          </div>
+          <div class="proof-item">
+            <span class="dot"></span>
+            <div><h3>Od farmáře po šálek</h3><p>Původ, proces a chuťový profil jsou součástí výběru.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh" class="container split">
+      <div class="split-grid">
+        <div class="split-media">
+          <div class="photo-card tall">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+          <div class="photo-card small">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </div>
+        </div>
+        <div class="split-copy">
+          <span class="eyebrow">Vinohradský rytmus</span>
+          <h2>Káva domů, do práce i na cestu</h2>
+          <p>V La Bohème Café si vyberete balení na filtr, espresso i kávu bez kofeinu. K tomu vybavení pro domácí přípravu, cold brew lahev Ka-Ku a dárkové kombinace z aktuální nabídky.</p>
+          <div class="quote">Kupte 4 balení kávy a získejte Floral Bloom jako dárek. Nabídka se řídí aktuální dostupností v obchodě.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="obchod" class="shop-band">
+      <div class="container shop-panel">
+        <div>
+          <span class="eyebrow" style="color:#d8df9f">Online i osobně</span>
+          <h2>Shop, předplatné a velkoobchod</h2>
+          <p>Objednejte si výběrovou kávu na doma, nastavte pravidelné předplatné nebo se ozvěte kvůli spolupráci pro Váš podnik.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://labohemecafe.cz/">Otevřít obchod</a>
+            <a class="btn btn-outline" href="mailto:hello@labohemecafe.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="shop-points">
+          <div class="shop-point"><span class="dot"></span><div><b>Doprava zdarma nad 499 Kč</b><span>Platí pro nákupy podle aktuálních podmínek obchodu.</span></div></div>
+          <div class="shop-point"><span class="dot"></span><div><b>Balíme a odesíláme denně</b><span>Čerstvě pražená káva odchází zákazníkům průběžně.</span></div></div>
+          <div class="shop-point"><span class="dot"></span><div><b>Velkoobchodní kontakt</b><span>Pro kavárny, restaurace a firmy je k dispozici přímá domluva.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Atmosféra</span>
+          <h2>Teplé světlo, klidný stůl, dobrý šálek</h2>
+        </div>
+        <p>Pro setkání ve dvou, krátkou zastávku po cestě i chvíli soustředění s kávou, která má jasný původ.</p>
+      </div>
+      <div class="gallery-strip">
+        <figure><img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus."></figure>
+        <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+        <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="container">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>La Bohème Café, Praha</h2>
+          <div class="contact-lines">
+            <span><b>Adresa</b>Sázavská 2031/32, Vinohrady, 120 00 Praha-Praha 2</span>
+            <a href="tel:+420730126990"><b>Telefon</b>+420 730 126 990</a>
+            <a href="mailto:hello@labohemecafe.cz"><b>E-mail</b>hello@labohemecafe.cz</a>
+            <a href="https://labohemecafe.cz/"><b>Web</b>labohemecafe.cz</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou La Bohème Café"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container final-inner">
+        <span class="eyebrow">Váš další šálek</span>
+        <h2>Zastavte se ve Vinohradech</h2>
+        <p>Nebo si objednejte čerstvě praženou kávu domů. La Bohème Café najdete v Sázavské ulici na Praze 2.</p>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420730126990">Zavolat do café</a>
+          <a class="btn btn-outline" href="https://labohemecafe.cz/">Objednat kávu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>© La Bohème Café</div>
+      <div class="disclaimer">Tento materiál připravil Webflex jako nezávaznou vizuální prezentaci. Pokud si jej nepřejete zobrazovat, můžete jej smazat zde: <a href="https://webflex.cz/delete/gs0ezpk">smazat stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4407602, 50.0767974],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#7B8D2E' })
+      .setLngLat([14.4407602, 50.0767974])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
