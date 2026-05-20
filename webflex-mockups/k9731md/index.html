@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IPPA Café Tylovo Náměstí</title>
+  <meta name="description" content="IPPA Café Tylovo Náměstí na Vinohradech. Dezerty, dorty, snídaně, poukazy a cukrářská akademie.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --ink: #171615;
+      --muted: #6c6863;
+      --soft: #ece8e2;
+      --accent: #E0C0A0;
+      --accent-deep: #9f7550;
+      --shadow: 0 28px 90px rgba(52, 45, 38, 0.10);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23, 22, 21, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 22, 21, .018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .78);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 42px; width: auto; object-fit: contain; }
+    .links { display: flex; align-items: center; gap: 24px; font-weight: 600; color: #393633; }
+    .links a { transition: color 180ms var(--ease); }
+    .links a:hover { color: var(--accent-deep); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #211a14; box-shadow: 0 18px 55px rgba(159, 117, 80, .22); }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 56px;
+      padding: 58px 0 76px;
+    }
+    h1 {
+      margin: 14px 0 20px;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead { max-width: 620px; color: #4d4944; font-size: clamp(18px, 2vw, 22px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.84);
+      backdrop-filter: blur(14px);
+    }
+    .rating { font-family: var(--font-mono); font-size: 26px; font-weight: 700; }
+    .rating small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+
+    section { padding: 92px 0; }
+    .section-head { display: grid; grid-template-columns: .7fr 1fr; gap: 44px; align-items: end; margin-bottom: 36px; }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); max-width: 650px; }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px 1fr minmax(220px, .5fr);
+      gap: 24px;
+      padding: 28px;
+      align-items: center;
+    }
+    .service-row + .service-row { border-top: 1px solid rgba(23,22,21,.08); }
+    .service-row strong { font-size: 24px; }
+    .service-row span:first-child { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; min-height: 310px; }
+    .stack { display: grid; gap: 22px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .stat span { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 46px;
+      align-items: start;
+    }
+    .note {
+      padding: 34px;
+      border-radius: 28px;
+      background: #171615;
+      color: #fffaf3;
+      box-shadow: var(--shadow);
+    }
+    .note h2 { color: #fffaf3; }
+    .note p { color: rgba(255,250,243,.72); }
+    .steps { display: grid; gap: 14px; }
+    .step {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 18px;
+      padding: 22px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 16px 60px rgba(52,45,38,.07);
+    }
+    .step em {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #211a14;
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-weight: 700;
+    }
+    .step h3 { margin: 0 0 5px; font-size: 21px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .contact-line { padding: 18px 0; border-bottom: 1px solid rgba(23,22,21,.08); }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span { display: block; color: var(--muted); font-size: 14px; }
+    .contact-line strong, .contact-line a { font-family: var(--font-mono); font-weight: 700; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .final {
+      margin: 46px 0 76px;
+      padding: 44px;
+      border-radius: 32px;
+      background: var(--accent);
+      color: #211a14;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final h2 { max-width: 760px; }
+    .footer {
+      padding: 26px 0 34px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(23,22,21,.08);
+    }
+
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero, .section-head, .gallery, .split, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero { min-height: 0; padding-top: 36px; }
+      .hero-photo { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats { grid-template-columns: 1fr; }
+      .final { padding: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="IPPA Café Tylovo Náměstí">
+        <img src="https://ippacafe.cz/img/theme/logo.svg" alt="IPPA Café Tylovo Náměstí">
+      </a>
+      <div class="links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="mailto:info@ippacafe.cz">Napsat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Tylovo náměstí · Vinohrady</div>
+        <h1>Káva, dezerty, snídaně</h1>
+        <p class="lead">Zastavte se v IPPA Café na Tylově náměstí pro šálek kávy, jednoporcové zákusky, slavnostní dorty nebo snídani kdykoliv během dne.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Najít kavárnu</a>
+          <a class="btn btn-outline" href="tel:+420608839826">+420 608 839 826</a>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <div class="hero-card">
+          <div>
+            <div class="eyebrow">Google hodnocení</div>
+            <div class="rating">4,5 <small>z 2 603 recenzí</small></div>
+          </div>
+          <a class="btn btn-outline" href="#nabidka">Nabídka</a>
+        </div>
+      </div>
+    </div>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>To nejlepší z IPPA</h2>
+          <p>Výběr vychází z cukrářského zázemí IPPA: jemné dezerty, dorty pro oslavy, celodenní snídaně, brunch, poukazy a kurzy v akademii.</p>
+        </div>
+        <div class="service-list">
+          <div class="service-row"><span>01</span><strong>Dezerty</strong><p>Jednoporcové zákusky včetně oblíbených chutí Lemon a Mango.</p></div>
+          <div class="service-row"><span>02</span><strong>Dorty</strong><p>Slavnostní dorty z kvalitních surovin připravené k vyzvednutí.</p></div>
+          <div class="service-row"><span>03</span><strong>Snídaně</strong><p>Pečlivě připravená nabídka snídaní, kterou si můžete dát kdykoliv během dne.</p></div>
+          <div class="service-row"><span>04</span><strong>Poukazy a kurzy</strong><p>Dárkové poukazy do kaváren a inspirativní kurzy IPPA academy.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="stack">
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><span>Hodnocení hostů</span><b>4,5</b><span>Google rating</span></div>
+          <div class="stat"><span>Zkušenosti návštěvníků</span><b>2603</b><span>recenzí na Google</span></div>
+          <div class="stat"><span>Pobočka</span><b>Tylovo</b><span>Vinohrady, Praha 2</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="note">
+          <div class="eyebrow">IPPA academy</div>
+          <h2>Cukrářský příběh v centru Prahy</h2>
+          <p>IPPA je mezinárodní cukrářská akademie se zázemím v Rosetta Palace v Jungmannově ulici. Do kavárny na Tylově náměstí se tenhle důraz na detail přenáší v dezertech, dortech i snídaních.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><em>1</em><div><h3>Na kávu a dezert</h3><p>Přijďte bez složitého plánování a vyberte si podle chuti na místě.</p></div></div>
+          <div class="step"><em>2</em><div><h3>Dort k oslavě</h3><p>Pro slavnostní dorty využijte objednávkový formulář nebo e-shop IPPA.</p></div></div>
+          <div class="step"><em>3</em><div><h3>Dárek nebo kurz</h3><p>Poukazy a kurzy jsou praktická volba pro každého, kdo má rád cukrařinu.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>IPPA Café Tylovo Náměstí sídlí na Vinohradech, kousek od ruchu Prahy 2.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line"><span>Adresa</span><strong>Tylovo Nám. 2, Vinohrady, 120 00 Praha-Praha 2</strong></div>
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420608839826">+420 608 839 826</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:info@ippacafe.cz">info@ippacafe.cz</a></div>
+            <div class="contact-line"><span>Recepce a e-shop</span><strong>Po-Pá 9-16</strong></div>
+            <div class="contact-line"><span>Rezervace</span><strong>Telefonické rezervace nepřijímáme</strong></div>
+          </div>
+          <div id="map" aria-label="Mapa IPPA Café Tylovo Náměstí"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap final">
+      <h2>Dejte si dnes něco dobrého.</h2>
+      <a class="btn btn-outline" href="mailto:info@ippacafe.cz">info@ippacafe.cz</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div>© 2026 IPPA Café. Všechna práva vyhrazena.</div>
+      <div class="footer-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizualizaci. Pro odstranění použijte <a href="https://webflex.cz/delete/k9731md">https://webflex.cz/delete/k9731md</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4320789, 50.0744288],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C0A0' })
+      .setLngLat([14.4320789, 50.0744288])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
