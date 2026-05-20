@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Louvre | Velkokavárna na Národní</title>
+  <meta name="description" content="Café Louvre na Národní 22 v Praze. Velkokavárna, polední nabídka, salónky, catering, rezervace a e-shop.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --surface: rgba(255, 255, 255, .075);
+      --surface-2: rgba(255, 255, 255, .11);
+      --ink: #f8f7f2;
+      --muted: #c9c3ba;
+      --dim: #918a82;
+      --line: rgba(255, 255, 255, .12);
+      --line-strong: rgba(255, 255, 255, .24);
+      --accent: #C85A78;
+      --accent-2: #f0adc0;
+      --accent-ink: #16070d;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --shadow: 0 34px 90px rgba(0, 0, 0, .28);
+      --s2: 10px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(200, 90, 120, .16), transparent 34%),
+        radial-gradient(circle at 92% 24%, rgba(160, 192, 224, .12), transparent 28%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, auto, 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: .98;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(32px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap {
+      width: min(1200px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      color: var(--accent-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: #d66b88; border-color: #d66b88; }
+    .btn.secondary {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 17, 20, .82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 220px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #ddd7cf;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 22px;
+      background: #1c1a19;
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.05);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(16,17,20,.72);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(14px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .55fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-list {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.055);
+    }
+    .menu-row strong {
+      color: var(--ink);
+      font-size: 15px;
+      text-transform: uppercase;
+    }
+    .menu-row span,
+    .menu-row b {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-2);
+      white-space: nowrap;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      padding: var(--s5);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: 0 28px 80px rgba(0,0,0,.18);
+    }
+    .stat strong {
+      display: block;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+    .stat p { max-width: 28ch; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .feature-list {
+      display: grid;
+      gap: 14px;
+      margin-top: var(--s5);
+    }
+    .feature-row {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+    .feature-row:last-child { border-bottom: 1px solid var(--line); }
+    .feature-row code {
+      color: var(--accent-2);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .feature-row strong { display: block; color: var(--ink); margin-bottom: 5px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 260px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #201a17;
+      box-shadow: 0 24px 70px rgba(0,0,0,.2);
+    }
+    .gallery-item.tall { min-height: 390px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: var(--s5);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hours {
+      margin-top: var(--s4);
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours .today { color: var(--accent-2); }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .final {
+      padding-bottom: var(--s8);
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: clamp(28px, 6vw, 70px);
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(200,90,120,.92), rgba(200,90,120,.58));
+      box-shadow: var(--shadow);
+    }
+    .final-panel h2 { color: #fff; max-width: 760px; }
+    .final-panel p { color: rgba(255,255,255,.82); margin-top: 18px; }
+    .final-panel .btn.primary {
+      background: #fff;
+      border-color: #fff;
+      color: var(--accent-ink);
+    }
+
+    .site-footer {
+      padding: 30px 0 40px;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .trust,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .gallery-item,
+      .gallery-item.tall { min-height: 260px; }
+      .final-panel { align-items: start; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .hero { padding: var(--s5) 0 var(--s6); }
+      .hero-grid { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .menu-row b { justify-self: start; }
+      .stat,
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="Café Louvre">
+        <img src="https://www.cafelouvre.cz/files/logo-preview.png" alt="Café Louvre">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#salonky">Salónky</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420224930949">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Národní 22 · Praha 1</div>
+          <h1>Kde Praha žije</h1>
+          <p class="hero-lead">Velkokavárna se stoletou historií, polední nabídkou, snídaněmi, salónky a cateringem v srdci Nového Města.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Rezervace</a>
+            <a class="btn secondary" href="#nabidka">Dnešní polední nabídka</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní údaje">
+            <span class="meta-pill">Dnes otevřeno 08:00–23:30</span>
+            <span class="meta-pill">4.6 · 22 898 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">Káva · menu · společnost</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">20. 5. 2026</div>
+            <h2>Dnešní polední nabídka</h2>
+          </div>
+          <p>Výběr z aktuální nabídky jídel s sebou i do kavárny. Objednávky jídel s sebou přijímáme na telefonu +420 724 054 055.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <span>0,25 l</span>
+            <strong>Flamendrova krémová česnečka, chlebové krutóny</strong>
+            <b>69 Kč</b>
+          </div>
+          <div class="menu-row">
+            <span>0,4 l</span>
+            <strong>Jemný karotkový krém s batáty, zastřené vejce</strong>
+            <b>129 Kč</b>
+          </div>
+          <div class="menu-row">
+            <span>200 g</span>
+            <strong>Pomalu tažený guláš z hovězí kýty, karlovarské knedlíky</strong>
+            <b>359 Kč</b>
+          </div>
+          <div class="menu-row">
+            <span>200 g</span>
+            <strong>Svíčková pečeně na smetaně, houskové knedlíky, brusinky</strong>
+            <b>359 Kč</b>
+          </div>
+          <div class="menu-row">
+            <span>350 g</span>
+            <strong>Veganské cizrnové ragú s kokosovým mlékem, dušená rýže basmati</strong>
+            <b>199 Kč</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Velkokavárna</div>
+            <h2 id="duvera">Jedinečné místo s bohatou historií</h2>
+          </div>
+          <p>Adresa na Národní, rozsáhlá nabídka a dlouhé otevírací hodiny dělají z Louvru místo pro snídani, pracovní oběd i večerní setkání.</p>
+        </div>
+        <div class="trust">
+          <article class="stat">
+            <strong>4.6</strong>
+            <p>Hodnocení hostů podle údajů z profilu podniku.</p>
+          </article>
+          <article class="stat">
+            <strong>22 898</strong>
+            <p>Recenzí od návštěvníků, kteří sdíleli zkušenost s kavárnou.</p>
+          </article>
+          <article class="stat">
+            <strong>08:00</strong>
+            <p>Dnešní začátek provozu, večer je otevřeno do 23:30.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="salonky">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div>
+          <div class="eyebrow">Salónky & catering</div>
+          <h2>Pro schůzky, oslavy i větší setkání</h2>
+          <div class="feature-list">
+            <div class="feature-row">
+              <code>01</code>
+              <p><strong>Rezervace stolu</strong>Pro chvíle, kdy chcete mít své místo jisté.</p>
+            </div>
+            <div class="feature-row">
+              <code>02</code>
+              <p><strong>Salónky</strong>Pro uzavřenější setkání přímo v kavárně.</p>
+            </div>
+            <div class="feature-row">
+              <code>03</code>
+              <p><strong>Catering</strong>Nabídka pro akce, které potřebují servis mimo běžný stůl.</p>
+            </div>
+            <div class="feature-row">
+              <code>04</code>
+              <p><strong>E-shop</strong>Dárky a položky z nabídky Café Louvre online.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 id="atmosfera">Ranní káva, oběd, večerní sklenka</h2>
+          </div>
+          <p>Prostor staví na klasické kavárenské energii: světlo, stoly, servis a menu, které funguje od snídaně po pozdní večer.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Národní 22, Praha 1</h2>
+          </div>
+          <p>Pro rezervaci, dotaz k salónkům nebo objednávku volejte přímo do kavárny.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <h3>Café Louvre</h3>
+            <p>Národní 22, 110 00 Praha 1-Nové Město</p>
+            <div class="hours">
+              <div class="today"><span>Dnes</span><strong>08:00–23:30</strong></div>
+              <div><span>Telefon</span><strong>+420 224 930 949</strong></div>
+              <div><span>E-mail</span><strong>info@cafelouvre.cz</strong></div>
+              <div><span>Jídla s sebou</span><strong>+420 724 054 055</strong></div>
+            </div>
+            <div class="hero-actions">
+              <a class="btn primary" href="tel:+420224930949">Zavolat</a>
+              <a class="btn secondary" href="mailto:info@cafelouvre.cz">Napsat e-mail</a>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa Café Louvre"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <h2>Rezervujte si stůl na Národní</h2>
+          <p>Pro snídani, oběd, večerní setkání nebo salónky kontaktujte Café Louvre přímo.</p>
+        </div>
+        <a class="btn primary" href="tel:+420224930949">+420 224 930 949</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>© Café Louvre · Národní 22, Praha 1</span>
+      <span>Neoficiální prezentační ukázka od Webflexu. <a href="https://webflex.cz/delete/yfzbk7y">Smazat stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4186192, 50.0820693],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C85A78' })
+      .setLngLat([14.4186192, 50.0820693])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
