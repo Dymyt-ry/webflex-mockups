@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alchymista | Cukrárna a kavárna na Letné</title>
+  <meta name="description" content="Alchymista na Letné: výběrová káva rodinné pražírny, dorty z vlastní výroby, originální nápoje a zahrádka v Jana Zajíce 7.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --bg-deep: #0d0d0f;
+      --fg: #f7f5f0;
+      --muted: rgba(247, 245, 240, .68);
+      --line: rgba(247, 245, 240, .14);
+      --line-strong: rgba(247, 245, 240, .24);
+      --panel: #22201d;
+      --panel-soft: rgba(255,255,255,.055);
+      --paper: #f8f5ef;
+      --paper-ink: #171412;
+      --paper-muted: #5f574f;
+      --accent: #000000;
+      --accent-hot: #f7f5f0;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      opacity: .12;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, #000, transparent 68%);
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 500;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.08;
+    }
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(247,245,240,.72);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-hot);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border: 1px solid var(--paper);
+      box-shadow: 0 18px 44px rgba(0,0,0,.32);
+    }
+    .btn.primary:hover { background: #ffffff; border-color: #ffffff; }
+    .btn.secondary {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #ffffff;
+      background: transparent;
+    }
+    .btn.secondary:hover { border-color: rgba(255,255,255,.75); background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: fixed;
+      z-index: 30;
+      inset: 0 0 auto;
+      background: linear-gradient(to bottom, rgba(13,13,15,.92), rgba(13,13,15,.36), transparent);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--fg);
+      white-space: nowrap;
+    }
+    .wordmark::after {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-left: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.52);
+      vertical-align: 2px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: rgba(255,255,255,.76);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #ffffff; }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      background: var(--bg-deep);
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.84) contrast(1.1);
+    }
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(13,13,15,.92) 0%, rgba(13,13,15,.68) 46%, rgba(13,13,15,.24) 100%),
+        linear-gradient(to top, var(--bg) 0%, transparent 34%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      padding: 132px 0 var(--s8);
+    }
+    .hero-lead {
+      max-width: 590px;
+      margin-top: var(--s4);
+      color: rgba(255,255,255,.84);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s6);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.72);
+    }
+    .meta-pill {
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(0,0,0,.24);
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .service-list {
+      border-top: 1px solid var(--line);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, .55fr) minmax(260px, .45fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: rgba(247,245,240,.62);
+      font-size: 13px;
+      letter-spacing: .08em;
+    }
+    .service-row p { color: rgba(247,245,240,.66); }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .paper-band p { color: var(--paper-muted); }
+    .paper-band .eyebrow { color: #26211c; }
+    .paper-band h2, .paper-band h3 { color: var(--paper-ink); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s4);
+      border: 1px solid rgba(23,20,18,.12);
+      background: rgba(255,255,255,.58);
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: .9;
+      color: var(--paper-ink);
+      letter-spacing: 0;
+    }
+    .stat span {
+      max-width: 260px;
+      color: var(--paper-muted);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(360px, .78fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: .78fr 1fr;
+      gap: var(--s3);
+      align-items: end;
+    }
+    .photo-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .photo-card:first-child { aspect-ratio: 4 / 3; }
+    .photo-card:last-child { aspect-ratio: 16 / 10; margin-bottom: var(--s5); }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.05);
+      transition: transform 360ms var(--ease);
+    }
+    .photo-card:hover img { transform: scale(1.035); }
+    .detail-list {
+      margin-top: var(--s5);
+      border-top: 1px solid var(--line);
+    }
+    .detail-item {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .detail-item b {
+      font-family: var(--font-mono);
+      color: rgba(247,245,240,.72);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .menu-card {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease);
+    }
+    .menu-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.38);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+    }
+    .menu-card p { margin-top: var(--s3); }
+    .menu-card small {
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      color: rgba(247,245,240,.62);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 360px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .gallery-item:nth-child(2) { margin-top: var(--s5); min-height: 300px; }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.04);
+      transition: transform 360ms var(--ease);
+    }
+    .gallery-item:hover img { transform: scale(1.035); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(420px, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: var(--s5);
+      border: 1px solid rgba(23,20,18,.12);
+      background: rgba(255,255,255,.62);
+    }
+    .contact-lines {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      display: block;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid rgba(23,20,18,.12);
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: #000000; }
+    .hours {
+      margin-top: var(--s5);
+      border-top: 1px solid rgba(23,20,18,.12);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(23,20,18,.12);
+    }
+    .hours .today {
+      color: var(--paper-ink);
+      font-weight: 700;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(23,20,18,.12);
+      border-radius: 16px;
+    }
+
+    .final {
+      padding: var(--s8) 0;
+      background: var(--bg-deep);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding-top: var(--s6);
+      border-top: 1px solid var(--line-strong);
+    }
+    .final h2 { max-width: 760px; }
+    .final p {
+      max-width: 560px;
+      margin-top: var(--s4);
+      font-size: 18px;
+    }
+    .footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      background: #101010;
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+    }
+    .footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--s3);
+    }
+    .footer a {
+      color: rgba(255,255,255,.8);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-content { padding: 112px 0 var(--s7); }
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .service-row {
+        grid-template-columns: 54px 1fr;
+      }
+      .service-row p { grid-column: 2; }
+      .stats,
+      .menu-grid,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-item,
+      .gallery-item:nth-child(2) {
+        min-height: 280px;
+        margin-top: 0;
+      }
+      .photo-stack {
+        grid-template-columns: 1fr;
+      }
+      .photo-card:last-child { margin-bottom: 0; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: var(--s6) 0; }
+      .hero-meta { margin-top: var(--s5); }
+      .service-row,
+      .detail-item {
+        grid-template-columns: 1fr;
+        gap: var(--s2);
+      }
+      .service-row p { grid-column: auto; }
+      .contact-card { padding: var(--s4); }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top">Alchymista</a>
+      <div class="nav-links" aria-label="Sekce stránky">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#zazitek">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-media" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      </div>
+      <div class="wrap">
+        <div class="hero-content">
+          <p class="eyebrow">Jana Zajíce 7 · Letná</p>
+          <h1 id="hero-title">Cukrárna, káva, zahrádka.</h1>
+          <p class="hero-lead">Výběrová káva rodinné pražírny, dorty z vlastní výroby a originální nápoje pro klidné zastavení v Praze 7.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420732938046">Zavolat do kavárny</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">Po-Pá 8:30-19:30</span>
+            <span class="meta-pill">Víkend 13:00-19:30</span>
+            <span class="meta-pill">4,7 · 1199 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Nabídka</p>
+            <h2>To hlavní na jednom stole.</h2>
+          </div>
+          <p>Alchymista stojí na jednoduché kombinaci: dobrá káva, vlastní dorty, nápoje, které mají charakter, a venkovní posezení, když Letná dovolí.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva</h3>
+            <p>Káva z rodinné pražírny připravená pro šálek v klidu i krátké zastavení cestou přes Bubeneč.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Dorty z vlastní výroby</h3>
+            <p>Domácí cukrářská práce pro odpolední kávu, návštěvu s přáteli nebo malou sladkou pauzu.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Originální nápoje</h3>
+            <p>Něco studeného, něco svátečnějšího a něco pro chvíli, kdy nechcete jen další espresso.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <h3>Zahrádka na Letné</h3>
+            <p>Místo venku u kavárny pro pomalejší odpoledne, setkání po práci i víkendový šálek.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper-band" aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Důvěra hostů</p>
+            <h2 id="trust-title">Letenská adresa s dlouhou stopou.</h2>
+          </div>
+          <p>Hodnocení a počet recenzí vycházejí z veřejného profilu podniku. Zbytek poznáte nejlépe u stolu.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,7</strong>
+            <span>průměrné hodnocení hostů</span>
+          </div>
+          <div class="stat">
+            <strong>1199</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>7</strong>
+            <span>Jana Zajíce, Praha 7-Bubeneč</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="zazitek">
+      <div class="wrap split">
+        <div class="photo-stack" aria-label="Atmosféra kavárny">
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+        <div>
+          <p class="eyebrow">Posezení</p>
+          <h2>Na chvíli zpomalit.</h2>
+          <p class="hero-lead">Všední den začíná v Alchymistovi dopolední kávou, víkend má volnější rytmus od jedné odpoledne. Uvnitř i na zahrádce je prostor pro dort, rozhovor i tiché čtení.</p>
+          <div class="detail-list">
+            <div class="detail-item">
+              <b>Všední dny</b>
+              <p>Otevřeno 8:30-19:30.</p>
+            </div>
+            <div class="detail-item">
+              <b>Víkend</b>
+              <p>Otevřeno 13:00-19:30, stejně také ve svátek.</p>
+            </div>
+            <div class="detail-item">
+              <b>Kontakt</b>
+              <p><a href="mailto:cukrarna@alchymista.cz">cukrarna@alchymista.cz</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Rytmus návštěvy</p>
+            <h2 id="menu-title">Vyberte si podle chvíle.</h2>
+          </div>
+          <p>Bez zbytečných okolků: káva, sladké a nápoj k tomu. Vykání hostům, klid v tónu a jasná cesta ke kontaktu.</p>
+        </div>
+        <div class="menu-grid">
+          <article class="menu-card">
+            <div>
+              <h3>Ranní šálek</h3>
+              <p>Pro všední dny, kdy chcete začít kávou ještě před pracovním tempem.</p>
+            </div>
+            <small>od 8:30</small>
+          </article>
+          <article class="menu-card">
+            <div>
+              <h3>Dort ke kávě</h3>
+              <p>Vlastní výroba pro návštěvu, malou oslavu i obyčejné odpoledne.</p>
+            </div>
+            <small>vlastní cukrárna</small>
+          </article>
+          <article class="menu-card">
+            <div>
+              <h3>Zahrádka</h3>
+              <p>Když je venku dobře, Letná se dá posedět pomaleji a bez spěchu.</p>
+            </div>
+            <small>Jana Zajíce 7</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie atmosféry">
+      <div class="wrap gallery-strip">
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="paper-band">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Jana Zajíce 975/7.</h2>
+          <div class="contact-lines">
+            <span>Jana Zajíce 975/7, 170 00 Praha 7-Bubeneč</span>
+            <a href="tel:+420732938046">+420 732 938 046</a>
+            <a href="mailto:cukrarna@alchymista.cz">cukrarna@alchymista.cz</a>
+            <a href="http://www.alchymista.cz/">www.alchymista.cz</a>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="today"><span>Středa</span><span>8:30-19:30</span></div>
+            <div><span>Všední dny</span><span>8:30-19:30</span></div>
+            <div><span>Víkend a svátek</span><span>13:00-19:30</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou kavárny Alchymista"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Alchymista · Letná</p>
+          <h2>Zastavte se na kávu a dort.</h2>
+          <p>Jsme v Jana Zajíce 7. Pro rychlý dotaz nebo domluvu volejte přímo do kavárny.</p>
+        </div>
+        <a class="btn primary" href="tel:+420732938046">+420 732 938 046</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>© Alchymista, Jana Zajíce 7, Letná</span>
+      <span class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správnou kontaktní osobou, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/u19pa9h">webflex.cz/delete/u19pa9h</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4171898, 50.100947500000004],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#000000' })
+      .setLngLat([14.4171898, 50.100947500000004])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
