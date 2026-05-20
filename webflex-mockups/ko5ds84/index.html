@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Národní kavárna | Restaurace na Národní 11</title>
+  <meta name="description" content="Národní kavárna v Praze 1. Snídaně, týdenní nabídka, jídelní a nápojový lístek, rezervace a dárkové poukazy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101112;
+      --surface: #18191a;
+      --surface-soft: #20211f;
+      --ink: #f7f4ee;
+      --muted: #c7c0b6;
+      --quiet: #8d877e;
+      --line: rgba(247, 244, 238, .11);
+      --line-strong: rgba(247, 244, 238, .2);
+      --accent: #606040;
+      --accent-light: #9c9b72;
+      --accent-ink: #f8f7ed;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .28);
+      --ambient: 0 36px 120px rgba(96, 96, 64, .18);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 82% 10%, rgba(96, 96, 64, .18), transparent 34%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: .96;
+      letter-spacing: 0;
+      color: var(--ink);
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4vw, 58px); }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-light);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border: 1px solid var(--accent);
+    }
+    .btn.primary:hover { background: #74744d; border-color: #74744d; }
+    .btn.secondary {
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.7); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 17, 18, .76);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      width: auto;
+      max-width: 220px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 64px 0 96px;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(440px, .82fr);
+      gap: clamp(36px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: #d2ccc3;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 38px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 38px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.055);
+      border: 1px solid var(--line);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow), var(--ambient);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.03);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(16,17,18,.72);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .45fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 40px;
+    }
+    .section-head p { font-size: 18px; }
+    .soft-panel {
+      background: rgba(255,255,255,.045);
+      border-radius: 28px;
+      box-shadow: 0 26px 90px rgba(0,0,0,.16);
+    }
+
+    .menu-list {
+      display: grid;
+      gap: 1px;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 190px 1fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      background: rgba(255,255,255,.05);
+      transition: background 220ms var(--ease), transform 220ms var(--ease);
+    }
+    .menu-row:hover { background: rgba(255,255,255,.075); transform: translateY(-1px); }
+    .menu-row:active { transform: translateY(1px); }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: 24px;
+      line-height: 1;
+    }
+    .menu-row span {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      white-space: nowrap;
+    }
+
+    .story-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, .78fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .story-card {
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 30px;
+      background: rgba(255,255,255,.05);
+      box-shadow: var(--shadow);
+    }
+    .story-card p {
+      margin-top: 24px;
+      font-size: 19px;
+    }
+    .split-photo {
+      min-height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--ambient);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 188px;
+      padding: 28px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.055);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 22px 70px rgba(0,0,0,.14);
+    }
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: -.03em;
+    }
+    .stat span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .82fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 310px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .gallery-item.tall { min-height: 440px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.055);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h3 { margin-bottom: 22px; }
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+    }
+    .contact-line {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line small {
+      color: var(--quiet);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-line strong,
+    .contact-line a {
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours td {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours tr.today td { color: var(--accent-light); font-weight: 600; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .final {
+      padding-bottom: 72px;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(96,96,64,.54), rgba(255,255,255,.055));
+      box-shadow: var(--ambient);
+    }
+    .final-panel p {
+      margin-top: 14px;
+      max-width: 660px;
+      color: #ddd8cf;
+      font-size: 18px;
+    }
+
+    footer {
+      padding: 34px 0 44px;
+      color: var(--quiet);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .credits {
+      max-width: 760px;
+      margin-top: 18px;
+      font-size: 12px;
+      color: #777168;
+    }
+    .wf-disclaimer {
+      margin-top: 16px;
+      max-width: 760px;
+      font-size: 12px;
+      color: #777168;
+    }
+    .wf-disclaimer a,
+    .credits a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .story-grid,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .stats,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-item,
+      .gallery-item.tall,
+      .split-photo { min-height: 280px; }
+      section { padding: 70px 0; }
+    }
+
+    @media (max-width: 560px) {
+      .brand img { max-width: 176px; max-height: 38px; }
+      .hero { padding-top: 46px; }
+      .hero-actions,
+      .final-panel .btn { width: 100%; }
+      .btn { width: 100%; }
+      .stat { min-height: 150px; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Národní kavárna">
+        <img src="https://static.tildacdn.net/tild3164-3563-4635-a638-663639626637/Snmek_obrazovky_2022.png" alt="Národní kavárna">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#pribeh">Historie</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420773824585">+420 773 824 585</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Národní 11 · Praha 1</div>
+          <h1>Kavárna s pražskou pamětí</h1>
+          <p class="hero-lead">Restaurace Národní kavárna vítá hosty na místě s bohatou historií, snídaněmi, týdenní nabídkou, jídelním lístkem a večerním posezením do 22:00.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420773824585">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">Po-Pá 08:00-22:00</span>
+            <span class="meta-pill">So-Ne 09:00-22:00</span>
+            <span class="meta-pill">Hodnocení 4,4 · 1618 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">stůl, káva, večeře</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si vybrat</div>
+            <h2>Od snídaně po sklenku večer</h2>
+          </div>
+          <p>V kavárně najdete snídaňové menu, týdenní nabídku, jídelní lístek, nápojový lístek i dárkové poukazy pro hosty, kteří se chtějí vracet.</p>
+        </div>
+        <div class="menu-list">
+          <a class="menu-row" href="#kontakt">
+            <strong>Snídaňové menu</strong>
+            <p>Ranní zastavení na Národní třídě před prací, schůzkou nebo procházkou centrem Prahy.</p>
+            <span>od 08:00</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <strong>Týdenní nabídka</strong>
+            <p>Pravidelně obměňovaná jídla pro oběd i klidnější posezení během dne.</p>
+            <span>po-pá</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <strong>Jídelní lístek</strong>
+            <p>Kavárenská klasika, restaurace v centru a zázemí pro delší setkání u stolu.</p>
+            <span>celý den</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <strong>Nápojový lístek</strong>
+            <p>Káva, víno, koktejly a večerní výběr pro návštěvu po divadle nebo práci.</p>
+            <span>do 22:00</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="wrap story-grid">
+        <article class="story-card">
+          <div class="eyebrow">Místo s tradicí</div>
+          <h2>Šálek kávy na známé adrese</h2>
+          <p>Národní kavárna patří k podnikům, které se opírají o atmosféru Prahy 1. V její historii se připomínají Karel Čapek, S. K. Neumann, Jaroslav Seifert, Vladislav Vančura, Voskovec s Werichem i Jan Masaryk.</p>
+          <p>Pro dnešní hosty je to adresa pro kávu, snídani, oběd, večeři i dárkový poukaz pro někoho blízkého.</p>
+        </article>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <b>4,4</b>
+            <span>Google hodnocení</span>
+          </div>
+          <div class="stat">
+            <b>1618</b>
+            <span>recenzí hostů</span>
+          </div>
+          <div class="stat">
+            <b>11</b>
+            <span>Národní, Praha 1</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, klidný stůl</h2>
+          </div>
+          <p>Interiér drží tempo kavárny přes den a restaurace večer: měkké světlo, sklo, dřevo a místo pro rozhovor.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </div>
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Rezervace a kontakt</div>
+            <h2>Národní 339/11, Praha 1</h2>
+          </div>
+          <p>Zavolejte pro rezervaci, domluvte dárkový poukaz nebo se zastavte přímo na Národní třídě.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Otevřeno každý den</h3>
+            <div class="contact-lines">
+              <div class="contact-line">
+                <small>Telefon</small>
+                <a href="tel:+420773824585">+420 773 824 585</a>
+              </div>
+              <div class="contact-line">
+                <small>E-mail</small>
+                <a href="mailto:info@narodnikavarna.cz">info@narodnikavarna.cz</a>
+              </div>
+              <div class="contact-line">
+                <small>Adresa</small>
+                <strong>Národní 339/11, Staré Město, 110 00 Praha-Praha 1</strong>
+              </div>
+            </div>
+            <table class="hours" aria-label="Otevírací doba">
+              <tr class="today"><td>Pondělí-pátek</td><td>08:00-22:00</td></tr>
+              <tr><td>Sobota-neděle</td><td>09:00-22:00</td></tr>
+            </table>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Národní kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="final-panel">
+          <div>
+            <div class="eyebrow">Rezervace</div>
+            <h2>Stůl na Národní</h2>
+            <p>Pro snídani, oběd, kávu po schůzce nebo večer v centru Prahy volejte přímo do restaurace.</p>
+          </div>
+          <a class="btn primary" href="tel:+420773824585">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>© Národní kavárna · Národní 339/11, Praha 1</span>
+        <a href="mailto:info@narodnikavarna.cz">info@narodnikavarna.cz</a>
+      </div>
+      <p class="credits">Fotografie: <a href="https://www.pexels.com/@zaktech90">Zain Ali</a>, <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>, <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>, <a href="https://www.pexels.com/@nguy-n-thanh-nh-n-203569019">NGUYỄN THÀNH NHƠN</a>, <a href="https://www.pexels.com/@alaritammsalu">Alari Tammsalu</a>.</p>
+      <p class="wf-disclaimer">Tuto prezentační stránku připravila služba Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/ko5ds84">webflex.cz/delete/ko5ds84</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.416213400000002, 50.0817208],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([14.416213400000002, 50.0817208])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
