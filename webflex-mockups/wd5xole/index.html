@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Onesip Coffee | Espresso bar v centru Prahy</title>
+  <meta name="description" content="Onesip Coffee, espresso bar na Haštalské v centru Prahy. Výběrová káva, pop-up a pojízdný stánek.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.76);
+      --surface-strong: #ffffff;
+      --ink: #171816;
+      --muted: #686b64;
+      --soft: #eff1eb;
+      --accent: #A0E0A0;
+      --accent-strong: #5fae63;
+      --line: rgba(23, 24, 22, 0.09);
+      --shadow: 0 28px 90px rgba(31, 35, 29, 0.09);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,24,22,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,24,22,.025) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(160,224,160,.28), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 248, .78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(31,35,29,.12); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-strong);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #122015; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: 58px;
+      padding: 72px 0 62px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .93;
+      margin: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 610px;
+      margin: 28px 0 0;
+      font-size: clamp(18px, 2vw, 23px);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 34px; }
+    .hero-panel {
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-strong);
+      position: relative;
+    }
+    .hero-panel img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-stamp {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(251,251,248,.82);
+      backdrop-filter: blur(14px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .6fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head h2 {
+      font-size: clamp(34px, 4vw, 58px);
+      overflow-wrap: anywhere;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 26px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .service-row strong { font-family: var(--font-display); font-size: clamp(24px, 3vw, 42px); line-height: .95; }
+    .service-row p { margin: 0; color: var(--muted); max-width: 560px; }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 58px); letter-spacing: -0.03em; }
+    .stat span { color: var(--muted); font-size: 16px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .8fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .photo-card, .copy-card {
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .photo-card img { width: 100%; height: 100%; min-height: 480px; object-fit: cover; }
+    .copy-card { padding: clamp(30px, 5vw, 58px); }
+    .copy-card h2 { font-size: clamp(34px, 4vw, 62px); overflow-wrap: anywhere; }
+    .copy-card p { color: var(--muted); font-size: 18px; margin: 24px 0 0; }
+    .coffee-notes {
+      display: grid;
+      gap: 10px;
+      margin-top: 32px;
+    }
+    .note {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .gallery img { width: 100%; height: 320px; object-fit: cover; }
+    .gallery figcaption { padding: 16px 18px 18px; color: var(--muted); font-size: 15px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 54px); margin-bottom: 24px; }
+    .contact-line {
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line small {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .hours {
+      margin-top: 22px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--soft);
+    }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .final {
+      padding-bottom: 92px;
+    }
+    .cta-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: clamp(28px, 5vw, 54px);
+      border-radius: 36px;
+      background: #171816;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .cta-strip h2 { font-size: clamp(34px, 4vw, 64px); overflow-wrap: anywhere; }
+    .cta-strip p { color: rgba(255,255,255,.72); margin: 16px 0 0; font-size: 18px; }
+    .cta-strip .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 28px 0 38px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero, .section-head, .split, .contact-grid, .cta-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 48px; gap: 34px; }
+      .hero-panel { width: 100%; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .photo-card img { min-height: 320px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      section { padding: 62px 0; }
+      .nav { min-height: 64px; }
+      .logo img { max-height: 34px; }
+      .btn { width: 100%; }
+      .hero-actions { width: 100%; }
+      .hero-panel, .photo-card, .copy-card, .contact-card, #map, .cta-strip { border-radius: 24px; }
+      .gallery img { height: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Onesip Coffee">
+        <img src="images/logo.svg" alt="Onesip Coffee">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#prostor">Prostor</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420605411441">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <p class="kicker">Haštalská 755/15 · Praha 1</p>
+        <h1 id="hero-title">Espresso bar v centru Prahy</h1>
+        <p class="lead">Zastavte se na šálek výběrové kávy v Haštalské. Onesip Coffee drží espresso bar, pop-up i pojízdný stánek pod jednou jasnou myšlenkou: we do love.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Najít cestu</a>
+          <a class="btn btn-secondary" href="mailto:love@onesip.coffee">Napsat e-mail</a>
+        </div>
+      </div>
+      <div class="hero-panel" aria-label="Atmosféra kavárny">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <div class="hero-stamp">Po-Pá 7:30-18:00 · So-Ne 8:30-17:00</div>
+      </div>
+    </section>
+
+    <section class="wrap" id="kava">
+      <div class="section-head">
+        <h2>Káva, kam se vracíte</h2>
+        <p>Krátké zastavení před prací, pomalé dopoledne v centru nebo šálek s sebou. V nabídce potkáte jména z výběrové scény, která Onesip uvádí přímo u sebe.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="tag">01</span>
+          <strong>Espresso bar</strong>
+          <p>Haštalská adresa v Praze 1 pro kávu u baru, s sebou i klidnou chvíli v okolí Starého Města.</p>
+        </article>
+        <article class="service-row">
+          <span class="tag">02</span>
+          <strong>Pop-up</strong>
+          <p>Kávový servis pro místa a události, kde má být dobrý šálek součástí atmosféry.</p>
+        </article>
+        <article class="service-row">
+          <span class="tag">03</span>
+          <strong>Pojízdný stánek</strong>
+          <p>Mobilní káva pro venkovní akce, pracovní setkání i krátká městská zastavení.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="stats">
+        <div class="stat">
+          <b>4.8</b>
+          <span>hodnocení od hostů</span>
+        </div>
+        <div class="stat">
+          <b>1254</b>
+          <span>veřejných recenzí spojených s podnikem</span>
+        </div>
+        <div class="stat">
+          <b>2</b>
+          <span>formáty mimo klasický bar: pop-up a pojízdný stánek</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap split" id="prostor">
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      </div>
+      <div class="copy-card">
+        <p class="kicker">we do love</p>
+        <h2>Pražské ráno začíná u baru</h2>
+        <p>Onesip stojí v centru, ale nepůsobí uspěchaně. Přijďte pro espresso, filtr nebo kávu s sebou a pokračujte dál Haštalskou, Dlouhou nebo směrem ke Staroměstskému náměstí.</p>
+        <div class="coffee-notes">
+          <div class="note"><span>Round Hill Roastery</span><span>v nabídce</span></div>
+          <div class="note"><span>ajala café</span><span>v nabídce</span></div>
+          <div class="note"><span>Candycane coffee</span><span>v nabídce</span></div>
+          <div class="note"><span>The Coffee Collective</span><span>v nabídce</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Atmosféra">
+      <div class="section-head">
+        <h2>Teplo uvnitř, město venku</h2>
+        <p>Pro šálek během dne, krátké zastavení mezi schůzkami i chvíli, kdy chcete z ruchu centra na pár minut vystoupit.</p>
+      </div>
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          <figcaption>Krátká zastávka v centru.</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <figcaption>Místo pro klidný šálek.</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          <figcaption>Večer v měkkém světle.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="wrap" id="kontakt">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <p class="kicker">Kontakt</p>
+          <h2>Onesip Coffee</h2>
+          <div class="contact-line">
+            <small>Adresa</small>
+            Haštalská 755 /15, Staré Město, 110 00 Praha-Praha 1
+          </div>
+          <div class="contact-line">
+            <small>Telefon</small>
+            <a href="tel:+420605411441">+420 605 411 441</a>
+          </div>
+          <div class="contact-line">
+            <small>E-mail</small>
+            <a href="mailto:love@onesip.coffee">love@onesip.coffee</a>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Po-Pá</span><strong>7:30-18:00</strong></div>
+            <div><span>So-Ne</span><strong>8:30-17:00</strong></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Onesip Coffee"></div>
+      </div>
+    </section>
+
+    <section class="wrap final">
+      <div class="cta-strip">
+        <div>
+          <h2>Dejte si jeden šálek</h2>
+          <p>Najdete nás v Haštalské, pár kroků od ruchu Starého Města.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420605411441">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:love@onesip.coffee">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>© Onesip Coffee · OneSip s.r.o., IČ 04655575</span>
+      <span>Vytvořil Webflex. <a href="https://webflex.cz/remove/wd5xole">Odstranit stránku</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.425392899999997, 50.0912818],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0E0A0' })
+      .setLngLat([14.425392899999997, 50.0912818])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
