@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ema Café | Snídaně a káva v centru Brna</title>
+  <meta name="description" content="Ema Café na Husově 167/7 v Brně. Snídaně ve všední dny od 6.30 do 11.00, káva, croissanty, vajíčka a příjemné posezení v centru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --surface: #202020;
+      --surface-2: #f7f3ee;
+      --ink: #f7f5f1;
+      --ink-dark: #171514;
+      --muted: #b8b0a9;
+      --muted-dark: #635a52;
+      --line: rgba(255,255,255,.14);
+      --line-dark: rgba(23,21,20,.14);
+      --accent: #C08060;
+      --accent-dark: #7b4934;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      color: inherit;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.2vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #15110f;
+    }
+    .btn.primary:hover { background: #d09a7d; border-color: #d09a7d; }
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: linear-gradient(rgba(10,10,10,.82), rgba(10,10,10,.32), transparent);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo img {
+      width: auto;
+      max-width: 168px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: rgba(255,255,255,.78);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background: #111;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(.45) saturate(.9) contrast(1.08);
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,.5) 44%, rgba(0,0,0,.22) 100%),
+                  linear-gradient(0deg, rgba(24,24,24,1) 0%, rgba(24,24,24,0) 34%);
+    }
+    .hero-copy {
+      max-width: 720px;
+      padding: 132px 0 var(--s7);
+    }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      font-size: clamp(18px, 2vw, 22px);
+      color: rgba(255,255,255,.82);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s2);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.76);
+    }
+    .meta-pill {
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(0,0,0,.22);
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .58fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-band {
+      background: var(--surface-2);
+      color: var(--ink-dark);
+    }
+    .menu-band p { color: var(--muted-dark); }
+    .menu-band .eyebrow { color: var(--accent-dark); }
+    .menu-list {
+      display: grid;
+      border-top: 1px solid var(--line-dark);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: center;
+      min-height: 94px;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line-dark);
+    }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .menu-row span {
+      color: var(--muted-dark);
+    }
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: .03em;
+      white-space: nowrap;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 176px;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.035);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 48px);
+      line-height: 1;
+      color: #fff;
+      font-weight: 600;
+    }
+    .trust-card span {
+      color: var(--muted);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .72fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #111;
+    }
+    .split-copy {
+      display: grid;
+      gap: var(--s4);
+    }
+    .detail-list {
+      display: grid;
+      border-top: 1px solid var(--line);
+      margin-top: var(--s3);
+    }
+    .detail-list div {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .detail-list dt {
+      margin: 0;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .detail-list dd {
+      margin: 0;
+      color: rgba(255,255,255,.82);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #111;
+    }
+    .gallery-item.tall { min-height: 420px; }
+
+    .contact-band {
+      background: var(--surface-2);
+      color: var(--ink-dark);
+      padding-bottom: var(--s6);
+    }
+    .contact-band p { color: var(--muted-dark); }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: var(--s5);
+      border: 1px solid var(--line-dark);
+      background: #fffdfa;
+      display: grid;
+      gap: var(--s4);
+    }
+    .hours {
+      display: grid;
+      gap: var(--s2);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      padding-bottom: var(--s2);
+      border-bottom: 1px solid var(--line-dark);
+    }
+    .hours .today {
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border: 1px solid var(--line-dark);
+      overflow: hidden;
+    }
+
+    .final-cta {
+      padding: var(--s7) 0;
+      text-align: center;
+    }
+    .final-cta p {
+      max-width: 620px;
+      margin: var(--s4) auto 0;
+      color: rgba(255,255,255,.78);
+      font-size: 18px;
+    }
+    .final-cta .hero-actions { justify-content: center; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: var(--s4) 0;
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer {
+      width: 100%;
+      margin-top: var(--s3);
+      color: rgba(255,255,255,.48);
+      font-size: 12px;
+    }
+    .webflex-disclaimer a {
+      color: rgba(255,255,255,.78);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links a:not(.phone-link) { display: none; }
+      .hero-copy { padding-top: 112px; }
+      .section-head,
+      .split,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .trust-grid,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: var(--s2);
+      }
+      .detail-list div { grid-template-columns: 1fr; gap: var(--s2); }
+      section { padding: var(--s6) 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Ema Café">
+        <img src="https://www.emacafe.cz/images/logo.svg" alt="Ema Café">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Galerie</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="phone-link" href="tel:+420602669900">602 669 900</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Ema Café">
+      <div class="hero-bg">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      </div>
+      <div class="wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Brno-střed · Husova 167/7</div>
+          <h1>Snídaně v centru Brna</h1>
+          <p class="hero-lead">Ve všední dny pro Vás od 6.30 chystáme vajíčka, croissanty na různé způsoby a kávu na cestu i k posezení.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420602669900">Zavolat nám</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">Po-Pá 6.30-17.00</span>
+            <span class="meta-pill">Snídaně do 11.00</span>
+            <span class="meta-pill">Hotově · Kartou · Stravenky</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="menu-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše nabídka</div>
+            <h2>Ranní jistoty, káva a něco navíc.</h2>
+          </div>
+          <p>Menu držíme blízko tomu, co lidé v centru potřebují: rychlá snídaně, klidná pauza i malá zastávka během dne.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <strong>Snídaně</strong>
+            <span>Vajíčka a croissanty na různé způsoby, připravované od pondělí do pátku.</span>
+            <span class="mono">6.30-11.00</span>
+          </div>
+          <div class="menu-row">
+            <strong>Káva</strong>
+            <span>Do kelímku na cestu nebo ke stolu, když máte v centru pár minut navíc.</span>
+            <span class="mono">PO-PÁ</span>
+          </div>
+          <div class="menu-row">
+            <strong>Posezení</strong>
+            <span>Adresa kousek od hlavních brněnských tras, vhodná pro schůzku i tichý start dne.</span>
+            <span class="mono">HUSOVA 167/7</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a platby">
+      <div class="wrap">
+        <div class="trust-grid">
+          <div class="trust-card">
+            <span>Hodnocení hostů</span>
+            <b>4,7</b>
+            <span>Google rating</span>
+          </div>
+          <div class="trust-card">
+            <span>Zkušenosti návštěvníků</span>
+            <b>91</b>
+            <span>recenzí</span>
+          </div>
+          <div class="trust-card">
+            <span>Platby</span>
+            <b>3</b>
+            <span>hotově, kartou, stravenkami Edenred a Sodexo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="split-copy">
+          <div class="eyebrow">Rytmus všedního dne</div>
+          <h2>Od první kávy po odpolední zastávku.</h2>
+          <p>Ema Café je otevřená od pondělí do pátku. Ráno patří snídaním, později kávě, setkáním a krátké pauze na Husově.</p>
+          <dl class="detail-list">
+            <div>
+              <dt>Ráno</dt>
+              <dd>Snídaně od 6.30 do 11.00.</dd>
+            </div>
+            <div>
+              <dt>Den</dt>
+              <dd>Otevřeno do 17.00.</dd>
+            </div>
+            <div>
+              <dt>Víkend</dt>
+              <dd>V sobotu a neděli zavřeno.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" aria-label="Galerie">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Galerie</div>
+            <h2>Teplé světlo, klidný stůl, centrum města.</h2>
+          </div>
+          <p>Atmosféra, která sedí rannímu tempu i pozdější kávě mezi schůzkami.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </div>
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Husově.</h2>
+          </div>
+          <p>Zavolejte nám, napište, nebo se zastavte v pracovní den mezi 6.30 a 17.00.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Ema Café</h3>
+            <p>Husova 167/7<br>602 00 Brno-střed</p>
+            <p><a href="tel:+420602669900">+420 602 669 900</a><br><a href="mailto:info@emacafe.cz">info@emacafe.cz</a></p>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="today"><span>Po-Pá</span><span>6.30-17.00</span></div>
+              <div><span>So</span><span>Zavřeno</span></div>
+              <div><span>Ne</span><span>Zavřeno</span></div>
+            </div>
+            <p class="mono">Hotově · Kartou · Stravenky Edenred, Sodexo</p>
+          </div>
+          <div id="map" aria-label="Mapa Ema Café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="eyebrow">Ema Café · Brno-střed</div>
+        <h2>Stavte se na snídani.</h2>
+        <p>V pracovní den začínáme v 6.30. Snídaňovou nabídku držíme do 11.00.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420602669900">Zavolat nám</a>
+          <a class="btn secondary" href="mailto:info@emacafe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>Ema Café · Husova 167/7, Brno-střed</span>
+      <span><a href="tel:+420602669900">602 669 900</a> · <a href="mailto:info@emacafe.cz">info@emacafe.cz</a></span>
+      <p class="webflex-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/pyuu9o5">webflex.cz/delete/pyuu9o5</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6048787, 49.1925923],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#C08060' })
+      .setLngLat([16.6048787, 49.1925923])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
