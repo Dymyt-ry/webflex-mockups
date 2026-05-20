@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Datel | Přes den kavárna, večer bar</title>
+  <meta name="description" content="Café Datel v Českých Budějovicích. Výběrová káva, snídaně, dorty, pivo, whisky, absinthy, giny a vlastní Hvozd od Martina Žufánka.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #141212;
+      --surface: #1b1818;
+      --surface-2: #211d1d;
+      --paper: #f7f3ee;
+      --ink: #fbf8f4;
+      --ink-paper: #191514;
+      --muted: #c8bbb3;
+      --soft: #8f8179;
+      --line: rgba(255,255,255,.12);
+      --line-strong: rgba(255,255,255,.2);
+      --accent: #E0C0C0;
+      --accent-deep: #c99696;
+      --accent-ink: #241414;
+      --font-display: "Space Grotesk", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.014) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 62px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+    .btn.primary:hover { background: #f1d7d7; border-color: #f1d7d7; }
+    .btn.secondary {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.72); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(20,18,18,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 210px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 78% 18%, rgba(224,192,192,.13), transparent 36%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(430px, .8fr);
+      gap: clamp(40px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      margin-top: var(--s4);
+      max-width: 640px;
+      color: #ded4ce;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.055);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #211d1d;
+      box-shadow: 0 42px 120px rgba(0,0,0,.42);
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .feature-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.08);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.42));
+      pointer-events: none;
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 1;
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(20,18,18,.68);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(14px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 470px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.045);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(220px, 330px);
+      gap: var(--s4);
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-index {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .offer-note {
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--ink-paper);
+    }
+    .paper-band h2,
+    .paper-band h3 { color: var(--ink-paper); }
+    .paper-band p { color: #5f5752; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s4);
+      border: 1px solid rgba(25,21,20,.12);
+      border-radius: 16px;
+      background: #fff;
+    }
+    .stat strong {
+      color: var(--ink-paper);
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 72px);
+      font-weight: 600;
+      line-height: .95;
+      letter-spacing: 0;
+    }
+    .stat span {
+      color: #6a615d;
+      font-weight: 700;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .feature-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 18px;
+      background: var(--surface-2);
+    }
+    .story-lines {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .story-line {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: var(--s4);
+      padding-top: var(--s3);
+      border-top: 1px solid var(--line);
+    }
+    .story-line span {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.05fr .75fr .9fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 280px;
+      overflow: hidden;
+      border-radius: 16px;
+      background: var(--surface-2);
+    }
+    .gallery-card.tall { min-height: 420px; }
+    .gallery-caption {
+      margin-top: var(--s3);
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .hours-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(420px, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      display: grid;
+      gap: var(--s4);
+      padding: var(--s5);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.045);
+    }
+    .hours-table {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today {
+      color: var(--accent);
+    }
+    .contact-links {
+      display: grid;
+      gap: var(--s2);
+      font-size: 20px;
+      font-weight: 800;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .faq-item {
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+    }
+    .faq-item p { margin-top: var(--s3); }
+
+    .final-cta {
+      padding: var(--s7) 0;
+      background: #0f0e0e;
+      border-top: 1px solid var(--line);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final-box h2 { max-width: 760px; }
+
+    .site-footer {
+      padding: var(--s5) 0;
+      color: var(--soft);
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, auto);
+      gap: var(--s4);
+      align-items: start;
+    }
+    .webflex-disclaimer {
+      margin-top: var(--s4);
+      padding-top: var(--s4);
+      border-top: 1px solid var(--line);
+      color: #9d928d;
+      font-size: 12px;
+    }
+    .webflex-disclaimer a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .feature-grid,
+      .hours-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .offer-row {
+        grid-template-columns: 1fr;
+        gap: var(--s2);
+      }
+      .offer-note { text-align: left; }
+      .stats,
+      .faq-list,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-card,
+      .gallery-card.tall { min-height: 260px; }
+      .story-line { grid-template-columns: 1fr; }
+      section { padding: var(--s6) 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="Café Datel">
+        <img src="dist/svg/logo.svg" alt="Café Datel">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420734449000">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Piaristická 8 · České Budějovice</div>
+          <h1>Přes den káva. Večer bar.</h1>
+          <p class="hero-lead">Výběrová káva, snídaně, dorty a po setmění pivo, whisky, absinthy i giny. Café Datel je místo pro dlouhý šálek, dobrý stůl a večer, který se nikam nežene.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420734449000">+420 734 449 000</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">PO-ČT 8-22</span>
+            <span class="meta-pill">PÁ-SO 8-24</span>
+            <span class="meta-pill">NE 8-22</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          <figcaption class="photo-label">Kavárna · bar · klubovna</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co u nás najdete</div>
+            <h2>Od ranního filtru po noční gin.</h2>
+          </div>
+          <p>Na espressu Kmen Coffee, na filtrech pražírny z Česka i Evropy. Ráno snídaně, přes den dorty, večer čepovaná jedenáctka z Jílovic, speciály a bar, který má rád věci s příběhem.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="offer-index">01</span>
+            <div>
+              <h3>Výběrová káva</h3>
+              <p>Espresso, filtr a šálky z pražíren, kterým sami věříme.</p>
+            </div>
+            <span class="offer-note">Kmen Coffee · Česko · Evropa</span>
+          </article>
+          <article class="offer-row">
+            <span class="offer-index">02</span>
+            <div>
+              <h3>Snídaně a dorty</h3>
+              <p>Dobré ráno, vlastní bílý chleba a dorty pečené tak, jak je chceme jíst.</p>
+            </div>
+            <span class="offer-note">od 8:00</span>
+          </article>
+          <article class="offer-row">
+            <span class="offer-index">03</span>
+            <div>
+              <h3>Večerní bar</h3>
+              <p>Jedenáctka z Jílovic, speciály, whisky, absinthy a giny včetně Hvozdu.</p>
+            </div>
+            <span class="offer-note">Pá-So do 24:00</span>
+          </article>
+          <article class="offer-row">
+            <span class="offer-index">04</span>
+            <div>
+              <h3>Cuppingy a klubovna</h3>
+              <p>Trénujeme, ochutnáváme a potkáváme lidi, které káva zajímá do hloubky.</p>
+            </div>
+            <span class="offer-note">podle programu</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper-band" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hosté a provoz</div>
+            <h2>Místo, které žije celý den.</h2>
+          </div>
+          <p>Café Datel spojuje kavárnu, bar a otevřenou klubovnu v centru Českých Budějovic. Stačí přijít na ranní kávu, odpolední dort nebo večerní sklenku.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,7</strong>
+            <span>hodnocení na Googlu</span>
+          </div>
+          <div class="stat">
+            <strong>2026</strong>
+            <span>recenzí od hostů</span>
+          </div>
+          <div class="stat">
+            <strong>8-24</strong>
+            <span>páteční a sobotní provoz</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="wrap feature-grid">
+        <div class="feature-photo">
+          <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="eyebrow">Lesní pankáč</div>
+          <h2>Šumava, mlha a vlastní Hvozd.</h2>
+          <p class="hero-lead">Milujeme Šumavu, její lesy, hory, mlhy i jinovatku po ránu. Proto občas vznikne něco šíleného: třeba limitovaný gin Hvozd, který pro Café Datel vydestiloval Martin Žufánek.</p>
+          <div class="story-lines">
+            <div class="story-line">
+              <span>Káva</span>
+              <p>Proježděné farmy v Panamě i Peru, filtry z Česka a Evropy, cuppingy v klubovně.</p>
+            </div>
+            <div class="story-line">
+              <span>Kuchyně</span>
+              <p>Snídaně, vlastní bílý chleba a sladké věci bez okázalosti.</p>
+            </div>
+            <div class="story-line">
+              <span>Bar</span>
+              <p>Pečlivě čepované pivo, whisky, absinthy a giny pro večery v Piaristické.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Stůl, světlo, sklenka.</h2>
+          </div>
+          <p>Datel se během dne promění. Ráno je klidný, odpoledne voní po kávě a dortu, večer se usadí do baru.</p>
+        </div>
+        <div class="gallery-strip">
+          <div>
+            <div class="gallery-card tall">
+              <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            </div>
+            <div class="gallery-caption">Snídaně · dorty · šálek kávy</div>
+          </div>
+          <div>
+            <div class="gallery-card">
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            </div>
+            <div class="gallery-caption">Whisky · absinthy · giny</div>
+          </div>
+          <div>
+            <div class="gallery-card tall">
+              <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            </div>
+            <div class="gallery-caption">Piaristická 8</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Zastavte se v Piaristické.</h2>
+          </div>
+          <p>Najdete nás na adrese Piaristická 22/8, 370 01 České Budějovice. Pro rychlou domluvu volejte nebo napište.</p>
+        </div>
+        <div class="hours-grid">
+          <div class="contact-card">
+            <div class="contact-links">
+              <a href="tel:+420734449000">+420 734 449 000</a>
+              <a href="mailto:info@cafedatel.cz">info@cafedatel.cz</a>
+            </div>
+            <p>Piaristická 22/8, 370 01 České Budějovice-České Budějovice 1</p>
+            <div class="hours-table" aria-label="Otevírací doba">
+              <div class="hours-row today"><span>PO-ČT</span><span>8-22</span></div>
+              <div class="hours-row"><span>PÁ-SO</span><span>8-24</span></div>
+              <div class="hours-row"><span>NE</span><span>8-22</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Café Datel"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prakticky</div>
+            <h2>Než vyrazíte.</h2>
+          </div>
+          <p>Krátké odpovědi pro návštěvu během dne i večera.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Kdy otevřete?</h3>
+            <p>Každý den od 8:00. V pátek a sobotu zůstává bar otevřený do 24:00.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co je na kávě?</h3>
+            <p>Na espressu Kmen Coffee, na filtrech pražírny z Česka i Evropy.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Máte i něco večer?</h3>
+            <p>Ano. Čepujeme jedenáctku z Jílovic, speciály a naléváme whisky, absinthy a giny.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-label="Závěr">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Café Datel</div>
+          <h2>Dnes káva, večer sklenka.</h2>
+        </div>
+        <a class="btn primary" href="tel:+420734449000">Zavolat do Datla</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Café Datel</strong>
+        <p>Piaristická 22/8, 370 01 České Budějovice · +420 734 449 000 · info@cafedatel.cz</p>
+        <p>Provozuje Café Datel, s. r. o., Česká 29/241, 370 01 České Budějovice, IČ 03669262.</p>
+        <div class="webflex-disclaimer">
+          Tuto prezentační stránku připravil Webflex. Pokud si nepřejete být kontaktováni, můžete záznam odstranit zde:
+          <a href="https://app.webflex.cz/delete/2uypj2v">https://app.webflex.cz/delete/2uypj2v</a>
+        </div>
+      </div>
+      <div>
+        <p>Fotografie: Pexels · Nathan J Hilton, Janko Ferlic, Daniil Kondrashin, Zain Ali, NGUYỄN THÀNH NHƠN.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4729467, 48.975356299999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#E0C0C0' })
+      .setLngLat([14.4729467, 48.975356299999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
