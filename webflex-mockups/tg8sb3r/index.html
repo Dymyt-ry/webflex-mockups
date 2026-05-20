@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GIMMI lounge cafe | Brno-Královo Pole</title>
+  <meta name="description" content="Stylová brněnská kavárna na Slovanském náměstí. Výběrová káva, snídaně po celý den, vlastní dezerty, zahrádka a káva s sebou.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Geist+Mono:wght@500;650&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f4ed;
+      --paper: #fffcf6;
+      --paper-2: #f1ebe1;
+      --ink: #17130f;
+      --muted: #6c6258;
+      --line: rgba(23, 19, 15, .14);
+      --line-strong: rgba(23, 19, 15, .28);
+      --accent: #C0A080;
+      --accent-dark: #7c5a38;
+      --accent-soft: rgba(192, 160, 128, .24);
+      --white: #ffffff;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23, 19, 15, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 19, 15, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-dark);
+      outline-offset: 3px;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(248, 244, 237, .86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-links a {
+      padding: 9px 12px;
+      border-radius: 999px;
+      transition: background .2s var(--ease), color .2s var(--ease);
+    }
+
+    .nav-links a:hover { background: rgba(23, 19, 15, .06); color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-primary:hover { background: #2b241d; }
+    .btn-outline { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(23, 19, 15, .06); }
+
+    main { overflow: hidden; }
+    section { padding: 86px 0; }
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      align-items: center;
+      padding: 48px 0 72px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(420px, .82fr);
+      gap: 56px;
+      align-items: center;
+    }
+
+    .eyebrow, .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.4;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+      color: var(--ink);
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.45;
+      color: #3a3129;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 46px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .hero-meta div {
+      background: rgba(255, 252, 246, .72);
+      padding: 16px;
+      min-height: 92px;
+    }
+
+    .hero-meta strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 17px;
+      margin-top: 8px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(.98);
+    }
+
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      background: rgba(23, 19, 15, .72);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: .42fr 1fr;
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1.04;
+      overflow-wrap: anywhere;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 620px;
+    }
+
+    .offer-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .offer-row {
+      display: grid;
+      grid-template-columns: 110px 1fr minmax(210px, .44fr);
+      gap: 28px;
+      align-items: baseline;
+      padding: 25px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row h3 { font-size: 25px; font-family: var(--font-display); }
+    .offer-row p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .trust-band {
+      background: #17130f;
+      color: #fffaf2;
+      border-block: 1px solid rgba(255,255,255,.12);
+    }
+
+    .trust-band h2, .trust-band h3 { color: #fffaf2; }
+    .trust-band .eyebrow, .trust-band .section-copy { color: rgba(255,250,242,.68); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
+      margin-top: 36px;
+    }
+
+    .stat {
+      background: #17130f;
+      padding: 28px;
+      min-height: 154px;
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat span { display: block; margin-top: 14px; color: rgba(255,250,242,.76); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(0, 1fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .gallery-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .gallery-stack figure {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .gallery-stack figure:first-child {
+      grid-row: span 2;
+    }
+
+    .gallery-stack img {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      object-fit: cover;
+    }
+
+    .note-panel {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      padding: 34px 0;
+    }
+
+    .note-panel p {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3vw, 46px);
+      line-height: 1.12;
+    }
+
+    .detail-list {
+      margin-top: 28px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .detail-item span:last-child { color: var(--muted); text-align: right; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 28px;
+    }
+
+    .hours {
+      margin-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .hours-row.today {
+      color: var(--accent-dark);
+      font-weight: 650;
+    }
+
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .faq-item {
+      background: rgba(255, 252, 246, .7);
+      padding: 26px;
+      min-height: 180px;
+    }
+
+    .faq-item h3 { font-family: var(--font-body); font-size: 21px; margin-bottom: 10px; }
+    .faq-item p { margin: 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 78px 0;
+      background: var(--accent);
+      color: #1b130d;
+    }
+
+    .final-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .final-cta h2 { color: #1b130d; max-width: 760px; }
+    .final-cta p { margin: 14px 0 0; color: rgba(27, 19, 13, .72); font-size: 18px; }
+
+    .site-footer {
+      background: #17130f;
+      color: rgba(255,250,242,.72);
+      padding: 28px 0;
+      font-size: 13px;
+    }
+
+    .footer-grid {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .site-footer a { color: #fffaf2; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { min-height: 66px; }
+      .nav-links a:not(.btn) { display: none; }
+      section { padding: 64px 0; }
+      .hero { min-height: auto; padding-top: 38px; }
+      .hero-grid, .split, .contact-grid, .final-grid, .section-head {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .offer-row { grid-template-columns: 1fr; gap: 8px; }
+      .stats, .hero-meta, .faq-list { grid-template-columns: 1fr; }
+      .final-grid { align-items: start; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 28px, 1180px); }
+      .wordmark { font-size: 18px; }
+      .nav .btn { display: none; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .btn { width: 100%; }
+      .photo-label { position: static; border-radius: 0; }
+      .gallery-stack { grid-template-columns: 1fr; }
+      .gallery-stack figure:first-child { grid-row: auto; }
+      .contact-card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top">GIMMI lounge cafe</a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420774575066">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Brno-Královo Pole · Slovanské náměstí</div>
+          <h1>Káva, snídaně, klid.</h1>
+          <p class="lead">Stylová brněnská kavárna s výběrovou kávou, snídaněmi po celý den, vlastní výrobou dezertů a nekuřáckou zahrádkou.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774575066">Rezervace po telefonu</a>
+            <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div><span class="mono">Hodnocení</span><strong>4,8 / 5</strong></div>
+            <div><span class="mono">Recenze</span><strong>678</strong></div>
+            <div><span class="mono">Dnes</span><strong id="today-short">Otevřeno</strong></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <div class="photo-label">
+            <span>Výběrová káva na dvou mlýncích</span>
+            <span class="mono">Po-Pá 7:30-19:00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka kavárny</div>
+            <h2>Po celý den podle chuti.</h2>
+          </div>
+          <p class="section-copy">Zastavte se na ranní kávu, delší snídani, domácí dezert nebo kávu s sebou. V kavárně najdete i denní tisk, Wi-Fi a místo pro klidné posezení.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="mono">01</span>
+            <h3>Snídaně po celý den</h3>
+            <p>Bez spěchu, i když se ráno protáhne. Snídaňová nabídka běží během celého dne.</p>
+          </article>
+          <article class="offer-row">
+            <span class="mono">02</span>
+            <h3>Vlastní dezerty</h3>
+            <p>Sladké ke kávě z vlastní výroby, podle aktuální nabídky v kavárně.</p>
+          </article>
+          <article class="offer-row">
+            <span class="mono">03</span>
+            <h3>Káva s sebou</h3>
+            <p>Espresso, cappuccino nebo filtr na cestu přes Slovanské náměstí.</p>
+          </article>
+          <article class="offer-row">
+            <span class="mono">04</span>
+            <h3>Zahrádka bez kouře</h3>
+            <p>Venkovní posezení pro dny, kdy chcete zůstat na vzduchu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Důvěra hostů</div>
+            <h2>Oblíbené místo v Králově Poli.</h2>
+          </div>
+          <p class="section-copy">Hosté se vrací pro kávu, klidné posezení a obsluhu, která drží každodenní rytmus kavárny.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4,8</strong><span>Google hodnocení</span></div>
+          <div class="stat"><strong>678</strong><span>recenzí hostů</span></div>
+          <div class="stat"><strong>2</strong><span>druhy kávy na mlýncích</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="gallery-stack" aria-label="Fotografie atmosféry">
+          <figure><img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere."></figure>
+          <figure><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></figure>
+          <figure><img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night."></figure>
+        </div>
+        <div>
+          <div class="eyebrow">Uvnitř i venku</div>
+          <div class="note-panel">
+            <p>Přijďte na chvíli vypnout nad šálkem kávy.</p>
+          </div>
+          <div class="detail-list">
+            <div class="detail-item"><span>Wi-Fi</span><span>zdarma pro hosty</span></div>
+            <div class="detail-item"><span>Denní tisk</span><span>k posezení v kavárně</span></div>
+            <div class="detail-item"><span>Novinky</span><span>Facebook a Instagram GIMMI</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Slovanském náměstí.</h2>
+          </div>
+          <p class="section-copy">GIMMI lounge cafe, 1, Slovanské nám. 2237, 612 00 Brno-Královo Pole. Pro rezervaci nebo dotaz volejte.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="mono">Telefon</div>
+            <h3 style="font-family:var(--font-display);font-size:32px;margin-top:8px;"><a href="tel:+420774575066">+420 774 575 066</a></h3>
+            <p style="color:var(--muted);margin:14px 0 0;"><a href="mailto:info@gimmicafe.cz">info@gimmicafe.cz</a></p>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hours-row" data-day="1"><span>Po</span><span>7:30 - 19:00</span></div>
+              <div class="hours-row" data-day="2"><span>Út</span><span>7:30 - 19:00</span></div>
+              <div class="hours-row" data-day="3"><span>St</span><span>7:30 - 19:00</span></div>
+              <div class="hours-row" data-day="4"><span>Čt</span><span>7:30 - 19:00</span></div>
+              <div class="hours-row" data-day="5"><span>Pá</span><span>7:30 - 19:00</span></div>
+              <div class="hours-row" data-day="6"><span>So</span><span>8:30 - 16:00</span></div>
+              <div class="hours-row" data-day="0"><span>Ne</span><span>zavřeno</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p class="section-copy">Praktické informace z kavárny, aby se Vám plánovalo jednoduše.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Podáváte snídaně jen ráno?</h3>
+            <p>Ne. Snídaně jsou v nabídce po celý den.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je možné vzít si kávu s sebou?</h3>
+            <p>Ano, kávu Vám připravíme i s sebou.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Máte zahrádku?</h3>
+            <p>Ano, k dispozici je nekuřácká zahrádka.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde sledovat aktuální nabídku?</h3>
+            <p>O novinkách kavárna informuje na Facebooku a Instagramu GIMMI.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap final-grid">
+        <div>
+          <div class="eyebrow" style="color:rgba(27,19,13,.64);">GIMMI lounge cafe</div>
+          <h2>Zastavte se dnes na kávu.</h2>
+          <p>Slovanské náměstí 2237/1, Brno-Královo Pole.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420774575066">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <span>© GIMMI lounge cafe. Fotografie: Pexels.</span>
+      <span>Neoficiální prezentační stránka od Webflex. <a href="https://webflex.cz/remove/tg8sb3r">Odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const rows = document.querySelectorAll('.hours-row');
+    const today = new Date().getDay();
+    rows.forEach((row) => {
+      if (Number(row.dataset.day) === today) row.classList.add('today');
+    });
+    const label = document.getElementById('today-short');
+    if (label && today === 0) label.textContent = 'Zavřeno';
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.592619, 49.223019],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([16.592619, 49.223019])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
