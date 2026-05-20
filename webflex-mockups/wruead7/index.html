@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CukrCafé Blackulus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f7f3;
+      --bg-soft: #efede7;
+      --surface: rgba(255, 255, 255, 0.68);
+      --surface-strong: rgba(255, 255, 255, 0.88);
+      --ink: #171717;
+      --muted: #66635d;
+      --dim: #9a958b;
+      --hairline: rgba(23, 23, 23, 0.1);
+      --hairline-strong: rgba(23, 23, 23, 0.18);
+      --accent: #202020;
+      --accent-2: #655f55;
+      --glow: rgba(32, 32, 32, 0.08);
+      --font-display: "Clash Display", "Geist", system-ui, sans-serif;
+      --font-body: "Geist", system-ui, -apple-system, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 148px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 42% at 8% 0%, rgba(32, 32, 32, 0.08), transparent 60%),
+        radial-gradient(ellipse 58% 38% at 92% 12%, rgba(101, 95, 85, 0.1), transparent 62%),
+        radial-gradient(ellipse 60% 36% at 50% 100%, rgba(32, 32, 32, 0.055), transparent 60%),
+        var(--bg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.56;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.026;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; hyphens: auto; }
+    main, header, footer { position: relative; z-index: 1; }
+
+    .container { width: min(100%, 1360px); margin: 0 auto; padding-inline: var(--gutter); }
+    .narrow { width: min(100%, 1080px); margin: 0 auto; padding-inline: var(--gutter); }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; opacity: 0.5; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(248, 247, 243, 0.76);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      gap: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav a { transition: color 190ms var(--ease); }
+    .nav a:hover { color: var(--ink); }
+    .nav a:focus-visible,
+    .btn:focus-visible,
+    .quiet-link:focus-visible,
+    .card-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 10px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      transition: transform 180ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 16px 36px rgba(32, 32, 32, 0.18); }
+    .btn-primary:hover { background: #000; }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: rgba(255,255,255,0.24); }
+    .btn-outline:hover { background: rgba(255,255,255,0.72); border-color: var(--ink); }
+    .icon {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .hero { padding: clamp(58px, 8vw, 112px) 0 clamp(70px, 9vw, 130px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(40%, 0.78fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 88px);
+    }
+    .hero-copy { max-width: 720px; }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(16px);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .kicker-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 7px rgba(32,32,32,0.07);
+    }
+    h1 {
+      margin-top: 28px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      font-weight: 700;
+      max-width: 10.2ch;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 26px;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 21px);
+      line-height: 1.58;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-meta span { padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 999px; background: rgba(255,255,255,0.42); }
+    .hero-visual {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-visual::before {
+      content: "";
+      position: absolute;
+      inset: -26px;
+      border-radius: 34px;
+      background: radial-gradient(circle at 20% 12%, rgba(255,255,255,0.92), transparent 34%), radial-gradient(circle at 86% 92%, rgba(32,32,32,0.14), transparent 44%);
+      filter: blur(1px);
+      z-index: -1;
+    }
+    .photo-frame {
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(23,23,23,0.12);
+      background: var(--surface);
+      box-shadow: 0 34px 80px rgba(32, 32, 32, 0.18);
+    }
+    .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-card {
+      position: absolute;
+      left: -28px;
+      bottom: 26px;
+      width: min(280px, 72%);
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 20px;
+      background: rgba(248, 247, 243, 0.74);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 22px 48px rgba(32,32,32,0.14);
+    }
+    .floating-card strong { display: block; font-family: var(--font-display); font-size: 22px; line-height: 1.1; }
+    .floating-card span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 5vw, 76px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-head h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 64px);
+      line-height: 1;
+      letter-spacing: 0;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; max-width: 54ch; }
+
+    .service-list {
+      border-top: 1px solid var(--hairline);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 0.34fr 1fr 0.42fr;
+      gap: 28px;
+      align-items: center;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .service-row .num { font-family: var(--font-mono); color: var(--dim); font-size: 13px; }
+    .service-row h3 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 42px); line-height: 1; font-weight: 600; }
+    .service-row p { color: var(--muted); max-width: 56ch; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      border: 1px solid var(--hairline);
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.46);
+      backdrop-filter: blur(22px);
+    }
+    .trust-item {
+      min-height: 178px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--hairline);
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-item strong { font-family: var(--font-mono); font-size: clamp(32px, 5vw, 58px); line-height: 1; letter-spacing: -0.04em; }
+    .trust-item span { color: var(--muted); max-width: 26ch; }
+
+    .alchemy {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(40%, 1fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: center;
+    }
+    .glass-panel {
+      border: 1px solid var(--hairline);
+      border-radius: 30px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(24px);
+      padding: clamp(26px, 4vw, 50px);
+      box-shadow: 0 26px 70px rgba(32,32,32,0.08);
+    }
+    .glass-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 62px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .glass-panel p { margin-top: 22px; color: var(--muted); font-size: 18px; }
+    .steps { margin-top: 34px; display: grid; gap: 14px; }
+    .step {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.38);
+    }
+    .step b {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .step strong { display: block; font-weight: 700; }
+    .step span { display: block; margin-top: 3px; color: var(--muted); }
+    .alchemy-photo { aspect-ratio: 16 / 10; border-radius: 28px; overflow: hidden; border: 1px solid var(--hairline); }
+    .alchemy-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery-track {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 340px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      position: relative;
+      background: var(--surface);
+    }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-card:nth-child(2) { margin-top: 54px; }
+    .caption {
+      position: absolute;
+      inset-inline: 16px;
+      bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(248,247,243,0.78);
+      backdrop-filter: blur(18px);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 0.72fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(26px, 4vw, 42px);
+      border-radius: 28px;
+      border: 1px solid var(--hairline);
+      background: rgba(255,255,255,0.56);
+      backdrop-filter: blur(24px);
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .contact-lines { display: grid; gap: 16px; margin-top: 28px; }
+    .contact-line { padding-top: 16px; border-top: 1px solid var(--hairline); }
+    .contact-line span { display: block; color: var(--muted); font-size: 13px; }
+    .contact-line a, .contact-line strong { display: inline-block; margin-top: 4px; font-size: 18px; font-weight: 700; }
+    .hours {
+      margin-top: 26px;
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 14px; border-bottom: 1px solid var(--hairline); }
+    .hours div:last-child { border-bottom: 0; }
+    .hours .today { background: rgba(32,32,32,0.07); font-weight: 600; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; border: 1px solid var(--hairline); min-height: 420px; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .qa {
+      padding: 24px;
+      border: 1px solid var(--hairline);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.44);
+      min-height: 174px;
+    }
+    .qa h3 { font-family: var(--font-display); font-size: 24px; line-height: 1.08; }
+    .qa p { margin-top: 12px; color: var(--muted); }
+
+    .final {
+      padding-bottom: clamp(72px, 9vw, 118px);
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 34px;
+      background: #171717;
+      color: #fff;
+      box-shadow: 0 30px 90px rgba(32,32,32,0.22);
+    }
+    .final-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 0.98;
+      overflow-wrap: anywhere;
+    }
+    .final-panel p { margin-top: 16px; color: rgba(255,255,255,0.72); max-width: 58ch; font-size: 18px; }
+    .final-panel .btn-primary { background: #fff; color: #171717; }
+    .final-panel .btn-outline { color: #fff; border-color: rgba(255,255,255,0.45); background: transparent; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .disclaimer {
+      border-top: 1px solid var(--hairline);
+      padding: 24px var(--gutter);
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .alchemy, .contact-grid, .final-panel { grid-template-columns: 1fr; }
+      .hero-copy { max-width: none; }
+      h1 { max-width: 11ch; }
+      .floating-card { left: 18px; bottom: 18px; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--hairline); min-height: 150px; }
+      .trust-item:last-child { border-bottom: 0; }
+      .gallery-track { grid-template-columns: 1fr; }
+      .gallery-card:nth-child(2) { margin-top: 0; }
+      .faq { grid-template-columns: 1fr; }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 760px) {
+      .nav { display: none; }
+      .topbar-inner { min-height: 68px; }
+      .brand img { max-height: 38px; }
+      .hero { padding-top: 42px; }
+      .hero-grid { gap: 34px; }
+      .photo-frame { border-radius: 22px; }
+      .floating-card { position: static; width: 100%; margin-top: 12px; }
+      .trust-item, .qa { min-height: auto; }
+      #map { height: 340px; min-height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top" aria-label="CukrCafé Blackulus">
+        <img src="https://449650fadb.clvaw-cdnwnd.com/0954831f8e9030816924e36e6695b102/200000540-cbe77cbe79/IMG_0234-0.jpeg?ph=449650fadb" alt="CukrCafé Blackulus">
+      </a>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="#zazitek">Zážitek</a>
+        <a href="#ludensio">Ludensio</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-outline" href="tel:+420725148512">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="kicker"><span class="kicker-dot"></span> Praha 2 · Sokolská 33</div>
+          <h1>Kouzelná kavárna Blackulus</h1>
+          <p class="lead">Výběrová káva, Candyland, signature alchemy a hostina, která nechává prostor fantazii. Přijďte pár kroků od I. P. Pavlova a nechte realitu na chvíli za dveřmi.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Rezervovat návštěvu
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+            </a>
+            <a class="btn btn-outline" href="mailto:info@cukrcafe.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta">
+            <span>Výběrová káva</span>
+            <span>Signature alchemy</span>
+            <span>4,7 · 1116 hodnocení</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Atmosféra kavárny">
+          <div class="photo-frame">
+            <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          </div>
+          <div class="floating-card">
+            <strong>První kouzelná kavárna se zážitkem v ČR</strong>
+            <span>Blackulus spojuje kávu, cukr, alchymii a osobní kontakt s hostem.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="zazitek">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Co vás čeká</span>
+            <h2>Káva, cukr a rituály u jednoho stolu.</h2>
+          </div>
+          <p>CukrCafé Blackulus staví návštěvu na detailech, lokálních řemeslných dodavatelích a zážitku, který si můžete prožít naplno nebo zvolna, podle nálady.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Výběrová káva</h3>
+            <p>Šálek připravený pro klidnou zastávku i delší posezení v prostředí inspirovaném fantazií, gastronomií a alchymií.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Candyland</h3>
+            <p>Tematické cukrovinky, Mandracake™ a dobroty z imaginární země, kde se chuť objevuje jako malé kouzlo.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Signature alchemy</h3>
+            <p>Originální lektvary, elixíry, kávové speciály a zážitková Alchymie pro hosty, kteří chtějí víc než běžné posezení.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="narrow">
+        <div class="trust-strip" aria-label="Důvěra hostů">
+          <div class="trust-item">
+            <strong>4,7</strong>
+            <span>Průměrné hodnocení hostů na Google.</span>
+          </div>
+          <div class="trust-item">
+            <strong>1116</strong>
+            <span>Veřejných hodnocení od návštěvníků.</span>
+          </div>
+          <div class="trust-item">
+            <strong>2022</strong>
+            <span>CukrCafé Blackulus podle vlastních slov funguje od roku 2022.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ludensio">
+      <div class="container alchemy">
+        <div class="glass-panel">
+          <span class="eyebrow">Ludensio™</span>
+          <h2>Hra začíná u stolu.</h2>
+          <p>Otočte kartičku na logo Ludensio, zkuste uhádnout heslo a spusťte interaktivní prvek obsluhy. WizWaiter vás provede tak, aby návštěva zůstala milá, osobní a lehce teatrální.</p>
+          <div class="steps">
+            <div class="step">
+              <b>01</b>
+              <div><strong>Vyberete si intenzitu</strong><span>Každý host si může zvolit, jak moc chce do příběhu vstoupit.</span></div>
+            </div>
+            <div class="step">
+              <b>02</b>
+              <div><strong>Zapojíte fantazii</strong><span>Vědomosti jsou klíčem a detaily kolem stolu jsou součástí hry.</span></div>
+            </div>
+            <div class="step">
+              <b>03</b>
+              <div><strong>Ochutnáte alchymii</strong><span>Lektvary, elixíry a kávové speciality drží zážitek pohromadě.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="alchemy-photo">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Atmosféra</span>
+            <h2>Teplé světlo, tichá magie, plný stůl.</h2>
+          </div>
+          <p>Interiér drží intimní náladu kavárny, baru a fantasy kabinetu. Hodí se na rande, oslavu i odpoledne, kdy chcete vypnout město.</p>
+        </div>
+        <div class="gallery-track">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <figcaption class="caption">Stůl připravený na pomalý začátek.</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            <figcaption class="caption">Světlo, které vede atmosféru.</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+            <figcaption class="caption">Barový detail pro večerní elixíry.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Najdete nás u I. P. Pavlova.</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Sokolská 33, 120 00 Praha 2-Nové Město</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420725148512">+420 725 148 512</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@cukrcafe.cz">info@cukrcafe.cz</a>
+            </div>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="today"><span>Dnes</span><span>ověřte rezervací</span></div>
+            <div><span>Rezervace</span><span>telefonicky nebo e-mailem</span></div>
+            <div><span>Doporučení</span><span>děti ideálně od 10 let</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa CukrCafé Blackulus"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Dobré vědět</span>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p>Pár praktických odpovědí z informací, které CukrCafé Blackulus samo uvádí hostům.</p>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Je návštěva vhodná pro děti?</h3>
+            <p>Podnik doporučuje návštěvu s dětmi alespoň od 6 let, ideálně od 10 let, aby si atmosféru plnohodnotně užily.</p>
+          </article>
+          <article class="qa">
+            <h3>Musím se zapojit do hry?</h3>
+            <p>Nemusíte. Každý host si volí, jak návštěvu prožije, a obsluha tomu přizpůsobí kontakt u stolu.</p>
+          </article>
+          <article class="qa">
+            <h3>Co je Mandracake™?</h3>
+            <p>Signature dezert z Candylandu, popisovaný jako rozřazovací bylinka a jeden z tematických prvků nabídky.</p>
+          </article>
+          <article class="qa">
+            <h3>Na čem si zakládáte?</h3>
+            <p>Na detailech, osobním kontaktu, prémiových a udržitelných značkách i lokálních řemeslných dodavatelích.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container">
+        <div class="final-panel">
+          <div>
+            <h2>Rezervujte si kouzelný stůl.</h2>
+            <p>Domluvte si návštěvu v CukrCafé Blackulus na Sokolské 33 a nechte si připravit zážitek podle nálady vaší skupiny.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn btn-primary" href="tel:+420725148512">+420 725 148 512</a>
+            <a class="btn btn-outline" href="mailto:info@cukrcafe.cz">info@cukrcafe.cz</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="disclaimer">
+    Vytvořeno službou Webflex. Pro odstranění této stránky použijte <a href="https://webflex.cz/delete/wruead7">odkaz pro smazání</a>.
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.428792, 50.0751709],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#202020' })
+      .setLngLat([14.428792, 50.0751709])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
