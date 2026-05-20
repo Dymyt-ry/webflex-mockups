@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>J&T café | Kavárna v Brně-střed</title>
+  <meta name="description" content="J&T café v Brně na Trnité. Snídaně a brunch, italská káva Marco Salvatori, Doubleshot, croissanty, vejce Benedikt, večírky a zasedací místnost.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111112;
+      --surface: #171719;
+      --surface-2: #202022;
+      --ink: #f7f3ec;
+      --muted: #c7beb3;
+      --faint: #8d8378;
+      --line: rgba(255,255,255,.12);
+      --line-strong: rgba(255,255,255,.22);
+      --accent: #8B5E3C;
+      --accent-light: #c9976b;
+      --cream: #f7f3ec;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 80% 8%, rgba(139,94,60,.24), transparent 34%),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 800;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.1; }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-light);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fffaf5; border-color: var(--accent); }
+    .btn.primary:hover { background: #9d6c46; border-color: #9d6c46; }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(17,17,18,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo { display: inline-flex; align-items: center; }
+    .logo img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 160ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero { padding: clamp(56px, 8vw, 104px) 0 var(--s7); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(420px, .82fr);
+      gap: clamp(40px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s2);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(255,255,255,.035);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .hero-photo img, .gallery-item img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.04);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.66));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .85fr 1fr;
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: var(--s6);
+    }
+    .section-head p { max-width: 620px; font-size: 19px; }
+
+    .menu-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 180px 1fr minmax(110px, auto);
+      gap: var(--s4);
+      align-items: baseline;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-kicker, .price {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .menu-title { color: var(--ink); font-weight: 800; font-size: 21px; }
+    .menu-note { margin-top: 3px; color: var(--faint); }
+    .price { justify-self: end; color: var(--ink); white-space: nowrap; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255,255,255,.025);
+    }
+    .stat {
+      min-height: 170px;
+      padding: var(--s5);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4.3vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    .stat span { color: var(--muted); font-weight: 600; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: clamp(36px, 6vw, 76px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--surface-2);
+    }
+    .feature-lines { margin-top: var(--s5); border-top: 1px solid var(--line-strong); }
+    .feature-line {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: var(--s3);
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-line b {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-size: 13px;
+    }
+    .feature-line strong { display: block; color: var(--ink); margin-bottom: 4px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 290px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .gallery-item.tall { min-height: 390px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: var(--s5);
+      background: rgba(255,255,255,.025);
+    }
+    .contact-card h3 { margin-bottom: var(--s4); }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: var(--s3);
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-row span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-light);
+      text-transform: uppercase;
+    }
+    .contact-row a, .contact-row strong { color: var(--ink); font-weight: 800; }
+    #map {
+      height: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .final {
+      padding: var(--s7) 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(139,94,60,.12);
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final p { margin-top: var(--s3); max-width: 620px; font-size: 19px; }
+
+    .site-footer {
+      padding: var(--s6) 0;
+      color: var(--faint);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: var(--s4);
+    }
+    .disclaimer {
+      max-width: 760px;
+      color: var(--faint);
+    }
+    .disclaimer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-inner {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 6px; }
+      .price { justify-self: start; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); min-height: 140px; }
+      .stat:last-child { border-bottom: 0; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item, .gallery-item.tall { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="J&T café">
+        <img src="https://www.jtcafe.cz/files/139-5-2-logojtcafe-white.png" alt="J&T café">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420221710871">+420 221 710 871</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Brno-střed · Trnitá 7/500</div>
+          <h1>Kavárna, kde hvězdy září</h1>
+          <p class="hero-lead">Stylové místo na snídani, pracovní schůzku i odpolední randíčko. Voní tu italská káva Marco Salvatori, Doubleshot a každý den čerstvé croissanty.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420221710871">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta">
+            <span class="pill">Snídaně a brunch 8:00-14:00</span>
+            <span class="pill">Hodnocení 4,6 z 220 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-caption"><span>J&T café</span><span>káva · brunch · večírek</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Menu</div>
+            <h2>Ráno vejce, odpoledne káva.</h2>
+          </div>
+          <p>Výběr z lístku drží kavárenský rytmus: snídaně a brunch do 14:00, sladké pečivo, lehký snack a nápoje od espressa po čerstvé limonády.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <div class="menu-kicker">Brunch</div>
+            <div>
+              <div class="menu-title">Vejce Benedikt</div>
+              <p class="menu-note">Pražská šunka nebo avokádo, holandská omáčka, 2 ks zastřená vejce.</p>
+            </div>
+            <div class="price">259 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Snídaně</div>
+            <div>
+              <div class="menu-title">Lanýžová míchaná vejce</div>
+              <p class="menu-note">Na žemli, s opečenou slaninou a ochucenou majo.</p>
+            </div>
+            <div class="price">229 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Croissant</div>
+            <div>
+              <div class="menu-title">Máslový nebo plněný dle dne</div>
+              <p class="menu-note">Lískooříškový, pistáciový nebo vanilkový podle aktuální nabídky.</p>
+            </div>
+            <div class="price">65-105 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Káva</div>
+            <div>
+              <div class="menu-title">Espresso, cappuccino, flat white</div>
+              <p class="menu-note">Marco Salvatori, Doubleshot, batch brew 200 ml nebo 400 ml.</p>
+            </div>
+            <div class="price">72-159 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Fresh</div>
+            <div>
+              <div class="menu-title">Oranžáda, malinovka, citronáda</div>
+              <p class="menu-note">Domácí limonády 0,5 l a čerstvé šťávy z ovoce i zeleniny.</p>
+            </div>
+            <div class="price">99-175 Kč</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap stats" aria-label="Důležité údaje">
+        <div class="stat">
+          <strong>4,6</strong>
+          <span>hodnocení hostů</span>
+        </div>
+        <div class="stat">
+          <strong>220</strong>
+          <span>recenzí na Google</span>
+        </div>
+        <div class="stat">
+          <strong>8:00</strong>
+          <span>začíná snídaňové menu</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        </div>
+        <div>
+          <div class="eyebrow">U stolu</div>
+          <h2>Schůzka, brunch nebo malý večírek.</h2>
+          <div class="feature-lines">
+            <div class="feature-line">
+              <b>01</b>
+              <p><strong>Snídaně a brunch</strong> Míchaná vejce, vejce do skla, omeleta, jogurt s granolou, vafle i bagely.</p>
+            </div>
+            <div class="feature-line">
+              <b>02</b>
+              <p><strong>Káva a nápoje</strong> Espresso, filtrovaná káva, cold brew, matcha, čaje z čerstvé máty nebo zázvoru.</p>
+            </div>
+            <div class="feature-line">
+              <b>03</b>
+              <p><strong>Soukromější chvíle</strong> Pro domluvený večírek nebo zasedací místnost volejte přímo kavárně.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Galerie</div>
+            <h2>Teplo světel, klid stolu.</h2>
+          </div>
+          <p>Interiér je stavěný pro pomalé ráno i večernější setkání: svíčky, sklo, dřevo a měkké světlo bez spěchu.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </div>
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Trnité.</h2>
+          </div>
+          <p>Pro rezervaci stolu, večírek nebo zasedací místnost zavolejte nebo napište. Kavárna je v Brně-střed na adrese Trnitá 7/500.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>J&T café</h3>
+            <div class="contact-row">
+              <span>Adresa</span>
+              <strong>Trnitá 7/500, 602 00 Brno-Brno-střed</strong>
+            </div>
+            <div class="contact-row">
+              <span>Telefon</span>
+              <a href="tel:+420221710871">+420 221 710 871</a>
+            </div>
+            <div class="contact-row">
+              <span>E-mail</span>
+              <a href="mailto:kavarna@jtcafe.cz">kavarna@jtcafe.cz</a>
+            </div>
+            <div class="contact-row">
+              <span>Brunch</span>
+              <strong>8:00-14:00</strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa J&T café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <div class="eyebrow">Rezervace</div>
+          <h2>Stůl pro kávu i brunch.</h2>
+          <p>Zastavte se na Trnité nebo si domluvte čas předem. Pro větší skupinu je nejlepší zavolat přímo do kavárny.</p>
+        </div>
+        <a class="btn primary" href="tel:+420221710871">Zavolat do J&T café</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>© J&T café · Trnitá 7/500, Brno-střed</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/eogh7qj">https://webflex.cz/delete/eogh7qj</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.613769599999998, 49.187660099999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#8B5E3C' })
+      .setLngLat([16.613769599999998, 49.187660099999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
