@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pelíšek - kočičí kavárna | První adopční kočičí kavárna v Brně</title>
+  <meta name="description" content="Útulná adopční kočičí kavárna v Brně-středu. Výběrová káva, domácí zákusky, kočičky z útulků a možnost adopce.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --paper: #fbfaf6;
+      --paper-2: #efe7dc;
+      --ink: #1f2118;
+      --muted: #686957;
+      --line: rgba(31, 33, 24, 0.14);
+      --line-strong: rgba(31, 33, 24, 0.24);
+      --accent: #4A5C28;
+      --accent-2: #e0e0c0;
+      --white: #fffdf8;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --radius: 8px;
+      --wrap: min(1160px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(31,33,24,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31,33,24,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 243, 236, .88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 15px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:focus-visible,
+    a:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--white); }
+    .btn-primary:hover { background: #3f4e22; }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(74, 92, 40, .08); }
+
+    .hero {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: calc(100vh - 72px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: 52px;
+      padding: 58px 0 70px;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin-top: 18px;
+      max-width: 680px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    .hero-lead {
+      margin-top: 24px;
+      max-width: 640px;
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.35;
+      color: #3d3f32;
+    }
+
+    .hero-actions {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta-item {
+      padding: 18px 18px 18px 0;
+      border-right: 1px solid var(--line);
+    }
+
+    .meta-item:last-child { border-right: 0; padding-left: 18px; }
+    .meta-item strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--ink);
+    }
+    .meta-item span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--paper-2);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: rgba(251, 250, 246, .86);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,.48);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    section { padding: 84px 0; }
+    .section-inner { width: var(--wrap); margin: 0 auto; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(260px, 430px) minmax(0, 1fr);
+      gap: 56px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      font-weight: 700;
+    }
+    .section-head p {
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 650px;
+    }
+
+    .offer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      align-items: stretch;
+    }
+
+    .offer-card {
+      min-height: 280px;
+      padding: 28px;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .offer-card h3 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1.05;
+    }
+
+    .offer-card p {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .card-index {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .trust-band {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 0;
+    }
+
+    .stats {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stat {
+      padding: 42px 32px;
+      border-right: 1px solid var(--line);
+    }
+
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+    }
+    .stat span {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .visit-layout {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(360px, .62fr);
+      gap: 48px;
+      align-items: start;
+    }
+
+    .rules {
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .rule {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr);
+      gap: 22px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .rule span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .rule h3 {
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .rule p {
+      margin-top: 8px;
+      color: var(--muted);
+      max-width: 700px;
+    }
+
+    .side-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      position: sticky;
+      top: 104px;
+    }
+
+    .side-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .adoption {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .adoption .kicker,
+    .adoption .step-number { color: var(--accent-2); }
+    .adoption .section-head p,
+    .adoption .step p { color: rgba(255,255,255,.72); }
+    .adoption .section-head { align-items: start; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      gap: 1px;
+    }
+
+    .step {
+      background: var(--ink);
+      padding: 26px;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .step-number {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .step h3 {
+      margin-top: 46px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .step p { margin-top: 14px; }
+
+    .price-callout {
+      margin-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      padding: 22px 26px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.06);
+    }
+
+    .price-callout strong {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      color: var(--accent-2);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .gallery-main,
+    .gallery-stack figure {
+      margin: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--paper-2);
+    }
+
+    .gallery-main { aspect-ratio: 16 / 10; }
+    .gallery-stack {
+      display: grid;
+      gap: 20px;
+    }
+    .gallery-stack figure { aspect-ratio: 16 / 10; }
+    .gallery-main img,
+    .gallery-stack img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .72fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .contact-panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 28px;
+    }
+
+    .contact-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+    }
+
+    .contact-list {
+      margin-top: 26px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .contact-row {
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-row span {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 5px;
+    }
+
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .hours td {
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .hours td:last-child { text-align: right; }
+    .today td {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    details {
+      background: var(--paper);
+      padding: 24px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 19px;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    details p {
+      margin-top: 14px;
+      color: var(--muted);
+    }
+
+    .final-cta {
+      padding: 88px 0;
+      background: var(--accent);
+      color: var(--white);
+    }
+
+    .cta-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .cta-inner h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: .98;
+      max-width: 760px;
+    }
+
+    .cta-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .final-cta .btn-primary {
+      background: var(--white);
+      color: var(--accent);
+    }
+    .final-cta .btn-outline {
+      color: var(--white);
+      border-color: rgba(255,255,255,.58);
+    }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.12); }
+
+    .site-footer {
+      background: #14150f;
+      color: rgba(255,255,255,.76);
+      padding: 28px 0;
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .visit-layout,
+      .contact-grid,
+      .cta-inner,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-photo { max-width: 720px; }
+      .offer-grid,
+      .timeline,
+      .stats,
+      .faq-list {
+        grid-template-columns: 1fr;
+      }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .side-photo { position: relative; top: auto; }
+      #map { height: 420px; }
+    }
+
+    @media (max-width: 640px) {
+      :root { --wrap: min(100vw - 28px, 1160px); }
+      section { padding: 60px 0; }
+      .nav { min-height: 64px; }
+      .logo img { max-height: 34px; }
+      h1 { font-size: clamp(40px, 14vw, 58px); }
+      .hero-meta { grid-template-columns: 1fr; }
+      .meta-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding-left: 0;
+      }
+      .meta-item:last-child { border-bottom: 0; padding-left: 0; }
+      .rule { grid-template-columns: 54px 1fr; }
+      .price-callout { align-items: flex-start; flex-direction: column; }
+      .photo-note { position: static; border-radius: 0; }
+      .hero-photo { display: flex; flex-direction: column; aspect-ratio: auto; }
+      .hero-photo img { aspect-ratio: 4 / 3; }
+      .cta-actions { width: 100%; }
+      .cta-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Pelíšek - kočičí kavárna">
+        <img src="img/logo.png" alt="Pelíšek - kočičí kavárna">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Co nabízíme</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#adopce">Adopce</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420773500640">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">První adopční kočičí kavárna v České republice</div>
+        <h1 id="hero-title">Káva, klid a kočičí společnost</h1>
+        <p class="hero-lead">Útulné místo v centru Brna, kde se potkává výběrová káva, domácí zákusky a kočičky z útulků čekající na stálý domov.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="mailto:rezervace@kocicipelisek.cz">Rezervovat stůl</a>
+          <a class="btn btn-outline" href="#adopce">Jak probíhá adopce</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <div class="meta-item">
+            <strong>4.7 / 5</strong>
+            <span>hodnocení od hostů</span>
+          </div>
+          <div class="meta-item">
+            <strong>2009</strong>
+            <span>recenzí na Google</span>
+          </div>
+          <div class="meta-item">
+            <strong>Brno-střed</strong>
+            <span>tř. Kpt. Jaroše 37a</span>
+          </div>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        <figcaption class="photo-note">
+          <span>PO-PÁ 10:00-20:00</span>
+          <span>SO-NE 10:00-19:00</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="nabidka" aria-labelledby="offer-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Co nabízíme</div>
+            <h2 id="offer-title">Poctivá kavárna s posláním</h2>
+          </div>
+          <p>Přijďte na chvíli vypnout, dát si kávu od brněnských Fiftybeans, ochutnat něco sladkého a strávit čas v tiché společnosti kočiček.</p>
+        </div>
+        <div class="offer-grid">
+          <article class="offer-card">
+            <span class="card-index">01</span>
+            <div>
+              <h3>Výběrová káva</h3>
+              <p>Stabilně připravujeme zrna od brněnských Fiftybeans, a to na espresso i filter.</p>
+            </div>
+          </article>
+          <article class="offer-card">
+            <span class="card-index">02</span>
+            <div>
+              <h3>Domácí zákusky</h3>
+              <p>Pečeme přímo v kavárně z kvalitních surovin, aby ke kávě vždy bylo něco čerstvého.</p>
+            </div>
+          </article>
+          <article class="offer-card">
+            <span class="card-index">03</span>
+            <div>
+              <h3>Adopce kočiček</h3>
+              <p>Kočičky k nám přišly z útulků a čekají tu na člověka, kterého si vyberou pro nový domov.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-band" aria-label="Důvěra hostů">
+      <div class="stats">
+        <div class="stat">
+          <strong>4.7</strong>
+          <span>průměrné hodnocení kavárny</span>
+        </div>
+        <div class="stat">
+          <strong>2009</strong>
+          <span>veřejných recenzí od návštěvníků</span>
+        </div>
+        <div class="stat">
+          <strong>1500 Kč</strong>
+          <span>adopční poplatek za jednu kočičku</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="navsteva" aria-labelledby="visit-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Návštěva kavárny</div>
+            <h2 id="visit-title">Aby bylo dobře lidem i kočkám</h2>
+          </div>
+          <p>Kočičky u nás mají svůj rytmus. Když budou chtít, přijdou samy. Vy jim prosím dopřejte klid, bezpečí a prostor.</p>
+        </div>
+        <div class="visit-layout">
+          <div class="rules">
+            <article class="rule">
+              <span>01</span>
+              <div>
+                <h3>Nekrmte kočičky</h3>
+                <p>Prosíme ani pěnou z cappuccina. Kočičkám potom bývá špatně a jejich strava musí zůstat pod kontrolou.</p>
+              </div>
+            </article>
+            <article class="rule">
+              <span>02</span>
+              <div>
+                <h3>Chovejte se jemně</h3>
+                <p>Když vycítíte, že se kočičce něco nelíbí, nechte toho. Nenucený kontakt je pro ně nejlepší.</p>
+              </div>
+            </article>
+            <article class="rule">
+              <span>03</span>
+              <div>
+                <h3>Nebuďte spící kočku</h3>
+                <p>Kočičky potřebují odpočinek i dvě třetiny dne. Spánek je pro ně stejně důležitý jako hraní.</p>
+              </div>
+            </article>
+            <article class="rule">
+              <span>04</span>
+              <div>
+                <h3>Děti mějte u sebe</h3>
+                <p>Pomozte nám ty nejmenší učit, jak se ke kočkám chovat. Děti prosím nenechávejte s kočkami samotné.</p>
+              </div>
+            </article>
+            <article class="rule">
+              <span>05</span>
+              <div>
+                <h3>Foťte bez blesku</h3>
+                <p>Bez blesku foťte klidně hodně. Na společné fotky můžete použít hashtag #kocicipelisek.</p>
+              </div>
+            </article>
+          </div>
+          <figure class="side-photo">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="adopce" class="adoption" aria-labelledby="adoption-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Adopce kočičky</div>
+            <h2 id="adoption-title">Když si vyberete navzájem</h2>
+          </div>
+          <p>Ideální je, když si vyberete konkrétní kočičku, případně si ona vybere vás. Celým postupem vás provedeme přímo v kavárně.</p>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <span class="step-number">KROK 01</span>
+            <div>
+              <h3>Seznámení v kavárně</h3>
+              <p>Poznáte kočičky v jejich běžném prostředí a zjistíte, s kým si nejlépe sednete.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="step-number">KROK 02</span>
+            <div>
+              <h3>Adopční dotazník</h3>
+              <p>Dotazník vyplníte přímo u nás. Poté ho projdeme se zástupcem útulku.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="step-number">KROK 03</span>
+            <div>
+              <h3>Domluva adopce</h3>
+              <p>Většinou do týdne se ozveme. Pokud je vše v pořádku, domluvíme předání.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="step-number">KROK 04</span>
+            <div>
+              <h3>Nový domov</h3>
+              <p>Podepíšete adopční smlouvu a kočičku si odnesete domů.</p>
+            </div>
+          </article>
+        </div>
+        <div class="price-callout">
+          <p>Každá kočička odchází odblešená, odčervená, vakcinovaná a dle věku také kastrovaná.</p>
+          <strong>1500 Kč</strong>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="atmosphere-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Atmosféra</div>
+            <h2 id="atmosphere-title">Teplo kavárny, ticho pelíšků</h2>
+          </div>
+          <p>Místo pro klidné posezení, první rande, práci nad filtrem i návštěvu s dětmi, které se učí respektu ke zvířatům.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-main">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+          <div class="gallery-stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="section-inner">
+        <div class="contact-grid">
+          <div class="contact-panel">
+            <div class="kicker">Kontakt</div>
+            <h2 id="contact-title">Najdete nás v Brně-středu</h2>
+            <div class="contact-list">
+              <div class="contact-row">
+                <span>Adresa</span>
+                <a href="https://maps.google.com/?q=t%C5%99.%20Kpt.%20Jaro%C5%A1e%201947%2F37a%2C%20602%2000%20Brno-st%C5%99ed">tř. Kpt. Jaroše 1947/37a, 602 00 Brno-střed</a>
+              </div>
+              <div class="contact-row">
+                <span>Telefon</span>
+                <a href="tel:+420773500640">+420 773 500 640</a>
+              </div>
+              <div class="contact-row">
+                <span>E-mail</span>
+                <a href="mailto:rezervace@kocicipelisek.cz">rezervace@kocicipelisek.cz</a>
+              </div>
+            </div>
+            <table class="hours" aria-label="Otevírací doba">
+              <tr class="today"><td>Středa</td><td>10:00 - 20:00</td></tr>
+              <tr><td>Po-Pá</td><td>10:00 - 20:00</td></tr>
+              <tr><td>So</td><td>10:00 - 19:00</td></tr>
+              <tr><td>Ne</td><td>10:00 - 19:00</td></tr>
+            </table>
+          </div>
+          <div id="map" aria-label="Mapa s polohou kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Časté otázky</div>
+            <h2 id="faq-title">Před první návštěvou</h2>
+          </div>
+          <p>Krátké odpovědi na věci, které pomáhají udržet kavárnu příjemnou pro hosty i kočičky.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Můžeme kočičky krmit?</summary>
+            <p>Ne, prosíme nekrmte je ničím z kavárny ani vlastními pamlsky. Jejich režim a zdraví tím chráníme.</p>
+          </details>
+          <details>
+            <summary>Je možné kočičku adoptovat?</summary>
+            <p>Ano. Vyplníte adopční dotazník, vše projdeme s útulkem a při vhodném domově domluvíme adopci.</p>
+          </details>
+          <details>
+            <summary>Smí se u vás fotit?</summary>
+            <p>Ano, bez blesku. Fotky můžete označit hashtagem #kocicipelisek.</p>
+          </details>
+          <details>
+            <summary>Odkud jsou kočičky?</summary>
+            <p>Všechny kočičky v kavárně pochází z útulků a čekají na svůj stálý domov.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="final-title">
+      <div class="cta-inner">
+        <h2 id="final-title">Zastavte se za kávou a vrněním</h2>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="mailto:rezervace@kocicipelisek.cz">Napsat rezervaci</a>
+          <a class="btn btn-outline" href="tel:+420773500640">+420 773 500 640</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" data-disclaimer="webflex">
+    <div class="footer-inner">
+      <span>Toto je nezávazný návrh od Webflex pro Pelíšek - kočičí kavárna.</span>
+      <a href="https://webflex.cz/delete/ssprsfh">Odstranit ukázku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.610140599999998, 49.203459599999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#4A5C28' })
+      .setLngLat([16.610140599999998, 49.203459599999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
