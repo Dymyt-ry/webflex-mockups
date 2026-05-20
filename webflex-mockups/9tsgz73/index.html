@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vídeňka Café | Kavárna na Vídeňské v Brně</title>
+  <meta name="description" content="Vídeňka Café na Vídeňské 15 v Brně. Snídaně od 7.00, káva Varesina, výběrová káva, domácí limonády, víno a čepovaná Plzeň.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Fraunces:opsz,wght@9..144,600&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: #fffdf8;
+      --surface-2: #eee7db;
+      --ink: #191612;
+      --muted: #62594f;
+      --soft: #8a7b6c;
+      --line: rgba(25, 22, 18, .13);
+      --line-strong: rgba(25, 22, 18, .24);
+      --accent: #A0A080;
+      --accent-ink: #58583f;
+      --coffee: #2b170c;
+      --wine: #5e221f;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-accent: "Fraunces", Georgia, serif;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(25,22,18,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,22,18,.024) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1 { max-width: 720px; font-size: clamp(40px, 6vw, 88px); overflow-wrap: anywhere; }
+    h2 { font-size: clamp(34px, 4vw, 56px); overflow-wrap: anywhere; }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+    .eyebrow {
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+    .btn.primary { background: var(--coffee); color: #fffaf2; border-color: var(--coffee); }
+    .btn.primary:hover { background: #3b2113; border-color: #3b2113; }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn.secondary:hover { background: rgba(25,22,18,.055); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 243, 236, .88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .wordmark { font-family: var(--font-display); font-weight: 900; font-size: 20px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; color: #554c42; font-size: 14px; font-weight: 700; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero { min-height: calc(100svh - 76px); display: grid; align-items: center; padding: 64px 0 96px; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(430px, .78fr); gap: clamp(36px, 6vw, 84px); align-items: center; }
+    .hero-copy { max-width: 720px; }
+    .hero-lead { max-width: 620px; margin-top: 24px; color: #51483f; font-size: clamp(18px, 2vw, 22px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 40px; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--accent-ink); }
+    .meta-pill { padding: 8px 11px; border-radius: 999px; background: rgba(255,253,248,.72); border: 1px solid var(--line); }
+    .hero-photo { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 28px; background: var(--surface-2); border: 1px solid var(--line); }
+    .hero-photo img, .gallery-item img, .split-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.93) contrast(1.03); }
+    .photo-label { position: absolute; left: 18px; bottom: 18px; padding: 9px 12px; border-radius: 999px; background: rgba(25,22,18,.72); color: #fffaf2; font-family: var(--font-mono); font-size: 12px; backdrop-filter: blur(12px); }
+
+    section { padding: 96px 0; border-top: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr); gap: 48px; align-items: end; margin-bottom: 40px; }
+    .section-head p { font-size: 19px; }
+
+    .menu-list { border-top: 1px solid var(--line-strong); }
+    .menu-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 150px; gap: 24px; padding: 24px 0; border-bottom: 1px solid var(--line); align-items: start; }
+    .menu-row strong { font-family: var(--font-display); font-size: 24px; line-height: 1; }
+    .menu-row span { font-family: var(--font-mono); color: var(--accent-ink); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
+
+    .trust-strip { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: rgba(255,253,248,.55); }
+    .trust-item { min-height: 154px; padding: 28px; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; }
+    .trust-item:last-child { border-right: 0; }
+    .number { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: .92; color: var(--coffee); }
+    .trust-item p { max-width: 260px; }
+
+    .split { display: grid; grid-template-columns: minmax(360px, .78fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+    .split-photo { aspect-ratio: 16 / 10; overflow: hidden; border-radius: 24px; border: 1px solid var(--line); }
+    .quote { margin-top: 30px; font-family: var(--font-accent); font-size: clamp(28px, 3.4vw, 44px); line-height: 1.08; color: var(--wine); }
+    .coffee-points { margin-top: 34px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+    .coffee-points div { display: flex; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+    .coffee-points b { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); }
+
+    .gallery { display: grid; grid-template-columns: 1.15fr .85fr 1fr; gap: 16px; align-items: stretch; }
+    .gallery-item { min-height: 290px; overflow: hidden; border-radius: 22px; border: 1px solid var(--line); background: var(--surface-2); }
+    .gallery-item.tall { min-height: 430px; }
+
+    .hours-contact { display: grid; grid-template-columns: minmax(320px, .62fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+    .panel { background: rgba(255,253,248,.68); border: 1px solid var(--line); border-radius: 24px; padding: 28px; }
+    .hours { margin-top: 28px; border-top: 1px solid var(--line); }
+    .hours-row { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 14px; }
+    .hours-row.today { color: var(--coffee); font-weight: 700; background: linear-gradient(90deg, rgba(160,160,128,.18), transparent); padding-inline: 10px; margin-inline: -10px; }
+    .contact-lines { margin-top: 28px; display: grid; gap: 12px; font-weight: 700; }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); }
+
+    .final-cta { padding: 96px 0 80px; }
+    .cta-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; padding: 40px; border: 1px solid var(--line-strong); border-radius: 28px; background: var(--coffee); color: #fffaf2; }
+    .cta-box h2, .cta-box p { color: #fffaf2; }
+    .cta-box p { opacity: .76; margin-top: 14px; max-width: 620px; }
+    .cta-box .btn.primary { background: #fffaf2; color: var(--coffee); border-color: #fffaf2; }
+    .cta-box .btn.secondary { color: #fffaf2; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .split, .hours-contact, .cta-box { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip, .gallery { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .cta-actions { justify-content: flex-start; }
+      section { padding: 72px 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 44px 0 72px; }
+      .btn { width: 100%; }
+      .panel, .cta-box { padding: 22px; border-radius: 20px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top">Vídeňka Café</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kava">Káva</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420725688317">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Vídeňská 15 · Brno-střed</div>
+          <h1>Vaše kavárna na Vídeňské</h1>
+          <p class="hero-lead">Od rána snídaně a káva s sebou, přes den rychlý snack, večer sklenka vína nebo čepovaná Plzeň. Každý všední den otevíráme už v 7.00.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn secondary" href="tel:+420725688317">+420 725 688 317</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-pill">Google 4,5</span>
+            <span class="meta-pill">494 recenzí</span>
+            <span class="meta-pill">WiFi free</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-label">ráno · káva · večer</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">jídlo · káva · nápoje</div>
+            <h2>Od snídaně po sklenku vína.</h2>
+          </div>
+          <p>Přijďte na míchaná vejce Vídeňka, kávu do ruky, domácí limonádu s ovocem nebo klidný večer po práci.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <strong>Snídaně</strong>
+            <p>Každý všední den od 7.00. Teplé ranní talíře, káva a místo na krátkou zastávku cestou do práce.</p>
+            <span>od 7.00</span>
+          </div>
+          <div class="menu-row">
+            <strong>Káva</strong>
+            <p>Varesina Caffé se servíruje od roku 1919. K tomu průběžně vybíráme kávy z lokálních pražíren.</p>
+            <span>take away</span>
+          </div>
+          <div class="menu-row">
+            <strong>Nápoje</strong>
+            <p>Domácí limonády s ovocem, víno po práci a čepovaná Plzeň, když se den protáhne do večera.</p>
+            <span>do 19.00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust-strip">
+        <div class="trust-item">
+          <div class="number">4,5</div>
+          <p>Hodnocení na Googlu podle veřejného firemního profilu.</p>
+        </div>
+        <div class="trust-item">
+          <div class="number">494</div>
+          <p>Recenzí od hostů, kteří se u nás zastavili na kávu, jídlo nebo večer.</p>
+        </div>
+        <div class="trust-item">
+          <div class="number">7.00</div>
+          <p>Všední dny začínáme brzy, aby se snídaně vešla i před práci.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="eyebrow">Varesina Caffé · lokální pražírny</div>
+          <h2>Káva, která má svůj rytmus.</h2>
+          <p class="quote">„Každý šálek připravujeme s láskou, aby Vás pohladil na duši.“</p>
+          <div class="coffee-points">
+            <div><span>Italská stálá nabídka</span><b>Varesina</b></div>
+            <div><span>Výběrová káva dle aktuální nabídky</span><b>lokální pražírny</b></div>
+            <div><span>Espresso, cappuccino i káva na cestu</span><b>s sebou</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">posezení na Vídeňské</div>
+            <h2>Klidné místo mezi ránem a večerem.</h2>
+          </div>
+          <p>Na rychlou zastávku, delší setkání i práci u stolu. WiFi je zdarma.</p>
+        </div>
+        <div class="gallery">
+          <div class="gallery-item tall"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></div>
+          <div class="gallery-item"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></div>
+          <div class="gallery-item tall"><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">kontakt</div>
+            <h2>Najdete nás na Vídeňské 15.</h2>
+          </div>
+          <p>Rezervaci nebo rychlý dotaz vyřídíte nejrychleji telefonicky. Jsme v Brně-střed na adrese Vídeňská 15, 639 00.</p>
+        </div>
+        <div class="hours-contact">
+          <div class="panel">
+            <h3>Otevírací doba</h3>
+            <div class="hours">
+              <div class="hours-row today"><span>Pondělí - pátek</span><span>7.00 - 19.00</span></div>
+              <div class="hours-row"><span>Sobota - neděle</span><span>13.00 - 19.00</span></div>
+            </div>
+            <div class="contact-lines">
+              <a href="tel:+420725688317">+420 725 688 317</a>
+              <a href="mailto:info@videnkacafe.cz">info@videnkacafe.cz</a>
+              <span>Vídeňská 15, 639 00 Brno-střed</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Vídeňka Café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-box">
+        <div>
+          <div class="eyebrow" style="color:#d7d0b4">dnes na kávu</div>
+          <h2>Zastavte se cestou po Vídeňské.</h2>
+          <p>Snídaně ve všední den od 7.00, odpolední káva s sebou a večerní posezení do 19.00.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420725688317">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@videnkacafe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>© Vídeňka Café s.r.o. · IČO 198 90 753</div>
+      <div class="disclaimer">Toto je nezávazný prezentační koncept vytvořený službou Webflex. Pokud si nepřejete jeho další uchování, můžete jej odstranit na adrese <a href="https://app.webflex.cz/delete/9tsgz73">app.webflex.cz/delete/9tsgz73</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5952558, 49.1839422],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#A0A080' })
+      .setLngLat([16.5952558, 49.1839422])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
