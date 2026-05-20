@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Version Coffee | Vinohrady Praha 2</title>
+  <meta name="description" content="Version Coffee na Anglické 15 ve Vinohradech. Káva, pražení, servis a klidné místo v Praze 2. Kontakt: roastery@versioncoffee.cz.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --fg: #f7f5f0;
+      --muted: rgba(247, 245, 240, .66);
+      --soft: rgba(247, 245, 240, .1);
+      --line: rgba(247, 245, 240, .16);
+      --accent: #402020;
+      --accent-hover: #5a2d2d;
+      --font-display: "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.4, 0, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--fg);
+      font-family: var(--font-display);
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      max-width: 760px;
+      font-size: clamp(40px, 5vw, 72px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap {
+      width: min(1180px, calc(100% - 40px));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: linear-gradient(to bottom, rgba(13, 13, 15, .72), rgba(13, 13, 15, 0));
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 36px);
+      color: rgba(247, 245, 240, .82);
+    }
+    .nav-links a,
+    .btn,
+    .maplibregl-ctrl button {
+      transition: transform .33s var(--ease), background .33s var(--ease), color .33s var(--ease), border-color .33s var(--ease), opacity .33s var(--ease);
+    }
+    .nav-links a:hover { color: var(--fg); }
+    a:focus-visible,
+    button:focus-visible,
+    .btn:focus-visible {
+      outline: 2px solid var(--fg);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 24px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #fff;
+    }
+    .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn.secondary {
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255, 255, 255, .08); }
+
+    .panel {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      padding: 104px 0;
+      overflow: hidden;
+    }
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(90deg, rgba(13, 13, 15, .86), rgba(13, 13, 15, .42) 48%, rgba(13, 13, 15, .2));
+    }
+    .hero-photo {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.08) brightness(.74);
+    }
+    .hero-copy {
+      max-width: 720px;
+      padding-top: 72px;
+    }
+    .eyebrow,
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(247, 245, 240, .72);
+    }
+    .hero-lead {
+      max-width: 600px;
+      margin-top: 24px;
+      color: rgba(247, 245, 240, .78);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.35;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 36px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, 1fr);
+      gap: clamp(36px, 6vw, 96px);
+      align-items: center;
+    }
+    .split.reverse { grid-template-columns: minmax(420px, 1fr) minmax(0, .9fr); }
+    .copy-block {
+      display: grid;
+      gap: 22px;
+      max-width: 680px;
+    }
+    .copy-block p {
+      max-width: 560px;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.35;
+      color: rgba(247, 245, 240, .72);
+    }
+    .photo-frame {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: #171719;
+    }
+    .photo-frame.tall { aspect-ratio: 4 / 3; }
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.78) contrast(1.05) brightness(.82);
+      transform: scale(1.01);
+      transition: transform .33s var(--ease), filter .33s var(--ease);
+    }
+    .photo-frame:hover img { transform: scale(1.035); filter: saturate(.88) contrast(1.08) brightness(.9); }
+
+    .line-list {
+      display: grid;
+      border-top: 1px solid var(--line);
+      margin-top: 12px;
+    }
+    .line-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 28px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .line-row strong {
+      font-weight: 600;
+      color: var(--fg);
+    }
+    .line-row span {
+      color: var(--muted);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      margin-top: 36px;
+    }
+    .stat {
+      min-height: 180px;
+      display: grid;
+      align-content: center;
+      gap: 10px;
+      padding: 28px;
+      background: var(--bg);
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      font-weight: 500;
+      line-height: 1;
+      color: var(--fg);
+    }
+    .stat span {
+      color: var(--muted);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery .photo-frame { min-height: 58vh; }
+    .gallery-stack {
+      display: grid;
+      gap: 16px;
+    }
+    .gallery-stack .photo-frame { min-height: calc(29vh - 8px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(460px, 1fr);
+      gap: clamp(32px, 6vw, 88px);
+      align-items: center;
+    }
+    .contact-lines {
+      display: grid;
+      gap: 20px;
+      margin-top: 32px;
+    }
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line span { color: var(--muted); }
+    .contact-line a,
+    .contact-line strong {
+      font-size: clamp(20px, 2.5vw, 30px);
+      font-weight: 500;
+    }
+    #map {
+      height: 420px;
+      overflow: hidden;
+      background: #171719;
+    }
+    .maplibregl-ctrl-attrib { font-family: var(--font-mono); }
+
+    .final {
+      min-height: 72svh;
+      text-align: center;
+    }
+    .final .copy-block {
+      margin-inline: auto;
+      justify-items: center;
+    }
+    .final p { max-width: 620px; }
+
+    .footer {
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      color: rgba(247, 245, 240, .48);
+      font-size: 12px;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 64px; }
+      .nav-links { display: none; }
+      .panel { min-height: auto; padding: 96px 0; }
+      .split,
+      .split.reverse,
+      .contact-grid,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .split.reverse .photo-frame { order: 2; }
+      .split.reverse .copy-block { order: 1; }
+      .photo-frame,
+      .photo-frame.tall { aspect-ratio: 4 / 3; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { min-height: 138px; }
+      .contact-grid { gap: 48px; }
+      .gallery .photo-frame,
+      .gallery-stack .photo-frame { min-height: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero::before { background: linear-gradient(90deg, rgba(13, 13, 15, .9), rgba(13, 13, 15, .48)); }
+      .actions { flex-direction: column; align-items: stretch; }
+      .line-row { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Version Coffee">Version Coffee</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kava">Káva</a>
+        <a href="#servis">Servis</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/35087730/pexels-photo-35087730.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A sleek, minimalistic coffee shop sign illuminated in soft ambient light, perfect for urban lifestyle themes.">
+      </div>
+      <div class="wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Anglická 15 · Vinohrady</div>
+          <h1>Version Coffee, Vinohrady.</h1>
+          <p class="hero-lead">Roast. Brew. Serve. Káva a pražení pro chvíli, kdy chcete šálek bez zbytečných slov.</p>
+          <div class="actions">
+            <a class="btn primary" href="mailto:roastery@versioncoffee.cz">Napsat do pražírny</a>
+            <a class="btn secondary" href="#kontakt">Najít podnik</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="kava" aria-label="Káva">
+      <div class="wrap split">
+        <div class="copy-block">
+          <div class="eyebrow">Roast · Brew · Serve</div>
+          <h2>Káva v tichém tempu.</h2>
+          <p>Na Anglické 15 se stavíte pro šálek na místě, kávu s sebou nebo kontakt s pražírnou.</p>
+          <div class="line-list" aria-label="Co zde najdete">
+            <div class="line-row">
+              <strong>Káva</strong>
+              <span>Espresso bar a filtrovaná káva podle aktuální nabídky.</span>
+            </div>
+            <div class="line-row">
+              <strong>Pražení</strong>
+              <span>Kontakt na pražírnu přes roastery@versioncoffee.cz.</span>
+            </div>
+            <div class="line-row">
+              <strong>Servis</strong>
+              <span>Místo pro krátké zastavení ve Vinohradech.</span>
+            </div>
+          </div>
+        </div>
+        <figure class="photo-frame tall">
+          <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="panel" id="servis" aria-label="Důvěra">
+      <div class="wrap split reverse">
+        <figure class="photo-frame">
+          <img src="https://images.pexels.com/photos/12603336/pexels-photo-12603336.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Modern restaurant interior featuring stylish hanging lights and neatly arranged tables.">
+        </figure>
+        <div class="copy-block">
+          <div class="eyebrow">Praha 2 · Vinohrady</div>
+          <h2>Místo, které lidé znají.</h2>
+          <p>Version Coffee má hodnocení 4,7 z 722 recenzí. Provoz najdete na Anglické 529/15.</p>
+          <div class="stats" aria-label="Základní údaje">
+            <div class="stat">
+              <strong>4,7</strong>
+              <span>Google hodnocení</span>
+            </div>
+            <div class="stat">
+              <strong>722</strong>
+              <span>recenzí</span>
+            </div>
+            <div class="stat">
+              <strong>15</strong>
+              <span>Anglická, Vinohrady</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Atmosféra">
+      <div class="wrap gallery">
+        <figure class="photo-frame">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="gallery-stack">
+          <figure class="photo-frame">
+            <img src="https://images.pexels.com/photos/14408369/pexels-photo-14408369.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of an illuminated hanging light bulb with a blurred background indoors.">
+          </figure>
+          <div class="copy-block">
+            <div class="eyebrow">Version Café</div>
+            <h2>Krátká pauza. Dlouhá chuť.</h2>
+            <p>Jednoduchý prostor pro kávu, setkání a cestu dál přes Vinohrady.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="kontakt" aria-label="Kontakt">
+      <div class="wrap contact-grid">
+        <div class="copy-block">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Anglická 529/15.</h2>
+          <p>Přijďte na adresu v Praze 2 nebo napište do pražírny.</p>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Anglická 529/15, 120 00 Praha 2-Vinohrady</strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:roastery@versioncoffee.cz">roastery@versioncoffee.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <a href="https://www.versioncoffee.cz/">versioncoffee.cz</a>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Version Coffee"></div>
+      </div>
+    </section>
+
+    <section class="panel final" aria-label="Závěr">
+      <div class="wrap copy-block">
+        <div class="eyebrow">Version Coffee · Praha 2</div>
+        <h2>Stavte se na šálek.</h2>
+        <p>Káva ve Vinohradech, kontakt na pražírnu a adresa pro vaši další zastávku v Praze.</p>
+        <div class="actions">
+          <a class="btn primary" href="mailto:roastery@versioncoffee.cz">Napsat e-mail</a>
+          <a class="btn secondary" href="https://www.versioncoffee.cz/">Otevřít versioncoffee.cz</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/7ru793j">webflex.cz/delete/7ru793j</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.433394499999999, 50.0767525],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([14.433394499999999, 50.0767525])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
