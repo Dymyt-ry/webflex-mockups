@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kavárna Místo | Káva, snídaně a večery v Dejvicích</title>
+  <meta name="description" content="Kavárna Místo na Bubenečské 12 v Praze 6. Káva, nápoje, snídaně, denní i víkendová nabídka, rezervace a dárkové poukazy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101011;
+      --paper: #171718;
+      --paper-2: #202022;
+      --ink: #f6f1e8;
+      --muted: #c4bbb0;
+      --faint: #8f857a;
+      --line: rgba(246, 241, 232, .14);
+      --line-strong: rgba(246, 241, 232, .28);
+      --accent: #C45B55;
+      --accent-hot: #e17870;
+      --black: #050506;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(246,241,232,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(246,241,232,.024) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      z-index: 50;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      color: var(--ink);
+      font-weight: 900;
+      line-height: .97;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.08; }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-hot);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: .03em;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-hot);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: #d86b64; border-color: #d86b64; }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,16,17,.86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 160ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero { padding: clamp(56px, 8vw, 104px) 0 var(--s7); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .82fr);
+      gap: clamp(40px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s2);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 8px 11px;
+      background: rgba(255,255,255,.035);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .hero-photo img, .gallery-item img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.45) saturate(.72) contrast(1.1);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(0,0,0,.72));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .stamp {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2;
+      width: 88px;
+      height: 88px;
+      border: 1px solid rgba(255,255,255,.42);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-align: center;
+      transform: rotate(8deg);
+      background: rgba(0,0,0,.22);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, .85fr) minmax(280px, 460px);
+      gap: clamp(24px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: var(--s6);
+    }
+    .section-no {
+      font-family: var(--font-display);
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+      font-size: clamp(56px, 8vw, 118px);
+      line-height: .8;
+    }
+    .section-head p { max-width: 620px; font-size: 19px; }
+
+    .menu-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 170px 1fr minmax(120px, auto);
+      gap: var(--s4);
+      align-items: baseline;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-kicker, .price {
+      font-family: var(--font-mono);
+      color: var(--accent-hot);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .menu-title { color: var(--ink); font-weight: 900; font-size: 22px; }
+    .menu-note { margin-top: 4px; color: var(--faint); }
+    .price { justify-self: end; color: var(--ink); white-space: nowrap; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.025);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: var(--s5);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .88fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      padding: var(--s6) 0;
+    }
+    .split-photo { aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid var(--line); }
+    .split-copy {
+      display: grid;
+      gap: var(--s4);
+    }
+    .split-copy h2 { max-width: 620px; }
+    .rule-list { border-top: 1px solid var(--line); margin-top: var(--s3); }
+    .rule-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: var(--s3);
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .rule-item b { color: var(--accent-hot); font-family: var(--font-mono); }
+    .rule-item span { color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .gallery-item.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: var(--s5);
+      display: grid;
+      gap: var(--s4);
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours td {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours td:last-child { text-align: right; color: var(--ink); }
+    .hours tr.today td { color: #fff; font-weight: 800; }
+    #map {
+      min-height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--paper-2);
+    }
+    .maplibregl-ctrl-group { border-radius: 2px; overflow: hidden; }
+
+    .final {
+      padding: var(--s7) 0;
+      border-top: 1px solid var(--line-strong);
+      background: var(--black);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s5);
+      align-items: end;
+    }
+    .final h2 { max-width: 760px; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: var(--s3); justify-content: flex-end; }
+
+    footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      align-items: center;
+    }
+    .disclaimer {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #a29990;
+    }
+    .disclaimer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .split, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { min-width: 0; }
+      .section-head { grid-template-columns: 1fr; gap: var(--s3); }
+      .section-no { font-size: 72px; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .price { justify-self: start; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .stat { min-height: 150px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .final-actions { justify-content: flex-start; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section, .final { padding: 72px 0; }
+      .hero { padding-top: 44px; }
+      .btn { width: 100%; }
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Kavárna Místo">Kavárna Místo</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420727914535">727 914 535</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Dejvice · Bubenečská 12</div>
+          <h1>Takové Místo Dejvicím chybělo</h1>
+          <p class="hero-lead">Káva, snídaně, denní nabídka a večerní sklenka na adrese, kam se dá zajít pracovně, s přáteli i jen na chvíli mezi schůzkami.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420727914535">Zavolat</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="pill">Po-Pá 9-21</span>
+            <span class="pill">So 9-20</span>
+            <span class="pill">Ne 10-18</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+          <span class="stamp">Praha 6<br>Bubenečská</span>
+          <figcaption class="photo-caption"><span>espresso bar</span><span>doubleshot</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Od rána po večer</h2>
+          <p>Nabídka drží jednoduchý rytmus: dobrá káva, snídaně, denní jídlo, víkendová zastávka a něco sladkého z rodiny Místo podniků.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <div class="menu-kicker">Káva</div>
+            <div>
+              <div class="menu-title">Espresso bar</div>
+              <p class="menu-note">Káva z doubleshotu a servis pro rychlé espresso i delší posezení.</p>
+            </div>
+            <div class="price">bar</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Jídlo</div>
+            <div>
+              <div class="menu-title">Snídaně a denní nabídka</div>
+              <p class="menu-note">Ranní talíře, polední zastávka a víkendové položky podle provozu.</p>
+            </div>
+            <div class="price">denně</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Nápoje</div>
+            <div>
+              <div class="menu-title">Sklenka po práci</div>
+              <p class="menu-note">Nápoje k večeři, ke schůzce i k tichému večeru u okna.</p>
+            </div>
+            <div class="price">do 21</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Domů</div>
+            <div>
+              <div class="menu-title">Dárkové poukazy</div>
+              <p class="menu-note">Pro návštěvy, které mají mít přesnou adresu a žádné složité plánování.</p>
+            </div>
+            <div class="price">poukaz</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2 id="duvera">Místo, které lidé znají</h2>
+          <p>Jasná adresa, dlouhá otevírací doba a tisíce veřejných hodnocení dávají návštěvě pevný rámec ještě před cestou.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,6</strong>
+            <span>Google hodnocení</span>
+          </div>
+          <div class="stat">
+            <strong>2884</strong>
+            <span>recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>7/7</strong>
+            <span>otevřeno každý den</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="split-copy">
+          <div class="eyebrow">Můj šálek kávy · cukrárna · espresso</div>
+          <h2>Dejvický provoz bez okázalosti</h2>
+          <p>Místo stojí na věcech, které si hosté hlídají: pohodlný stůl, stabilní espresso, snídaně bez spěchu a večerní režim, který nevyžaduje zvláštní příležitost.</p>
+          <div class="rule-list">
+            <div class="rule-item"><b>01</b><span>Rezervace pro návštěvu, u které nechcete čekat na volný stůl.</span></div>
+            <div class="rule-item"><b>02</b><span>Káva a sladké napojené na podniky, které se v Praze kolem doubleshotu dlouhodobě potkávají.</span></div>
+            <div class="rule-item"><b>03</b><span>Adresa pár kroků od dejvického každodenního provozu.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2 id="galerie">Stůl, bar, večer</h2>
+          <p>Fotografie drží tmavou, městskou náladu a nechávají prostor jídlu, sklu, světlu a detailům interiéru.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Kontakt a cesta</h2>
+          <p>Bubenečská 12, Praha 6. Pro rezervaci nebo rychlou domluvu je nejjistější telefon.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div>
+              <div class="eyebrow">Kavárna Místo</div>
+              <h3>Bubenečská 12</h3>
+              <p>160 00 Praha-Praha 6</p>
+            </div>
+            <div>
+              <p><a href="tel:+420727914535">+420 727 914 535</a></p>
+              <p><a href="mailto:info@mistoprovas.cz">info@mistoprovas.cz</a></p>
+            </div>
+            <table class="hours" aria-label="Otevírací doba">
+              <tr class="today"><td>Po-Pá</td><td>9-21</td></tr>
+              <tr><td>So</td><td>9-20</td></tr>
+              <tr><td>Ne</td><td>10-18</td></tr>
+            </table>
+            <a class="btn primary" href="tel:+420727914535">Rezervace telefonem</a>
+          </div>
+          <div id="map" aria-label="Mapa Kavárny Místo"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Dnes na Bubenečské</div>
+          <h2>Káva, snídaně, večerní stůl.</h2>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420727914535">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@mistoprovas.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>Kavárna Místo · Bubenečská 12, 160 00 Praha-Praha 6</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/v2tf7bo">Odstranit stránku</a></div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.404449600000001, 50.099056],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#C45B55' })
+      .setLngLat([14.404449600000001, 50.099056])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
