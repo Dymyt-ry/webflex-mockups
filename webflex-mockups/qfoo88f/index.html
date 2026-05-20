@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Foyer Café | Kavárna ve Fantově budově</title>
+  <meta name="description" content="Foyer Café ve Fantově budově hlavního nádraží v Praze. Káva, snídaně, viennoiserie, dezerty, čaje, víno, živá hudba a akce pro děti.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f2ea;
+      --surface: rgba(255, 253, 248, .78);
+      --surface-solid: #fffdf8;
+      --ink: #173134;
+      --muted: #6f6257;
+      --soft: #e8ded1;
+      --line: rgba(23, 49, 52, .10);
+      --accent: #C0A080;
+      --accent-deep: #8b6845;
+      --teal: #00585C;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --shadow: 0 34px 90px rgba(55, 39, 23, .10);
+      --shadow-soft: 0 22px 70px rgba(55, 39, 23, .075);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,49,52,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,49,52,.022) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      color: var(--ink);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      color: #fffaf2;
+      background: var(--teal);
+      border: 1px solid var(--teal);
+    }
+    .btn.primary:hover { background: #00484b; border-color: #00484b; }
+    .btn.secondary {
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid currentColor;
+    }
+    .btn.secondary:hover { background: rgba(23,49,52,.055); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 242, 234, .88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: 176px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #4d6263;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 64px 0 96px;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(430px, .78fr);
+      gap: clamp(38px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #4e5b5a;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 40px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 40px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,253,248,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .split-photo img,
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,253,248,.84);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(280px, .45fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head p { font-size: 19px; }
+
+    .menu-rows {
+      display: grid;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 28px;
+      border-top: 1px solid var(--line);
+    }
+    .menu-row:first-child { border-top: 0; }
+    .menu-row .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .menu-row strong { font-size: 24px; }
+    .menu-row .note { max-width: 560px; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat .number {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+      color: var(--teal);
+      overflow-wrap: anywhere;
+    }
+    .stat p { margin-top: 18px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .82fr) minmax(0, 1fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+    }
+    .feature-list {
+      display: grid;
+      gap: 18px;
+      margin-top: 34px;
+    }
+    .feature {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature span {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #1f1710;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .feature strong { display: block; margin-bottom: 4px; font-size: 20px; }
+
+    .program {
+      display: grid;
+      grid-template-columns: .45fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .program-card,
+    .hours-card,
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .program-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 320px;
+    }
+    .program-card .mono,
+    .hours-card .mono,
+    .contact-card .mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .timeline { display: grid; gap: 0; }
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .timeline-item:first-child { padding-top: 0; }
+    .timeline-item time {
+      font-family: var(--font-mono);
+      color: var(--accent-deep);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 360px;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+    .gallery-item.tall { min-height: 460px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .76fr) minmax(340px, .48fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .hours-table {
+      display: grid;
+      gap: 11px;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 11px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-links {
+      display: grid;
+      gap: 12px;
+      margin-top: 28px;
+      font-weight: 800;
+    }
+    .contact-links a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .contact-links a:hover { color: var(--teal); transform: translateY(-1px); }
+    .contact-links a:active { transform: translateY(1px); }
+
+    .final-cta {
+      padding: 34px;
+      border-radius: 32px;
+      background: var(--teal);
+      color: #fffaf2;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final-cta h2,
+    .final-cta p { color: #fffaf2; }
+    .final-cta p { max-width: 620px; opacity: .82; margin-top: 12px; }
+    .final-cta .btn.primary {
+      background: #fffaf2;
+      color: var(--teal);
+      border-color: #fffaf2;
+    }
+    .final-cta .btn.primary:hover { background: #f0e4d2; border-color: #f0e4d2; }
+
+    footer { padding: 54px 0 28px; }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .credits,
+    .disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #85776a;
+    }
+    .credits a,
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .program,
+      .contact-grid,
+      .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo,
+      .split-photo { min-width: 0; }
+      .trust-strip,
+      .gallery-strip { grid-template-columns: 1fr; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .timeline-item { grid-template-columns: 1fr; gap: 8px; }
+      .final-cta { align-items: start; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: 64px 0; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero-photo,
+      .split-photo,
+      .gallery-item,
+      .program-card,
+      .hours-card,
+      .contact-card,
+      #map,
+      .final-cta { border-radius: 22px; }
+      .menu-row,
+      .stat,
+      .program-card,
+      .hours-card,
+      .contact-card { padding: 22px; }
+      .hero-actions { align-items: stretch; }
+      .btn { width: 100%; }
+      .footer-grid { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Foyer Café">
+        <img src="https://foyercafe.cz/wp-content/uploads/2024/03/cropped-logo.png" alt="Foyer Café">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#program">Program</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420725153892">+420 725 153 892</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Fantova budova · Praha hlavní nádraží</div>
+          <h1>Klid uprostřed nádraží</h1>
+          <p class="hero-lead">Historické foyer pro šálek kávy, kontinentální snídani, sklenku vína i večer s živou hudbou.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">Wilsonova 300/8</span>
+            <span class="meta-pill">Hodnocení 4,5</span>
+            <span class="meta-pill">551 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <figcaption class="photo-label">Káva · snídaně · víno</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Menu po celý den</div>
+            <h2>Od croissantu po lasagne.</h2>
+          </div>
+          <p>Vychutnáte si kávu, čerstvou viennoiserii z pekárny, domácí dezerty, sendviče, quiche, italskou lasagni i pečlivě vybrané čaje na českém porcelánu Bernadotte.</p>
+        </div>
+        <div class="menu-rows">
+          <div class="menu-row">
+            <span class="tag">Ráno</span>
+            <strong>Kontinentální snídaně</strong>
+            <p class="note">Sladké i slané začátky dne, káva a pečivo z plundrového těsta.</p>
+          </div>
+          <div class="menu-row">
+            <span class="tag">Pekárna</span>
+            <strong>Viennoiserie</strong>
+            <p class="note">Croissanty, flan, pain au chocolat a další pečivo připravované až 72 hodin.</p>
+          </div>
+          <div class="menu-row">
+            <span class="tag">Oběd</span>
+            <strong>Lasagne, sendviče, quiche</strong>
+            <p class="note">Poctivé slané položky pro krátkou zastávku i delší setkání.</p>
+          </div>
+          <div class="menu-row">
+            <span class="tag">Odpoledne</span>
+            <strong>Dezerty, čaj, víno</strong>
+            <p class="note">Domácí sladkosti, kvalitní čaje a sklenka vína v secesním prostředí.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust-strip">
+        <div class="stat">
+          <div class="number">4,5</div>
+          <p>Průměrné hodnocení hostů podle dodaných veřejných údajů.</p>
+        </div>
+        <div class="stat">
+          <div class="number">551</div>
+          <p>Recenzí od návštěvníků, kteří se zastavili na kávu, jídlo nebo program.</p>
+        </div>
+        <div class="stat">
+          <div class="number">300/8</div>
+          <p>Adresa ve Wilsonově ulici, přímo v historické Fantově budově.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div>
+          <div class="eyebrow">Secesní atmosféra</div>
+          <h2>Fantova budova zpomalí čas.</h2>
+          <p class="hero-lead">Art Nouveau ornamenty, výhled na cestující a tichý stůl pro práci, schůzku nebo chvíli před odjezdem.</p>
+          <div class="feature-list">
+            <div class="feature">
+              <span>01</span>
+              <div><strong>Historické místo</strong><p>Kavárna stojí v jedné z nejvýraznějších secesních staveb v České republice.</p></div>
+            </div>
+            <div class="feature">
+              <span>02</span>
+              <div><strong>Klidný ostrůvek</strong><p>Prostor pro odpočinek uprostřed městského ruchu a nádražního pohybu.</p></div>
+            </div>
+            <div class="feature">
+              <span>03</span>
+              <div><strong>Setkání i zážitky</strong><p>Dobré jídlo, káva, čaj a večery, které se přirozeně protáhnou.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="program">
+      <div class="wrap program">
+        <div class="program-card">
+          <div>
+            <div class="mono">Program kavárny</div>
+            <h2>Hudba a dětské víkendy.</h2>
+          </div>
+          <p>Foyer Café propojuje kavárnu, gastronomii a kulturní zastávku pro malé i velké hosty.</p>
+        </div>
+        <div class="program-card">
+          <div class="timeline">
+            <div class="timeline-item">
+              <time>Pátek</time>
+              <div><strong>Živá hudba</strong><p>Jazzové melodie, klavírní improvizace i akustické koncerty podle aktuálního programu.</p></div>
+            </div>
+            <div class="timeline-item">
+              <time>Víkend</time>
+              <div><strong>Akce pro děti</strong><p>Loutková divadélka, kouzelnická představení nebo oblíbená bubble show.</p></div>
+            </div>
+            <div class="timeline-item">
+              <time>Dárek</time>
+              <div><strong>Vouchery</strong><p>Pozvání na kávu, snídani nebo společný zážitek ve foyer historické budovy.</p></div>
+            </div>
+            <div class="timeline-item">
+              <time>Soukromě</time>
+              <div><strong>Pronájem prostoru</strong><p>Elegantní prostředí pro setkání, menší akci nebo slavnostní chvíli.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Galerie atmosféry">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, porcelán, ruch vlaků.</h2>
+          </div>
+          <p>Fotografie drží tlumený večerní tón, který sedí k secesnímu interiéru a klidnému posezení.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás ve Vinohradech.</h2>
+          </div>
+          <p>Foyer Café je na adrese Wilsonova 300/8, 110 00 Praha 2-Vinohrady. Pro rezervaci stolu volejte nebo napište e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div id="map" aria-label="Mapa Foyer Café"></div>
+          <aside class="contact-card">
+            <div class="mono">Foyer Café</div>
+            <h3>Wilsonova 300/8</h3>
+            <p>110 00 Praha 2-Vinohrady</p>
+            <div class="contact-links">
+              <a href="tel:+420725153892">+420 725 153 892</a>
+              <a href="mailto:info@foyercafe.cz">info@foyercafe.cz</a>
+              <a href="https://foyercafe.cz/">foyercafe.cz</a>
+            </div>
+            <div class="hours-table" aria-label="Rezervace">
+              <div><span>Rezervace</span><strong>telefonicky</strong></div>
+              <div><span>Menu</span><strong>káva · snídaně · víno</strong></div>
+              <div><span>Program</span><strong>pátky · víkendy</strong></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Zastavte se před odjezdem.</h2>
+          <p>Rezervujte si stůl na snídani, kávu, večerní hudbu nebo klidné setkání ve Fantově budově.</p>
+        </div>
+        <a class="btn primary" href="tel:+420725153892">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Foyer Café</strong><br>
+        Wilsonova 300/8, Praha 2-Vinohrady
+      </div>
+      <div class="credits">
+        Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN a Việt Anh Nguyễn přes Pexels.
+      </div>
+    </div>
+    <div class="wrap" style="margin-top: 22px;">
+      <p class="disclaimer">Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/qfoo88f">webflex.cz/delete/qfoo88f</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.435914499999999, 50.0836176],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([14.435914499999999, 50.0836176])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
