@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A Café | Bistro a kavárna v Mariánských Horách</title>
+  <meta name="description" content="A Café na Mariánském náměstí v Ostravě. Snídaně, obědy, káva, rezervace a bezbariérový přístup.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111113;
+      --panel: #18181b;
+      --panel-2: #202024;
+      --fg: #f8f6f0;
+      --muted: #c9c2b7;
+      --faint: #91887b;
+      --line: rgba(255,255,255,.12);
+      --line-strong: rgba(255,255,255,.22);
+      --paper: #f8f6f0;
+      --paper-ink: #171715;
+      --accent: #f8f6f0;
+      --brand-dark: #202000;
+      --warm: #d5b46f;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--fg);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--fg);
+      font-family: var(--font-display);
+      font-weight: 500;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.12; }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--warm);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--warm);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: var(--paper-ink); border-color: var(--accent); }
+    .btn.primary:hover { background: #ffffff; border-color: #ffffff; }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #ffffff; background: transparent; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(17,17,19,.84);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo { display: inline-flex; align-items: center; }
+    .logo img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 170ms var(--ease); }
+    .nav-links a:hover { color: var(--fg); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 74% 22%, rgba(213,180,111,.16), transparent 32%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(440px, .82fr);
+      gap: clamp(40px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s2);
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(255,255,255,.04);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.05);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(0,0,0,.68));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s3);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .9fr 1fr;
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: var(--s6);
+    }
+    .section-head p { max-width: 620px; font-size: 19px; }
+
+    .menu-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 180px 1fr minmax(112px, auto);
+      gap: var(--s4);
+      align-items: baseline;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-time,
+    .menu-price {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--warm);
+      white-space: nowrap;
+    }
+    .menu-name strong {
+      display: block;
+      color: var(--fg);
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+    .menu-name span { display: block; margin-top: 4px; color: var(--muted); }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .trust-item {
+      min-height: 170px;
+      padding: var(--s4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--line);
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-value {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 1;
+      color: var(--fg);
+    }
+    .trust-item p { max-width: 270px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1fr);
+      gap: clamp(40px, 6vw, 86px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .feature-list {
+      margin-top: var(--s5);
+      border-top: 1px solid var(--line-strong);
+    }
+    .feature {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: var(--s3);
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature b {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--warm);
+    }
+    .feature strong { display: block; color: var(--fg); margin-bottom: 4px; }
+
+    .paper-band {
+      color: var(--paper-ink);
+      background: var(--paper);
+    }
+    .paper-band h2,
+    .paper-band h3 { color: var(--paper-ink); }
+    .paper-band p { color: #5f5b51; }
+    .hours-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: var(--s5);
+      align-items: start;
+    }
+    .hours-card {
+      border: 1px solid rgba(23,23,21,.16);
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s3);
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(23,23,21,.1);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today {
+      background: #202000;
+      color: #fff;
+    }
+    .note-list {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s4);
+    }
+    .note {
+      padding: 18px 20px;
+      border: 1px solid rgba(23,23,21,.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,.72);
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(23,23,21,.16);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 260px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .gallery-item.tall { aspect-ratio: 4 / 5; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--s3);
+    }
+    .qa {
+      min-height: 180px;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+    }
+    .qa h3 { margin-bottom: var(--s3); }
+
+    .final {
+      padding: var(--s8) 0;
+      border-top: 1px solid var(--line);
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final h2 { max-width: 760px; }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--s3);
+    }
+
+    .site-footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      align-items: start;
+    }
+    .disclaimer {
+      margin-top: var(--s3);
+      font-size: 12px;
+      color: #8f877c;
+      max-width: 860px;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .hours-grid,
+      .final-inner {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .trust-strip,
+      .gallery,
+      .faq {
+        grid-template-columns: 1fr;
+      }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .menu-row { grid-template-columns: 1fr; gap: var(--s2); }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: var(--s6) 0; }
+      .hero { padding: var(--s5) 0 var(--s6); }
+      .btn { width: 100%; }
+      .photo-caption { flex-direction: column; }
+      .hours-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="A Café">
+        <img src="https://www.acafe.cz/wp-content/uploads/2018/03/logo-white.png" alt="A Café">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420737706521">Rezervace</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Mariánské náměstí 10 · Ostrava</div>
+          <h1 id="hero-title">Káva, snídaně, oběd.</h1>
+          <p class="hero-lead">Bistro a kavárna v srdci Mariánských Hor. Přijďte na ranní vejce Benedikt, obědové menu, dezert a šálek kávy v příjemném prostředí.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420737706521">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="pill">Po-Pá 7:00-18:00</span>
+            <span class="pill">Ne 9:00-13:00</span>
+            <span class="pill">Bezbariérový přístup</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-caption">
+            <span>A Café Ostrava</span>
+            <span>Snídaně do 10:30</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Snídaně · obědy · káva</div>
+            <h2 id="menu-title">Na stole přesně to, na co máte chuť.</h2>
+          </div>
+          <p>Menu se opírá o snídaně, denní obědy a kavárenskou klasiku. Níže jsou položky a ceny převzaté z aktuální nabídky A Café.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <div class="menu-time">7:00-10:30</div>
+            <div class="menu-name"><strong>Vejce Benedikt</strong><span>Anglický muffin, zastřené vejce, holandská omáčka, šunka a špenát.</span></div>
+            <div class="menu-price">239 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-time">7:00-10:30</div>
+            <div class="menu-name"><strong>Podmáslový lívanec</strong><span>Sezónní ovoce, javorovo-máslová omáčka a citronové mascarpone.</span></div>
+            <div class="menu-price">239 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-time">11:15-16:45</div>
+            <div class="menu-name"><strong>Linguine Carbonara</strong><span>Podává se s domácí focacciou.</span></div>
+            <div class="menu-price">279 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-time">11:15-16:45</div>
+            <div class="menu-name"><strong>Chef salad</strong><span>Burrata, chřest, cuketa a japonský lilek.</span></div>
+            <div class="menu-price">329 Kč</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hodnocení a pohodlí</div>
+            <h2 id="duvera-title">Místo pro běžný den i nedělní snídani.</h2>
+          </div>
+          <p>Zaplatíte hotově, kartou i papírovými stravenkami Sodexo, Chèque Déjeuner, GastroPass a TicketRestaurant. V neděli se podávají pouze snídaně a doporučuje se rezervace.</p>
+        </div>
+        <div class="trust-strip">
+          <div class="trust-item">
+            <span class="trust-value">4,8</span>
+            <p>Hodnocení hostů na Googlu.</p>
+          </div>
+          <div class="trust-item">
+            <span class="trust-value">845</span>
+            <p>Recenzí od návštěvníků.</p>
+          </div>
+          <div class="trust-item">
+            <span class="trust-value">10:30</span>
+            <p>Čas, do kdy se ve všední dny podávají snídaně.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" aria-labelledby="atmosfera-title">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+        <div>
+          <div class="eyebrow">O nás</div>
+          <h2 id="atmosfera-title">Jídlo, káva a atmosféra v jednom rytmu.</h2>
+          <p class="hero-lead">Tým A Café se stará o to, aby každá návštěva byla zážitkem: od rychlé kávy přes pracovní oběd až po klidnější setkání u stolu.</p>
+          <div class="feature-list">
+            <div class="feature">
+              <b>01</b>
+              <div><strong>Snídaně každý všední den</strong><p>Vejce, lívance, granola, sendviče i teplé varianty z aktuální nabídky.</p></div>
+            </div>
+            <div class="feature">
+              <b>02</b>
+              <div><strong>Obědové menu</strong><p>Polévka dle denní nabídky a hlavní jídla od 11:15 do 16:45.</p></div>
+            </div>
+            <div class="feature">
+              <b>03</b>
+              <div><strong>Rezervace telefonicky</strong><p>Pro rezervaci stolu volejte na číslo +420 737 706 521.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper-band" id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt a otevírací doba</div>
+            <h2 id="kontakt-title">Najdete nás na Mariánském náměstí.</h2>
+          </div>
+          <p>A Café sídlí na adrese Mariánské nám. 10, 709 00 Ostrava-Mariánské Hory a Hulváky. Pro rezervaci volejte nebo napište e-mail.</p>
+        </div>
+        <div class="hours-grid">
+          <div>
+            <div class="hours-card" aria-label="Otevírací doba">
+              <div class="hours-row today"><span>Pondělí-pátek</span><span>7:00-18:00</span></div>
+              <div class="hours-row"><span>Snídaně</span><span>do 10:30</span></div>
+              <div class="hours-row"><span>Obědy</span><span>11:15-16:45</span></div>
+              <div class="hours-row"><span>Sobota</span><span>Zavřeno</span></div>
+              <div class="hours-row"><span>Neděle</span><span>9:00-13:00</span></div>
+            </div>
+            <div class="note-list">
+              <a class="note" href="tel:+420737706521"><strong>+420 737 706 521</strong><p>Telefonická rezervace stolu.</p></a>
+              <a class="note" href="mailto:acafeostrava@gmail.com"><strong>acafeostrava@gmail.com</strong><p>E-mail pro dotazy a domluvu.</p></a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa A Café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 id="galerie-title">Teplé světlo, klidný stůl, dobrý šálek.</h2>
+          </div>
+          <p>Fotografie drží náladu večerního bistra a kavárny: tlumené světlo, sklo, dřevo a prostor pro rozhovor.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-item tall"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure class="gallery-item"><img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor."></figure>
+          <figure class="gallery-item tall"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prakticky</div>
+            <h2 id="faq-title">Než vyrazíte.</h2>
+          </div>
+          <p>Krátké odpovědi k rezervaci, platbě a nedělnímu provozu.</p>
+        </div>
+        <div class="faq">
+          <div class="qa"><h3>Je potřeba rezervace?</h3><p>Ve všední den se můžete zastavit podle chuti. V neděli se doporučuje rezervace.</p></div>
+          <div class="qa"><h3>Dá se platit kartou?</h3><p>Ano, přijímají se všechny druhy platebních karet, hotovost i papírové stravenky.</p></div>
+          <div class="qa"><h3>Je podnik bezbariérový?</h3><p>Ano, bistro má bezbariérový přístup.</p></div>
+          <div class="qa"><h3>Co se podává v neděli?</h3><p>V neděli se podávají pouze snídaně od 9:00 do 13:00.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-inner">
+        <div>
+          <div class="eyebrow">Rezervace</div>
+          <h2 id="final-title">Zavolejte a domluvte si stůl.</h2>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420737706521">+420 737 706 521</a>
+          <a class="btn secondary" href="mailto:acafeostrava@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>A Café</strong><br>
+        Mariánské nám. 10, 709 00 Ostrava-Mariánské Hory a Hulváky<br>
+        Provozovatel: Radim Dvořáček, IČO 04462904
+        <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správnou kontaktní osobou, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/5lgpgsp">webflex.cz/delete/5lgpgsp</a>.</p>
+      </div>
+      <div>© 2026 A Café</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2587197, 49.8288205],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#d5b46f' })
+      .setLngLat([18.2587197, 49.8288205])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
