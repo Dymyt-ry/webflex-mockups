@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Born Coffee Brno | Kavárna na Gorkého</title>
+  <meta name="description" content="Born Coffee Brno na Gorkého 83/39. Káva, matcha, hojicha latté, dezerty a klidné místo v Brně-střed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Fraunces:opsz,wght@9..144,600&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f5ee;
+      --surface: #fffdf8;
+      --surface-warm: #eee7da;
+      --ink: #18130d;
+      --muted: #635848;
+      --soft: #8a7c67;
+      --line: rgba(92, 72, 39, .16);
+      --line-strong: rgba(92, 72, 39, .28);
+      --accent: #5C4827;
+      --accent-2: #E0E0C0;
+      --deep: #2b170c;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-accent: "Fraunces", Georgia, serif;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(92,72,39,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92,72,39,.026) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fffdf8;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: #47361d; border-color: #47361d; }
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid currentColor;
+      color: var(--ink);
+    }
+    .btn.secondary:hover { background: rgba(92,72,39,.06); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(248,245,238,.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: #5c5141;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(430px, .78fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #514637;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,253,248,.72);
+      border: 1px solid var(--line);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--surface-warm);
+      border: 1px solid var(--line);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,253,248,.88);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 480px);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .menu-list { border-top: 1px solid var(--line-strong); }
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(180px, .55fr) minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: center;
+      min-height: 116px;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row h3 { font-size: clamp(24px, 3vw, 38px); }
+    .menu-row p { max-width: 560px; }
+    .menu-tag {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: rgba(255,253,248,.52);
+    }
+    .trust-item {
+      min-height: 180px;
+      padding: var(--s4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--line);
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-number {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: .9;
+      color: var(--accent);
+      letter-spacing: -.02em;
+    }
+    .quote-band {
+      margin-top: var(--s5);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap: var(--s5);
+      align-items: end;
+      padding-top: var(--s5);
+      border-top: 1px solid var(--line);
+    }
+    .quote {
+      font-family: var(--font-accent);
+      color: var(--ink);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1.05;
+      max-width: 820px;
+    }
+    .quote-source {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .78fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-warm);
+    }
+    .steps {
+      border-top: 1px solid var(--line-strong);
+      margin-top: var(--s5);
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step-num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .shop-callout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 390px);
+      gap: var(--s5);
+      align-items: center;
+      padding: var(--s5);
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .price-lines {
+      display: grid;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .price-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--s3);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .price-line strong { color: var(--accent); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .82fr .82fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      position: relative;
+      min-height: 260px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-warm);
+    }
+    .gallery-item.large { min-height: 430px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .58fr) minmax(0, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: var(--s5);
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--line);
+    }
+    .label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+    .contact-line strong,
+    .contact-line a {
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .hours-note {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    #map {
+      min-height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 var(--s5);
+      border-top: 1px solid var(--line-strong);
+    }
+    .faq-item {
+      min-height: 156px;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .faq-item p { margin-top: 10px; }
+
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: var(--s6);
+      color: #fffaf1;
+      background: var(--deep);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .final-panel h2,
+    .final-panel p,
+    .final-panel .eyebrow { color: #fffaf1; }
+    .final-panel p { max-width: 620px; opacity: .74; margin-top: var(--s3); }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      justify-content: flex-end;
+    }
+    .final-panel .btn.primary {
+      background: #fffaf1;
+      border-color: #fffaf1;
+      color: var(--deep);
+    }
+    .final-panel .btn.secondary {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+    }
+    .final-panel .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--soft);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: start;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+    .photo-credit {
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: var(--s5); }
+      .hero-grid,
+      .section-head,
+      .split,
+      .shop-callout,
+      .contact-grid,
+      .final-panel,
+      .quote-band {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .trust-strip,
+      .gallery-strip,
+      .faq-list {
+        grid-template-columns: 1fr;
+      }
+      .trust-item {
+        min-height: 150px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .trust-item:last-child { border-bottom: 0; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .menu-tag { justify-self: start; }
+      .final-actions { justify-content: flex-start; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero-actions,
+      .final-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shop-callout,
+      .contact-card,
+      .final-panel { padding: var(--s4); }
+      .step { grid-template-columns: 44px 1fr; }
+      #map { min-height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Born Coffee Brno">Born Coffee Brno</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420774099757">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Gorkého 83/39 · Brno-střed</div>
+          <h1>Káva, matcha, klid.</h1>
+          <p class="hero-lead">Malá kavárna ve Veveří, kde se zastavíte na batch, cappuccino, matchu, hojicha latté nebo něco sladkého k pomalému odpoledni.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420774099757">+420 774 099 757</a>
+            <a class="btn secondary" href="#kontakt">Najít kavárnu</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4.9 Google</span>
+            <span class="meta-pill">76 recenzí</span>
+            <span class="meta-pill">@borncoffee_brno</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-label">Born mood · Veveří</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-label="Nabídka kavárny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si dát</div>
+            <h2>Od espressa po matchu</h2>
+          </div>
+          <p>Born Coffee stojí na jednoduché věci: dobře připravený nápoj, milá obsluha a prostor, kde se hosté cítí jako doma.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <h3>Káva</h3>
+            <p>Espresso, cappuccino, flat white, batch brew i espresso tonic pro chvíle, kdy chcete něco svěžího.</p>
+            <span class="menu-tag">bar</span>
+          </article>
+          <article class="menu-row">
+            <h3>Matcha & hojicha</h3>
+            <p>Matcha, hojicha latté a čajové nápoje, které hosté často zmiňují jako důvod vrátit se znovu.</p>
+            <span class="menu-tag">tea</span>
+          </article>
+          <article class="menu-row">
+            <h3>Sladké</h3>
+            <p>Čoko dort, cookies a drobnosti ke kávě. Nabídka se drží útulného kavárenského rytmu.</p>
+            <span class="menu-tag">daily</span>
+          </article>
+          <article class="menu-row">
+            <h3>Domů</h3>
+            <p>V e-shopu najdete mimo jiné Matcha Ceremonial Japan BIO v balení 50 g i 2x50 g.</p>
+            <span class="menu-tag">online</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a slova hostů">
+      <div class="wrap">
+        <div class="trust-strip">
+          <div class="trust-item">
+            <span class="eyebrow">Google rating</span>
+            <strong class="trust-number">4.9</strong>
+            <p>Hodnocení podle veřejného profilu kavárny.</p>
+          </div>
+          <div class="trust-item">
+            <span class="eyebrow">Recenze</span>
+            <strong class="trust-number">76</strong>
+            <p>Hosté oceňují atmosféru, obsluhu, kávu, matchu i cookies.</p>
+          </div>
+          <div class="trust-item">
+            <span class="eyebrow">Adresa</span>
+            <strong class="trust-number">83/39</strong>
+            <p>Gorkého, Brno-střed-Veveří.</p>
+          </div>
+        </div>
+        <div class="quote-band">
+          <p class="quote">„Recept na dokonalý den: čoko dort a batch z Born Coffee.“</p>
+          <p class="quote-source">Z veřejných slov zákazníků · Filip</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" aria-label="Atmosféra">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </figure>
+        <div>
+          <div class="eyebrow">Uvnitř</div>
+          <h2>Klidné místo na den ve městě</h2>
+          <p class="hero-lead">Na kávu s přáteli, na tichý stůl u okna i na rychlé zastavení cestou přes Veveří. Born Coffee drží osobní tón: Petr, barista a srdce kavárny, tu chce mít místo s trochou radosti v každém dni.</p>
+          <div class="steps" aria-label="Jak návštěva probíhá">
+            <div class="step">
+              <span class="step-num">01</span>
+              <div>
+                <h3>Vyberte nápoj</h3>
+                <p>Od kávy přes matchu až po horkou čokoládu.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-num">02</span>
+              <div>
+                <h3>Zůstaňte na chvíli</h3>
+                <p>Hosté popisují Born jako malé, jednoduché a příjemné místo.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-num">03</span>
+              <div>
+                <h3>Vezměte něco s sebou</h3>
+                <p>Cookies, čajové produkty z e-shopu nebo další kávu na cestu.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="E-shop">
+      <div class="wrap shop-callout">
+        <div>
+          <div class="eyebrow">Online store</div>
+          <h2>Matcha i domů</h2>
+          <p class="hero-lead">Když chcete mít Born chuť i mimo kavárnu, v online nabídce najdete ceremonial matchu z Japonska.</p>
+        </div>
+        <div class="price-lines" aria-label="Vybrané položky e-shopu">
+          <div class="price-line">
+            <span>Matcha Ceremonial Japan BIO 50 g</span>
+            <strong>450 Kč</strong>
+          </div>
+          <div class="price-line">
+            <span>Matcha Ceremonial Japan BIO 2x50 g</span>
+            <strong>800 Kč</strong>
+          </div>
+          <a class="btn secondary" href="https://www.borncoffee.cz/">Otevřít e-shop</a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Galerie">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Galerie</div>
+            <h2>Teplé světlo, dřevo, ticho</h2>
+          </div>
+          <p>Vizuální rytmus kavárny je civilní: stůl, světlo, šálek a dost prostoru na rozhovor.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item large">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-label="Kontakt a mapa">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás ve Veveří</h2>
+          </div>
+          <p>Zavolejte, napište e-mail nebo se zastavte na Gorkého. Aktuální denní nabídku a čas návštěvy je nejlepší ověřit přímo v kavárně.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span class="label">Adresa</span>
+              <strong>Gorkého 83/39, 602 00 Brno-střed-Veveří</strong>
+            </div>
+            <div class="contact-line">
+              <span class="label">Telefon</span>
+              <a href="tel:+420774099757">+420 774 099 757</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">E-mail</span>
+              <a href="mailto:bornbrno@gmail.com">bornbrno@gmail.com</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">Instagram</span>
+              <strong>@borncoffee_brno</strong>
+            </div>
+            <p class="hours-note">Otevírací dobu ověřte telefonicky nebo přes aktuální profil kavárny.</p>
+          </div>
+          <div id="map" role="img" aria-label="Mapa s polohou Born Coffee Brno"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Před návštěvou</div>
+            <h2>Prakticky a stručně</h2>
+          </div>
+          <p>Věci, které se hodí vědět, když jdete do Born Coffee poprvé.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Má Born Coffee i matchu?</h3>
+            <p>Ano. Matcha patří mezi nejčastěji zmiňované nápoje hostů a je i v online nabídce.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dá se koupit něco sladkého?</h3>
+            <p>Ano. V recenzích hosté zmiňují cookies, matcha cookie i čoko dort.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je kavárna spíš rušná?</h3>
+            <p>Hosté ji popisují jako malé, klidné a útulné místo s příjemnou atmosférou.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Mluví obsluha anglicky?</h3>
+            <p>V zákaznických slovech se objevuje zkušenost s anglicky mluvící obsluhou.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Závěrečný kontakt">
+      <div class="wrap final-panel">
+        <div>
+          <div class="eyebrow">Born Coffee Brno</div>
+          <h2>Zastavte se na Gorkého</h2>
+          <p>Káva, matcha, cookies a klidná atmosféra ve Veveří. Pro aktuální nabídku volejte přímo do kavárny.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420774099757">Zavolat</a>
+          <a class="btn secondary" href="mailto:bornbrno@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/m1cwp9j" rel="nofollow">webflex.cz/delete/m1cwp9j</a>.</p>
+      <p class="photo-credit">Foto: Pexels</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5929619, 49.1989622],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#5C4827' })
+      .setLngLat([16.5929619, 49.1989622])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
