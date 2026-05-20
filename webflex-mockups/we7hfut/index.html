@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kobliha | Donuty, dorty a jarní menu v Brně</title>
+  <meta name="description" content="Kobliha v Brně na adrese Pekařská 433/68. Donuty, dorty, matcha, čokoláda, poukazy a přímý kontakt na brněnskou obsluhu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #151313;
+      --bg-2: #1d1918;
+      --fg: #faf6f2;
+      --ink: #171313;
+      --muted: #c9bebb;
+      --muted-2: #8f8582;
+      --surface: #f8f4ef;
+      --surface-2: #ebe3dc;
+      --line: rgba(250, 246, 242, .16);
+      --line-dark: rgba(23, 19, 19, .13);
+      --accent: #E06060;
+      --accent-dark: #bf4747;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--fg);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 64px); }
+    h3 {
+      font-size: 24px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      color: #170f0f;
+      background: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn.primary:hover {
+      background: #f17878;
+      border-color: #f17878;
+    }
+    .btn.secondary {
+      color: #fff;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.45);
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+    .btn.light-secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn.light-secondary:hover { background: rgba(23,19,19,.06); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: linear-gradient(to bottom, rgba(21,19,19,.82), rgba(21,19,19,.28), transparent);
+    }
+    .nav {
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo img {
+      width: auto;
+      max-width: 170px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: rgba(255,255,255,.78);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      padding: 112px 0 var(--s7);
+      overflow: hidden;
+      background: #100f0f;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(16,15,15,.88) 0%, rgba(16,15,15,.62) 43%, rgba(16,15,15,.22) 100%),
+        linear-gradient(0deg, rgba(16,15,15,.95) 0%, transparent 42%);
+      z-index: 1;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.08) brightness(.74);
+    }
+    .hero-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(260px, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      color: rgba(250,246,242,.78);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-panel {
+      align-self: end;
+      justify-self: end;
+      width: min(100%, 390px);
+      border-top: 1px solid rgba(255,255,255,.24);
+      padding-top: var(--s4);
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    .hero-panel strong {
+      display: block;
+      margin-bottom: var(--s2);
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 500;
+      line-height: 1.05;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(280px, .65fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-band {
+      background: var(--surface);
+      color: var(--ink);
+    }
+    .menu-band p { color: #5f5552; }
+    .menu-list {
+      display: grid;
+      border-top: 1px solid var(--line-dark);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(120px, auto) minmax(120px, auto);
+      gap: var(--s4);
+      align-items: center;
+      min-height: 76px;
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--line-dark);
+    }
+    .menu-row h3 { color: var(--ink); }
+    .menu-row span,
+    .menu-row b {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #6a5f5c;
+      text-align: right;
+    }
+    .menu-row b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 180px;
+      border: 1px solid var(--line);
+      padding: var(--s4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255,255,255,.035);
+    }
+    .trust-card .number {
+      font-family: var(--font-mono);
+      color: var(--fg);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+    }
+    .trust-card p {
+      max-width: 280px;
+      color: var(--muted);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .9fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #211b19;
+    }
+    .feature-list {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .feature-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-top: 1px solid var(--line);
+    }
+    .feature-item:last-child { border-bottom: 1px solid var(--line); }
+    .feature-item .code {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+
+    .gallery {
+      padding-top: 0;
+    }
+    .gallery-track {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #211b19;
+    }
+    .gallery-item.tall { min-height: 420px; }
+
+    .contact-band {
+      background: var(--surface);
+      color: var(--ink);
+      padding-bottom: var(--s6);
+    }
+    .contact-band p { color: #5f5552; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .75fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-dark);
+      padding: var(--s5);
+      background: #fffdfa;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s4);
+    }
+    .contact-line {
+      display: grid;
+      gap: var(--s1);
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--line-dark);
+    }
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #8a7d79;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-line a,
+    .contact-line strong {
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 600;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line-dark);
+    }
+
+    .final-cta {
+      padding: var(--s8) 0;
+      background: #110f0f;
+      text-align: center;
+    }
+    .final-cta h2 {
+      max-width: 820px;
+      margin: var(--s3) auto 0;
+    }
+    .final-cta p {
+      max-width: 620px;
+      margin: var(--s4) auto 0;
+      font-size: 19px;
+    }
+    .final-cta .hero-actions { justify-content: center; }
+
+    .site-footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      align-items: center;
+    }
+    .disclaimer {
+      color: rgba(255,255,255,.52);
+      max-width: 760px;
+    }
+    .delete-link {
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,.74);
+      border-bottom: 1px solid rgba(255,255,255,.34);
+    }
+
+    @media (max-width: 880px) {
+      .nav { min-height: 72px; }
+      .nav-links { display: none; }
+      .hero {
+        min-height: auto;
+        padding: 112px 0 var(--s7);
+      }
+      .hero::before {
+        background:
+          linear-gradient(90deg, rgba(16,15,15,.92), rgba(16,15,15,.68)),
+          linear-gradient(0deg, rgba(16,15,15,.96) 0%, transparent 48%);
+      }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { justify-self: start; }
+      .trust-strip,
+      .gallery-track { grid-template-columns: 1fr; }
+      .split-photo { min-width: 0; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: var(--s2);
+      }
+      .menu-row span,
+      .menu-row b { text-align: left; }
+      section { padding: var(--s6) 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Kobliha">
+        <img src="https://obchod.kobliha.live/cdn/shop/files/Logo_4caef189-e2cc-4453-9d71-cc873271b356.jpg?v=1678976704&width=600" alt="Kobliha">
+      </a>
+      <div class="nav-links" aria-label="Sekce stránky">
+        <a href="#menu">Menu</a>
+        <a href="#brno">Brno</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-bg" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Brno · Pekařská 433/68</div>
+          <h1 id="hero-title">Jaro v Kobliha Brno</h1>
+          <p class="hero-lead">Donuty, dorty, matcha, čokoláda a ovocné jarní kombinace pro vyzvednutí v Brně.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="https://obchod.kobliha.live/collections/frontpage">Projít nabídku</a>
+            <a class="btn secondary" href="tel:+420776802799">Zavolat obsluze</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Rychlé informace">
+          <strong>Ochutnejte jarní menu plné ovoce, matchy a čokolády.</strong>
+          <span>Telefon Brno: +420 776 802 799 · E-mail: brno@kobliha.live</span>
+        </aside>
+      </div>
+    </section>
+
+    <section id="menu" class="menu-band" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše menu v Brně</div>
+            <h2 id="menu-title">Sladké položky z aktuální nabídky.</h2>
+          </div>
+          <p>Výběr z brněnského obchodu: ovocné rozvary, curdy, matcha, dorty a koblihové stálice.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <h3>Yuzu Donut</h3>
+            <span>citrusový profil</span>
+            <b>39,00 Kč</b>
+          </article>
+          <article class="menu-row">
+            <h3>Malina &amp; Matcha</h3>
+            <span>jarní menu</span>
+            <b>79,00 Kč</b>
+          </article>
+          <article class="menu-row">
+            <h3>Pistáciové Maritozzi</h3>
+            <span>krémová položka</span>
+            <b>89,00 Kč</b>
+          </article>
+          <article class="menu-row">
+            <h3>Lemon Curd</h3>
+            <span>curd</span>
+            <b>109,00 Kč</b>
+          </article>
+          <article class="menu-row">
+            <h3>Koblihový Dort</h3>
+            <span>větší objednávka</span>
+            <b>590,00 Kč</b>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Důvěra hostů</div>
+            <h2 id="trust-title">Brněnská adresa s ověřeným hodnocením.</h2>
+          </div>
+          <p>Pro rychlý dotaz k objednávce se dovoláte přímo brněnské obsluze.</p>
+        </div>
+        <div class="trust-strip">
+          <article class="trust-card">
+            <div class="number">4.7</div>
+            <p>Google hodnocení z dostupných firemních dat.</p>
+          </article>
+          <article class="trust-card">
+            <div class="number">529</div>
+            <p>Recenzí spojených s profilem podniku.</p>
+          </article>
+          <article class="trust-card">
+            <div class="number">776&nbsp;802&nbsp;799</div>
+            <p>Přímý telefon na obsluhu v Brně.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="brno" aria-labelledby="brno-title">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/31206741/pexels-photo-31206741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary café interior with artistic lighting design and moody ambiance.">
+        </div>
+        <div>
+          <div class="eyebrow">Objednávky a dárky</div>
+          <h2 id="brno-title">Od jedné koblihy po poukaz.</h2>
+          <div class="feature-list">
+            <article class="feature-item">
+              <span class="code">01</span>
+              <div>
+                <h3>Donuty a dezerty</h3>
+                <p>Jahody v čokoládě, Apple Fritter, Blueberry Cheesecake Donut, Borůvkové Tiramisu i Mandlovo-malinový Dort.</p>
+              </div>
+            </article>
+            <article class="feature-item">
+              <span class="code">02</span>
+              <div>
+                <h3>Nápoje a matcha</h3>
+                <p>Jasmine Milk Tea, Matcha Kit Kat a kombinace ovoce s matchou pro jarní objednávky.</p>
+              </div>
+            </article>
+            <article class="feature-item">
+              <span class="code">03</span>
+              <div>
+                <h3>Dárky a merch</h3>
+                <p>Dárkový poukaz od 100,00 Kč, koblihový šálek, triko, hoodie a mikina.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery" aria-label="Atmosféra Kobliha">
+      <div class="wrap gallery-track">
+        <figure class="gallery-item tall">
+          <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+        <figure class="gallery-item tall">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact-band" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2 id="contact-title">Zastavte se na Pekařské.</h2>
+          </div>
+          <p>Pro objednávku, vyzvednutí nebo dotaz ke koblihovému obchodu použijte brněnský kontakt.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Pekařská 433/68, 602 00 Brno-střed-Staré Brno</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon Brno</span>
+              <a href="tel:+420776802799">+420 776 802 799</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:brno@kobliha.live">brno@kobliha.live</a>
+            </div>
+            <div class="contact-line">
+              <span>Online obchod</span>
+              <a href="https://obchod.kobliha.live/collections/frontpage">obchod.kobliha.live</a>
+            </div>
+            <div class="hero-actions" style="margin-top: 0;">
+              <a class="btn primary" href="tel:+420776802799">Zavolat do Brna</a>
+              <a class="btn light-secondary" href="mailto:brno@kobliha.live">Napsat e-mail</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa: Pekařská 433/68, Brno"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="final-title">
+      <div class="wrap">
+        <div class="eyebrow">Brno · dnes sladce</div>
+        <h2 id="final-title">Vyberte si z nabídky Kobliha.</h2>
+        <p>Jarní menu, dorty, koblihy, nápoje a dárkové položky najdete v brněnské kolekci.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://obchod.kobliha.live/collections/frontpage">Projít nabídku</a>
+          <a class="btn secondary" href="tel:+420776802799">+420 776 802 799</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný vizuální podklad. Pro odstranění použijte odkaz vpravo.</p>
+      <a class="delete-link" href="https://webflex.cz/delete/we7hfut">Smazat stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5982742, 49.191714499999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#E06060' })
+      .setLngLat([16.5982742, 49.191714499999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
