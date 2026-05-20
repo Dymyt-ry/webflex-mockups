@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cafe Letka | Kavárna na Letohradské 44</title>
+  <meta name="description" content="Cafe Letka v Praze 7-Holešovicích. Káva, snídaně, posezení a večerní atmosféra na adrese Letohradská 44.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf7;
+      --paper: #f4f1ea;
+      --paper-2: #eeebe4;
+      --ink: #111111;
+      --muted: #57534d;
+      --soft: #7b756c;
+      --line: rgba(17, 17, 17, .18);
+      --line-strong: rgba(17, 17, 17, .72);
+      --accent: #1A1A1A;
+      --accent-ink: #ffffff;
+      --warm: #c5bcae;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(17,17,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,17,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: .94;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.5vw, 64px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 250, 247, .88);
+      border-bottom: 1px solid var(--line-strong);
+      backdrop-filter: blur(14px);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 180px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2.2vw, 30px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .nav-links a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      min-height: 50px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 22px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.primary:hover { background: #000; border-color: #000; }
+    .btn.secondary { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn.secondary:hover { background: var(--ink); color: #fff; }
+    a:focus-visible, button:focus-visible, .btn:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    .hero {
+      min-height: calc(100svh - 74px);
+      display: grid;
+      align-items: center;
+      padding: clamp(54px, 7vw, 96px) 0;
+      border-bottom: 2px solid var(--ink);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 54%) minmax(380px, 42%);
+      gap: clamp(36px, 5vw, 78px);
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      margin-bottom: 20px;
+      padding: 8px 10px;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(19px, 2.1vw, 24px);
+      color: #2e2b27;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 38px;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+    }
+    .hero-meta span {
+      min-height: 72px;
+      display: grid;
+      align-content: center;
+      padding: 14px;
+      border-right: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hero-meta span:last-child { border-right: 0; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      background: #151515;
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.12);
+    }
+    .photo-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(251, 250, 247, .92);
+      border-top: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: clamp(62px, 8vw, 108px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(250px, 380px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 34px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: .75;
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--ink);
+    }
+
+    .menu-rows {
+      border-top: 1px solid var(--ink);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr) auto;
+      gap: 28px;
+      align-items: center;
+      min-height: 104px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--ink);
+    }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 40px);
+      line-height: .95;
+      text-transform: uppercase;
+    }
+    .menu-row .tag {
+      justify-self: end;
+      padding: 7px 9px;
+      border: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .trust {
+      background: var(--ink);
+      color: #fff;
+      border-block: 2px solid var(--ink);
+    }
+    .trust p, .trust h2 { color: #fff; }
+    .trust .section-head { border-color: rgba(255,255,255,.55); }
+    .trust .section-no {
+      -webkit-text-stroke-color: #fff;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid rgba(255,255,255,.5);
+    }
+    .stat {
+      min-height: 210px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid rgba(255,255,255,.5);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 7vw, 92px);
+      line-height: .85;
+      overflow-wrap: anywhere;
+    }
+    .stat span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.74);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+    }
+    .timeline {
+      border-top: 1px solid var(--ink);
+    }
+    .time-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--ink);
+    }
+    .time-row b {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .time-row h3 { margin-bottom: 8px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.25fr .9fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 330px;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .gallery-card:first-child { min-height: 460px; }
+    .gallery-card img { transition: transform 400ms var(--ease), filter 260ms var(--ease); }
+    .gallery-card:hover img { transform: scale(1.035); filter: grayscale(.75) contrast(1.1); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .85fr) minmax(0, 1.15fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .contact-card h3 { margin-bottom: 16px; }
+    .contact-list {
+      display: grid;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .contact-list a,
+    .contact-list span {
+      display: block;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .contact-list a:hover { color: #000; transform: translateX(3px); }
+    #map {
+      height: 420px;
+      border: 2px solid var(--ink);
+      border-radius: 0;
+      overflow: hidden;
+      background: var(--paper-2);
+    }
+
+    .final-cta {
+      padding: clamp(58px, 8vw, 96px) 0;
+      background: var(--paper);
+      border-block: 2px solid var(--ink);
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta-box h2 { max-width: 760px; }
+
+    footer {
+      padding: 28px 0 36px;
+      background: var(--ink);
+      color: rgba(255,255,255,.72);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    footer a {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .section-head { gap: 14px; }
+      .section-no { font-size: 64px; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .menu-row .tag { justify-self: start; }
+      .stats,
+      .gallery-strip,
+      .hero-meta {
+        grid-template-columns: 1fr;
+      }
+      .hero-meta span,
+      .stat {
+        border-right: 0;
+        border-bottom: 1px solid currentColor;
+      }
+      .hero-meta span:last-child,
+      .stat:last-child { border-bottom: 0; }
+      .gallery-card,
+      .gallery-card:first-child { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand-logo" href="#top" aria-label="Cafe Letka">
+        <img src="https://static.wixstatic.com/media/39a8c2_a0614a3d384b4a29903688e9d822e5c9~mv2.png/v1/fill/w_76,h_67,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/logo.png" alt="Cafe Letka">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="kicker">Praha 7 · Letohradská 44</span>
+          <h1>Káva u Letné</h1>
+          <p class="hero-lead">Zastavte se na šálek kávy, snídani nebo klidné posezení v Holešovicích. Cafe Letka drží jednoduchý rytmus: dobrá atmosféra, výrazný interiér a místo, kam se dobře vrací.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420777444035">Zavolat</a>
+            <a class="btn secondary" href="#kontakt">Najít cestu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span>Hodnocení 4,5</span>
+            <span>2 962 recenzí</span>
+            <span>Praha 7-Holešovice</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+          <figcaption class="photo-caption"><span>Cafe Letka</span><span>Interiér / káva / stůl</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Co si dát</h2>
+          <p>Letka je městská kavárna pro běžný den i delší zastavení. Nabídku držíme v jazyce hosta: káva, snídaně, něco sladkého a místo u stolu.</p>
+        </div>
+        <div class="menu-rows">
+          <div class="menu-row">
+            <strong>Káva</strong>
+            <p>Espresso, cappuccino, filtrovaná káva a šálek podle nálady dne.</p>
+            <span class="tag">Bar</span>
+          </div>
+          <div class="menu-row">
+            <strong>Snídaně</strong>
+            <p>Ranní talíře, pečivo a věci, kvůli kterým se u stolu zůstává o chvíli déle.</p>
+            <span class="tag">Ráno</span>
+          </div>
+          <div class="menu-row">
+            <strong>Posezení</strong>
+            <p>Schůzka, čtení, práce na chvíli nebo setkání s přáteli v živé části Holešovic.</p>
+            <span class="tag">Stůl</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra hostů">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Hosté se vracejí</h2>
+          <p>Veřejné hodnocení a počet recenzí jsou převzaté z dostupných firemních údajů pro Cafe Letka.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <b>4,5</b>
+            <span>Google hodnocení</span>
+          </div>
+          <div class="stat">
+            <b>2962</b>
+            <span>recenzí hostů</span>
+          </div>
+          <div class="stat">
+            <b>44</b>
+            <span>Letohradská adresa</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="section-head" style="grid-template-columns: 94px 1fr; margin-bottom: 28px;">
+            <div class="section-no">03</div>
+            <h2>Jak tu plyne den</h2>
+          </div>
+          <div class="timeline">
+            <div class="time-row">
+              <b>RÁNO</b>
+              <div>
+                <h3>První káva</h3>
+                <p>Krátké zastavení před cestou, schůzka u okna nebo pomalejší snídaně.</p>
+              </div>
+            </div>
+            <div class="time-row">
+              <b>DEN</b>
+              <div>
+                <h3>Stůl v Holešovicích</h3>
+                <p>Místo pro rozhovor, čtení i chvíli práce, když potřebujete být ve městě.</p>
+              </div>
+            </div>
+            <div class="time-row">
+              <b>VEČER</b>
+              <div>
+                <h3>Světlo nad barem</h3>
+                <p>Interiér, sklenky a ruch Letné bez potřeby spěchat dál.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Uvnitř Letky</h2>
+          <p>Stoly, světla, bar a městský ruch. Letka funguje pro rychlou kávu i delší večer u sklenky.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Kde nás najdete</h2>
+          <p>Letohradská 44 leží v Praze 7-Holešovicích, kousek od Letné a běžných městských tras.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div>
+              <h3>Kontakt</h3>
+              <div class="contact-list">
+                <a href="tel:+420777444035">+420 777 444 035</a>
+                <a href="mailto:cafeletka@gmail.com">cafeletka@gmail.com</a>
+                <span>Letohradská 44, 170 00 Praha 7-Holešovice</span>
+                <a href="https://www.cafeletka.cz/">www.cafeletka.cz</a>
+              </div>
+            </div>
+            <a class="btn primary" href="https://www.google.com/maps/search/?api=1&query=50.0982405,14.4253721">Otevřít v mapách</a>
+          </aside>
+          <div id="map" aria-label="Mapa Cafe Letka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-box">
+        <h2>Zastavte se na Letce.</h2>
+        <div class="hero-actions" style="margin-top:0;">
+          <a class="btn primary" href="tel:+420777444035">Zavolat</a>
+          <a class="btn secondary" href="mailto:cafeletka@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Tuto prezentaci připravil Webflex. Nejste-li správce podniku Cafe Letka, ignorujte prosím tento odkaz.</span>
+      <a href="https://webflex.cz/remove/s06s2cs">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4253721, 50.0982405],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#1A1A1A' })
+      .setLngLat([14.4253721, 50.0982405])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
