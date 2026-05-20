@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kavárna Ponrepo | Káva, víno a bar u kinosálu</title>
+  <meta name="description" content="Kavárna Ponrepo v Bartolomějské 11. Káva, limo, víno, pivo a jídlo před vstupem do kinosálu. Otevřeno denně do 01:00.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --paper: #f4f1ea;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #565656;
+      --soft: #e8e5de;
+      --line: rgba(17,17,17,.16);
+      --line-strong: rgba(17,17,17,.34);
+      --accent: #FFEA00;
+      --accent-ink: #161300;
+      --black: #0d0d0f;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(17,17,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,17,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.52;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .95;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.02; }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 0;
+      border: 1px solid transparent;
+      font-weight: 900;
+      text-transform: uppercase;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+    .btn.primary:hover { background: #fff27a; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: rgba(17,17,17,.06); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(250,250,250,.9);
+      border-bottom: 2px solid var(--ink);
+      backdrop-filter: blur(14px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo { display: inline-flex; align-items: center; }
+    .logo img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .nav-links a { transition: background 160ms var(--ease); }
+    .nav-links a:hover { background: var(--accent); }
+
+    .hero { padding: clamp(56px, 8vw, 104px) 0 var(--s7); border-bottom: 2px solid var(--ink); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(430px, .8fr);
+      gap: clamp(40px, 6vw, 86px);
+      align-items: center;
+    }
+    .stamp {
+      display: inline-flex;
+      margin-bottom: var(--s4);
+      padding: 9px 12px;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #343434;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+      font-weight: 600;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      margin-top: var(--s5);
+      border: 1px solid var(--ink);
+      width: fit-content;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--surface);
+    }
+    .hero-meta span { padding: 10px 12px; border-right: 1px solid var(--ink); }
+    .hero-meta span:last-child { border-right: 0; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      background: var(--soft);
+      box-shadow: 12px 12px 0 var(--accent);
+    }
+    .hero-photo img, .gallery-card img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.14);
+    }
+    .photo-caption {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      padding: 10px 12px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-top: 2px solid var(--ink);
+      border-right: 2px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, 520px);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: var(--s6);
+    }
+    .section-head p { max-width: 620px; font-size: 19px; font-weight: 600; }
+    .marker {
+      display: block;
+      margin-bottom: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .menu-board {
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      background: rgba(255,255,255,.6);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) minmax(150px, auto);
+      gap: var(--s4);
+      align-items: baseline;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-kicker, .menu-tag {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .menu-title { color: var(--ink); font-size: 22px; font-weight: 900; }
+    .menu-note { margin-top: 3px; color: var(--muted); font-weight: 600; }
+    .menu-tag { justify-self: end; background: var(--accent); padding: 6px 8px; border: 1px solid var(--ink); white-space: nowrap; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 2px solid var(--ink);
+      background: var(--surface);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 170px;
+      padding: var(--s5);
+      border-right: 2px solid var(--ink);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4.3vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    .stat span { color: var(--muted); font-weight: 800; }
+
+    .black-band {
+      background: var(--black);
+      color: #fff;
+      border-block: 2px solid var(--ink);
+    }
+    .black-band h2, .black-band h3 { color: #fff; }
+    .black-band p, .black-band .eyebrow { color: #d8d8d8; }
+    .visit-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(360px, .7fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .steps {
+      counter-reset: step;
+      border-top: 1px solid rgba(255,255,255,.28);
+    }
+    .step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid rgba(255,255,255,.18);
+    }
+    .step::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 800;
+    }
+    .step strong { display: block; color: #fff; font-size: 21px; margin-bottom: 5px; }
+    .split-photo { aspect-ratio: 4 / 3; border: 2px solid #fff; overflow: hidden; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card {
+      position: relative;
+      min-height: 280px;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      background: var(--soft);
+    }
+    .gallery-card.tall { min-height: 380px; }
+    .gallery-card span {
+      position: absolute;
+      left: 0;
+      top: 0;
+      padding: 8px 10px;
+      background: var(--surface);
+      border-right: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .65fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card, .hours-card {
+      border: 2px solid var(--ink);
+      background: var(--surface);
+      padding: var(--s5);
+    }
+    .contact-card h3, .hours-card h3 { margin-bottom: var(--s4); }
+    .contact-list { display: grid; gap: 16px; }
+    .contact-list a, .contact-list span {
+      display: block;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .contact-list small {
+      display: block;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today { background: var(--accent); margin-inline: -12px; padding-inline: 12px; border: 1px solid var(--ink); }
+    #map {
+      height: 420px;
+      border: 2px solid var(--ink);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      border-top: 2px solid var(--ink);
+      border-left: 2px solid var(--ink);
+    }
+    .qa {
+      min-height: 170px;
+      padding: var(--s5);
+      border-right: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      background: rgba(255,255,255,.55);
+    }
+    .qa strong { display: block; margin-bottom: 10px; font-size: 22px; font-weight: 900; }
+
+    .final {
+      padding: var(--s7) 0;
+      background: var(--accent);
+      border-block: 2px solid var(--ink);
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final .btn.primary { background: var(--ink); color: #fff; box-shadow: none; }
+
+    .site-footer {
+      padding: 34px 0;
+      background: var(--black);
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .site-footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .visit-grid, .contact-grid, .final-grid { grid-template-columns: 1fr; }
+      .hero-photo { box-shadow: 8px 8px 0 var(--accent); }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .menu-tag { justify-self: start; }
+      .stats, .gallery-strip, .faq { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 2px solid var(--ink); }
+      .stat:last-child { border-bottom: 0; }
+      .gallery-card, .gallery-card.tall { min-height: 260px; }
+    }
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .hero { padding-top: var(--s5); }
+      .hero-meta { width: 100%; }
+      .hero-meta span { width: 100%; border-right: 0; border-bottom: 1px solid var(--ink); }
+      .hero-meta span:last-child { border-bottom: 0; }
+      .contact-card, .hours-card, .qa, .stat { padding: var(--s4); }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Kavárna Ponrepo">
+        <img src="https://nfa.cz/static/images/nfa-logo.svg" alt="Kavárna Ponrepo">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420608006044">608 006 044</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="stamp">Bartolomějská 11 · Praha 1</span>
+          <h1>Kavárna před sálem</h1>
+          <p class="hero-lead">Káva, limo, víno, pivo a něco k jídlu hned před vstupem do kinosálu Ponrepo. Zastavte se před projekcí, po ní nebo jen tak během dne.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420608006044">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span>Po-Pá 10:00-01:00</span>
+            <span>So-Ne 14:00-01:00</span>
+            <span>Hodnocení 4,4 / 170 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+          <figcaption class="photo-caption">Kino · káva · bar</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="marker">01 / NABÍDKA</span>
+            <h2>U baru bez dlouhých řečí</h2>
+          </div>
+          <p>Ponrepo drží kavárnu jako přirozenou součást návštěvy kina: šálek kávy před filmem, sklenka vína po projekci, rychlé nealko nebo pivo k debatě.</p>
+        </div>
+        <div class="menu-board">
+          <div class="menu-row">
+            <span class="menu-kicker">Káva</span>
+            <div>
+              <div class="menu-title">Espresso, cappuccino, káva s sebou</div>
+              <p class="menu-note">Pro příchod před začátkem projekce i pomalé posezení v centru.</p>
+            </div>
+            <span class="menu-tag">bar</span>
+          </div>
+          <div class="menu-row">
+            <span class="menu-kicker">Sklenka</span>
+            <div>
+              <div class="menu-title">Víno, pivo a limo</div>
+              <p class="menu-note">Nápoje na večer, odpolední schůzku i setkání po filmu.</p>
+            </div>
+            <span class="menu-tag">do 01:00</span>
+          </div>
+          <div class="menu-row">
+            <span class="menu-kicker">Jídlo</span>
+            <div>
+              <div class="menu-title">Něco k jídlu u kinosálu</div>
+              <p class="menu-note">Když potřebujete zůstat v rytmu programu a neztrácet čas přesunem.</p>
+            </div>
+            <span class="menu-tag">před sálem</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="black-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="marker">02 / DŮVĚRA</span>
+            <h2>Adresa, čas, jistota</h2>
+          </div>
+          <p>Všechny podstatné údaje bez hledání: podnik najdete ve Starém Městě, rezervace berou telefonicky každý den a kavárna zůstává otevřená do pozdního večera.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,4</strong>
+            <span>hodnocení podle Google profilu</span>
+          </div>
+          <div class="stat">
+            <strong>170</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>01:00</strong>
+            <span>zavírací čas každý den</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap visit-grid">
+        <div>
+          <span class="marker">03 / NÁVŠTĚVA</span>
+          <h2>Napojte večer na program kina</h2>
+          <div class="steps" style="margin-top: 40px;">
+            <div class="step">
+              <div>
+                <strong>Před projekcí</strong>
+                <p>Dejte si kávu, limonádu nebo něco malého k jídlu přímo u vstupu do sálu.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <strong>Po projekci</strong>
+                <p>Zůstaňte na sklenku vína nebo pivo, když film ještě potřebuje doznívat v rozhovoru.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <strong>Bez projekce</strong>
+                <p>Kavárna funguje i jako zastávka v Bartolomějské, když jste právě v centru.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="marker">04 / ATMOSFÉRA</span>
+            <h2>Kavárna v kině má vlastní tempo</h2>
+          </div>
+          <p>Černobílá fotografie, barové světlo a městský večer drží vizuální linku blízko filmovému prostoru Ponrepa.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+            <span>Interiér</span>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <span>Bar</span>
+          </figure>
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            <span>Večer</span>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="marker">05 / KONTAKT</span>
+            <h2>Bartolomějská 11</h2>
+          </div>
+          <p>Rezervace telefonicky po celý týden. E-mail pro zprávy od pondělí do pátku.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Kontakt</h3>
+            <div class="contact-list">
+              <div>
+                <small>Telefon</small>
+                <a href="tel:+420608006044">+420 608 006 044</a>
+              </div>
+              <div>
+                <small>E-mail</small>
+                <a href="mailto:kavarna.ponrepo@gmail.com">kavarna.ponrepo@gmail.com</a>
+              </div>
+              <div>
+                <small>Adresa</small>
+                <span>11, Bartolomějská 291, Staré Město, 110 00 Praha-Praha 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-row today"><span>Pondělí až pátek</span><span>10:00-01:00</span></div>
+            <div class="hours-row"><span>Sobota a neděle</span><span>14:00-01:00</span></div>
+            <p style="margin-top: 18px;">Rezervace: telefonicky PO-NE, e-mailem PO-PÁ.</p>
+          </div>
+        </div>
+        <div style="margin-top: 40px;">
+          <div id="map" aria-label="Mapa Kavárny Ponrepo"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="marker">06 / PRAKTICKY</span>
+            <h2>Časté otázky</h2>
+          </div>
+          <p>Krátké odpovědi pro návštěvu kavárny před filmem, po filmu i mimo projekci.</p>
+        </div>
+        <div class="faq">
+          <div class="qa">
+            <strong>Dá se rezervovat?</strong>
+            <p>Ano, rezervace přijímají na čísle +420 608 006 044 po celý týden.</p>
+          </div>
+          <div class="qa">
+            <strong>Kdy psát e-mail?</strong>
+            <p>Na adresu kavarna.ponrepo@gmail.com můžete psát od pondělí do pátku.</p>
+          </div>
+          <div class="qa">
+            <strong>Je kavárna přímo u kina?</strong>
+            <p>Ano, kavárna je před vstupem do kinosálu Ponrepo v Bartolomějské.</p>
+          </div>
+          <div class="qa">
+            <strong>Co si dát?</strong>
+            <p>V nabídce je káva, limo, víno, pivo a jídlo podle aktuálního provozu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <span class="marker">KAVÁRNA PONREPO</span>
+          <h2>Sejdeme se před sálem.</h2>
+        </div>
+        <a class="btn primary" href="tel:+420608006044">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>© Kavárna Ponrepo · Bartolomějská 11 · Praha 1</span>
+      <span>Vytvořil Webflex jako nezávaznou prezentační stránku. <a href="https://webflex.cz/delete/uwnuawe">Smazat stránku</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.417590899999999, 50.0830851],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#FFEA00' })
+      .setLngLat([14.417590899999999, 50.0830851])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
