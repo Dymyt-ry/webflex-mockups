@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bolt Café - kavárna (DOV)</title>
+  <meta name="description" content="Bolt Café v Dolních Vítkovicích. Káva, občerstvení a místo pro pauzu uprostřed industriálního areálu v Ostravě-Vítkovicích.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --paper: #ffffff;
+      --panel: #f2f0ea;
+      --ink: #111111;
+      --muted: #5d5a52;
+      --line: rgba(17, 17, 17, .18);
+      --line-strong: #111111;
+      --accent: #E0C000;
+      --accent-dark: #8c7800;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(17,17,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,17,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); letter-spacing: .01em; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent-dark);
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,248,.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .nav-links a {
+      padding: 10px 0;
+      border-bottom: 2px solid transparent;
+      transition: border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .nav-links a:hover { border-color: var(--accent); color: #000; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 14px 18px;
+      border: 1px solid var(--line-strong);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); background: #111; color: #fff; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #111; }
+    .btn-primary:hover { background: #111; color: #fff; }
+    .btn-outline { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+
+    .hero {
+      padding: 72px 0 54px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      gap: 46px;
+      align-items: center;
+    }
+    h1 {
+      margin: 16px 0 20px;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: #222;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.05) saturate(.85);
+    }
+    .hero-photo::after {
+      content: "DOV / BOLT CAFE";
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      padding: 7px 9px;
+      background: var(--accent);
+      color: #111;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+      margin-bottom: 30px;
+    }
+    .sec-no {
+      font-family: var(--font-display);
+      font-size: 58px;
+      line-height: .9;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--line-strong);
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 58px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-copy { max-width: 720px; color: var(--muted); margin: 14px 0 0; }
+
+    .bay-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.58);
+    }
+    .bay-row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) 180px;
+      gap: 28px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .bay-row:last-child { border-bottom: 0; }
+    .bay-row strong {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .bay-row p { margin: 0; color: var(--muted); }
+    .tag {
+      justify-self: end;
+      border: 1px solid var(--line-strong);
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: var(--accent);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      align-items: stretch;
+    }
+    .metric {
+      padding: 28px;
+      min-height: 150px;
+      border-right: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric:last-child { border-right: 0; }
+    .metric b {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 5vw, 72px);
+      line-height: .9;
+    }
+    .metric span {
+      margin-top: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-stack figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: #111;
+      overflow: hidden;
+    }
+    .photo-stack figure:first-child { grid-column: 1 / -1; }
+    .photo-stack img {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.03);
+    }
+    .info-panel {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .info-panel h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .spec-table {
+      border-top: 1px solid var(--line-strong);
+    }
+    .spec {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .spec dt {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .spec dd { margin: 0; font-weight: 700; }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: 28px;
+    }
+    .contact-card h3 {
+      margin: 0 0 20px;
+      font-family: var(--font-display);
+      font-size: 34px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours th, .hours td {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    .hours td:last-child { text-align: right; font-weight: 700; }
+    .today th, .today td { color: #111; background: linear-gradient(90deg, rgba(224,192,0,.22), transparent); }
+    .contact-lines {
+      display: grid;
+      gap: 12px;
+      margin-top: 24px;
+      font-weight: 700;
+    }
+    .contact-lines a {
+      border-bottom: 1px solid var(--line-strong);
+      padding-bottom: 4px;
+      transition: color .2s var(--ease), border-color .2s var(--ease);
+    }
+    .contact-lines a:hover { color: var(--accent-dark); border-color: var(--accent); }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+    }
+
+    .faq {
+      border-top: 1px solid var(--line-strong);
+    }
+    details {
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.45);
+    }
+    summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 22px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      font-family: var(--font-display);
+      font-size: 22px;
+      text-transform: uppercase;
+      transition: color .2s var(--ease);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; font-family: var(--font-mono); color: var(--accent-dark); }
+    details[open] summary::after { content: "-"; }
+    summary:hover { color: var(--accent-dark); }
+    details p { margin: 0; max-width: 760px; padding: 0 0 24px; color: var(--muted); }
+
+    .final-cta {
+      padding: 46px 0;
+      background: #111;
+      color: #fff;
+      border-top: 1px solid #111;
+      border-bottom: 1px solid #111;
+    }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { color: #fff; max-width: 760px; }
+    .final-cta p { margin: 12px 0 0; color: rgba(255,255,255,.72); }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-cta .btn:hover { background: #fff; color: #111; }
+
+    footer {
+      padding: 28px 0;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border-top: 1px solid var(--line-strong);
+      background: var(--bg);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 66px; }
+      .nav-links { display: none; }
+      .hero { padding-top: 46px; }
+      .hero-grid, .split, .hours-contact, .cta-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .sec-no { font-size: 42px; }
+      .bay-row { grid-template-columns: 1fr; gap: 10px; }
+      .tag { justify-self: start; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .metric:last-child { border-bottom: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      section { padding: 54px 0; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .photo-stack { grid-template-columns: 1fr; }
+      .photo-stack figure:first-child { grid-column: auto; }
+      .spec { grid-template-columns: 1fr; gap: 4px; }
+      #map { height: 330px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Bolt Café - kavárna (DOV)">
+        <img src="https://www.dolnivitkovice.cz/wp-content/themes/dov/img/logo.svg" alt="Bolt Café - kavárna (DOV)">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#areal">Areál</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420724955121">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Dolní Vítkovice · Ruská 2993</div>
+          <h1>Káva mezi vysokými pecemi</h1>
+          <p class="lead">Bolt Café je kavárna v areálu Dolních Vítkovic: zastávka na šálek kávy, něco malého k jídlu a klidnou pauzu mezi prohlídkou, akcí nebo cestou do Světa techniky.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Najít kavárnu</a>
+            <a class="btn btn-outline" href="mailto:infocentrum@dolnivitkovice.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-photo" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="sec-no">01</div>
+          <div>
+            <div class="eyebrow">Nabídka v provozu</div>
+            <h2>Pauza v trase areálem</h2>
+            <p class="section-copy">Přijďte na kávu, občerstvení a chvíli na sezení v industriálním prostředí DOV. Kavárna funguje jako přirozený bod pro návštěvníky atraktivit, programů a akcí v areálu.</p>
+          </div>
+        </div>
+        <div class="bay-list">
+          <div class="bay-row">
+            <strong>Káva</strong>
+            <p>Šálek před prohlídkou, po programu nebo mezi přesuny v areálu Dolních Vítkovic.</p>
+            <span class="tag">bar</span>
+          </div>
+          <div class="bay-row">
+            <strong>Občerstvení</strong>
+            <p>Něco malého k jídlu pro návštěvníky, rodiny i skupiny, které tráví den v DOV.</p>
+            <span class="tag">pauza</span>
+          </div>
+          <div class="bay-row">
+            <strong>Setkání</strong>
+            <p>Místo, kde se dá počkat, domluvit další program a nadechnout se mezi industriálními stavbami.</p>
+            <span class="tag">DOV</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěryhodnost">
+      <div class="wrap">
+        <div class="metrics">
+          <div class="metric">
+            <b>4,5</b>
+            <span>hodnocení na Googlu</span>
+          </div>
+          <div class="metric">
+            <b>326</b>
+            <span>recenzí návštěvníků</span>
+          </div>
+          <div class="metric">
+            <b>DOV</b>
+            <span>součást Dolních Vítkovic</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areal">
+      <div class="wrap split">
+        <div class="photo-stack">
+          <figure>
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+        </div>
+        <div class="info-panel">
+          <div>
+            <div class="eyebrow">02 · orientace</div>
+            <h3>Po kávě rovnou za programem</h3>
+          </div>
+          <p class="section-copy">Bolt Café patří mezi občerstvení v Dolních Vítkovicích. V jednom areálu navážete na Bolt Tower, Velký svět techniky, U6, Gong, FUTUREUM i další zastávky.</p>
+          <dl class="spec-table">
+            <div class="spec">
+              <dt>Adresa</dt>
+              <dd>Ruská 2993, 703 00 Ostrava-Vítkovice</dd>
+            </div>
+            <div class="spec">
+              <dt>Telefon</dt>
+              <dd><a href="tel:+420724955121">+420 724 955 121</a></dd>
+            </div>
+            <div class="spec">
+              <dt>E-mail</dt>
+              <dd><a href="mailto:infocentrum@dolnivitkovice.cz">infocentrum@dolnivitkovice.cz</a></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="sec-no">03</div>
+          <div>
+            <div class="eyebrow">Kontakt a mapa</div>
+            <h2>Ruská 2993, Ostrava</h2>
+            <p class="section-copy">Pro aktuální informace k návštěvě areálu volejte nebo pište na infocentrum Dolních Vítkovic.</p>
+          </div>
+        </div>
+        <div class="hours-contact">
+          <div class="contact-card">
+            <h3>Provozní info</h3>
+            <table class="hours" aria-label="Provozní informace">
+              <tbody>
+                <tr><th>Po</th><td>podle provozu areálu</td></tr>
+                <tr><th>Út</th><td>podle provozu areálu</td></tr>
+                <tr><th>St</th><td>podle provozu areálu</td></tr>
+                <tr class="today"><th>Čt</th><td>ověřte před návštěvou</td></tr>
+                <tr><th>Pá</th><td>podle provozu areálu</td></tr>
+                <tr><th>So</th><td>podle programu DOV</td></tr>
+                <tr><th>Ne</th><td>podle programu DOV</td></tr>
+              </tbody>
+            </table>
+            <div class="contact-lines">
+              <a href="tel:+420724955121">+420 724 955 121</a>
+              <a href="mailto:infocentrum@dolnivitkovice.cz">infocentrum@dolnivitkovice.cz</a>
+              <span>Ruská 2993, 703 00 Ostrava-Vítkovice</span>
+            </div>
+          </div>
+          <div class="map-card">
+            <div id="map" role="img" aria-label="Mapa s polohou Bolt Café v Dolních Vítkovicích"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="sec-no">04</div>
+          <div>
+            <div class="eyebrow">Nejčastější dotazy</div>
+            <h2>Než dorazíte</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Kde kavárnu najdu?</summary>
+            <p>V areálu Dolních Vítkovic na adrese Ruská 2993 v Ostravě-Vítkovicích. Orientujte se podle mapy areálu a programu DOV.</p>
+          </details>
+          <details>
+            <summary>Je kavárna vhodná mezi programy?</summary>
+            <p>Ano. Bolt Café je praktická zastávka pro kávu a občerstvení mezi atraktivitami, prohlídkami a akcemi v areálu.</p>
+          </details>
+          <details>
+            <summary>Jak ověřím aktuální provoz?</summary>
+            <p>Pro aktuální odpověď zavolejte na +420 724 955 121 nebo napište na infocentrum@dolnivitkovice.cz.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-grid">
+        <div>
+          <div class="eyebrow">Bolt Café · DOV</div>
+          <h2>Zastavte se na kávu v areálu</h2>
+          <p>Ruská 2993, Ostrava-Vítkovice · kontakt přes infocentrum Dolních Vítkovic.</p>
+        </div>
+        <a class="btn btn-outline" href="https://www.dolnivitkovice.cz/">Otevřít DOV</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Prezentační stránku připravil Webflex pro Bolt Café - kavárna (DOV).</span>
+      <a href="https://app.webflex.cz/delete/58xrvq7">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2766947, 49.8194784],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#E0C000' })
+      .setLngLat([18.2766947, 49.8194784])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
