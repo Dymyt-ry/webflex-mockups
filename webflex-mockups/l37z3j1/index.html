@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossCafe Masarykovo náměstí | Kavárna v Pardubicích</title>
+  <meta name="description" content="CrossCafe Masarykovo náměstí v Paláci Magnum. Výběrová káva, snídaně, obědové menu, domácí zákusky, studijní prostor a zahrádka.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Geist+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f1f0ed;
+      --ink: #171514;
+      --muted: #68615c;
+      --line: rgba(23, 21, 20, .10);
+      --line-strong: rgba(23, 21, 20, .18);
+      --accent: #A00020;
+      --accent-dark: #780018;
+      --accent-soft: #f5e6e9;
+      --shadow: 0 28px 90px rgba(40, 34, 30, .08);
+      --shadow-soft: 0 18px 70px rgba(40, 34, 30, .06);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,21,20,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,20,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: var(--wrap);
+      margin-inline: auto;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+    .btn.secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(160, 0, 32, .06); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      width: auto;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: #514c48;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, .82fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #4f4945;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.88);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 18px 40px rgba(0,0,0,.10);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p {
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 10px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(220px, .45fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: 26px;
+      min-height: 122px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+      transition: transform 200ms var(--ease), background 200ms var(--ease);
+    }
+    .service-row:hover {
+      transform: translateY(-1px);
+      background: #fff;
+    }
+    .service-index {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .service-row p { max-width: 720px; }
+    .service-tag {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #5e5650;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      white-space: nowrap;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: var(--s3);
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 5vw, 72px);
+      line-height: .9;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+    .stat .mono {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .82fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .feature-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: var(--s5);
+    }
+    .feature {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .feature svg {
+      width: 26px;
+      height: 26px;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+    .feature b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+    }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(420px, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      padding: 30px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .contact-line {
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+    .contact-line a,
+    .contact-line strong {
+      font-size: 18px;
+      color: var(--ink);
+    }
+    .hours-table {
+      display: grid;
+      margin-top: 26px;
+      gap: 8px;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .map-wrap {
+      margin-top: var(--s4);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    #map {
+      height: 420px;
+      width: 100%;
+    }
+
+    .gallery {
+      overflow: hidden;
+    }
+    .gallery-rail {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-item.tall { min-height: 380px; }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--s3);
+    }
+    .faq-item {
+      padding: 26px;
+      min-height: 172px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq-item h3 { margin-bottom: 12px; }
+
+    .final-cta {
+      padding-bottom: var(--s8);
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: clamp(32px, 5vw, 58px);
+      border-radius: 32px;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 32px 100px rgba(160,0,32,.18);
+    }
+    .cta-panel h2,
+    .cta-panel p { color: #fff; }
+    .cta-panel p {
+      margin-top: 14px;
+      max-width: 620px;
+      opacity: .86;
+    }
+    .cta-panel .btn.primary {
+      background: #fff;
+      color: var(--accent);
+      border-color: #fff;
+    }
+    .cta-panel .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.55);
+    }
+    .cta-panel .btn.secondary:hover { background: rgba(255,255,255,.12); }
+    .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .site-footer {
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .credit-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+    }
+    .disclaimer a {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    @media (max-width: 920px) {
+      :root { --wrap: min(100% - 28px, 720px); }
+      .nav { min-height: 70px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero,
+      section { padding: 58px 0; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .hours-contact,
+      .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo,
+      .split-photo { aspect-ratio: 4 / 3; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .service-tag { justify-self: start; white-space: normal; }
+      .trust-strip,
+      .faq-list,
+      .gallery-rail { grid-template-columns: 1fr; }
+      .stat { min-height: 150px; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .logo img { max-height: 34px; }
+      .nav .btn { display: none; }
+      .hero-actions,
+      .cta-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .contact-card,
+      .hours-card,
+      .service-row,
+      .faq-item { padding: 22px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="CrossCafe Masarykovo náměstí">
+        <img src="https://www.crosscafe.cz//images/logo.svg" alt="CrossCafe Masarykovo náměstí">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#prostor">Prostor</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420724902010">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Pardubice · Palác Magnum</div>
+          <h1 id="hero-title">Káva na třídě Míru</h1>
+          <p class="hero-lead">Zastavte se na snídani, obědové menu, rychlou svačinu nebo domácí zákusek s lahodnou kávou v útulné kavárně na Masarykově náměstí.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn secondary" href="mailto:masarykovonamesti@crosscafe.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Vybavení kavárny">
+            <span class="meta-pill">Wi-Fi</span>
+            <span class="meta-pill">Dog friendly</span>
+            <span class="meta-pill">Zahrádka</span>
+            <span class="meta-pill">Bezbariérový přístup</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-label">Každý den do 19:00</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="nabidka-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si dát</div>
+            <h2 id="nabidka-title">Od ranní kávy po zákusek</h2>
+          </div>
+          <p>Kavárna je připravená na krátkou zastávku, práci u šálku i delší posezení s rodinou nebo přáteli.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="service-index">01</span>
+            <div>
+              <h3>Snídaně a káva</h3>
+              <p>Ranní šálek, něco sladkého i slaného a klidný start dne přímo v centru Pardubic.</p>
+            </div>
+            <span class="service-tag">Po-Pá od 7:00</span>
+          </article>
+          <article class="service-row">
+            <span class="service-index">02</span>
+            <div>
+              <h3>Obědové menu</h3>
+              <p>Výhodné obědové menu pro pracovní pauzu, setkání ve městě nebo rychlý oběd cestou.</p>
+            </div>
+            <span class="service-tag">Přes den</span>
+          </article>
+          <article class="service-row">
+            <span class="service-index">03</span>
+            <div>
+              <h3>Domácí zákusky</h3>
+              <p>Dezert ke kávě, svačina mezi schůzkami nebo sladká tečka po procházce třídou Míru.</p>
+            </div>
+            <span class="service-tag">Každý den</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Proč sem zajít</div>
+            <h2 id="duvera-title">Příjemné místo v centru</h2>
+          </div>
+          <p>CrossCafe Masarykovo náměstí je druhou kavárnou CrossCafe v Pardubicích a nabízí několik prostorů pro relax, studium i setkání.</p>
+        </div>
+        <div class="trust-strip">
+          <article class="stat">
+            <span class="mono">Hodnocení</span>
+            <div><strong>4,6</strong><span>podle 45 recenzí</span></div>
+          </article>
+          <article class="stat">
+            <span class="mono">Poloha</span>
+            <div><strong>2800</strong><span>tř. Míru, Palác Magnum</span></div>
+          </article>
+          <article class="stat">
+            <span class="mono">Víkend</span>
+            <div><strong>8-19</strong><span>otevřeno v sobotu i neděli</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="prostor" aria-labelledby="prostor-title">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+        <div>
+          <div class="eyebrow">Vybavení</div>
+          <h2 id="prostor-title">Na práci i posezení</h2>
+          <p class="hero-lead">Uvnitř najdete studijní prostor, knihovnu, klimatizaci a bezbariérový přístup. Venku můžete využít zahrádku, když počasí přeje.</p>
+          <div class="feature-stack">
+            <div class="feature">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M6 11h12M8 15h8M10 19h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div><b>Studijní prostor a Wi-Fi</b><p>Pro notebook, poznámky i soustředěnou chvíli u kávy.</p></div>
+            </div>
+            <div class="feature">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V6.5A2.5 2.5 0 0 1 7.5 4H19v15H7.5A2.5 2.5 0 0 0 5 21m0-2a2.5 2.5 0 0 1 2.5-2H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div><b>Knihovna a klidné kouty</b><p>Několik prostorů pro relax, rozhovor i chvíli o samotě.</p></div>
+            </div>
+            <div class="feature">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16M12 4v16M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div><b>Klimatizace a zahrádka</b><p>Pohodlné posezení uvnitř i venku během dne.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery" aria-labelledby="atmosfera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 id="atmosfera-title">Teplé světlo, klidný rytmus</h2>
+          </div>
+          <p>Prostor pro ranní plán dne, pracovní pauzu i odpolední setkání s přáteli.</p>
+        </div>
+        <div class="gallery-rail">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap hours-contact">
+        <div class="contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2 id="kontakt-title">CrossCafe Masarykovo náměstí</h2>
+          <div class="contact-grid">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>tř. Míru 2800, 530 02 Pardubice I</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420724902010">+420 724 902 010</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:masarykovonamesti@crosscafe.cz">masarykovonamesti@crosscafe.cz</a>
+            </div>
+          </div>
+          <div class="map-wrap">
+            <div id="map" aria-label="Mapa kavárny CrossCafe Masarykovo náměstí"></div>
+          </div>
+        </div>
+        <aside class="hours-card">
+          <div class="eyebrow">Otevírací doba</div>
+          <h2>Dnes otevřeno</h2>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="hours-row today"><span>Čtvrtek</span><span>7:00-19:00</span></div>
+            <div class="hours-row"><span>Pondělí</span><span>7:00-19:00</span></div>
+            <div class="hours-row"><span>Úterý</span><span>7:00-19:00</span></div>
+            <div class="hours-row"><span>Středa</span><span>7:00-19:00</span></div>
+            <div class="hours-row"><span>Pátek</span><span>7:00-19:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>8:00-19:00</span></div>
+            <div class="hours-row"><span>Neděle</span><span>8:00-19:00</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Dobré vědět</div>
+            <h2 id="faq-title">Než dorazíte</h2>
+          </div>
+          <p>Krátké odpovědi na věci, které se při návštěvě kavárny hodí znát.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Dá se platit kartou?</h3>
+            <p>Ano, v kavárně přijímáme platební karty.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Můžu přijít se psem?</h3>
+            <p>Ano, kavárna je dog friendly.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je prostor bezbariérový?</h3>
+            <p>Ano, kavárna uvádí bezbariérový přístup.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Hodí se místo ke studiu?</h3>
+            <p>Ano, k dispozici je studijní prostor, Wi-Fi a knihovna.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="cta-title">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <h2 id="cta-title">Stavte se na kávu</h2>
+            <p>Najdete nás v Paláci Magnum na třídě Míru. Ve všední dny otevíráme v 7:00, o víkendu v 8:00.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn primary" href="tel:+420724902010">Zavolat</a>
+            <a class="btn secondary" href="https://www.crosscafe.cz/kavarny/crosscafe-masarykovo-namesti/">Oficiální profil</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>CrossCafe Masarykovo náměstí · tř. Míru 2800, Pardubice I</span>
+        <div class="credit-links" aria-label="Fotografie">
+          <a href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Foto: Việt Anh Nguyễn</a>
+          <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>
+          <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>
+          <a href="https://www.pexels.com/@nguy-n-thanh-nh-n-203569019">NGUYỄN THÀNH NHƠN</a>
+        </div>
+      </div>
+      <div class="disclaimer">
+        Neoficiální prezentační stránka připravená studiem Webflex. Pokud si nepřejete její zobrazení, můžete ji odstranit zde:
+        <a href="https://webflex.cz/remove/l37z3j1">webflex.cz/remove/l37z3j1</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7704475, 50.0364584],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A00020' })
+      .setLngLat([15.7704475, 50.0364584])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
