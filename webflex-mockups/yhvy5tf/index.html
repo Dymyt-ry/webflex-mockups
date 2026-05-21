@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Café Maryša | Káva ve Wolfrumově vile</title>
+  <meta name="description" content="Café Maryša v Knihovně Ústeckého kraje. Káva, čaj, Maryšiny limonády, regionální zákusky a kulturní akce ve Velké Hradební 49." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #171713;
+      --muted: #6d6a60;
+      --soft: #efeee8;
+      --accent: #E0C000;
+      --accent-dark: #5e5200;
+      --shadow: 0 28px 90px rgba(22, 22, 18, 0.09);
+      --shadow-soft: 0 18px 70px rgba(22, 22, 18, 0.06);
+      --radius: 24px;
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,23,19,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,19,.025) 1px, transparent 1px),
+        radial-gradient(circle at 74% 12%, rgba(224, 192, 0, .18), transparent 26rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    .page {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(22px);
+      background: rgba(251, 251, 248, .82);
+      border-bottom: 1px solid rgba(23, 23, 19, .06);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      transition: color 180ms var(--ease);
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .button:focus-visible,
+    .ghost:focus-visible,
+    .tile:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .button,
+    .ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+
+    .button {
+      color: #15130a;
+      background: var(--accent);
+      box-shadow: 0 12px 34px rgba(224, 192, 0, .26);
+    }
+
+    .ghost {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+
+    .button:hover,
+    .ghost:hover,
+    .tile:hover {
+      transform: translateY(-1px);
+    }
+
+    .button:active,
+    .ghost:active,
+    .tile:active {
+      transform: translateY(1px);
+    }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: clamp(32px, 6vw, 78px);
+      padding: 72px 0 84px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin: 0 0 18px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 23px);
+      color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .hero-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-note {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 14px 44px rgba(20,20,16,.12);
+    }
+
+    .hero-note strong,
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      letter-spacing: -.02em;
+    }
+
+    .hero-note span,
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    section { padding: 84px 0; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .45fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.3vw, 64px);
+      line-height: 1;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(180px, .34fr);
+      gap: 26px;
+      align-items: center;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .service-row h3 {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 800;
+      line-height: 1.06;
+    }
+
+    .service-row p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat,
+    .hours-card,
+    .event-card,
+    .contact-panel,
+    .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      border-radius: var(--radius);
+    }
+
+    .stat {
+      padding: 28px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong {
+      font-size: clamp(34px, 5vw, 58px);
+      color: var(--ink);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hours-card {
+      padding: 30px;
+    }
+
+    .hours-card h2 {
+      font-size: clamp(32px, 4vw, 52px);
+      margin-bottom: 26px;
+    }
+
+    .hours {
+      display: grid;
+      gap: 8px;
+    }
+
+    .day {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(23,23,19,.08);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .day.today {
+      padding: 13px 14px;
+      margin: 0 -14px;
+      border-radius: 14px;
+      background: rgba(224,192,0,.2);
+      border-bottom-color: transparent;
+    }
+
+    .event-card {
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: minmax(260px, 1fr) auto;
+    }
+
+    .event-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      aspect-ratio: 16 / 10;
+    }
+
+    .event-copy {
+      padding: 28px;
+    }
+
+    .event-copy h3 {
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 1;
+      font-family: var(--font-display);
+    }
+
+    .event-copy p {
+      color: var(--muted);
+      margin: 14px 0 0;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      min-height: 280px;
+    }
+
+    .gallery-side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, .8fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .contact-panel {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .contact-line {
+      display: grid;
+      gap: 4px;
+    }
+
+    .contact-line span {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .contact-line strong,
+    .contact-line a {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      padding: 26px;
+    }
+
+    .faq-item h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .faq-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .cta {
+      margin: 42px 0 88px;
+      padding: clamp(34px, 6vw, 70px);
+      border-radius: 36px;
+      background: #181814;
+      color: #fffdf2;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .cta h2 {
+      font-size: clamp(34px, 5vw, 72px);
+    }
+
+    .cta p {
+      margin: 14px 0 0;
+      color: rgba(255,255,255,.72);
+      max-width: 600px;
+    }
+
+    .cta .ghost {
+      color: #ffffff;
+      border-color: rgba(255,255,255,.45);
+    }
+
+    .footer {
+      padding: 26px 0 34px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid rgba(23,23,19,.08);
+    }
+
+    .footer-disclaimer {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #8a867a;
+    }
+
+    .footer-disclaimer a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .gallery,
+      .contact-grid,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        padding-top: 46px;
+      }
+      .hero-card { min-width: 0; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .stats,
+      .faq {
+        grid-template-columns: 1fr;
+      }
+      .cta {
+        margin-bottom: 58px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 24px, 1180px); }
+      section { padding: 58px 0; }
+      .hero-note {
+        position: static;
+        margin: -76px 14px 14px;
+      }
+      .hero-card {
+        border-radius: 24px;
+      }
+      .service-row,
+      .hours-card,
+      .contact-panel,
+      .stat,
+      .faq-item {
+        padding: 22px;
+      }
+      .cta {
+        border-radius: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="page nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top">Café Maryša</a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#otevreno">Otevírací doba</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="button" href="tel:+420721945653">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="page hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">Ústí nad Labem · Velká Hradební 49</p>
+        <h1 id="hero-title">Káva ve Wolfrumově vile</h1>
+        <p class="lead">Klidná kavárna v přízemí Knihovny Ústeckého kraje. Přijďte na kávu, čaj, Maryšiny limonády, zákusky z regionálních zdrojů nebo kulturní akci.</p>
+        <div class="hero-actions">
+          <a class="button" href="#kontakt">Najít kavárnu</a>
+          <a class="ghost" href="mailto:cafe.marysa@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+      <figure class="hero-card" aria-label="Atmosféra kavárny">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs." />
+        <figcaption class="hero-note">
+          <div>
+            <strong>8.30-18.30</strong>
+            <span>pondělí až pátek</span>
+          </div>
+          <div>
+            <strong>4,7</strong>
+            <span>hodnocení Google</span>
+          </div>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="nabidka" class="page" aria-labelledby="offer-title">
+      <div class="section-head">
+        <h2 id="offer-title">Co si u Maryši dáte</h2>
+        <p>Nabídka stojí na nápojích, sladkém z regionálních zdrojů a programu, který přirozeně navazuje na život knihovny.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01 / ŠÁLEK</span>
+          <h3>Káva a čaj</h3>
+          <p>Espresso, filtrovaná nálada dne i čaj pro pomalé čtení mezi regály.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02 / SKLO</span>
+          <h3>Maryšiny limonády</h3>
+          <p>Domácí nealko nápoje pro rychlou zastávku, pracovní schůzku i odpoledne s knihou.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03 / TALÍŘ</span>
+          <h3>Regionální zákusky</h3>
+          <p>Sladké z místních zdrojů, podle denní nabídky a sezóny.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04 / VEČER</span>
+          <h3>Kulturní akce</h3>
+          <p>Komorní programy, setkání a kavárenské chvíle spojené s knihovnou.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="page" aria-labelledby="trust-title">
+      <div class="section-head">
+        <h2 id="trust-title">Zastávka v centru města</h2>
+        <p>Adresa, hodnocení i otevírací doba vycházejí z veřejných údajů kavárny.</p>
+      </div>
+      <div class="stats">
+        <article class="stat">
+          <span>Google hodnocení</span>
+          <strong>4,7</strong>
+          <span>z recenzí návštěvníků</span>
+        </article>
+        <article class="stat">
+          <span>Počet recenzí</span>
+          <strong>45</strong>
+          <span>veřejně uvedených ohlasů</span>
+        </article>
+        <article class="stat">
+          <span>Adresa</span>
+          <strong>49</strong>
+          <span>Velká Hradební, Ústí nad Labem</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="otevreno" class="page split" aria-labelledby="hours-title">
+      <article class="hours-card">
+        <p class="eyebrow">Otevírací doba</p>
+        <h2 id="hours-title">Přijďte ve všední den</h2>
+        <div class="hours" aria-label="Otevírací doba">
+          <div class="day"><span>Pondělí</span><strong>8.30-18.30</strong></div>
+          <div class="day"><span>Úterý</span><strong>8.30-18.30</strong></div>
+          <div class="day"><span>Středa</span><strong>8.30-18.30</strong></div>
+          <div class="day today"><span>Čtvrtek</span><strong>8.30-18.30</strong></div>
+          <div class="day"><span>Pátek</span><strong>8.30-18.30</strong></div>
+          <div class="day"><span>Sobota</span><strong>zavřeno</strong></div>
+          <div class="day"><span>Neděle</span><strong>zavřeno</strong></div>
+        </div>
+      </article>
+      <article class="event-card">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere." />
+        <div class="event-copy">
+          <p class="eyebrow">Kavárna v knihovně</p>
+          <h3>Na chvíli se zastavit</h3>
+          <p>Mezi pochůzkami, po půjčení knih nebo před kulturním programem. Café Maryša je v přízemí Wolfrumovy vily.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="page" aria-labelledby="gallery-title">
+      <div class="section-head">
+        <h2 id="gallery-title">Teplé světlo, klidný stůl</h2>
+        <p>Místo pro tichý šálek, krátké setkání i chvíli před odchodem zpět do města.</p>
+      </div>
+      <div class="gallery">
+        <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting." />
+        <div class="gallery-side">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns." />
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus." />
+        </div>
+      </div>
+    </section>
+
+    <section class="page" aria-labelledby="faq-title">
+      <div class="section-head">
+        <h2 id="faq-title">Než vyrazíte</h2>
+        <p>Praktické odpovědi pro návštěvu kavárny ve všední den.</p>
+      </div>
+      <div class="faq">
+        <article class="faq-item">
+          <h3>Kde kavárnu najdu?</h3>
+          <p>Na adrese Velká Hradební 49 v Ústí nad Labem, v Knihovně Ústeckého kraje ve Wolfrumově vile.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Je otevřeno o víkendu?</h3>
+          <p>Sobota a neděle jsou zavřené. Ve všední dny je otevřeno od 8.30 do 18.30.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Koho kontaktovat?</h3>
+          <p>Provozní je Štěpánka Prusíková. Napsat můžete na cafe.marysa@gmail.com nebo zavolat na 721 945 653.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt" class="page" aria-labelledby="contact-title">
+      <div class="section-head">
+        <h2 id="contact-title">Kontakt a cesta</h2>
+        <p>Kavárna je v centru Ústí nad Labem, v přízemí Knihovny Ústeckého kraje.</p>
+      </div>
+      <div class="contact-grid">
+        <aside class="contact-panel">
+          <div class="contact-line">
+            <span>Adresa</span>
+            <strong>Velká Hradební 49, 400 01 Ústí nad Labem-město</strong>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a href="tel:+420721945653">+420 721 945 653</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:cafe.marysa@gmail.com">cafe.marysa@gmail.com</a>
+          </div>
+          <div class="contact-line">
+            <span>Provozní</span>
+            <strong>Štěpánka Prusíková</strong>
+          </div>
+          <a class="button" href="https://www.google.com/maps/search/?api=1&query=Velk%C3%A1%20Hradebn%C3%AD%2049%2C%20400%2001%20%C3%9Ast%C3%AD%20nad%20Labem-m%C4%9Bsto">Otevřít trasu</a>
+        </aside>
+        <div id="map" aria-label="Mapa s polohou Café Maryša"></div>
+      </div>
+    </section>
+
+    <section class="page cta" aria-labelledby="cta-title">
+      <div>
+        <h2 id="cta-title">Dnes na kávu?</h2>
+        <p>Ve čtvrtek 21. května 2026 je podle uvedené otevírací doby otevřeno 8.30-18.30.</p>
+      </div>
+      <a class="ghost" href="tel:+420721945653">Zavolat do kavárny</a>
+    </section>
+  </main>
+
+  <footer class="page footer">
+    <div>Fotografie: Valeria Boltneva, Daniil Kondrashin, NGUYỄN THÀNH NHƠN a Việt Anh Nguyễn přes Pexels.</div>
+    <div class="footer-disclaimer">
+      Tuto prezentační stránku připravil Webflex. Nejste-li adresátem nebo si přejete odstranění, pokračujte zde:
+      <a href="https://webflex.cz/remove/yhvy5tf">odstranit stránku</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0436924, 50.662359699999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C000' })
+      .setLngLat([14.0436924, 50.662359699999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
