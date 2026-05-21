@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kafe Palača | Kavárna v Ostravě-Porubě</title>
+  <meta name="description" content="Kafe Palača na Hlavní třídě v Ostravě-Porubě. Káva, sladká tečka, útulný interiér, zahrádka, dětský koutek a bezbariérový přístup.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101112;
+      --panel: #171413;
+      --panel-soft: rgba(255, 255, 255, .055);
+      --fg: #f8f4ed;
+      --muted: rgba(248, 244, 237, .68);
+      --quiet: rgba(248, 244, 237, .48);
+      --accent: #604040;
+      --accent-2: #bfa48d;
+      --line: rgba(248, 244, 237, .12);
+      --shadow: 0 34px 90px rgba(0, 0, 0, .28);
+      --radius: 22px;
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(96, 64, 64, .26), transparent 34rem),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.6vw, 66px); }
+    h3 { font-size: clamp(21px, 2vw, 30px); }
+    p { margin: 0; color: var(--muted); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 17, 18, .76);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: 190px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--fg); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--fg); color: #14100f; }
+    .btn.primary:hover { background: #ffffff; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #ffffff; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 72px 0 62px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      align-items: center;
+      gap: 52px;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { margin-bottom: 20px; }
+    .hero-copy p {
+      margin-top: 24px;
+      max-width: 610px;
+      font-size: clamp(18px, 2vw, 23px);
+      color: rgba(248,244,237,.76);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #211917;
+    }
+    .hero-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(.96);
+    }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,.34));
+      pointer-events: none;
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(16,17,18,.72);
+      backdrop-filter: blur(16px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .86fr .9fr;
+      gap: 52px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { max-width: 580px; font-size: 18px; }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .feature-row {
+      display: grid;
+      grid-template-columns: 150px 1fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 25px 28px;
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      box-shadow: 0 22px 70px rgba(0,0,0,.12);
+    }
+    .feature-row strong {
+      font-family: var(--font-display);
+      font-size: 23px;
+      line-height: 1;
+    }
+    .feature-row span {
+      font-family: var(--font-mono);
+      color: var(--accent-2);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .stat-card, .soft-card {
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+      box-shadow: var(--shadow);
+      padding: 34px;
+    }
+    .stat-card {
+      display: grid;
+      align-content: space-between;
+      min-height: 420px;
+    }
+    .big-number {
+      font-family: var(--font-mono);
+      font-size: clamp(52px, 8vw, 114px);
+      line-height: .9;
+      font-weight: 700;
+      color: var(--fg);
+      overflow-wrap: anywhere;
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .mini-card {
+      min-height: 202px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 24px;
+      padding: 24px;
+      background: rgba(255,255,255,.055);
+    }
+    .mini-card b { font-size: 20px; }
+    .mini-card .mono { font-family: var(--font-mono); color: var(--accent-2); font-size: 13px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo-tile {
+      min-height: 340px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #211917;
+    }
+    .photo-tile.small { min-height: 260px; }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.88); }
+    .stack { display: grid; gap: 18px; }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .hours-table {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-row.today {
+      margin: 0 -14px;
+      padding: 14px;
+      border-radius: 14px;
+      border-bottom: 0;
+      background: rgba(96, 64, 64, .38);
+    }
+    .contact-links {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+    }
+    .contact-links a {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--fg);
+      transition: color 180ms var(--ease), padding-left 180ms var(--ease);
+    }
+    .contact-links a:hover { color: var(--accent-2); padding-left: 6px; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #181818;
+    }
+
+    .final-cta {
+      padding: 92px 0 112px;
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 32px;
+      border-radius: 34px;
+      padding: clamp(30px, 5vw, 62px);
+      background: linear-gradient(135deg, rgba(96,64,64,.72), rgba(255,255,255,.07));
+      box-shadow: var(--shadow);
+    }
+    .cta-panel h2 { max-width: 760px; }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer {
+      border-top: 1px solid var(--line);
+      padding: 30px 0;
+      color: var(--quiet);
+      font-size: 12px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .trust, .gallery-strip, .hours-contact, .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-card { min-width: 0; }
+      .feature-row { grid-template-columns: 1fr; gap: 12px; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 46px; }
+      section { padding: 64px 0; }
+      .hero-note { position: static; border-radius: 0; }
+      .trust-grid { grid-template-columns: 1fr; }
+      .stat-card, .soft-card { padding: 24px; border-radius: 22px; }
+      .photo-tile, .photo-tile.small { min-height: 250px; border-radius: 22px; }
+      #map { height: 340px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Kafe Palača">
+        <img src="https://cdn.website.dish.co/media/15/60/4426437/Kafe-Palaca-logo-jpg.jpg" alt="Kafe Palača">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#sluzby">Služby</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420604966960">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Ostrava-Poruba · Hlavní třída 568/71</div>
+          <h1>Kafe Palača v Porubě</h1>
+          <p>Útulná kavárna pro klidný šálek kávy, sladkou tečku a posezení v idylickém interiéru nebo na stylové zahrádce.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420604966960">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="hero-note">
+            <span>Káva · sladká tečka</span>
+            <span>Po-Pá 08:30-20:00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše nabídka</div>
+            <h2>Račte vstoupit.</h2>
+          </div>
+          <p>Personál Vám uvaří kávu, doporučí sladkou tečku a postará se o pohodové posezení přes den i po práci.</p>
+        </div>
+        <div class="feature-list">
+          <article class="feature-row">
+            <span>01 / káva</span>
+            <strong>Šálek v klidu</strong>
+            <p>Kavárna pro krátkou zastávku i delší posezení v centru Poruby.</p>
+          </article>
+          <article class="feature-row">
+            <span>02 / sladké</span>
+            <strong>Sladká tečka</strong>
+            <p>Doporučení ke kávě, když chcete zakončit den příjemněji.</p>
+          </article>
+          <article class="feature-row">
+            <span>03 / posezení</span>
+            <strong>Interiér i zahrádka</strong>
+            <p>Idylický interiér a stylová zahrádka pro dny, kdy chcete být venku.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap trust">
+        <article class="stat-card">
+          <div>
+            <div class="eyebrow">Hodnocení hostů</div>
+            <div class="big-number">4.4</div>
+          </div>
+          <p>Průměrné hodnocení z 590 recenzí. Čísla vycházejí z dostupných veřejných údajů pro Kafe Palača.</p>
+        </article>
+        <div class="trust-grid">
+          <article class="mini-card">
+            <span class="mono">Přístup</span>
+            <b>Bezbariérové</b>
+            <p>Pohodlný vstup pro hosty, kteří potřebují snadnější přístup.</p>
+          </article>
+          <article class="mini-card">
+            <span class="mono">Rodiny</span>
+            <b>Dětský koutek</b>
+            <p>Místo pro rodiče s dětmi, když se káva nemá pít ve spěchu.</p>
+          </article>
+          <article class="mini-card">
+            <span class="mono">Pohodlí</span>
+            <b>Bezplatná Wi‑Fi</b>
+            <p>Vhodné pro domluvu schůzky, krátkou práci i klidné čekání.</p>
+          </article>
+          <article class="mini-card">
+            <span class="mono">Platby</span>
+            <b>Karta i hotovost</b>
+            <p>Zaplatíte hotově, platební kartou nebo bezkontaktně.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplo kavárny.</h2>
+          </div>
+          <p>Vybrané záběry drží stejný večerní tón: měkké světlo, dřevo, sklo a stoly připravené pro dalšího hosta.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+          <div class="stack">
+            <figure class="photo-tile small">
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            </figure>
+            <article class="soft-card">
+              <div class="eyebrow">Domácí mazlíčci vítáni</div>
+              <h3>Vezměte je s sebou.</h3>
+              <p style="margin-top: 14px;">Kafe Palača počítá i s hosty, kteří chodí na kávu se svým mazlíčkem.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap hours-contact">
+        <article class="soft-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Kdy se zastavit</h2>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="hours-row today"><span>Pondělí-Pátek</span><span>08:30-20:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>09:00-19:00</span></div>
+            <div class="hours-row"><span>Neděle</span><span>Máme zavřeno</span></div>
+          </div>
+          <div class="contact-links">
+            <a href="tel:+420604966960"><span>Telefon</span><strong>+420 604 966 960</strong></a>
+            <a href="mailto:tereza.stiakova@seznam.cz"><span>E-mail</span><strong>tereza.stiakova@seznam.cz</strong></a>
+            <a href="https://www.google.com/maps/search/?api=1&query=Hlavn%C3%AD%20t%C5%99.%20568%2F71%2C%20708%2000%20Ostrava-Poruba" target="_blank" rel="noopener"><span>Adresa</span><strong>Hlavní tř. 568/71</strong></a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa Kafe Palača"></div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-panel">
+        <div>
+          <div class="eyebrow">Těšíme se na Vás</div>
+          <h2>Udělejte si pohodlí.</h2>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420604966960">Zavolat do kavárny</a>
+          <a class="btn secondary" href="mailto:tereza.stiakova@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>© Kafe Palača · Hlavní tř. 568/71, 708 00 Ostrava-Poruba</span>
+      <span>Tento Webflex koncept slouží jako nezávazná vizuální prezentace. <a href="https://webflex.cz/remove/sjo3nv9">Odstranit stránku</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.1727434, 49.8281924],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#604040' })
+      .setLngLat([18.1727434, 49.8281924])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
