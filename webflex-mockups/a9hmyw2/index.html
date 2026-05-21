@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cukrárna a Kavárna Dino | Zlín</title>
+  <meta name="description" content="Cukrárna a Kavárna Dino ve Zlíně. Pečené dorty, semifredové dorty, zákusky, zmrzlina, makronky a zmrzlinové kolo pro oslavy, firemní akce i svatby." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101113;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f8f4ec;
+      --muted: rgba(248, 244, 236, 0.70);
+      --line: rgba(248, 244, 236, 0.10);
+      --accent: #C3A05F;
+      --accent-ink: #211406;
+      --soft: #18191c;
+      --shadow: 0 34px 110px rgba(0, 0, 0, 0.34);
+      --shadow-soft: 0 28px 90px rgba(195, 160, 95, 0.09);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(195,160,95,0.18), transparent 34rem),
+        radial-gradient(circle at 12% 46%, rgba(255,255,255,0.055), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(16, 17, 19, 0.78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a,
+    .quiet-link {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .quiet-link:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0,0,0,0.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #d4b674; }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #fff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.70); }
+
+    .hero {
+      min-height: calc(100svh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.94fr) minmax(420px, 1.06fr);
+      align-items: center;
+      gap: 56px;
+      padding: 64px 0 54px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(195,160,95,0.15);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: 0.96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.45vw, 21px);
+      line-height: 1.7;
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .hero-panel {
+      position: relative;
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 44px;
+      background:
+        radial-gradient(circle at 74% 24%, rgba(195,160,95,0.22), transparent 22rem),
+        linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045));
+      box-shadow: var(--shadow), var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .hero-panel::before,
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      border: 1px solid rgba(195,160,95,0.36);
+      pointer-events: none;
+    }
+    .hero-panel::before { width: 62%; aspect-ratio: 1; right: -12%; top: -10%; }
+    .hero-panel::after { width: 72%; aspect-ratio: 1; left: -20%; bottom: -30%; opacity: 0.55; }
+
+    .plate {
+      position: absolute;
+      inset: 12% 12% auto auto;
+      width: 54%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.96) 0 18%, rgba(255,255,255,0.10) 19% 22%, transparent 23%),
+        radial-gradient(circle at 50% 50%, rgba(195,160,95,0.85) 0 44%, rgba(94,42,25,0.88) 45% 54%, rgba(255,255,255,0.10) 55% 58%, transparent 59%);
+      box-shadow: 0 36px 90px rgba(0,0,0,0.32);
+    }
+
+    .order-card {
+      position: absolute;
+      left: 28px;
+      bottom: 28px;
+      width: min(340px, calc(100% - 56px));
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(16,17,19,0.70);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 68px rgba(0,0,0,0.26);
+    }
+    .order-card strong { display: block; font-size: 18px; margin-bottom: 10px; }
+    .order-card span { color: var(--muted); font-size: 14px; }
+    .order-card .mono { margin-top: 18px; color: var(--accent); font-family: var(--font-mono); font-size: 12px; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(280px, 0.56fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p,
+    .muted { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) minmax(230px, 0.46fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 26px 80px rgba(0,0,0,0.18);
+      transition: transform 200ms var(--ease), background 200ms var(--ease);
+    }
+    .service-row:hover { transform: translateY(-2px); background: var(--surface-strong); }
+    .service-row .num { color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+    .service-row h3 { font-size: clamp(22px, 2.4vw, 36px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat-card {
+      min-height: 210px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 26px 80px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-card .value {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(34px, 5vw, 70px);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .stat-card p { margin: 22px 0 0; color: var(--muted); }
+
+    .story {
+      display: grid;
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .story-aside,
+    .story-main {
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: 0 26px 80px rgba(0,0,0,0.18);
+      padding: clamp(28px, 4vw, 48px);
+    }
+    .story-aside .year {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(38px, 5vw, 74px);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .story-main p { margin: 0 0 18px; color: var(--muted); font-size: 18px; line-height: 1.75; hyphens: auto; }
+    .story-main p:last-child { margin-bottom: 0; }
+
+    .custom-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 220px;
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(255,255,255,0.065);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 22px 70px rgba(0,0,0,0.16);
+    }
+    .step b { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+    .step h3 { margin-top: 22px; font-size: 24px; line-height: 1.05; }
+    .step p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: 0 26px 80px rgba(0,0,0,0.18);
+    }
+    .contact-card h3 { font-size: 30px; margin-bottom: 22px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 98px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .contact-line:first-of-type { border-top: 0; }
+    .contact-line b {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: 0 26px 80px rgba(0,0,0,0.20);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    details {
+      border-radius: 24px;
+      background: rgba(255,255,255,0.065);
+      padding: 22px 24px;
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final-cta {
+      padding: 54px;
+      border-radius: 38px;
+      background:
+        radial-gradient(circle at 82% 24%, rgba(195,160,95,0.26), transparent 24rem),
+        rgba(255,255,255,0.09);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 34px;
+    }
+    .final-cta h2 { max-width: 760px; }
+
+    footer {
+      padding: 42px 0 34px;
+      color: rgba(248,244,236,0.58);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 26px;
+    }
+    .webflex-disclaimer {
+      margin-top: 22px;
+      color: rgba(248,244,236,0.46);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .webflex-disclaimer a { color: rgba(248,244,236,0.72); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .story,
+      .contact-grid,
+      .final-cta { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-panel { width: 100%; }
+      .service-row { grid-template-columns: 1fr; min-height: auto; }
+      .trust-grid,
+      .custom-grid,
+      .faq { grid-template-columns: 1fr; }
+      .final-cta { padding: 34px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .brand img { max-height: 36px; }
+      .hero-panel { border-radius: 30px; }
+      .order-card { left: 16px; bottom: 16px; width: calc(100% - 32px); }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 340px; border-radius: 26px; }
+      .footer-grid { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#" aria-label="Cukrárna a Kavárna Dino">
+        <img src="https://www.cukrarna-dino.cz/assets/public/images/logo/logo-white.png" alt="Cukrárna a Kavárna Dino">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#produkty">Produkty</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#objednavka">Objednávka</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420577439172">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow">Zlín · tř. Tomáše Bati 3118</span>
+        <h1 id="hero-title">Poctivá cukrárna ve Zlíně</h1>
+        <p class="lead">Dorty, zákusky, makronky a zmrzlina z vlastní výroby. V Cukrárně DINO vám pomůžeme vybrat sladkost pro návštěvu, oslavu, firemní akci i svatbu.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#objednavka">Objednat dort</a>
+          <a class="btn btn-outline" href="#produkty">Prohlédnout nabídku</a>
+        </div>
+        <div class="meta-row">
+          <span>Hodnocení 4,2</span>
+          <span>200 recenzí</span>
+          <span>+420 577 439 172</span>
+        </div>
+      </div>
+      <div class="hero-panel" aria-hidden="true">
+        <div class="plate"></div>
+        <div class="order-card">
+          <strong>Semifredový dort podle vašich představ</strong>
+          <span>Vyberete tvar, příchuť, polevu i zdobení. Dort připravíme přesně pro vaši příležitost.</span>
+          <div class="mono">DINO · VLASTNÍ VÝROBA</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="produkty" class="wrap">
+      <div class="section-head">
+        <h2>Sladké, které má důvod se vracet.</h2>
+        <p>Sortiment vychází z vlastní výroby a tradičních postupů. Vyberete si hotový zákusek ke kávě i dort připravený na konkrétní den.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Pečené dorty</h3>
+          <p>Dorty z kvalitních surovin, připravené pečlivě pro narozeniny, rodinné oslavy i slavnostní stůl.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Semifredové dorty</h3>
+          <p>Lehké dorty inspirované tradičními italskými recepty, s výběrem tvaru, příchutě, polevy a zdobení.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Zákusky a makronky</h3>
+          <p>Jednotlivé kousky ke kávě, na návštěvu nebo jako sladký výběr pro hosty podle oblíbených chutí.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <h3>Zmrzlina a kolo</h3>
+          <p>Klasické i hravější příchutě a zmrzlinové kolo pro oslavu, firemní akci nebo svatbu.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="duvera-title">
+      <div class="section-head">
+        <h2 id="duvera-title">Známé místo pro sladké chvíle.</h2>
+        <p>Hosté sem chodí pro zákusky, dort na zakázku i rychlou zastávku u kávy. Kontakty a adresa jsou vždy po ruce.</p>
+      </div>
+      <div class="trust-grid">
+        <article class="stat-card">
+          <span class="value">4,2</span>
+          <p>Veřejné hodnocení podniku podle poskytnutých firemních údajů.</p>
+        </article>
+        <article class="stat-card">
+          <span class="value">200</span>
+          <p>Recenzí od hostů, kteří sdíleli zkušenost s návštěvou cukrárny.</p>
+        </article>
+        <article class="stat-card">
+          <span class="value">1939</span>
+          <p>Rok, kdy Josef Malota založil cukrárnu s výrobou kvalitních zákusků, dortů a vařené zmrzliny.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pribeh" class="wrap">
+      <div class="story">
+        <aside class="story-aside">
+          <div class="year">DINO</div>
+          <p class="muted" style="margin-top: 24px;">Pokračování cukrářského odkazu ve Zlíně s důrazem na kvalitu surovin, čerstvost a poctivou výrobu.</p>
+        </aside>
+        <div class="story-main">
+          <p>Cukrárna DINO navazuje na odkaz mistra cukráře Josefa Maloty. V nabídce zůstávají tradiční piškoty a zákusky, zároveň přibývají semifredové dorty, pečené dorty, makronky i sezónní suroviny.</p>
+          <p>Každý výrobek vzniká tak, aby se hodil k opravdové příležitosti: od malého šálku kávy se zákuskem až po dort, který má být středem oslavy.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="objednavka" class="wrap">
+      <div class="section-head">
+        <h2>Dort si poskládáte jednoduše.</h2>
+        <p>U semifredového dortu si určíte hlavní volby předem. Cukrářky pak připraví kombinaci přesně podle domluvených požadavků.</p>
+      </div>
+      <div class="custom-grid">
+        <article class="step">
+          <div>
+            <b>01</b>
+            <h3>Tvar dortu</h3>
+          </div>
+          <p>Zvolíte podobu, která odpovídá oslavě a počtu hostů.</p>
+        </article>
+        <article class="step">
+          <div>
+            <b>02</b>
+            <h3>Příchuť</h3>
+          </div>
+          <p>Vyberete chuť, na kterou se hosté budou těšit.</p>
+        </article>
+        <article class="step">
+          <div>
+            <b>03</b>
+            <h3>Poleva</h3>
+          </div>
+          <p>Dort dostane povrch podle zvolené kombinace.</p>
+        </article>
+        <article class="step">
+          <div>
+            <b>04</b>
+            <h3>Zdobení</h3>
+          </div>
+          <p>Finální vzhled se doladí pro narozeniny, svatbu nebo firemní setkání.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="faq-title">
+      <div class="section-head">
+        <h2 id="faq-title">Co se hodí vědět.</h2>
+        <p>Nejčastější situace, se kterými hosté do cukrárny přicházejí.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Umíte připravit dort na konkrétní příležitost?</summary>
+          <p>Ano. U dortu se domlouvá tvar, příchuť, poleva a zdobení podle toho, pro koho a na jakou událost je připravovaný.</p>
+        </details>
+        <details>
+          <summary>Je v nabídce zmrzlina na akce?</summary>
+          <p>Ano. Zmrzlinové kolo se hodí pro oslavy, firemní akce i svatby.</p>
+        </details>
+        <details>
+          <summary>Najdu u vás i malé zákusky ke kávě?</summary>
+          <p>Ano. Nabídka zahrnuje zákusky, makronky a další cukrářské výrobky z vlastní výroby.</p>
+        </details>
+        <details>
+          <summary>Kde cukrárnu najdu?</summary>
+          <p>Na adrese tř. Tomáše Bati 3118, 760 01 Zlín-Zlín 1.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="section-head">
+        <h2>Stavte se ve Zlíně.</h2>
+        <p>Pro dort na zakázku, zákusky ke kávě nebo domluvu zmrzlinového kola volejte přímo do cukrárny.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h3>Kontakt</h3>
+          <div class="contact-line">
+            <b>Adresa</b>
+            <span>tř. Tomáše Bati 3118, 760 01 Zlín-Zlín 1</span>
+          </div>
+          <div class="contact-line">
+            <b>Telefon</b>
+            <a class="quiet-link" href="tel:+420577439172">+420 577 439 172</a>
+          </div>
+          <div class="contact-line">
+            <b>E-mail</b>
+            <a class="quiet-link" href="mailto:cukrarna-dino@seznam.cz">cukrarna-dino@seznam.cz</a>
+          </div>
+          <div class="contact-line">
+            <b>Web</b>
+            <a class="quiet-link" href="https://www.cukrarna-dino.cz/">www.cukrarna-dino.cz</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Cukrárny a Kavárny Dino"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final-cta">
+        <div>
+          <span class="eyebrow">Dorty · zákusky · zmrzlina</span>
+          <h2>Domluvte si sladkost pro svou příležitost.</h2>
+        </div>
+        <a class="btn btn-primary" href="tel:+420577439172">Zavolat do cukrárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>Cukrárna a Kavárna Dino · Zlín</span>
+        <a class="quiet-link" href="mailto:cukrarna-dino@seznam.cz">cukrarna-dino@seznam.cz</a>
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/a9hmyw2">webflex.cz/delete/a9hmyw2</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6674077, 49.225514800000006],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C3A05F' })
+      .setLngLat([17.6674077, 49.225514800000006])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
