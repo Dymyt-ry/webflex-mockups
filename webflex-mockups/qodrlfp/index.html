@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dortíkárna Pardubice</title>
+  <meta name="description" content="Dortíkárna v Pardubicích peče dorty na míru, dezerty a zákusky z kvalitních surovin. Objednávky na oslavy, svatby i firemní akce.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #17110f;
+      --muted: #746a65;
+      --soft: #f1efed;
+      --accent: #400000;
+      --accent-2: #8d5c4b;
+      --line: rgba(64, 0, 0, 0.1);
+      --shadow: 0 28px 80px rgba(44, 25, 20, 0.09);
+      --shadow-soft: 0 18px 50px rgba(44, 25, 20, 0.06);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(64,0,0,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,0,0,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .38;
+      background: radial-gradient(circle at 15% 8%, rgba(64,0,0,.08), transparent 28%),
+                  radial-gradient(circle at 85% 35%, rgba(141,92,75,.08), transparent 25%);
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.82);
+      border-bottom: 1px solid rgba(64,0,0,.06);
+    }
+    .nav {
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      color: var(--accent);
+      hyphens: none;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .button, button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(1px); }
+    .button:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .button.primary { background: var(--accent); color: #fff; box-shadow: 0 16px 34px rgba(64,0,0,.18); }
+    .button.primary:hover { background: #5a0707; }
+    .button.secondary { color: var(--ink); border: 1px solid currentColor; background: rgba(255,255,255,.42); }
+    .button.secondary:hover { background: #fff; }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .86fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+      padding: clamp(58px, 8vw, 100px) 0 54px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      color: var(--ink);
+    }
+    .lead {
+      max-width: 610px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: var(--muted);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 44px;
+      max-width: 670px;
+    }
+    .fact {
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+    .fact span { color: var(--muted); font-size: 14px; }
+    .hero-media {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(.98);
+    }
+    .media-label {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      width: min(330px, calc(100% - 44px));
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+      font-weight: 700;
+    }
+
+    section { padding: clamp(70px, 9vw, 118px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: 1;
+    }
+    .section-head p { color: var(--muted); margin: 0; font-size: 18px; }
+
+    .offer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .offer-card {
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+      transition: transform 220ms var(--ease), background 220ms var(--ease);
+    }
+    .offer-card:hover { transform: translateY(-3px); background: #fff; }
+    .offer-card .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .offer-card h3 { font-size: 25px; line-height: 1.05; margin-top: 24px; }
+    .offer-card p { color: var(--muted); margin: 14px 0 0; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(340px, .9fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 32px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .story {
+      padding: clamp(28px, 5vw, 54px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 38px;
+    }
+    .story h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+    }
+    .story p { font-size: 19px; color: var(--muted); margin: 20px 0 0; max-width: 610px; }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      padding: 22px;
+      border-radius: 22px;
+      background: var(--soft);
+    }
+    .stat strong { display: block; font-family: var(--font-mono); font-size: 30px; color: var(--accent); }
+    .stat span { color: var(--muted); font-weight: 600; }
+    .photo-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 18px; }
+    .photo-stack img {
+      width: 100%;
+      height: 100%;
+      min-height: 250px;
+      object-fit: cover;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: minmax(260px, .38fr) minmax(0, 1fr);
+      gap: 42px;
+      align-items: start;
+    }
+    .product-list {
+      background: rgba(255,255,255,.72);
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      padding: 8px;
+    }
+    .product-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      padding: 22px;
+      border-radius: 23px;
+      transition: background 190ms var(--ease), transform 190ms var(--ease);
+    }
+    .product-row + .product-row { border-top: 1px solid var(--line); }
+    .product-row:hover { background: #fff; transform: translateY(-1px); }
+    .product-row h3 { font-size: 22px; }
+    .product-row p { margin: 8px 0 0; color: var(--muted); }
+    .price { font-family: var(--font-mono); color: var(--accent); font-weight: 700; white-space: nowrap; }
+    .availability { font-family: var(--font-mono); color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-strip img { width: 100%; height: 360px; object-fit: cover; }
+    .gallery-strip figure:nth-child(2) { transform: translateY(38px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(310px, .42fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(28px, 4vw, 46px);
+      border-radius: 32px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 30px 80px rgba(64,0,0,.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 34px;
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+    }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      font-size: 18px;
+    }
+    .contact-lines a:hover { text-decoration: underline; }
+    .mono { font-family: var(--font-mono); }
+    #map {
+      height: 420px;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .qa {
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .qa h3 { font-size: 22px; margin-bottom: 12px; }
+    .qa p { color: var(--muted); margin: 0; }
+
+    .final {
+      padding: clamp(46px, 6vw, 74px);
+      border-radius: 36px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      margin-bottom: 48px;
+    }
+    .final h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 60px);
+      line-height: 1;
+    }
+    .final p { color: var(--muted); margin: 14px 0 0; font-size: 18px; max-width: 650px; }
+
+    .site-footer {
+      padding: 34px 0 46px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      color: #8b817c;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .split, .products, .contact-grid, .final, .section-head {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .hero-media { min-width: 0; }
+      .offer-grid, .faq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { transform: none; }
+      .gallery-strip img { height: 280px; }
+      .final { text-align: left; }
+    }
+    @media (max-width: 700px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      .nav { height: auto; min-height: 72px; }
+      .nav-links a:not(.button) { display: none; }
+      .hero-facts, .offer-grid, .stat-row, .faq { grid-template-columns: 1fr; }
+      .product-row { grid-template-columns: 1fr; }
+      .photo-stack { grid-template-rows: none; }
+      .contact-card, #map, .panel, .final { border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="wordmark" href="#top" aria-label="Dortíkárna">Dortíkárna</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="button primary" href="tel:+420731442655">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="shell hero">
+      <div>
+        <p class="kicker">Pardubice III · Jana Zajíce 982</p>
+        <h1>Dorty s vlastním příběhem</h1>
+        <p class="lead">Ručně pečené dorty, dezerty a zákusky pro narozeniny, svatby, firemní večírky i chvíle, kdy chcete někomu udělat sladkou radost.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="tel:+420731442655">Objednat dort</a>
+          <a class="button secondary" href="#nabidka">Prohlédnout nabídku</a>
+        </div>
+        <div class="hero-facts" aria-label="Hlavní informace">
+          <div class="fact"><strong>4,8/5</strong><span>hodnocení od zákazníků</span></div>
+          <div class="fact"><strong>19</strong><span>veřejných recenzí</span></div>
+          <div class="fact"><strong>8 000+</strong><span>upečených dortů a zákusků</span></div>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <div class="media-label">Káva, zákusek, vyzvednutí objednávky a sladké chvíle v srdci Pardubic.</div>
+      </div>
+    </div>
+
+    <section id="nabidka">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Naše nabídka</p>
+            <h2>Od dortu na míru po dezert ke kávě</h2>
+          </div>
+          <p>Pečeme z kvalitních a čerstvých surovin, ručně a bez zbytečné chemie. Každý kousek připravujeme tak, aby potěšil chuť i oko.</p>
+        </div>
+        <div class="offer-grid">
+          <article class="offer-card">
+            <span class="num">01</span>
+            <div><h3>Základní dorty</h3><p>Poctivé dorty pro rodinné oslavy, návštěvy a sladká setkání.</p></div>
+          </article>
+          <article class="offer-card">
+            <span class="num">02</span>
+            <div><h3>Dětské dorty</h3><p>Veselé dorty pro narozeniny, které mají být radost už na první pohled.</p></div>
+          </article>
+          <article class="offer-card">
+            <span class="num">03</span>
+            <div><h3>Svatební dorty</h3><p>Sladká dominanta svatebního dne s chutí i vzhledem podle vaší oslavy.</p></div>
+          </article>
+          <article class="offer-card">
+            <span class="num">04</span>
+            <div><h3>Dezerty</h3><p>Malé dezerty a zákusky do vitríny, k vyzvednutí i k posezení u kávy.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="shell split">
+        <div class="panel story">
+          <div>
+            <p class="kicker">O nás</p>
+            <h2>Sladká práce, která je vidět</h2>
+            <p>V Dortíkárně věříme, že každý dort má svůj příběh. Vznikli jsme z lásky k poctivému pečení, radosti z tvoření a touhy dělat lidem sladkou radost.</p>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><strong>7 800+</strong><span>spokojených zákazníků</span></div>
+            <div class="stat"><strong>4,8</strong><span>průměrné hodnocení</span></div>
+          </div>
+        </div>
+        <div class="photo-stack">
+          <div class="panel"><img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere."></div>
+          <div class="panel"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell products">
+        <div>
+          <p class="kicker">Oblíbené produkty</p>
+          <h2 style="font-family:var(--font-display);font-size:clamp(34px,4vw,58px);line-height:1;">Dezerty do tří dnů</h2>
+          <p style="color:var(--muted);font-size:18px;margin-top:18px;">Vybrané dezerty z nabídky Dortíkárny. Cena a dostupnost vycházejí z aktuálně uvedených produktů.</p>
+        </div>
+        <div class="product-list">
+          <article class="product-row">
+            <div><h3>Dezert slaný karamel</h3><p>Karamelový krém se špetkou mořské soli a karamelovou čokoládou.</p><div class="availability">Dostupnost: 3 dny · alergeny 1, 3, 7, 8</div></div>
+            <div class="price">85 Kč</div>
+          </article>
+          <article class="product-row">
+            <div><h3>Levandule dezert</h3><p>Čokoládový korpus, šlehačkový krém a jemný krém s levandulovým extraktem.</p><div class="availability">Dostupnost: 3 dny · alergeny 1, 3, 7</div></div>
+            <div class="price">85 Kč</div>
+          </article>
+          <article class="product-row">
+            <div><h3>Dezert pistácie malina</h3><p>Elegantní spojení jemně oříškové chuti a svěží malinové lehkosti.</p><div class="availability">Dostupnost: 3 dny · alergeny 1, 3, 7, 8</div></div>
+            <div class="price">85 Kč</div>
+          </article>
+          <article class="product-row">
+            <div><h3>Dezert čoko ořech</h3><p>Lehký kakaový korpus s lískooříškovým krémem a čokoládovým vkladem.</p><div class="availability">Dostupnost: 3 dny</div></div>
+            <div class="price">85 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Atmosféra</p>
+            <h2>Místo pro dort, kávu i kulturu</h2>
+          </div>
+          <p>Přijďte si vybrat něco sladkého, vyzvednout objednávku nebo nahlédnout do světa, kde vznikají dortové kreace. V Dortíkárně se sladké potkává i s výstavami a hudebními odpoledni.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell contact-grid">
+        <aside class="contact-card">
+          <div>
+            <p class="kicker" style="color:#f2dede;">Kontakt</p>
+            <h2>Najdete nás v Pardubicích</h2>
+          </div>
+          <div class="contact-lines">
+            <a href="tel:+420731442655" class="mono">+420 731 442 655</a>
+            <a href="mailto:info@dortikarnapardubice.cz">info@dortikarnapardubice.cz</a>
+            <span>Jana Zajíce 982<br>530 12 Pardubice III</span>
+          </div>
+          <a class="button secondary" style="color:#fff;border-color:rgba(255,255,255,.45);background:transparent;" href="mailto:info@dortikarnapardubice.cz">Napsat e-mail</a>
+        </aside>
+        <div id="map" aria-label="Mapa Dortíkárny v Pardubicích"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Časté dotazy</p>
+            <h2>Než zavoláte</h2>
+          </div>
+          <p>Pro konkrétní termín, velikost dortu a chuťovou kombinaci se ozvěte telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="faq">
+          <article class="qa"><h3>Pečete dorty na oslavu?</h3><p>Ano, připravujeme dorty pro narozeniny, svatby, firemní večírky i další události.</p></article>
+          <article class="qa"><h3>Dá se objednat dezert?</h3><p>Vybrané dezerty jsou uvedené s dostupností 3 dny a cenou 85 Kč s DPH.</p></article>
+          <article class="qa"><h3>Můžu se zastavit osobně?</h3><p>Ano, Dortíkárnu najdete na adrese Jana Zajíce 982 v Pardubicích III.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <div class="shell">
+      <section class="final">
+        <div>
+          <p class="kicker">Objednávka</p>
+          <h2>Dort pro vaši oslavu</h2>
+          <p>Ať chystáte svatbu, narozeniny nebo firemní večírek, připravíme sladkost, která bude ladit s příležitostí.</p>
+        </div>
+        <a class="button primary" href="tel:+420731442655">+420 731 442 655</a>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <div>© Dortíkárna Pardubice</div>
+      <div class="disclaimer">Prezentační podklad vytvořila služba Webflex. Pro odstranění použijte odkaz: /delete/qodrlfp</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.8087428, 50.0438663],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#400000' })
+      .setLngLat([15.8087428, 50.0438663])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
