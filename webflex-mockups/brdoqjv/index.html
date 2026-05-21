@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Šálek & Špunt / Na Náplavce | Káva, víno a gin v Plzni</title>
+  <meta name="description" content="Šálek & Špunt / Na Náplavce na Anglickém nábřeží v Plzni. Ráno káva, chai a matcha latté, večer víno a gin. Rezervace na telefonu +420 736 440 389.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Geist+Mono:wght@500;650&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101112;
+      --surface: #171819;
+      --surface-2: #1e1d1b;
+      --paper: #f6f1e8;
+      --ink: #f5f0e6;
+      --muted: #b9afa1;
+      --quiet: #8d8377;
+      --line: rgba(245, 240, 230, .14);
+      --line-strong: rgba(245, 240, 230, .24);
+      --accent: #D9A66A;
+      --accent-deep: #a87337;
+      --accent-soft: rgba(217, 166, 106, .14);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-accent: "Fraunces", Georgia, serif;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(245,240,230,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,240,230,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      color: var(--ink);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #17110b;
+    }
+    .btn.primary:hover { background: #e3b77f; border-color: #e3b77f; }
+    .btn.secondary {
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.72); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,18,.86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: var(--s6) 0 var(--s7);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 86px);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      color: #d5cabd;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--quiet);
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,.035);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: var(--surface-2);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.04);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16,17,18,.04), rgba(16,17,18,.52));
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #fff8ef;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: var(--s7) 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .48fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; color: #c8bdaf; }
+
+    .menu-rows {
+      border-top: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 210px;
+      gap: var(--s4);
+      align-items: start;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: 24px;
+      line-height: 1.05;
+    }
+    .menu-row p { color: var(--muted); }
+    .menu-row .mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .proof-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255,255,255,.025);
+    }
+    .proof-item {
+      min-height: 170px;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .proof-item:last-child { border-right: 0; }
+    .proof-number {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .proof-label {
+      margin-top: 18px;
+      color: #d8cec1;
+      font-weight: 700;
+    }
+    .proof-small {
+      margin-top: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--quiet);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(0, .9fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .editorial-card {
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: clamp(28px, 4vw, 48px);
+      background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+    }
+    .quote {
+      font-family: var(--font-accent);
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1.02;
+      color: var(--paper);
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    .atmosphere {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s3);
+    }
+    .atmosphere figure {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .atmosphere img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+    }
+    .atmosphere figcaption {
+      min-height: 72px;
+      padding: 14px 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, .9fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: 28px;
+      background: rgba(255,255,255,.035);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      display: block;
+      color: var(--ink);
+      font-weight: 800;
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: var(--accent); }
+    .hours {
+      margin-top: 28px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      color: #d9cec0;
+    }
+    .hours .today {
+      color: #17110b;
+      background: var(--accent);
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-radius: 8px;
+      border-bottom: 0;
+    }
+    #map {
+      height: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--surface-2);
+    }
+
+    .reserve {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(280px, .42fr);
+      align-items: center;
+      gap: var(--s5);
+      padding: clamp(34px, 5vw, 56px);
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: var(--paper);
+      color: #15110d;
+    }
+    .reserve h2 { color: #15110d; }
+    .reserve p { color: #51483d; margin-top: 18px; max-width: 720px; }
+    .reserve .btn.secondary {
+      color: #15110d;
+      border-color: currentColor;
+    }
+    .reserve .btn.secondary:hover { background: rgba(21,17,13,.06); }
+    .reserve-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    footer {
+      padding: var(--s5) 0;
+      color: var(--quiet);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 780px;
+    }
+    .disclaimer a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 180ms var(--ease);
+    }
+    .disclaimer a:hover { color: #e3b77f; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .hours-contact,
+      .reserve {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .hero-photo { max-width: 680px; }
+      .proof-strip { grid-template-columns: 1fr; }
+      .proof-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .proof-item:last-child { border-bottom: 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .menu-row .mono { text-align: left; }
+      .reserve-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 620px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      body { font-size: 16px; }
+      section { padding: 70px 0; }
+      .hero { padding: 44px 0 70px; }
+      .hero-grid { gap: 32px; }
+      .brand img { max-height: 36px; }
+      .hero-actions,
+      .reserve-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .photo-note { flex-direction: column; }
+      .atmosphere { grid-template-columns: 1fr; }
+      .contact-card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Šálek & Špunt / Na Náplavce">
+        <img src="https://173914cd8c.clvaw-cdnwnd.com/590c57c9fe70d5cfe6f15df8b617662d/200000032-c36cbc36cd/horizontal_cream%20large.png?ph=173914cd8c" alt="Šálek & Špunt / Na Náplavce">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420736440389">Rezervovat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Anglické nábřeží · Plzeň</div>
+          <h1 id="hero-title">Ráno káva, večer víno.</h1>
+          <p class="hero-lead">Útulná kavárna a večerní bar nad Radbuzou. Přijďte na espresso, chai nebo matcha latté, dezert naší výroby, sklenku vína nebo gin s přáteli.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420736440389">Zavolat a rezervovat</a>
+            <a class="btn secondary" href="#kontakt">Adresa a otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="chip">Po-Pá 8:00-20:00</span>
+            <span class="chip">So 10:00-22:00</span>
+            <span class="chip">Hodnocení 4.6 / 464 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-note">
+            <span>Sladký život nad Radbuzou</span>
+            <span>káva · víno · gin</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="nabidka-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si dáte</div>
+            <h2 id="nabidka-title">Od prvního šálku po poslední sklenku</h2>
+          </div>
+          <p>Pro klidné pracovní dopoledne, pauzu u dezertu i večerní posezení bez spěchu.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <strong>Káva a latté</strong>
+            <p>Dokonale připravená káva, bezkofeinová varianta, chai latté i matcha latté pro pomalejší začátek dne.</p>
+            <span class="mono">ráno · celý den</span>
+          </article>
+          <article class="menu-row">
+            <strong>Sladké a slané</strong>
+            <p>Dezerty včetně dezertů naší výroby a drobné slané pochutiny ke kávě nebo skleničce.</p>
+            <span class="mono">ke stolu · s sebou</span>
+          </article>
+          <article class="menu-row">
+            <strong>Víno a gin</strong>
+            <p>Večer přichází výběr vín a ginů pro chvíle po náročném dni nebo setkání s přáteli.</p>
+            <span class="mono">večerní bar</span>
+          </article>
+          <article class="menu-row">
+            <strong>Nealko a čaj</strong>
+            <p>Místo i pro ty, kdo hledají nealkoholické nápoje, čaj nebo klidnou atmosféru bez kofeinu.</p>
+            <span class="mono">pro každého</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Proč se zastavit</div>
+            <h2 id="duvera-title">Každodenní útočiště v centru Plzně</h2>
+          </div>
+          <p>Na Náplavce se potkává tiché místo pro práci s večerní atmosférou baru.</p>
+        </div>
+        <div class="proof-strip">
+          <div class="proof-item">
+            <div>
+              <div class="proof-number">4.6</div>
+              <div class="proof-label">hodnocení hostů</div>
+            </div>
+            <div class="proof-small">Google · 464 recenzí</div>
+          </div>
+          <div class="proof-item">
+            <div>
+              <div class="proof-number">8:00</div>
+              <div class="proof-label">otevřeno ve všední den</div>
+            </div>
+            <div class="proof-small">pondělí až pátek</div>
+          </div>
+          <div class="proof-item">
+            <div>
+              <div class="proof-number">22:00</div>
+              <div class="proof-label">sobotní večer</div>
+            </div>
+            <div class="proof-small">víno · gin · posezení</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" aria-labelledby="atmosfera-title">
+      <div class="wrap split">
+        <div class="editorial-card">
+          <div class="eyebrow">Atmosféra</div>
+          <p class="quote" id="atmosfera-title">Klid přes den. Teplo večera. Jeden stůl pro obojí.</p>
+        </div>
+        <div class="atmosphere" aria-label="Fotografie atmosféry">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Večerní sklenka vína nebo gin po náročném dni.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl pro dezert, čaj i dlouhé setkání s přáteli.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Navštivte nás</div>
+            <h2 id="kontakt-title">Na Anglickém nábřeží</h2>
+          </div>
+          <p>Rezervací máte jistotu svého oblíbeného místa bez čekání.</p>
+        </div>
+        <div class="hours-contact">
+          <div class="contact-card">
+            <h3>Šálek & Špunt / Na Náplavce</h3>
+            <div class="contact-lines">
+              <span>Anglické nábř. 301 00, 301 00 Plzeň 3</span>
+              <a href="tel:+420736440389">+420 736 440 389</a>
+              <a href="mailto:info@salekaspunt.cz">info@salekaspunt.cz</a>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><span>Pondělí-Pátek</span><span>8:00-20:00</span></div>
+              <div class="today"><span>Sobota</span><span>10:00-22:00</span></div>
+              <div><span>Neděle</span><span>10:00-20:00</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="rezervace-title">
+      <div class="wrap reserve">
+        <div>
+          <div class="eyebrow">Rezervace</div>
+          <h2 id="rezervace-title">Dnes je dobrý den se zastavit.</h2>
+          <p>Voňavá káva, dezert a klidná atmosféra uprostřed dne. Večer sklenka vína nebo gin v příjemném světle nad Radbuzou.</p>
+        </div>
+        <div class="reserve-actions">
+          <a class="btn primary" href="tel:+420736440389">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@salekaspunt.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Šálek & Špunt / Na Náplavce</div>
+      <div class="disclaimer">Prezentační stránku připravil Webflex. Majitel provozovny může stránku odstranit na adrese <a href="https://www.webflex.cz/remove/brdoqjv">webflex.cz/remove/brdoqjv</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3805148, 49.74445000000001],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#D9A66A' })
+      .setLngLat([13.3805148, 49.74445000000001])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
