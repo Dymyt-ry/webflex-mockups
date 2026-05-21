@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Happy coffee | Kavárna ve Zlíně</title>
+  <meta name="description" content="Happy coffee ve Zlíně: káva, čerstvé dobroty, zahrádka, rozvoz, catering a prostor pro odpočinek i soukromé akce." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --ink: #202020;
+      --muted: #696b63;
+      --line: rgba(32, 32, 32, 0.08);
+      --accent: #8BC34A;
+      --accent-dark: #4f821d;
+      --soft: #eef2ea;
+      --shadow: 0 28px 80px rgba(29, 35, 25, 0.10);
+      --shadow-small: 0 18px 48px rgba(29, 35, 25, 0.08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,32,32,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,32,32,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 86% 12%, rgba(139,195,74,0.16), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,248,0.80);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(32,32,32,0.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #183100; }
+    .btn-primary:hover { background: #9bd65a; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(32,32,32,0.04); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 54px;
+      padding: 64px 0 56px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin-bottom: 22px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(139,195,74,0.16);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 610px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 42px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-card img, .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-hours {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(310px, 78%);
+      padding: 22px;
+      background: rgba(255,255,255,0.88);
+      border-radius: 26px;
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(20px);
+    }
+    .floating-hours strong { display: block; font-size: 15px; margin-bottom: 10px; }
+    .floating-hours span { display: flex; justify-content: space-between; gap: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(220px, 0.45fr);
+      align-items: center;
+      gap: 24px;
+      padding: 28px;
+      min-height: 128px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-small);
+    }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+    .service-row h3 { font-size: clamp(23px, 2.4vw, 36px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b { font-family: var(--font-display); font-size: clamp(38px, 5vw, 72px); line-height: 1; overflow-wrap: anywhere; }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .soft-panel {
+      padding: 36px;
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .soft-panel h2 { font-size: clamp(32px, 4vw, 58px); }
+    .checks {
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 13px;
+    }
+    .checks li {
+      display: flex;
+      gap: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .checks li::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      margin-top: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 0.72fr;
+      gap: 16px;
+      min-height: 500px;
+    }
+    .photo-stack figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow-small);
+      background: var(--soft);
+    }
+    .photo-stack figure:first-child { grid-row: span 2; }
+    .photo-stack img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hours-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card, .contact-card {
+      padding: 32px;
+      border-radius: 34px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+    }
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-table td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-table td:last-child { text-align: right; color: var(--muted); }
+    .hours-table tr.today td {
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin: 20px 0 28px;
+      font-weight: 700;
+    }
+    .contact-lines span { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 13px; margin-top: 3px; }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      height: 330px;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow-small);
+      background: var(--soft);
+    }
+    .gallery figure:nth-child(2) { height: 410px; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    details {
+      padding: 24px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff; }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final-cta {
+      padding: 54px;
+      border-radius: 42px;
+      background: #202020;
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final-cta h2 { font-size: clamp(34px, 5vw, 76px); }
+    .final-cta p { margin: 16px 0 0; color: rgba(255,255,255,0.72); max-width: 640px; font-size: 18px; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,0.45); }
+    .final-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .disclaimer {
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .hours-grid, .final-cta { grid-template-columns: 1fr; }
+      .hero { min-height: auto; gap: 34px; padding-top: 44px; }
+      .hero-card { aspect-ratio: 16 / 10; border-radius: 30px; }
+      .floating-hours { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 14px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust, .faq, .gallery { grid-template-columns: 1fr; }
+      .photo-stack { grid-template-columns: 1fr; min-height: auto; }
+      .photo-stack figure { min-height: 260px; }
+      .gallery figure, .gallery figure:nth-child(2) { height: 290px; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .soft-panel, .hours-card, .contact-card { padding: 24px; border-radius: 26px; }
+      .final-cta { padding: 30px; border-radius: 30px; }
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Happy coffee</a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#sluzby">Služby</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="mailto:happycoffee@email.cz">Rezervovat</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Zlín · Soudní 5549</div>
+        <h1>Káva, klid a sladká tečka</h1>
+        <p class="lead">Dopřejte si šálek výběrové kávy, čerstvé dobroty a osvěžující nápoje v kavárně, kde můžete posedět uvnitř, na zahrádce nebo si vzít jídlo s sebou.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="mailto:happycoffee@email.cz">Napsat kvůli rezervaci</a>
+          <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+        </div>
+        <div class="hero-note">
+          <span>4.6 / 5 · 94 recenzí</span>
+          <span>Wi-Fi · parkování · bezbariérový přístup</span>
+        </div>
+      </div>
+      <div class="hero-media" aria-label="Atmosféra kavárny">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="floating-hours">
+          <strong>Dnes pro vás</strong>
+          <span><em>Pondělí-Pátek</em><em>09:00-18:00</em></span>
+          <span><em>Sobota</em><em>09:00-17:00</em></span>
+          <span><em>Neděle</em><em>zavřeno</em></span>
+        </div>
+      </div>
+    </div>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si u nás dáte</h2>
+          <p>Široký výběr kávových specialit, čerstvé maličkosti k snědku, sladké dobroty a nápoje pro pomalé dopoledne i rychlé zastavení ve městě.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Kávové speciality</h3>
+            <p>Espresso, cappuccino i další oblíbené přípravy pro chvíli odpočinku během dne.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Čerstvé dobroty</h3>
+            <p>Sladká tečka ke kávě, drobné občerstvení a osvěžující nápoje včetně čerstvě vymačkaného džusu.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>S sebou i rozvoz</h3>
+            <p>Jídlo vám rádi zabalíme s sebou, případně využijete rozvoz až domů.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="trust" aria-label="Důvěryhodnost a služby">
+          <div class="stat">
+            <b>4.6</b>
+            <span>hodnocení hostů</span>
+          </div>
+          <div class="stat">
+            <b>94</b>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <b>6</b>
+            <span>dní v týdnu otevřeno</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="soft-panel">
+          <div class="eyebrow">Pobyt v kavárně</div>
+          <h2>Pro práci, setkání i oslavu</h2>
+          <p class="lead">Klimatizované prostory příjemně ochladí v horkých dnech, zahrádka láká k posezení za hezkého počasí a rezervaci pro soukromou akci s vámi rádi domluvíme e-mailem.</p>
+          <ul class="checks">
+            <li>Bezplatná Wi-Fi pro práci i kontakt s přáteli.</li>
+            <li>Domácí mazlíčci jsou vítáni.</li>
+            <li>Parkování, bezbariérový přístup a platby kartou.</li>
+            <li>Cateringové služby podle vaší objednávky.</li>
+          </ul>
+        </div>
+        <div class="photo-stack">
+          <figure>
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>Happy coffee sídlí na adrese Soudní 5549 ve Zlíně. Rezervace, catering i dotazy vyřídíme přes e-mail nebo telefonicky.</p>
+        </div>
+        <div class="hours-grid">
+          <div class="hours-card">
+            <h3>Otevírací doba</h3>
+            <table class="hours-table" aria-label="Otevírací doba">
+              <tr><td>Pondělí</td><td>09:00-18:00</td></tr>
+              <tr><td>Úterý</td><td>09:00-18:00</td></tr>
+              <tr><td>Středa</td><td>09:00-18:00</td></tr>
+              <tr class="today"><td>Čtvrtek</td><td>09:00-18:00</td></tr>
+              <tr><td>Pátek</td><td>09:00-18:00</td></tr>
+              <tr><td>Sobota</td><td>09:00-17:00</td></tr>
+              <tr><td>Neděle</td><td>zavřeno</td></tr>
+            </table>
+          </div>
+          <div class="contact-card">
+            <h3>Kontakt</h3>
+            <div class="contact-lines">
+              <div>Soudní 5549, 760 01 Zlín-Zlín 1 <span>Česká republika</span></div>
+              <div><a href="tel:+420732265766">+420 732 265 766</a> <span>telefon</span></div>
+              <div><a href="mailto:happycoffee@email.cz">happycoffee@email.cz</a> <span>rezervace a catering</span></div>
+            </div>
+            <div id="map" aria-label="Mapa Happy coffee ve Zlíně"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Posezení s měkkým světlem</h2>
+          <p>U stolu, u kávy, s dezertem nebo s notebookem. Prostor je připravený na krátkou pauzu i delší setkání.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prakticky před návštěvou</h2>
+          <p>Krátké odpovědi na věci, které hosté obvykle řeší před rezervací, rozvozem nebo soukromou akcí.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Můžeme přijít se psem?</summary>
+            <p>Ano, domácí mazlíčci jsou v kavárně vítáni.</p>
+          </details>
+          <details>
+            <summary>Dá se platit kartou?</summary>
+            <p>Ano, přijímáme bezkontaktní platby, Mastercard, VISA, Apple Pay i hotovost.</p>
+          </details>
+          <details>
+            <summary>Nabízíte catering?</summary>
+            <p>Ano, cateringové služby domlouváme podle objednávky. Napište nám prosím e-mailem.</p>
+          </details>
+          <details>
+            <summary>Je možné jídlo zabalit s sebou?</summary>
+            <p>Ano, jídlo vám rádi zabalíme. Využít můžete také rozvoz.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Zastavte se dnes</h2>
+          <p>Na kávu, sladkou tečku, klidné posezení nebo domluvu soukromé akce ve Zlíně.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="mailto:happycoffee@email.cz">Napsat rezervaci</a>
+          <a class="btn btn-outline" href="tel:+420732265766">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      <span>Nezávazná prezentační stránka vytvořená službou Webflex pro Happy coffee.</span>
+      <a href="https://webflex.cz/remove/rvo89iv" rel="nofollow">Požádat o odstranění</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6646231, 49.2259982],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#8BC34A' })
+      .setLngLat([17.6646231, 49.2259982])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
