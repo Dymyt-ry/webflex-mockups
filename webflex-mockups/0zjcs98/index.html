@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SALEM CAFE & BAR | Fantasy café & bar v Plzni</title>
+  <meta name="description" content="SALEM CAFE & BAR na Americké 17 v Plzni. Magické drinky, dobroty, hry, knížky, kvízy, promítání a rezervace míst ve sklepním fantasy baru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f1e7;
+      --paper: #fffaf0;
+      --ink: #16110d;
+      --muted: rgba(22, 17, 13, .68);
+      --quiet: rgba(22, 17, 13, .48);
+      --accent: #8B0E0E;
+      --accent-dark: #5f0909;
+      --line: rgba(22, 17, 13, .2);
+      --line-strong: rgba(22, 17, 13, .82);
+      --shadow: 0 28px 70px rgba(45, 25, 12, .16);
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(22,17,13,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22,17,13,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .032;
+      z-index: 50;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .94;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.8vw, 66px); }
+    h3 { font-size: clamp(22px, 2.1vw, 31px); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 2px solid var(--ink);
+      background: rgba(247, 241, 231, .88);
+      backdrop-filter: blur(14px);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: .95;
+      font-weight: 700;
+      max-width: 220px;
+      text-transform: uppercase;
+    }
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a {
+      padding: 8px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 19px;
+      border-radius: 0;
+      border: 2px solid currentColor;
+      font-weight: 900;
+      text-transform: uppercase;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fffaf0; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn.secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn.secondary:hover { background: var(--ink); color: var(--paper); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 70px 0 56px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .hero-copy p {
+      margin-top: 24px;
+      max-width: 610px;
+      font-size: clamp(18px, 2vw, 23px);
+      color: rgba(22,17,13,.76);
+      font-weight: 600;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      box-shadow: 12px 12px 0 var(--ink);
+      background: #201814;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.72) contrast(1.06) sepia(.16);
+    }
+    .stamp {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      max-width: 300px;
+      padding: 15px 16px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .9fr .86fr;
+      gap: 52px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { max-width: 590px; font-size: 18px; font-weight: 600; }
+
+    .rules-list {
+      border-top: 2px solid var(--ink);
+    }
+    .rule-row {
+      display: grid;
+      grid-template-columns: 140px minmax(0, .78fr) minmax(220px, .64fr);
+      gap: 28px;
+      align-items: center;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .rule-row .num {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 6vw, 78px);
+      line-height: .8;
+      color: var(--accent);
+    }
+    .rule-row b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 25px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 40px);
+    }
+    .reservation-note {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .note-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .mini {
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      border: 2px solid var(--ink);
+      background: #f2eadc;
+    }
+    .mini span { font-family: var(--font-mono); color: var(--accent); font-size: 12px; font-weight: 700; }
+    .mini b { margin-top: 18px; font-size: 20px; text-transform: uppercase; }
+
+    .trust {
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .trust p { color: rgba(255,250,240,.72); }
+    .trust .eyebrow { color: #f2c6b9; }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 36px;
+      align-items: center;
+    }
+    .rating {
+      font-family: var(--font-mono);
+      font-size: clamp(64px, 10vw, 136px);
+      line-height: .86;
+      font-weight: 700;
+      color: var(--paper);
+    }
+    .quote {
+      border-left: 6px solid var(--accent);
+      padding-left: 26px;
+    }
+    .quote h2 { color: var(--paper); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo-tile {
+      min-height: 350px;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      background: #241b16;
+    }
+    .photo-tile.small { min-height: 250px; }
+    .photo-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.62) contrast(1.08) sepia(.18);
+      transition: transform 260ms var(--ease), filter 260ms var(--ease);
+    }
+    .photo-tile:hover img { transform: scale(1.025); filter: grayscale(.35) contrast(1.08) sepia(.12); }
+    .stack { display: grid; gap: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .hours {
+      margin-top: 24px;
+      display: grid;
+      gap: 0;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-row.today {
+      margin: 0 -12px;
+      padding: 14px 12px;
+      background: rgba(139, 14, 14, .12);
+      border-bottom-color: var(--accent);
+    }
+    .contact-links {
+      display: grid;
+      margin-top: 24px;
+    }
+    .contact-links a {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+      transition: color 180ms var(--ease), padding-left 180ms var(--ease);
+    }
+    .contact-links a:hover { color: var(--accent); padding-left: 7px; }
+    #map {
+      height: 420px;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      background: #e7dfd0;
+      box-shadow: var(--shadow);
+    }
+
+    .final {
+      padding: 86px 0 108px;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 54px);
+      background: var(--accent);
+      color: #fffaf0;
+      border: 2px solid var(--ink);
+      box-shadow: 12px 12px 0 var(--ink);
+    }
+    .cta p { color: rgba(255,250,240,.82); margin-top: 14px; max-width: 620px; font-weight: 700; }
+    .cta .btn.primary { background: #fffaf0; color: var(--accent); border-color: #fffaf0; }
+    .cta .btn.secondary { color: #fffaf0; border-color: rgba(255,255,255,.6); }
+    .cta .btn.secondary:hover { background: rgba(255,255,255,.12); color: #fffaf0; }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer {
+      border-top: 2px solid var(--ink);
+      padding: 28px 0;
+      font-size: 12px;
+      color: var(--quiet);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .wf-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .split, .trust-grid, .gallery, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding: 44px 0 48px; }
+      section { padding: 64px 0; }
+      .rule-row { grid-template-columns: 1fr; gap: 12px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .panel { padding: 22px; }
+      .photo-tile, .photo-tile.small { min-height: 250px; }
+      #map { height: 340px; }
+      .stamp { position: static; max-width: none; border-left: 0; border-right: 0; border-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="SALEM CAFE & BAR">SALEM CAFE & BAR</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#rezervace">Rezervace</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="mailto:info@salembar.cz">Rezervace</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Americká 17 · Plzeň</div>
+          <h1>Fantasy café pod městem</h1>
+          <p>Ve sklepním Salemu mizí ruch Americké třídy. Přijďte na magický drink, sladký zákusek, kávu, deskové hry a večer s lidmi, kteří mají rádi příběhy.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="mailto:info@salembar.cz">Rezervovat stůl</a>
+            <a class="btn secondary" href="#kontakt">Kdy máme otevřeno</a>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <figcaption class="stamp">Středa až neděle · 11:55-20:00 · pet friendly</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka Salemu</div>
+            <h2>Co najdete dole</h2>
+          </div>
+          <p>Salem je klidné místo pro povídání, hraní i menší oslavy. Nabídka stojí na originálních drincích, sladkých dobrotách, kávě a programu, kvůli kterému se vyplatí sledovat novinky.</p>
+        </div>
+        <div class="rules-list">
+          <article class="rule-row">
+            <div class="num">01</div>
+            <b>Magické drinky</b>
+            <p>Autorské nápoje pro večer s přáteli, oslavu nebo zastávku po práci.</p>
+          </article>
+          <article class="rule-row">
+            <div class="num">02</div>
+            <b>Dobroty a káva</b>
+            <p>Sladký zákusek, lahodná káva a malé potěšení k posezení ve sklepním baru.</p>
+          </article>
+          <article class="rule-row">
+            <div class="num">03</div>
+            <b>Hry, knížky, kvízy</b>
+            <p>Deskové hry, čtení, promítání a salónek pro soukromé i firemní akce.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="rezervace">
+      <div class="wrap split">
+        <article class="panel reservation-note">
+          <div>
+            <div class="eyebrow">Rezervace</div>
+            <h2>Držíme 15 minut</h2>
+          </div>
+          <p>Rezervaci vytvořte nejpozději 3 hodiny před požadovaným termínem. Do sklepního prostoru se nám nedovoláte, proto prosíme využijte e-mail nebo Instagram.</p>
+          <div>
+            <div class="note-line"><span>Kanál</span><span>Formulář / Instagram</span></div>
+            <div class="note-line"><span>Čas u stolu</span><span>1-3 hodiny</span></div>
+            <div class="note-line"><span>Zavřeno</span><span>Pondělí a úterý</span></div>
+          </div>
+          <a class="btn primary" href="mailto:info@salembar.cz">Napsat rezervaci</a>
+        </article>
+        <div class="feature-grid">
+          <article class="mini"><span>Vchod</span><b>Americká 663/17</b></article>
+          <article class="mini"><span>Prostor</span><b>Bar a salónek</b></article>
+          <article class="mini"><span>Akce</span><b>Soukromé i firemní</b></article>
+          <article class="mini"><span>Catering</span><b>Přímo na míru</b></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Hodnocení hostů">
+      <div class="wrap trust-grid">
+        <div>
+          <div class="eyebrow">Google recenze</div>
+          <div class="rating">4.9</div>
+          <p class="mono">57 hodnocení</p>
+        </div>
+        <div class="quote">
+          <h2>Klid pro partu, rodinu i sólo návštěvu.</h2>
+          <p style="margin-top:18px;">Z veřejných údajů držíme jen fakta: vysoké hodnocení, adresa v centru Plzně a podnik, který sám uvádí hry, knížky, kvízy, promítání, salónek, catering a pet friendly provoz.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Sklo, stín, svíčky</h2>
+          </div>
+          <p>Vizuální tón drží sklepní náladu: tlumené světlo, tmavé dřevo, sklenky nad barem a stoly připravené pro další příběh.</p>
+        </div>
+        <div class="gallery">
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <div class="stack">
+            <figure class="photo-tile small">
+              <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            </figure>
+            <article class="panel">
+              <div class="eyebrow">Pet friendly café & bar</div>
+              <h3 style="margin-top:10px;">Vezměte je s sebou.</h3>
+              <p style="margin-top:14px;">Salem počítá s návštěvou přátel, rodiny i čtyřnohého doprovodu.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="panel">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Kdy sejít dolů</h2>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hours-row"><span>Pondělí</span><span>Zavřeno</span></div>
+            <div class="hours-row"><span>Úterý</span><span>Zavřeno</span></div>
+            <div class="hours-row today"><span>Středa</span><span>11:55-20:00</span></div>
+            <div class="hours-row"><span>Čtvrtek</span><span>11:55-20:00</span></div>
+            <div class="hours-row"><span>Pátek</span><span>11:55-20:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>11:55-20:00</span></div>
+            <div class="hours-row"><span>Neděle</span><span>11:55-20:00</span></div>
+          </div>
+          <div class="contact-links">
+            <a href="mailto:info@salembar.cz"><span>E-mail</span><span>info@salembar.cz</span></a>
+            <a href="tel:+420777692453"><span>Telefon</span><span>+420 777 692 453</span></a>
+            <a href="https://www.salembar.cz/"><span>Web</span><span>salembar.cz</span></a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa umístění SALEM CAFE & BAR"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <h2>Stůl v Salemu?</h2>
+          <p>Napište termín, počet dospělých, počet dětí a délku posezení. Otevřeno máme od středy do neděle.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="mailto:info@salembar.cz">Poslat rezervaci</a>
+          <a class="btn secondary" href="#kontakt">Najít adresu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>SALEM CAFE & BAR · Americká 17, 301 00 Plzeň 3</span>
+      <span class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/0zjcs98">webflex.cz/delete/0zjcs98</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3750438, 49.7438269],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#8B0E0E' })
+      .setLngLat([13.3750438, 49.7438269])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
