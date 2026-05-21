@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Tymián bistro | Pardubice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f2ea;
+      --paper: #fffdf8;
+      --paper-soft: #fbf8f1;
+      --ink: #202019;
+      --muted: #6e6a5d;
+      --soft: #dad1c2;
+      --accent: #606040;
+      --accent-strong: #4f5034;
+      --accent-soft: rgba(96, 96, 64, .13);
+      --shadow: 0 26px 90px rgba(62, 54, 39, .11);
+      --shadow-soft: 0 16px 55px rgba(62, 54, 39, .075);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 138px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(96,96,64,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96,96,64,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .28;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(96,96,64,.12), transparent 28%),
+        radial-gradient(circle at 86% 10%, rgba(255,255,255,.82), transparent 25%),
+        radial-gradient(circle at 78% 82%, rgba(96,96,64,.08), transparent 30%);
+      z-index: -1;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      line-height: .92;
+      letter-spacing: 0;
+      text-wrap: balance;
+      hyphens: none;
+    }
+    p { color: var(--muted); text-wrap: pretty; }
+    .container { width: min(100% - 2 * var(--gutter), 1280px); margin-inline: auto; }
+    .section { padding-block: var(--section); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 242, 234, .82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(96,96,64,.1);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand { display: inline-flex; align-items: center; min-width: 150px; }
+    .brand img {
+      height: 42px;
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks { display: flex; gap: 28px; align-items: center; }
+    .navlinks a, .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+    .navlinks a {
+      color: rgba(32,32,25,.72);
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .navlinks a:hover { color: var(--ink); transform: translateY(-1px); }
+    .actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, .gallery-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fffdf8;
+      box-shadow: 0 16px 42px rgba(96,96,64,.22);
+    }
+    .btn-primary:hover { background: var(--accent-strong); box-shadow: 0 20px 52px rgba(96,96,64,.28); }
+    .btn-outline {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(96,96,64,.08); }
+
+    .hero { padding: clamp(44px, 6vw, 84px) 0 clamp(70px, 9vw, 118px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      gap: clamp(34px, 5vw, 76px);
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.54);
+      box-shadow: var(--shadow-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .kicker::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(96,96,64,.12);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 24px;
+      max-width: 620px;
+      font-size: clamp(19px, 2.1vw, 25px);
+      line-height: 1.22;
+      color: #4d493e;
+      font-weight: 500;
+    }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 40px;
+      max-width: 650px;
+    }
+    .fact {
+      min-height: 96px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,253,248,.68);
+      box-shadow: var(--shadow-soft);
+    }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--ink);
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .fact span { color: var(--muted); font-size: 14px; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+      background: var(--paper);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 14px;
+      border-radius: 18px;
+      background: rgba(255,253,248,.82);
+      backdrop-filter: blur(14px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .48fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    h2 { font-size: clamp(34px, 4.8vw, 68px); overflow-wrap: anywhere; }
+    h3 { font-size: clamp(23px, 2vw, 31px); line-height: 1; }
+
+    .menu-board {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-list, .surface {
+      border-radius: 28px;
+      background: rgba(255,253,248,.74);
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-list { padding: clamp(22px, 3vw, 36px); }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(96,96,64,.14);
+    }
+    .menu-row:first-child { padding-top: 0; }
+    .menu-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .menu-row .mono { color: var(--accent); font-weight: 600; }
+    .menu-row p { margin-top: 6px; max-width: 620px; }
+    .side-note {
+      padding: clamp(24px, 3.5vw, 42px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+      min-height: 100%;
+    }
+    .rating {
+      font-family: var(--font-display);
+      font-size: clamp(68px, 8vw, 116px);
+      line-height: .85;
+      color: var(--accent);
+    }
+    .rating-copy { font-size: 18px; color: #494538; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .lounge {
+      padding: clamp(26px, 4vw, 48px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 48px;
+    }
+    .lounge p { max-width: 560px; font-size: 18px; }
+    .mini-table { display: grid; gap: 10px; }
+    .mini-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(96,96,64,.12);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .gallery-card {
+      min-height: 260px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+      background: var(--paper);
+    }
+    .gallery-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .gallery-card:active { transform: translateY(1px); }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+
+    .news-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .news-card {
+      padding: 26px;
+      border-radius: 28px;
+      background: rgba(255,253,248,.72);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      min-height: 250px;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      transition: transform .22s var(--ease), background .22s var(--ease);
+    }
+    .news-card:hover { transform: translateY(-2px); background: rgba(255,253,248,.94); }
+    .news-card:active { transform: translateY(1px); }
+    .news-card time { color: var(--accent); font-family: var(--font-mono); font-size: 12px; }
+    .news-card p { margin-top: 12px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(24px, 3.5vw, 42px);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .contact-links { display: grid; gap: 12px; }
+    .contact-link {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(96,96,64,.13);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--ink);
+      transition: color .2s var(--ease), padding-left .2s var(--ease);
+    }
+    .contact-link:hover { color: var(--accent); padding-left: 4px; }
+    .hours {
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: rgba(96,96,64,.06);
+    }
+    .hours .today {
+      background: var(--accent);
+      color: #fffdf8;
+    }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final {
+      padding: clamp(34px, 6vw, 72px);
+      border-radius: 34px;
+      background: var(--accent);
+      color: #fffdf8;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 26px 88px rgba(96,96,64,.22);
+    }
+    .final h2 { color: #fffdf8; max-width: 820px; }
+    .final p { color: rgba(255,253,248,.78); margin-top: 16px; max-width: 620px; }
+    .final .btn-primary { background: #fffdf8; color: var(--accent); box-shadow: none; }
+    .final .btn-outline { color: #fffdf8; border-color: rgba(255,255,255,.5); }
+    .final-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer { padding: 42px 0 28px; }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 28px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .credit-links { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: flex-end; }
+    .credit-links a { color: var(--muted); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .wf-disclaimer {
+      border-top: 1px solid rgba(96,96,64,.13);
+      padding-top: 18px;
+      color: rgba(32,32,25,.58);
+      font-size: 12px;
+    }
+    .wf-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .menu-board, .split, .contact-grid, .final {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .navlinks { display: none; }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 720px) {
+      .actions .btn-outline { display: none; }
+      .hero-facts, .news-strip, .gallery { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .photo-label { position: static; border-radius: 0; }
+      .footer-main { display: grid; }
+      .credit-links { justify-content: flex-start; }
+      .brand img { max-width: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="container nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Tymián bistro">
+        <img src="https://tymianbistro.cz/images/logo.svg" alt="Tymián bistro">
+      </a>
+      <div class="navlinks">
+        <a href="#menu">Menu</a>
+        <a href="#lounge">Lounge</a>
+        <a href="#novinky">Novinky</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <div class="actions">
+        <a class="btn btn-outline" href="tel:+420705106457">Zavolat</a>
+        <a class="btn btn-primary" href="#kontakt">Rezervace</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker">Dnes 8:00-21:00 · Pardubice</div>
+          <h1>Bistro pro celý den.</h1>
+          <p class="lead">Snídaně, oběd, odpolední menu i víkendový brunch v centru Pardubic. Výběrová káva, víno, drinky a jídlo, které si na nic nehraje.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#menu">Prohlédnout menu</a>
+            <a class="btn btn-outline" href="tel:+420705106457">+420 705 106 457</a>
+          </div>
+          <div class="hero-facts" aria-label="Rychlé informace">
+            <div class="fact"><strong>4.8 / 5</strong><span>Hodnocení od hostů</span></div>
+            <div class="fact"><strong>267 recenzí</strong><span>Google profil bistra</span></div>
+            <div class="fact"><strong>Za Pasáží</strong><span>Pardubice I-Zelené Předměstí</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label"><span>Tymián bistro</span><span>káva · brunch · večeře</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="menu">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Menu přes den</div>
+            <h2>Od ranní kávy po večerní drink.</h2>
+          </div>
+          <p>Vaříme bistro food s moderním twistem: burgery, těstoviny, rice bowly, veggie speciality i české klasiky.</p>
+        </div>
+        <div class="menu-board">
+          <div class="menu-list">
+            <div class="menu-row">
+              <span class="mono">08:00</span>
+              <div><h3>Snídaně a káva</h3><p>Ráno začíná výběrovou kávou, snídaní a místem, kde se dá v klidu sednout před prací.</p></div>
+            </div>
+            <div class="menu-row">
+              <span class="mono">OBĚD</span>
+              <div><h3>Obědové menu</h3><p>Polední jídlo bez těžkosti: talíře do pracovního dne, klasiky i lehčí volby.</p></div>
+            </div>
+            <div class="menu-row">
+              <span class="mono">BRUNCH</span>
+              <div><h3>Víkendový brunch</h3><p>Pomalejší tempo, káva, sklenička a stůl pro setkání s přáteli.</p></div>
+            </div>
+            <div class="menu-row">
+              <span class="mono">DOMŮ</span>
+              <div><h3>Rozvoz a vyzvednutí</h3><p>Když nestíháte do bistra, objednáte si Tymián domů pohodlně na pár kliknutí.</p></div>
+            </div>
+          </div>
+          <aside class="surface side-note">
+            <div>
+              <div class="rating">4.8</div>
+              <p class="rating-copy">Hodnocení hostů z 267 recenzí. Důvod navíc zastavit se na kávu, oběd nebo večeři.</p>
+            </div>
+            <a class="btn btn-primary" href="#kontakt">Rezervovat stůl</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="lounge">
+      <div class="container split">
+        <div class="surface lounge">
+          <div>
+            <div class="eyebrow">Lounge</div>
+            <h2>Prostor až pro 25 lidí.</h2>
+          </div>
+          <p>Plánujete oslavu, firemní poradu, narozeniny nebo školení? Lounge se dá uzpůsobit Vašim představám včetně občerstvení, výzdoby a servisu.</p>
+          <div class="mini-table">
+            <div><span>Kapacita</span><strong>až 25 lidí</strong></div>
+            <div><span>Využití</span><strong>oslavy · porady · školení</strong></div>
+            <div><span>Servis</span><strong>občerstvení podle domluvy</strong></div>
+          </div>
+        </div>
+        <div class="gallery" aria-label="Atmosféra bistra">
+          <a class="gallery-card" href="#kontakt"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></a>
+          <a class="gallery-card" href="#kontakt"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="novinky">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Novinky</div>
+            <h2>Co se u nás právě řeší.</h2>
+          </div>
+          <p>Catering, dárkové karty a objednávka domů patří mezi věci, které hosté nejčastěji hledají mimo běžné menu.</p>
+        </div>
+        <div class="news-strip">
+          <article class="news-card">
+            <div><time datetime="2026-05-20">20.05.2026</time><h3>Catering z Tymiánu</h3><p>Pro oslavu, firemní poradu, narozeniny nebo setkání s přáteli připravíme catering s jednoduchým servisem.</p></div>
+            <a class="mono" href="#kontakt">Poptat catering</a>
+          </article>
+          <article class="news-card">
+            <div><time datetime="2025-11-20">20.11.2025</time><h3>Dárkové karty</h3><p>Dárek pro milovníky kávy, snídaní, brunchů i večeří, který si obdarovaný vybere podle chuti.</p></div>
+            <a class="mono" href="#kontakt">Zeptat se na kartu</a>
+          </article>
+          <article class="news-card">
+            <div><time datetime="2025-09-24">24.09.2025</time><h3>Tymián domů</h3><p>Jídlo z bistra si objednáte pohodlně přes aplikaci, když se k nám zrovna nestihnete zastavit.</p></div>
+            <a class="mono" href="#kontakt">Objednávka a vyzvednutí</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Za Pasáží 1429.</h2>
+          </div>
+          <p>Najdete nás v Pardubicích na adrese Za Pasáží 1429, 530 02 Pardubice I-Zelené Předměstí.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="surface contact-card">
+            <div class="contact-links">
+              <a class="contact-link" href="tel:+420705106457"><span>Zavolat do bistra</span><strong>+420 705 106 457</strong></a>
+              <a class="contact-link" href="mailto:info@tymianbistro.cz"><span>Napsat e-mail</span><strong>info@tymianbistro.cz</strong></a>
+              <a class="contact-link" href="https://tymianbistro.cz/"><span>Online objednávka</span><strong>tymianbistro.cz</strong></a>
+            </div>
+            <div>
+              <div class="eyebrow">Otevírací doba</div>
+              <div class="hours">
+                <div class="today"><span>Dnes</span><strong>8:00-21:00</strong></div>
+                <div><span>Pátek 22.5.</span><strong>8:00-21:00</strong></div>
+                <div><span>Sobota 23.5.</span><strong>9:00-14:00</strong></div>
+                <div><span>Neděle 24.5.</span><strong>9:00-14:00</strong></div>
+                <div><span>Pondělí 25.5.</span><strong>8:00-14:00</strong></div>
+                <div><span>Úterý 26.5.</span><strong>8:00-21:00</strong></div>
+                <div><span>Středa 27.5.</span><strong>8:00-21:00</strong></div>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění Tymián bistro"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="final">
+          <div>
+            <h2>Zastavte se dnes.</h2>
+            <p>Na snídani, oběd, brunch, víno nebo drink. Když chcete mít jisté místo, ozvěte se nám předem.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn btn-primary" href="tel:+420705106457">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:info@tymianbistro.cz">Napsat</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-main">
+        <span class="mono">Tymián bistro · Za Pasáží 1429 · Pardubice</span>
+        <div class="credit-links" aria-label="Fotografie">
+          <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>
+          <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>
+          <a href="https://www.pexels.com/@zaktech90">Zain Ali</a>
+        </div>
+      </div>
+      <div class="wf-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/iidu4w8" rel="nofollow">webflex.cz/delete/iidu4w8</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7755083, 50.036325299999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([15.7755083, 50.036325299999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
