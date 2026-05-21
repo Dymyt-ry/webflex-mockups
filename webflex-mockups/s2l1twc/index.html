@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divadelní klub | Restaurace v přízemí divadla v Pardubicích</title>
+  <meta name="description" content="Divadelní klub v Pardubicích. Útulná restaurace v přízemí divadelní budovy, polední menu, jídlo, pití a rezervace stolu na telefonu +420 602 528 752.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101011;
+      --panel: #181819;
+      --panel-2: #202022;
+      --paper: #f8f5ee;
+      --ink: #f7f3ec;
+      --muted: #b8afa5;
+      --muted-2: #8f877f;
+      --line: rgba(248, 245, 238, .13);
+      --line-strong: rgba(248, 245, 238, .24);
+      --accent: #F2C894;
+      --accent-deep: #c99757;
+      --dark-ink: #141313;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      max-width: 760px;
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .wrap {
+      width: var(--wrap);
+      margin-inline: auto;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #17110a;
+    }
+    .btn.primary:hover {
+      background: #ffd7a4;
+      border-color: #ffd7a4;
+    }
+    .btn.secondary {
+      background: transparent;
+      border-color: rgba(255,255,255,.45);
+      color: #ffffff;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(16, 16, 17, .82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .brand-logo {
+      width: auto;
+      max-width: 220px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: rgba(247,243,236,.72);
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      position: relative;
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.08) brightness(.66);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(16,16,17,.94), rgba(16,16,17,.66) 46%, rgba(16,16,17,.28)),
+        linear-gradient(180deg, rgba(16,16,17,.20), var(--bg));
+    }
+    .hero-inner {
+      width: var(--wrap);
+      margin-inline: auto;
+      padding: var(--s7) 0 var(--s8);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 640px;
+      margin-top: var(--s4);
+      color: rgba(247,243,236,.82);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(247,243,236,.78);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .meta-pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(0,0,0,.22);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .55fr);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p {
+      max-width: 520px;
+      font-size: 18px;
+    }
+
+    .menu-rows {
+      border-top: 1px solid var(--line-strong);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) minmax(150px, .28fr);
+      gap: var(--s4);
+      align-items: center;
+      min-height: 104px;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 650;
+    }
+    .menu-row .tag {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .split {
+      background: #151516;
+      border-block: 1px solid var(--line);
+    }
+    .split-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(420px, .9fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.04);
+    }
+    .feature-list {
+      display: grid;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .feature-item {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: var(--s3);
+      align-items: start;
+      padding-top: var(--s3);
+      border-top: 1px solid var(--line);
+    }
+    .feature-item span {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .feature-item b {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 18px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 54px);
+      line-height: 1;
+    }
+    .stat p { margin-top: var(--s4); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card {
+      position: relative;
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.08);
+      transition: transform 260ms var(--ease), filter 260ms var(--ease);
+    }
+    .gallery-card:hover img {
+      transform: scale(1.025);
+      filter: saturate(.9) contrast(1.12);
+    }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--dark-ink);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .contact-card {
+      padding: var(--s5);
+      display: grid;
+      gap: var(--s4);
+      align-content: start;
+    }
+    .contact-card p,
+    .hours-card p { color: #5d5349; }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-top: var(--s3);
+      border-top: 1px solid rgba(20,19,19,.12);
+    }
+    .contact-line span {
+      color: #786d61;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-line a {
+      font-size: 22px;
+      font-weight: 750;
+      transition: color 180ms var(--ease);
+    }
+    .contact-line a:hover { color: #8b5f28; }
+    .hours-card { padding: var(--s4); }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s3);
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(20,19,19,.10);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today {
+      margin-inline: -10px;
+      padding-inline: 10px;
+      border-radius: 6px;
+      background: rgba(242, 200, 148, .28);
+      color: #20170e;
+      font-weight: 600;
+    }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .faq-list {
+      border-top: 1px solid var(--line-strong);
+    }
+    .faq-item {
+      display: grid;
+      grid-template-columns: minmax(260px, .42fr) minmax(0, 1fr);
+      gap: var(--s5);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .faq-item h3 { font-size: 24px; }
+
+    .final-cta {
+      padding: var(--s7) 0 var(--s8);
+      background: var(--accent);
+      color: #17110a;
+    }
+    .final-cta p { color: rgba(23,17,10,.74); }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final-cta .btn.primary {
+      background: #17110a;
+      border-color: #17110a;
+      color: #fffaf2;
+    }
+    .final-cta .btn.primary:hover { background: #2b2117; }
+    .final-cta .btn.secondary {
+      border-color: currentColor;
+      color: #17110a;
+    }
+    .final-cta .btn.secondary:hover { background: rgba(23,17,10,.08); }
+
+    .footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-inner { padding: var(--s6) 0 var(--s7); }
+      .section-head,
+      .split-grid,
+      .hours-contact,
+      .faq-item,
+      .cta-grid {
+        grid-template-columns: 1fr;
+        gap: var(--s4);
+      }
+      .menu-row {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        gap: var(--s2);
+      }
+      .stats,
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card { min-height: 260px; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .brand-logo { max-width: 170px; max-height: 38px; }
+      .nav { min-height: 68px; }
+      .nav .btn { display: none; }
+      section { padding: var(--s6) 0; }
+      .hero { min-height: calc(100svh - 68px); }
+      .hero-actions .btn { width: 100%; }
+      .contact-card { padding: var(--s4); }
+      .stat { min-height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a href="#top" aria-label="Divadelní klub">
+        <img class="brand-logo" src="https://divadelniklubpardubice.cz/wp-content/uploads/2024/02/image.png-bile.png" alt="Divadelní klub">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420602528752">Rezervovat stůl</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <picture class="hero-bg">
+        <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      </picture>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">Pardubice · U Divadla 50</div>
+          <h1>Večer začíná v klubu</h1>
+          <p class="hero-lead">Útulná restaurace přímo v přízemí divadelní budovy. Přijďte na jídlo a pití před představením, o pauze i po něm.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420602528752">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">Dnes 11:00-23:00</span>
+            <span class="meta-pill">Hodnocení 4,8 · 24 recenzí</span>
+            <span class="meta-pill">5% sleva pro předplatitele</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Polední menu a stálá nabídka</div>
+            <h2>Jídla, která se hodí před oponou i po potlesku.</h2>
+          </div>
+          <p>V nabídce najdete hotová jídla, menší chuťovky i talíře ke sklence. Pro aktuální polední menu a volná místa volejte přímo do klubu.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="tag">Masové jídlo</span>
+            <strong>Vepřová panenka</strong>
+            <p>Medailonky s grilovanou zeleninou a grenaille.</p>
+          </article>
+          <article class="menu-row">
+            <span class="tag">Z grilu</span>
+            <strong>Kuřecí steak</strong>
+            <p>Batátové hranolky, zelenina a grilovací omáčka.</p>
+          </article>
+          <article class="menu-row">
+            <span class="tag">Lehčí talíř</span>
+            <strong>Carpaccio z červené řepy</strong>
+            <p>Feta sýr, mandlové lupínky, rukola, balsamicová redukce a toast.</p>
+          </article>
+          <article class="menu-row">
+            <span class="tag">K pivu a vínu</span>
+            <strong>Cibulové kroužky</strong>
+            <p>Smažené kroužky s grilovací omáčkou.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="split" id="divadlo">
+      <div class="wrap split-grid">
+        <div>
+          <div class="eyebrow">Přímo v divadelní budově</div>
+          <h2>Pro veřejnost, herce i divadelní večery.</h2>
+          <div class="feature-list">
+            <div class="feature-item">
+              <span>01</span>
+              <p><b>Před představením</b>Rezervujte si stůl včas a dejte si večeři bez spěchu.</p>
+            </div>
+            <div class="feature-item">
+              <span>02</span>
+              <p><b>O pauze</b>Krátká zastávka na sklenku nebo něco malého k zakousnutí.</p>
+            </div>
+            <div class="feature-item">
+              <span>03</span>
+              <p><b>Po představení</b>Klub zůstává místem pro klidné posezení a pokračování večera.</p>
+            </div>
+          </div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <div class="num">4,8</div>
+            <p>Průměrné hodnocení hostů podle dostupných údajů.</p>
+          </div>
+          <div class="stat">
+            <div class="num">24</div>
+            <p>Recenzí od návštěvníků, kteří klub hodnotili online.</p>
+          </div>
+          <div class="stat">
+            <div class="num">5%</div>
+            <p>Sleva na konzumaci pro majitele předplatného v den představení.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, stůl u divadla, čas na rozhovor.</h2>
+          </div>
+          <p>Klub je otevřený všem návštěvníkům, nejen lidem z divadla. Přijďte na oběd, večeři nebo sklenku v centru Pardubic.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt a otevírací doba</div>
+            <h2>Stůl si nejrychleji zajistíte telefonicky.</h2>
+          </div>
+          <p>Najdete nás na adrese U Divadla 50 v Pardubicích. Rezervace přijímáme na telefonu +420 602 528 752.</p>
+        </div>
+        <div class="hours-contact">
+          <div class="contact-card">
+            <div>
+              <h3>Divadelní klub</h3>
+              <p>U Divadla 50, 530 02 Pardubice I</p>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420602528752">+420 602 528 752</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:martindamaschko@seznam.cz">martindamaschko@seznam.cz</a>
+            </div>
+            <div class="hours-card" aria-label="Otevírací doba">
+              <div class="hours-row today"><span>Po-Čt</span><span>11:00-23:00</span></div>
+              <div class="hours-row"><span>Pá</span><span>11:00-00:00</span></div>
+              <div class="hours-row"><span>So</span><span>16:00-00:00</span></div>
+              <div class="hours-row"><span>Ne</span><span>16:00-22:00</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění Divadelního klubu"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Dobré vědět</div>
+            <h2>Než vyrazíte do divadla.</h2>
+          </div>
+          <p>Krátké odpovědi k rezervaci, slevě pro předplatitele a návštěvě klubu.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Je klub jen pro zaměstnance divadla?</h3>
+            <p>Ne. Divadelní klub je otevřený veřejnosti, takže můžete přijít na jídlo a pití i bez vstupenky.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak si rezervuji stůl?</h3>
+            <p>Nejjednodušší je zavolat na číslo +420 602 528 752 a domluvit si čas podle programu večera.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Platí sleva pro předplatitele?</h3>
+            <p>Ano. Majitelé předplatného mají v den svého představení 5% slevu na celou konzumaci.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-label="Rezervace">
+      <div class="wrap cta-grid">
+        <div>
+          <div class="eyebrow" style="color:#5a3a16;">Rezervace</div>
+          <h2>Domluvte si stůl na dnešní večer.</h2>
+          <p>Telefonicky vám potvrdíme místo i čas, který sedí k vašemu programu.</p>
+        </div>
+        <div class="hero-actions" style="margin-top:0;">
+          <a class="btn primary" href="tel:+420602528752">Zavolat do klubu</a>
+          <a class="btn secondary" href="mailto:martindamaschko@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <span>© 2026 Divadelní klub · Fotografie: Pexels</span>
+      <span>Prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/s2l1twc">Odstranit stránku s tokenem s2l1twc</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7775229, 50.0368839],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#F2C894' })
+      .setLngLat([15.7775229, 50.0368839])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
