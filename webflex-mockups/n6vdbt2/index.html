@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Semler | Kavárna v Semlerově rezidenci</title>
+  <meta name="description" content="Café Semler v přízemí Semlerovy rezidence v Plzni. Výběrová káva, snídaně, obědové menu, domácí zákusky a dezerty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: rgba(255, 255, 255, .82);
+      --paper-strong: #ffffff;
+      --ink: #171518;
+      --muted: #69646c;
+      --soft: #f1f0ee;
+      --hairline: rgba(23, 21, 24, .09);
+      --accent: #A00078;
+      --accent-dark: #76005a;
+      --wood: #8f6d52;
+      --grey-red: #d8d5d2;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --shadow: 0 30px 90px rgba(40, 32, 44, .08);
+      --shadow-soft: 0 18px 70px rgba(160, 0, 120, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,21,24,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,24,.018) 1px, transparent 1px),
+        radial-gradient(circle at 84% 8%, rgba(160,0,120,.07), transparent 28%),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; hyphens: none; letter-spacing: 0; }
+    h1, h2 { font-family: var(--font-display); overflow-wrap: anywhere; }
+    h3 { font-family: var(--font-body); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 74px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(23,21,24,.72);
+    }
+
+    .nav-links a,
+    .text-link {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .text-link:hover {
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 16px 42px rgba(160, 0, 120, .22);
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); }
+
+    .btn-secondary {
+      color: var(--ink);
+      border-color: currentColor;
+      background: transparent;
+    }
+
+    .btn-secondary:hover { background: rgba(160, 0, 120, .07); }
+
+    .hero {
+      width: var(--wrap);
+      min-height: calc(100vh - 74px);
+      margin: 0 auto;
+      padding: 58px 0 74px;
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .86fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 82px);
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      max-width: 680px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+      color: #464149;
+    }
+
+    .hero-actions {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hero-meta {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(23,21,24,.54));
+      pointer-events: none;
+    }
+
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section {
+      width: var(--wrap);
+      margin: 0 auto;
+      padding: 76px 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .54fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      font-size: clamp(34px, 4.4vw, 66px);
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .surface {
+      background: var(--paper);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .offer-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      overflow: hidden;
+    }
+
+    .offer-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 28px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row strong {
+      font-size: 22px;
+      line-height: 1.1;
+    }
+    .offer-row span {
+      color: var(--muted);
+    }
+    .offer-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .story-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(320px, .56fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .story-card {
+      padding: clamp(28px, 4vw, 48px);
+      min-height: 100%;
+    }
+
+    .story-card p {
+      font-size: 20px;
+      line-height: 1.48;
+      color: #3e3942;
+    }
+
+    .materials {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .material {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(23,21,24,.04);
+      color: var(--muted);
+    }
+
+    .story-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .story-photo img,
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .stat {
+      padding: 28px;
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat .num {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat p {
+      margin-top: 18px;
+      color: #49444c;
+    }
+
+    .visit {
+      display: grid;
+      grid-template-columns: minmax(0, .62fr) minmax(360px, .62fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .hours-card,
+    .contact-card {
+      padding: 30px;
+    }
+
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 22px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .hours-table td {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .hours-table td:last-child {
+      text-align: right;
+      color: var(--ink);
+    }
+
+    .today td {
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .contact-lines a,
+    .contact-lines span {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(23,21,24,.04);
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease);
+    }
+
+    .contact-lines a:hover {
+      transform: translateY(-1px);
+      background: rgba(160,0,120,.08);
+      color: var(--accent);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .gallery figure:nth-child(2) {
+      margin-top: 44px;
+    }
+
+    .cta {
+      margin: 76px auto;
+      padding: clamp(34px, 5vw, 58px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      background: #171518;
+      color: #fff;
+      box-shadow: 0 30px 90px rgba(23,21,24,.16);
+    }
+
+    .cta h2 {
+      max-width: 760px;
+      color: #fff;
+      font-size: clamp(32px, 4.6vw, 64px);
+    }
+
+    .cta p {
+      margin-top: 16px;
+      color: rgba(255,255,255,.72);
+    }
+
+    .cta .btn-secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    footer {
+      width: var(--wrap);
+      margin: 0 auto;
+      padding: 36px 0 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--hairline);
+      margin-bottom: 18px;
+      font-family: var(--font-mono);
+    }
+
+    .wf-disclaimer a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .story-grid,
+      .visit,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .hero-photo { min-width: 0; }
+      .offer-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .stats,
+      .materials,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .gallery figure:nth-child(2) { margin-top: 0; }
+      .cta { margin: 36px auto; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: 54px 0; }
+      .brand img { max-height: 34px; }
+      .hero { padding-top: 36px; }
+      .hero-actions,
+      .cta-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .btn { width: 100%; }
+      .photo-note { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Café Semler">
+        <img src="https://semler.cz/wp-content/img/ZCG-new.png" alt="Café Semler">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#interier">Interiér</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420739610365">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div>
+        <div class="eyebrow">Plzeň · Klatovská tř. 110</div>
+        <h1>Káva uvnitř Semlerovy rezidence</h1>
+        <p class="lead">Stylová kavárna v přízemí Semlerovy rezidence. Zastavte se na výbornou kávu, snídani, obědové menu nebo domácí zákusek před prohlídkou i po ní.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#navsteva">Otevírací doba</a>
+          <a class="btn btn-secondary" href="mailto:cafesemler@seznam.cz">Napsat e-mail</a>
+        </div>
+        <div class="hero-meta">
+          <span class="meta-chip">Hodnocení 4,8 z 111 recenzí</span>
+          <span class="meta-chip">Út-Čt 10-19 · Pá-Ne 9-19</span>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <div class="photo-note">
+          <span>Café Semler</span>
+          <span>veřejně přístupná kavárna</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="section-head">
+        <h2>Co si dáte</h2>
+        <p>Kavárna staví na kávě, sezónních surovinách a vlastních domácích dezertech. Přijít můžete i bez vstupenky na prohlídku historického interiéru.</p>
+      </div>
+      <div class="offer-list surface">
+        <div class="offer-row">
+          <strong>Kávové nápoje</strong>
+          <span>Šálek před prohlídkou, po ní nebo jen cestou městem.</span>
+          <span class="offer-tag">káva</span>
+        </div>
+        <div class="offer-row">
+          <strong>Snídaně</strong>
+          <span>Ranní zastavení v klidném prostoru Semlerovy rezidence.</span>
+          <span class="offer-tag">út-ne</span>
+        </div>
+        <div class="offer-row">
+          <strong>Obědové menu</strong>
+          <span>Regionální a sezónní suroviny v nabídce pro všední den i víkend.</span>
+          <span class="offer-tag">sezóna</span>
+        </div>
+        <div class="offer-row">
+          <strong>Domácí zákusky</strong>
+          <span>Vyhlášené vlastní zákusky a dezerty ke kávě.</span>
+          <span class="offer-tag">dezerty</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="interier">
+      <div class="story-grid">
+        <div class="story-card surface">
+          <div class="eyebrow">Interiér podle Loose</div>
+          <h2>Červená, šedá, dub</h2>
+          <p>Interiér navrhli Jaromír Veselák a Jan Toman. Vychází z inspirace Adolfem Loosem: výrazná barva, přírodní materiály a bar obložený původními dveřmi z domu poskládanými jako patchwork.</p>
+          <div class="materials">
+            <div class="material">červená</div>
+            <div class="material">šedá</div>
+            <div class="material">dubové obložení</div>
+          </div>
+        </div>
+        <div class="story-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvody k návštěvě">
+      <div class="stats">
+        <div class="stat surface">
+          <div class="num">4,8</div>
+          <p>Průměrné hodnocení hostů v dostupných recenzích.</p>
+        </div>
+        <div class="stat surface">
+          <div class="num">111</div>
+          <p>Recenzí od návštěvníků kavárny a Semlerovy rezidence.</p>
+        </div>
+        <div class="stat surface">
+          <div class="num">10 %</div>
+          <p>Sleva na kávové nápoje a zákusky v den prohlídky po předložení platné vstupenky.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kavárny">
+      <div class="section-head">
+        <h2>Stůl, světlo, klid</h2>
+        <p>Místo pro krátké espresso, pozdní snídani i sladké zakončení návštěvy Semlerovy rezidence.</p>
+      </div>
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="navsteva">
+      <div class="section-head">
+        <h2>Naplánujte návštěvu</h2>
+        <p>Kavárna je v přízemí rezidence a je přístupná široké veřejnosti. Není nutné jít na prohlídku historického interiéru.</p>
+      </div>
+      <div class="visit">
+        <div class="hours-card surface">
+          <h3>Otevírací doba</h3>
+          <table class="hours-table">
+            <tbody>
+              <tr><td>Pondělí</td><td>zavřeno</td></tr>
+              <tr><td>Úterý</td><td>10-19</td></tr>
+              <tr><td>Středa</td><td>10-19</td></tr>
+              <tr class="today"><td>Čtvrtek</td><td>10-19</td></tr>
+              <tr><td>Pátek</td><td>9-19</td></tr>
+              <tr><td>Sobota</td><td>9-19</td></tr>
+              <tr><td>Neděle</td><td>9-19</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="kontakt" class="contact-card surface">
+          <h3>Kontakt</h3>
+          <div class="contact-lines">
+            <span>Klatovská tř. 110, 301 00 Plzeň 3</span>
+            <a href="tel:+420739610365">+420 739 610 365</a>
+            <a href="mailto:cafesemler@seznam.cz">cafesemler@seznam.cz</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Mapa">
+      <div id="map"></div>
+    </section>
+
+    <section class="cta surface" aria-label="Závěrečná výzva">
+      <div>
+        <h2>Dejte si kávu v rezidenci</h2>
+        <p>Najdete nás v přízemí Semlerovy rezidence na Klatovské třídě 110 v Plzni.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="tel:+420739610365">Zavolat</a>
+        <a class="btn btn-secondary" href="https://semler.cz/cafe-semler/">Oficiální stránka</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-main">
+      <span>Café Semler</span>
+      <span>Klatovská tř. 110 · Plzeň</span>
+    </div>
+    <div class="wf-disclaimer">
+      Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správnou kontaktní osobou, můžete ji odstranit zde:
+      <a href="https://webflex.cz/delete/n6vdbt2">webflex.cz/delete/n6vdbt2</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.369885, 49.733227199999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A00078' })
+      .setLngLat([13.369885, 49.733227199999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
