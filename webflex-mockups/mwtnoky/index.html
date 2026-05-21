@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Don Café Ústí nad Labem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #171713;
+      --muted: #68665d;
+      --soft: #efeee8;
+      --accent: #D7B16D;
+      --accent-deep: #8c6631;
+      --line: rgba(23, 23, 19, 0.08);
+      --shadow: 0 28px 90px rgba(48, 42, 30, 0.09);
+      --shadow-soft: 0 18px 60px rgba(48, 42, 30, 0.06);
+      --font-display: 'Archivo Black', Impact, system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 132px);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23,23,19,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,19,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 84% 8%, rgba(215,177,109,0.18), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { text-wrap: balance; hyphens: none; }
+    button, input, textarea { font: inherit; }
+
+    .container { width: min(100% - 2 * var(--gutter), 1260px); margin-inline: auto; }
+    .section { padding-block: var(--section); }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; opacity: 0.5; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.52fr);
+      gap: clamp(32px, 6vw, 84px);
+      align-items: end;
+      margin-bottom: clamp(32px, 5vw, 64px);
+    }
+    .section h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: clamp(16px, 1.5vw, 19px); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 248, 0.78);
+      backdrop-filter: blur(22px);
+      border-bottom: 1px solid rgba(23,23,19,0.06);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: inline-flex; align-items: center; min-width: 150px; }
+    .brand img {
+      width: auto;
+      max-width: 174px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .links { display: flex; align-items: center; gap: 30px; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .links a, .contact-line a, .footer a {
+      transition: color 220ms cubic-bezier(.16,1,.3,1), transform 220ms cubic-bezier(.16,1,.3,1);
+    }
+    .links a:hover, .contact-line a:hover, .footer a:hover { color: var(--accent-deep); }
+    .links a:focus-visible, .btn:focus-visible, .contact-line a:focus-visible, .footer a:focus-visible, .maplibregl-ctrl button:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 13px 19px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 220ms cubic-bezier(.16,1,.3,1), border-color 220ms cubic-bezier(.16,1,.3,1), transform 220ms cubic-bezier(.16,1,.3,1), box-shadow 220ms cubic-bezier(.16,1,.3,1);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #171713; box-shadow: 0 16px 40px rgba(215,177,109,0.28); }
+    .btn-primary:hover { background: #e4c17e; box-shadow: 0 20px 48px rgba(215,177,109,0.34); }
+    .btn-outline { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(23,23,19,0.04); }
+
+    .hero {
+      min-height: calc(100svh - 74px);
+      display: grid;
+      align-items: center;
+      padding-block: clamp(48px, 8vw, 96px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.96fr) minmax(420px, 0.82fr);
+      gap: clamp(34px, 5vw, 70px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-kicker {
+      display: inline-flex;
+      gap: 12px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(215,177,109,0.13);
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 26px;
+    }
+    .hero-kicker span { width: 8px; height: 8px; border-radius: 99px; background: var(--accent); box-shadow: 0 0 0 6px rgba(215,177,109,0.16); }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      max-width: 10ch;
+      overflow-wrap: anywhere;
+    }
+    .hero-copy p {
+      max-width: 58ch;
+      margin-top: 24px;
+      font-size: clamp(17px, 1.5vw, 21px);
+      color: var(--muted);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-panel {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-card {
+      position: absolute;
+      left: clamp(12px, 4vw, 44px);
+      right: clamp(12px, 4vw, 44px);
+      bottom: -38px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+    .floating-card strong { display: block; font-size: 15px; }
+    .floating-card small { color: var(--muted); }
+    .rating {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--accent-deep);
+      white-space: nowrap;
+    }
+
+    .row-list {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 0.38fr 1fr auto;
+      gap: 24px;
+      padding: clamp(20px, 3vw, 32px);
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-deep); font-size: 13px; font-weight: 600; }
+    .service-row h3 { font-size: clamp(22px, 2.6vw, 34px); line-height: 1.08; font-weight: 800; }
+    .service-row p { color: var(--muted); max-width: 54ch; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(22px, 3vw, 32px);
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--accent-deep);
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 70px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .story-card {
+      padding: clamp(28px, 5vw, 56px);
+      border-radius: 32px;
+      background: rgba(255,255,255,0.74);
+      box-shadow: var(--shadow-soft);
+    }
+    .story-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: 0.98;
+      overflow-wrap: anywhere;
+    }
+    .story-card p { margin-top: 22px; color: var(--muted); font-size: 18px; }
+    .mini-list { display: grid; gap: 12px; margin-top: 28px; }
+    .mini-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .mini-list span { color: var(--muted); font-family: var(--font-body); font-weight: 700; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.08fr 0.82fr 0.82fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 280px;
+    }
+    .gallery-strip figure:first-child { min-height: 420px; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; transition: transform 420ms cubic-bezier(.16,1,.3,1); }
+    .gallery-strip figure:hover img { transform: scale(1.035); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.74fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card, .hours-card {
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      padding: clamp(24px, 4vw, 40px);
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 62px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .contact-line { display: grid; gap: 8px; margin-top: 26px; }
+    .contact-line span, .hours-row span:first-child { color: var(--muted); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+    .contact-line a, .contact-line strong { font-size: 18px; font-weight: 800; }
+    .hours { display: grid; gap: 10px; margin-top: 18px; }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today {
+      margin-inline: -14px;
+      padding-inline: 14px;
+      border-radius: 14px;
+      background: rgba(215,177,109,0.16);
+      border-bottom-color: transparent;
+    }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+
+    .final {
+      padding: clamp(40px, 7vw, 72px);
+      border-radius: 34px;
+      background: #171713;
+      color: #fffaf0;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 76px);
+      line-height: 0.98;
+      overflow-wrap: anywhere;
+    }
+    .final p { margin-top: 14px; color: rgba(255,250,240,0.7); max-width: 58ch; }
+    .final .btn-outline { color: #fffaf0; border-color: rgba(255,255,255,0.45); }
+    .final .btn-outline:hover { background: rgba(255,255,255,0.08); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .footer {
+      padding: 34px var(--gutter);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: min(100%, 1260px);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .footer-disclaimer { max-width: 760px; }
+
+    @media (max-width: 940px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .hero-photo { aspect-ratio: 4 / 3; }
+      .floating-card { position: relative; left: auto; right: auto; bottom: auto; margin: -28px 16px 0; }
+      .service-row { grid-template-columns: 1fr; }
+      .stats, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure, .gallery-strip figure:first-child { min-height: 260px; }
+      .final-actions { justify-content: flex-start; }
+      .footer-inner { flex-direction: column; }
+    }
+    @media (max-width: 560px) {
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .floating-card { grid-template-columns: 1fr; }
+      .stats { gap: 14px; }
+      .stat { min-height: 150px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Don Café">
+        <img src="https://www.doncafe.cz/wp-content/uploads/2020/09/logo-don-cafe.svg" alt="Don Café">
+      </a>
+      <div class="links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">O kavárně</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420735822901">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="hero-kicker"><span></span>OC Fórum Ústí nad Labem</div>
+          <h1>Italská káva každý den</h1>
+          <p>Don Café najdete ve spojovacím krčku obchodního centra Fórum. Zastavte se na snídani, šálek kávy, domácí dort nebo zmrzlinu podle italské receptury.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn btn-outline" href="mailto:mb@doncafe.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-panel" aria-label="Atmosféra kavárny">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+          <div class="floating-card">
+            <div>
+              <strong>Hodnocení hostů</strong>
+              <small>Google recenze z profilu Don Café</small>
+            </div>
+            <div class="rating">4.1 / 316</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="nabidka">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Nabídka</span>
+            <h2>Káva, snídaně i sladká tečka.</h2>
+          </div>
+          <p>Receptury inspirované Itálií, domácí dorty a dezerty z vlastní produkce. Kavárna je připravená na rychlé espresso i klidné posezení.</p>
+        </div>
+        <div class="row-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Káva v italské tradici</h3>
+            <p>Směs připravená ve spolupráci s ikonou světové kávy Gianluigim Norou.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Snídaně od osmi</h3>
+            <p>Začněte den vydatnou snídaní přímo v OC Fórum Ústí nad Labem.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Dorty a dezerty</h3>
+            <p>Domácí zákusky, svatební a narozeninové dorty i sladkosti ke kávě.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <h3>Italská zmrzlina</h3>
+            <p>Zmrzlina z kvalitních surovin podle italské receptury.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Čísla Don Café">
+      <div class="container">
+        <div class="stats">
+          <div class="stat">
+            <b>20</b>
+            <span>druhů zmrzliny</span>
+          </div>
+          <div class="stat">
+            <b>7</b>
+            <span>domácích dortů a dezertů</span>
+          </div>
+          <div class="stat">
+            <b>234</b>
+            <span>káv připravených za den</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pribeh">
+      <div class="container split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="story-card">
+          <span class="eyebrow">O kavárně</span>
+          <h2>Kvalita a osobitost.</h2>
+          <p>Idea Don Café je prostá: nabídnout hostům to, co má dobrá kavárna mít. Pečlivou kávu, vlastní dezerty, italskou inspiraci a prostředí, kam se dá vracet.</p>
+          <div class="mini-list">
+            <div><span>Adresa</span><strong>Bílinská 3490/6</strong></div>
+            <div><span>Místo</span><strong>OC Fórum</strong></div>
+            <div><span>Kontakt</span><strong>+420 735 822 901</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Fotografie kavárny">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Atmosféra</span>
+            <h2>Posezení na kávu i oslavu.</h2>
+          </div>
+          <p>Kavárna funguje pro běžnou návštěvu, rodinné oslavy i firemní akce. V nabídce je také pronájem celé kavárny přibližně pro 50 míst.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kontakt</span>
+            <h2>Najdete nás ve Fóru.</h2>
+          </div>
+          <p>Don Café Ústí nad Labem je otevřené 7 dní v týdnu. Pro dorty, oslavy nebo firemní akce se ozvěte telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h2>Don Café</h2>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420735822901">+420 735 822 901</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:mb@doncafe.cz">mb@doncafe.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Bílinská 3490/6, 400 01 Ústí nad Labem-město</strong>
+            </div>
+          </div>
+          <div class="hours-card">
+            <span class="eyebrow">Otevírací doba</span>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hours-row"><span>Pondělí</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row"><span>Úterý</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row"><span>Středa</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row today"><span>Čtvrtek</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row"><span>Pátek</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row"><span>Sobota</span><strong>8.00 - 21.00</strong></div>
+              <div class="hours-row"><span>Neděle</span><strong>8.00 - 21.00</strong></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 22px;">
+          <div id="map" aria-label="Mapa Don Café Ústí nad Labem"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="final">
+          <div>
+            <h2>Zastavte se dnes.</h2>
+            <p>Na snídani, kávu, zmrzlinu nebo dort. Don Café je v OC Fórum otevřené od 8.00 do 21.00.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn btn-primary" href="tel:+420735822901">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:mb@doncafe.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-disclaimer">
+        Toto je nezávazný koncept veřejné stránky připravený studiem Webflex. Nejste-li adresátem nebo si nepřejete další kontakt, můžete stránku odstranit zde:
+        <a href="https://www.webflex.cz/delete/mwtnoky">https://www.webflex.cz/delete/mwtnoky</a>
+      </div>
+      <div>Foto: Pexels</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0403269, 50.6586541],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#D7B16D' })
+      .setLngLat([14.0403269, 50.6586541])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
