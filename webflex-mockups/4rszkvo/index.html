@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Casablanca | Kavárna a italská kuchyně v Pardubicích</title>
+  <meta name="description" content="Café Casablanca v Pardubicích. Výběrová káva, luxusní zákusky, pizza, těstoviny, víno, prosecco a prostor pro soukromé akce.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #141312;
+      --panel: #1c1a18;
+      --panel-2: #24211e;
+      --paper: #f8f4ed;
+      --ink: #f7f2ea;
+      --muted: #c9bdae;
+      --paper-ink: #1a1714;
+      --paper-muted: #6f6256;
+      --line: rgba(248, 244, 237, .13);
+      --line-strong: rgba(248, 244, 237, .24);
+      --accent: #D4A66A;
+      --accent-deep: #a9793f;
+      --font-display: "Space Grotesk", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(248,244,237,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(248,244,237,.024) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px, 32px 32px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.2vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 23px;
+      line-height: 1.1;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #17120e;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: #e2b879; border-color: #e2b879; }
+    .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      background: linear-gradient(180deg, rgba(20,19,18,.86), rgba(20,19,18,.58));
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: rgba(247,242,234,.78);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
+      padding: 116px 0 var(--s7);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background: #100f0e;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.08);
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 72% 42%, rgba(212,166,106,.14), transparent 26%),
+        linear-gradient(90deg, rgba(10,9,8,.92), rgba(10,9,8,.72) 44%, rgba(10,9,8,.34) 72%, rgba(10,9,8,.78));
+    }
+    .hero-copy {
+      max-width: 720px;
+      display: grid;
+      gap: var(--s4);
+    }
+    .hero-lead {
+      max-width: 610px;
+      color: rgba(247,242,234,.82);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s2);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s3);
+      color: rgba(247,242,234,.76);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .meta-pill {
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(20,19,18,.42);
+    }
+
+    .section {
+      padding: var(--s7) 0;
+      border-top: 1px solid var(--line);
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .5fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p {
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .menu-rows {
+      border-top: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: baseline;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row strong {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .menu-row span {
+      color: var(--muted);
+    }
+    .menu-row em {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border-top: 0;
+      border-bottom: 0;
+    }
+    .paper-band p { color: var(--paper-muted); }
+    .paper-band .eyebrow { color: var(--accent-deep); }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .84fr) minmax(420px, .72fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-copy {
+      display: grid;
+      gap: var(--s4);
+    }
+    .split-copy p {
+      font-size: 19px;
+      line-height: 1.55;
+    }
+    .split-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ddd1c2;
+    }
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .quote {
+      margin-top: var(--s4);
+      padding-left: var(--s4);
+      border-left: 2px solid var(--accent);
+      color: var(--paper-ink);
+      font-size: 22px;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 188px;
+      display: grid;
+      align-content: space-between;
+      gap: var(--s4);
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+    }
+    .stat b {
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 5vw, 70px);
+      line-height: .9;
+      letter-spacing: 0;
+    }
+    .stat span {
+      color: var(--muted);
+    }
+
+    .events {
+      display: grid;
+      grid-template-columns: minmax(0, .55fr) minmax(0, .45fr);
+      gap: var(--s5);
+      align-items: start;
+    }
+    .event-list {
+      display: grid;
+      border-top: 1px solid var(--line-strong);
+    }
+    .event-item {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .event-item i {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .event-item h3 { margin-bottom: 8px; }
+    .event-card {
+      padding: var(--s5);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(212,166,106,.12), rgba(255,255,255,.03));
+      border-radius: 8px;
+    }
+    .event-card p { margin-top: var(--s3); }
+    .event-card .btn { margin-top: var(--s4); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.05fr .72fr .72fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+    .gallery figure:first-child { grid-row: span 2; min-height: 536px; }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 420ms var(--ease), filter 420ms var(--ease);
+    }
+    .gallery figure:hover img {
+      transform: scale(1.025);
+      filter: saturate(1.03) contrast(1.06);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .46fr) minmax(0, .54fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      display: grid;
+      gap: var(--s4);
+      padding: var(--s5);
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line small {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .contact-line a,
+    .contact-line span {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 650;
+    }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .final {
+      padding: var(--s7) 0 var(--s8);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+      padding: var(--s6);
+      border-radius: 8px;
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(135deg, rgba(212,166,106,.18), rgba(255,255,255,.03)),
+        var(--panel);
+    }
+    .final-box p {
+      margin-top: var(--s3);
+      max-width: 620px;
+      font-size: 19px;
+    }
+
+    .site-footer {
+      padding: var(--s4) 0;
+      border-top: 1px solid var(--line);
+      color: rgba(247,242,234,.58);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+    .footer-grid a {
+      color: rgba(247,242,234,.74);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding: 112px 0 var(--s7); }
+      .hero-bg::after {
+        background: linear-gradient(180deg, rgba(10,9,8,.78), rgba(10,9,8,.9));
+      }
+      .section-head,
+      .split,
+      .events,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .stats { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure,
+      .gallery figure:first-child {
+        min-height: 280px;
+        grid-row: auto;
+      }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .final-box { padding: var(--s5) var(--s4); }
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Café Casablanca">
+        <img src="https://cafecasablanca.cz/wp-content/uploads/2026/03/logo_cafe_casablanca.svg" alt="Café Casablanca">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#akce">Prostory a akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420774706949">Rezervovat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      </div>
+      <div class="wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Pardubice · 17. listopadu 238</div>
+          <h1 id="hero-title">Čas na Casablanca</h1>
+          <p class="hero-lead">Výběrová káva, italská kuchyně, luxusní zákusky a večerní sklenka v kavárně s atmosférou starých filmů.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420774706949">Rezervovat stůl</a>
+            <a class="btn secondary" href="#menu">Zobrazit nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4,6 Google</span>
+            <span class="meta-pill">310 recenzí</span>
+            <span class="meta-pill">Káva · oběd · večerní drink</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše menu</div>
+            <h2>Od ranní kávy po prosecco</h2>
+          </div>
+          <p>Stavíme na čerstvě pražené kávě z rodinné pražírny Kafe Křižka, dezertech od Milujeme dorty a italských surovinách od Cortelazzy.</p>
+        </div>
+        <div class="menu-rows">
+          <div class="menu-row">
+            <strong>Výběrová káva</strong>
+            <span>Espresso, cappuccino, latte i káva s sebou pro cestu městem.</span>
+            <em>Kafe Křižka</em>
+          </div>
+          <div class="menu-row">
+            <strong>Dezerty</strong>
+            <span>Luxusní zákusky pro odpolední šálek i pomalé víkendové posezení.</span>
+            <em>Milujeme dorty</em>
+          </div>
+          <div class="menu-row">
+            <strong>Italská kuchyně</strong>
+            <span>Pizza a těstoviny z kvalitních italských surovin.</span>
+            <em>Cortelazza</em>
+          </div>
+          <div class="menu-row">
+            <strong>Večer u baru</strong>
+            <span>Pečlivě vybraná vína, prosecco a klidná atmosféra po práci.</span>
+            <em>Víno · prosecco</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section paper-band" id="atmosfera">
+      <div class="wrap split">
+        <div class="split-copy">
+          <div class="eyebrow">Kavárna s duší</div>
+          <h2>Staré filmy, měkké světlo, klid u stolu</h2>
+          <p>Café Casablanca je místo, kde se čas trochu zpomalí. Interiér připomíná uvolněnou eleganci 60. let, černobílé filmy a osobní péči, která drží prostor příjemný pro každého hosta.</p>
+          <p>Duší kavárny je majitelka Nela. Stará se o to, aby tu bylo dobře u ranní kávy, pracovního setkání i delšího večerního posezení.</p>
+          <div class="quote">„Jídlo bylo chutné, prostředí útulné a obsluha velmi sympatická.“</div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hosté</div>
+            <h2>Důvody se vracet</h2>
+          </div>
+          <p>Hodnocení i reakce hostů stojí na jídle, prostředí, milém personálu a kavárenské atmosféře, která v Pardubicích působí osobně.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <b>4,6</b>
+            <span>Průměrné hodnocení na Googlu.</span>
+          </div>
+          <div class="stat">
+            <b>310</b>
+            <span>Recenzí od hostů, kteří se zastavili na kávu, jídlo i drink.</span>
+          </div>
+          <div class="stat">
+            <b>3</b>
+            <span>Silné linky nabídky: káva, italská kuchyně a sladké dezerty.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="akce">
+      <div class="wrap events">
+        <div>
+          <div class="eyebrow">Prostory a akce</div>
+          <h2>Posezení pro oslavy i setkání</h2>
+        </div>
+        <div class="event-list">
+          <div class="event-item">
+            <i>01</i>
+            <div>
+              <h3>Narozeniny</h3>
+              <p>Komorní posezení s dobrým jídlem, kávou a sladkou tečkou.</p>
+            </div>
+          </div>
+          <div class="event-item">
+            <i>02</i>
+            <div>
+              <h3>Pracovní setkání</h3>
+              <p>Klidné prostředí pro schůzku, oběd nebo odpolední kávu.</p>
+            </div>
+          </div>
+          <div class="event-item">
+            <i>03</i>
+            <div>
+              <h3>Komunitní akce</h3>
+              <p>Inspirativní prostor, kde se hosté potkají u stolu přirozeně.</p>
+            </div>
+          </div>
+          <div class="event-card">
+            <h3>Plánujete vlastní termín?</h3>
+            <p>Napište nebo zavolejte. Domluvíme se podle velikosti skupiny, času a charakteru akce.</p>
+            <a class="btn primary" href="mailto:info@cafecasablanca.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nahlédněte k nám</div>
+            <h2 id="gallery-title">Večer má vlastní rytmus</h2>
+          </div>
+          <p>Teplé světlo, sklenky, svíčky a měkký ruch kavárny vytvářejí prostředí pro krátkou zastávku i delší posezení.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Kde nás najdete</h2>
+          </div>
+          <p>Jsme na adrese 17. listopadu 238 v Pardubicích. Pro rezervaci stolu nebo akci nám zavolejte, případně napište e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <small>Telefon</small>
+              <a href="tel:+420774706949">+420 774 706 949</a>
+            </div>
+            <div class="contact-line">
+              <small>E-mail</small>
+              <a href="mailto:info@cafecasablanca.cz">info@cafecasablanca.cz</a>
+            </div>
+            <div class="contact-line">
+              <small>Adresa</small>
+              <span>17. listopadu 238, Zelené Předměstí, 530 02 Pardubice-Pardubice I</span>
+            </div>
+            <div class="contact-line">
+              <small>Otevírací doba</small>
+              <span>Aktuální časy vám potvrdíme při rezervaci.</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Café Casablanca"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Rezervace</div>
+          <h2 id="final-title">Zastavte se dnes</h2>
+          <p>Na kávu, oběd, dort nebo večerní prosecco. Stůl si nejrychleji domluvíte telefonicky.</p>
+        </div>
+        <a class="btn primary" href="tel:+420774706949">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>Neoficiální prezentační stránka připravená studiem Webflex pro Café Casablanca.</span>
+      <a href="https://webflex.cz/remove/4rszkvo" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.770959, 50.035630999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#D4A66A' })
+      .setLngLat([15.770959, 50.035630999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
