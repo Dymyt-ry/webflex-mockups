@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventář | Dobroty v Ústí nad Labem</title>
+  <meta name="description" content="Inventář na Brněnské 1310/8 v Ústí nad Labem. Objednávky dobrot e-mailem, aktuální dění na Instagramu a hodnocení 4,8 z 164 recenzí.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101012;
+      --surface: #171719;
+      --surface-soft: #202023;
+      --ink: #f7f4ef;
+      --muted: #c7bdb4;
+      --quiet: #8e8580;
+      --line: rgba(247, 244, 239, .11);
+      --line-strong: rgba(247, 244, 239, .2);
+      --accent: #402020;
+      --accent-lit: #b27968;
+      --accent-soft: rgba(178, 121, 104, .16);
+      --shadow: 0 28px 90px rgba(0, 0, 0, .28);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 8%, rgba(178,121,104,.16), transparent 30%),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1, h2 { overflow-wrap: anywhere; }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 62px); }
+    h3 { font-size: 24px; line-height: 1.06; }
+
+    .wrap {
+      width: var(--wrap);
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-lit);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent-lit);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: #f7f4ef;
+      color: #171719;
+      border-color: #f7f4ef;
+    }
+    .btn.primary:hover { background: #e8ddd6; border-color: #e8ddd6; }
+    .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 16, 18, .82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: rgba(247,244,239,.72);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 82px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, .82fr);
+      gap: clamp(36px, 6vw, 84px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: #d8cdc5;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--quiet);
+    }
+    .meta-pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.055);
+      border: 1px solid var(--line);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.04);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.44));
+      pointer-events: none;
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p {
+      max-width: 480px;
+      font-size: 18px;
+    }
+
+    .service-list {
+      border-radius: 28px;
+      background: rgba(255,255,255,.045);
+      box-shadow: 0 24px 80px rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(220px, .38fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-top: 1px solid var(--line);
+    }
+    .service-row:first-child { border-top: 0; }
+    .service-row strong {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 38px);
+      line-height: 1;
+      font-weight: 400;
+    }
+    .service-row .code {
+      font-family: var(--font-mono);
+      color: var(--accent-lit);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 210px;
+      padding: 28px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 22px 70px rgba(0,0,0,.17);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat .num {
+      font-family: var(--font-mono);
+      color: #fff;
+      font-size: clamp(38px, 6vw, 74px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .stat p { max-width: 280px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .9fr) minmax(0, 1fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .split-copy {
+      padding: 26px 0;
+    }
+    .split-copy p {
+      margin-top: 22px;
+      max-width: 560px;
+      font-size: 18px;
+    }
+    .quote {
+      margin-top: 30px;
+      padding: 20px 0 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: #efe5dd;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 320px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: 0 20px 70px rgba(0,0,0,.18);
+    }
+    .gallery-card:nth-child(2) { margin-top: 54px; min-height: 280px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .5fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.055);
+      box-shadow: 0 22px 80px rgba(0,0,0,.18);
+    }
+    .contact-card h3 { margin-bottom: 22px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line:first-of-type { border-top: 0; }
+    .contact-line span {
+      font-family: var(--font-mono);
+      color: var(--quiet);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .contact-line a,
+    .contact-line strong {
+      color: var(--ink);
+      font-weight: 800;
+    }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 22px 80px rgba(0,0,0,.18);
+      background: var(--surface-soft);
+    }
+
+    .final {
+      padding: 96px 0 110px;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 32px;
+      background: #f7f4ef;
+      color: #151517;
+      box-shadow: 0 28px 90px rgba(0,0,0,.26);
+    }
+    .final-panel h2 { color: #151517; max-width: 780px; }
+    .final-panel p {
+      max-width: 560px;
+      margin-top: 16px;
+      color: #5c5652;
+    }
+    .final-panel .btn.primary {
+      background: #151517;
+      color: #fff;
+      border-color: #151517;
+    }
+    .final-panel .btn.secondary {
+      color: #151517;
+      border-color: currentColor;
+    }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .wf-disclaimer {
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      color: rgba(247,244,239,.58);
+      font-size: 12px;
+    }
+    .wf-disclaimer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .wf-disclaimer a {
+      color: rgba(247,244,239,.78);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        padding-top: 44px;
+      }
+      .hero-photo { width: 100%; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .stats,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-card,
+      .gallery-card:nth-child(2) {
+        min-height: 260px;
+        margin-top: 0;
+      }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 28px, 1180px); }
+      body { font-size: 16px; }
+      .nav { min-height: 68px; }
+      .btn { width: 100%; }
+      .nav .btn { width: auto; min-height: 42px; padding-inline: 16px; }
+      section { padding: 68px 0; }
+      .hero-actions,
+      .final-actions { width: 100%; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top" aria-label="Inventář">Inventář</a>
+      <div class="nav-links">
+        <a href="#dobroty">Dobroty</a>
+        <a href="#misto">Místo</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn secondary" href="mailto:ahoj@malicko.cz">Napsat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Ústí nad Labem · Brněnská 1310/8</div>
+          <h1>Inventář chystá dobroty</h1>
+          <p class="hero-lead">Příprava maličko.cz je v plném proudu. Do té doby můžete objednávky posílat přímo na e-mail a sledovat aktuální dění na Instagramu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="mailto:ahoj@malicko.cz">Objednat e-mailem</a>
+            <a class="btn secondary" href="#kontakt">Najít adresu</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4,8 Google</span>
+            <span class="meta-pill">164 recenzí</span>
+            <span class="meta-pill">ahoj@malicko.cz</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">
+            <span>Teplé světlo</span>
+            <span>Stůl pro dobrou chvíli</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="dobroty">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co teď vyřídíte</div>
+            <h2>Jednoduše a napřímo.</h2>
+          </div>
+          <p>Inventář zatím sbírá objednávky přes e-mail. Web maličko.cz se připravuje, proto jsou nejjistější cestou přímé zprávy a Instagram.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="code">01 / objednávky</span>
+            <strong>Dobroty</strong>
+            <p>Napište, o co máte zájem, a nechte na sebe kontakt pro potvrzení.</p>
+          </article>
+          <article class="service-row">
+            <span class="code">02 / zprávy</span>
+            <strong>E-mail</strong>
+            <p>Objednávky a dotazy směřujte na adresu ahoj@malicko.cz.</p>
+          </article>
+          <article class="service-row">
+            <span class="code">03 / aktuálně</span>
+            <strong>Instagram</strong>
+            <p>Krátké zprávy, novinky a momenty z příprav najdete na Instagramu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Hodnocení</div>
+            <h2 id="duvera-title">Lidé se vracejí.</h2>
+          </div>
+          <p>Veřejné hodnocení pomáhá rychle poznat, že jste na správné adrese.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span class="num">4,8</span>
+            <p>Průměrné hodnocení na Google.</p>
+          </div>
+          <div class="stat">
+            <span class="num">164</span>
+            <p>Recenzí od hostů a zákazníků.</p>
+          </div>
+          <div class="stat">
+            <span class="num">400&nbsp;01</span>
+            <p>Ústí nad Labem, Brněnská 1310/8.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="misto">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="split-copy">
+          <div class="eyebrow">Atmosféra</div>
+          <h2>Blízko centra, v klidném rytmu.</h2>
+          <p>Adresa na Brněnské je dobře dostupná pro rychlé vyzvednutí i pro domluvu. Stránka maličko.cz se připravuje, proto zůstává hlavním kontaktem e-mail.</p>
+          <div class="quote">Inventář · Brněnská 1310/8 · ahoj@malicko.cz</div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nálada místa</div>
+            <h2 id="galerie-title">Teplo, sklo, večerní světlo.</h2>
+          </div>
+          <p>Pár záběrů pro náladu večera, kdy se na stole potká dobré pití, měkké světlo a čas pro klidnou zastávku.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Ozvěte se předem.</h2>
+          </div>
+          <p>Telefon není uvedený, proto prosím použijte e-mail. Adresa níže vás dovede přímo na Brněnskou.</p>
+        </div>
+        <div class="contact-grid">
+          <address class="contact-card">
+            <h3>Inventář</h3>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Brněnská 1310/8, 400 01 Ústí nad Labem</strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:ahoj@malicko.cz">ahoj@malicko.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <a href="http://malicko.cz/">malicko.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Souřadnice</span>
+              <strong>50.6608632, 14.0331029</strong>
+            </div>
+          </address>
+          <div id="map" aria-label="Mapa s polohou Inventář"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-panel">
+        <div>
+          <h2 id="final-title">Máte chuť na něco dobrého?</h2>
+          <p>Napište na ahoj@malicko.cz a přidejte, co byste si rádi objednali.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="mailto:ahoj@malicko.cz">Napsat e-mail</a>
+          <a class="btn secondary" href="#kontakt">Zobrazit mapu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wf-disclaimer">
+    <div class="wrap">
+      <span>Tuto prezentační stránku připravilo studio Webflex pro provoz Inventář.</span>
+      <a href="https://webflex.cz/remove/afymj76">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0331029, 50.660863199999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#b27968' })
+      .setLngLat([14.0331029, 50.660863199999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
