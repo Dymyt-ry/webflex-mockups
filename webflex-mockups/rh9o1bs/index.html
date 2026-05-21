@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C•UP - coffeeup | Výběrová káva a dezerty v Ústí nad Labem</title>
+  <meta name="description" content="C•UP - coffeeup v Ústí nad Labem. Výběrová káva, brunch po celý týden, vlastní výroba dezertů, zakázkové dezerty a coffee catering.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf9;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --surface-soft: #f1f1ed;
+      --ink: #171814;
+      --muted: #67685f;
+      --muted-2: #8a8a7f;
+      --accent: #808060;
+      --accent-dark: #626247;
+      --accent-soft: rgba(128, 128, 96, .13);
+      --line: rgba(23, 24, 20, .08);
+      --shadow: 0 34px 110px rgba(27, 29, 24, .09);
+      --shadow-soft: 0 18px 70px rgba(27, 29, 24, .07);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,24,20,.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,24,20,.012) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(128,128,96,.12), transparent 28%),
+        radial-gradient(circle at 8% 68%, rgba(128,128,96,.08), transparent 24%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1, h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 66px);
+      line-height: .96;
+    }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 23px;
+      line-height: 1.08;
+      font-weight: 800;
+    }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 16px 36px rgba(128, 128, 96, .24);
+    }
+    .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn.secondary { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn.secondary:hover { background: rgba(128,128,96,.09); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 249, .84);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 220px;
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 86px;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      gap: clamp(34px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 610px;
+      margin-top: 24px;
+      color: #55574d;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 38px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 38px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery-card img, .feature-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.04);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: var(--shadow-soft);
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; }
+
+    .menu-list {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.6fr auto;
+      gap: 30px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row strong { font-size: 22px; line-height: 1.1; }
+    .menu-row span {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 26px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: .92;
+      letter-spacing: -.02em;
+    }
+    .stat p { max-width: 260px; }
+
+    .feature {
+      display: grid;
+      grid-template-columns: minmax(410px, .86fr) minmax(0, 1fr);
+      gap: clamp(34px, 6vw, 82px);
+      align-items: center;
+    }
+    .feature-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .feature-copy {
+      display: grid;
+      gap: 24px;
+    }
+    .detail-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .detail-item {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .detail-item i {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .detail-item strong { display: block; margin-bottom: 4px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 330px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+    .gallery-card:nth-child(2) { margin-top: 46px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .76fr) minmax(380px, .9fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card h3 { margin-bottom: 18px; }
+    .contact-lines {
+      display: grid;
+      gap: 18px;
+      margin-top: 26px;
+    }
+    .contact-line {
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span {
+      display: block;
+      color: var(--muted-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .contact-line a, .contact-line strong { font-size: 22px; font-weight: 800; color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .faq article {
+      padding: 26px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq h3 { margin-bottom: 10px; }
+
+    .final-cta {
+      padding: 82px 0 74px;
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 56px);
+      border-radius: 34px;
+      background: #1c1d18;
+      color: #ffffff;
+      box-shadow: 0 34px 120px rgba(28, 29, 24, .18);
+    }
+    .cta-panel h2, .cta-panel p { color: #ffffff; }
+    .cta-panel p { opacity: .74; max-width: 560px; margin-top: 14px; }
+    .cta-panel .btn.secondary { color: #ffffff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0 46px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .webflex-disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted-2);
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-grid, .feature, .section-head, .contact-grid, .cta-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo, .feature-photo { min-width: 0; }
+      .trust-strip, .gallery-strip, .faq { grid-template-columns: 1fr; }
+      .gallery-card:nth-child(2) { margin-top: 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: 58px 0; }
+      .brand-logo img { max-width: 170px; max-height: 40px; }
+      .hero-actions, .cta-actions { align-items: stretch; flex-direction: column; }
+      .btn { width: 100%; }
+      .stat, .contact-card, .faq article { padding: 22px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="C•UP - coffeeup">
+        <img src="http://kavarnacoffeeup.cz/wp-content/uploads/2026/02/cropped-C·UP-COFFEE-profilovka-svetla.png" alt="C•UP - coffeeup">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kavarna">O kavárně</a>
+        <a href="#nabidka">Nabídka</a>
+        <a href="#dezerty">Dezerty</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420775180004">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Ústí nad Labem · U Nemocnice</div>
+          <h1 id="hero-title">Výběrová káva každý den</h1>
+          <p class="hero-lead">Kavárna pro šálek od českých i zahraničních pražíren, brunch po celý týden a dezerty z vlastní výroby.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420775180004">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">Hodnocení 4.8</span>
+            <span class="meta-pill">789 recenzí</span>
+            <span class="meta-pill">Otevřeno od 2015</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-label">Káva · brunch · dezerty</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2 id="menu-title">Co si u nás dáte</h2>
+          </div>
+          <p>Stavíme na kvalitě před kvantitou. Kávu připravujeme i alternativními způsoby a ke každému týdnu patří obměněný brunch.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <strong>Výběrová káva</strong>
+            <p>České i zahraniční pražírny, espresso i alternativní přípravy pro hosty, kteří chtějí objevovat chuť v detailu.</p>
+            <span>káva</span>
+          </div>
+          <div class="menu-row">
+            <strong>Brunch po celý týden</strong>
+            <p>Týdenní obměna menu, pohodový rytmus a jídlo, které dává smysl ráno, v poledne i později během dne.</p>
+            <span>brunch</span>
+          </div>
+          <div class="menu-row">
+            <strong>Matcha, chai a rostlinná mléka</strong>
+            <p>Nápoje pro chvíle, kdy nechcete klasickou kávu, ale pořád chcete poctivě připravený šálek.</p>
+            <span>nápoje</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarna" aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Místo s příběhem</div>
+            <h2 id="trust-title">Kvalita má přednost</h2>
+          </div>
+          <p>Od roku 2015 se C•UP - coffeeup drží jednoduché linky: dobré věci, vlastní výroba a prostředí, kam se lidé vrací.</p>
+        </div>
+        <div class="trust-strip" aria-label="Důvěryhodnost">
+          <article class="stat">
+            <b>2015</b>
+            <p>Rok otevření kavárny v Ústí nad Labem.</p>
+          </article>
+          <article class="stat">
+            <b>4.8</b>
+            <p>Průměrné hodnocení od hostů.</p>
+          </article>
+          <article class="stat">
+            <b>789</b>
+            <p>Recenzí od lidí, kteří se zastavili na kávu, brunch nebo dezert.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="dezerty" aria-labelledby="dessert-title">
+      <div class="wrap feature">
+        <div class="feature-photo">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </div>
+        <div class="feature-copy">
+          <div class="eyebrow">Vlastní výroba</div>
+          <h2 id="dessert-title">Dezerty od základu</h2>
+          <p>Všechny dezerty vznikají ve vlastní výrobě. Díky tomu přesně víme, co nabízíme, a můžeme připravit i zakázkovou výrobu dezertů pro vaše oslavy nebo firemní setkání.</p>
+          <div class="detail-list">
+            <div class="detail-item">
+              <i>01</i>
+              <div><strong>Zakázková výroba dezertů</strong><p>Sladké věci připravené podle domluvy a příležitosti.</p></div>
+            </div>
+            <div class="detail-item">
+              <i>02</i>
+              <div><strong>Coffee catering</strong><p>Káva a kavárenský servis tam, kde se potkávají vaši hosté.</p></div>
+            </div>
+            <div class="detail-item">
+              <i>03</i>
+              <div><strong>Poctivý základ</strong><p>Vlastní receptury, ruční práce a jasný původ surovin v nabídce.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 id="gallery-title">Zastavte se cestou městem</h2>
+          </div>
+          <p>U Nemocnice 1763/1 je kavárna pro klidnou pauzu, pracovní schůzku i delší posezení nad brunchem.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2 id="contact-title">Kde nás najdete</h2>
+          </div>
+          <p>Jsme v Ústí nad Labem-město na adrese U Nemocnice 1763/1. Pro rezervaci nebo zakázkovou výrobu se ozvěte telefonicky či e-mailem.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <h3>C•UP - coffeeup</h3>
+            <p>Výběrová káva, brunch po celý týden, dezerty z vlastní výroby, zakázková výroba dezertů a coffee catering.</p>
+            <div class="contact-lines">
+              <div class="contact-line">
+                <span>Telefon</span>
+                <a href="tel:+420775180004">+420 775 180 004</a>
+              </div>
+              <div class="contact-line">
+                <span>E-mail</span>
+                <a href="mailto:info@kavarnacoffeeup.cz">info@kavarnacoffeeup.cz</a>
+              </div>
+              <div class="contact-line">
+                <span>Adresa</span>
+                <strong>U Nemocnice 1763/1, 400 01 Ústí nad Labem-město</strong>
+              </div>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa s polohou kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Než dorazíte</div>
+            <h2 id="faq-title">Časté dotazy</h2>
+          </div>
+          <p>Krátké odpovědi k nabídce, kterou hosté nejčastěji hledají před první návštěvou.</p>
+        </div>
+        <div class="faq">
+          <article>
+            <h3>Máte rostlinná mléka?</h3>
+            <p>Ano, v nabídce nechybí rostlinná mléka pro kávu i další nápoje.</p>
+          </article>
+          <article>
+            <h3>Děláte brunch jen o víkendu?</h3>
+            <p>Brunch si u nás můžete dát po celý týden a menu pravidelně obměňujeme.</p>
+          </article>
+          <article>
+            <h3>Připravujete dezerty na zakázku?</h3>
+            <p>Ano, vedle kavárenské nabídky řešíme zakázkovou výrobu dezertů.</p>
+          </article>
+          <article>
+            <h3>Nabízíte coffee catering?</h3>
+            <p>Ano, coffee catering je součástí služeb C•UP - coffeeup.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="cta-title">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <div class="eyebrow" style="color: rgba(255,255,255,.68)">Ústí nad Labem</div>
+            <h2 id="cta-title">Zastavte se na šálek</h2>
+            <p>Káva, brunch a dezerty z vlastní výroby na jednom místě u Nemocnice.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn primary" href="tel:+420775180004">Zavolat</a>
+            <a class="btn secondary" href="mailto:info@kavarnacoffeeup.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <div>© C•UP - coffeeup · U Nemocnice 1763/1</div>
+      <div class="webflex-disclaimer">
+        Prezentační stránku připravilo studio Webflex jako nezávazný podklad pro provozovatele podniku. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/rh9o1bs">webflex.cz/delete/rh9o1bs</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.027280999999999, 50.6657142],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#808060' })
+      .setLngLat([14.027280999999999, 50.6657142])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
