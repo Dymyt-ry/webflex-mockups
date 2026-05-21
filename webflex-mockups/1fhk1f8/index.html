@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caffé zone | Italská káva ve Zlíně</title>
+  <meta name="description" content="Caffé zone ve Zlíně: kamenná prodejna s kavárnou, italské kávy Mauro a Epos, horké čokolády Moretto, kávové kurzy, servis a e-shop.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: rgba(255, 255, 255, .82);
+      --paper-solid: #ffffff;
+      --soft: #f1f2ec;
+      --ink: #181914;
+      --muted: #666a5c;
+      --line: rgba(24, 25, 20, .075);
+      --accent: #A0A060;
+      --accent-dark: #6b6f32;
+      --coffee: #73211B;
+      --shadow: 0 32px 90px rgba(33, 38, 29, .09);
+      --shadow-small: 0 18px 54px rgba(33, 38, 29, .075);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(24,25,20,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,25,20,.018) 1px, transparent 1px),
+        radial-gradient(circle at 84% 12%, rgba(160,160,96,.20), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 690px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    h3 { font-size: clamp(22px, 2.1vw, 32px); }
+    section { padding: 86px 0; }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,250,.86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(24,25,20,.09); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-dark);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #17170d; }
+    .btn.primary:hover { background: #b0b06e; }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: rgba(24,25,20,.045); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .9fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 84px);
+      padding: 62px 0 76px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(160,160,96,.16);
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.48;
+      color: #494d42;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.68);
+      box-shadow: var(--shadow-small);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 36px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.03);
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(16px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #3b3e32;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(300px, .48fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      min-height: 124px;
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(230px, .48fr);
+      gap: 24px;
+      align-items: center;
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: var(--shadow-small);
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 210px;
+      padding: 30px;
+      border-radius: 28px;
+      background: var(--paper-solid);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .trust-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1;
+      color: var(--coffee);
+    }
+    .trust-card span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .8fr) minmax(0, 1fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .panel {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: 34px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow);
+    }
+    .panel p { margin-top: 20px; font-size: 18px; line-height: 1.72; }
+    .spec-list {
+      margin-top: 28px;
+      display: grid;
+      gap: 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .spec-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .spec-list b { color: var(--ink); }
+    .spec-list span { color: var(--muted); text-align: right; }
+
+    .price-callout {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .45fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .price-main,
+    .price-side {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: 34px;
+      background: var(--paper-solid);
+      box-shadow: var(--shadow-small);
+    }
+    .price-main strong {
+      display: block;
+      margin-top: 28px;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 5vw, 72px);
+      line-height: 1;
+      color: var(--coffee);
+    }
+    .price-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 330px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-small);
+      background: var(--soft);
+    }
+    .gallery-card:nth-child(2) { margin-top: 42px; }
+
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+    .faq details {
+      padding: 24px 28px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-small);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    .faq details:hover { transform: translateY(-1px); background: #fff; }
+    .faq details:active { transform: translateY(1px); }
+    .faq summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq p { margin-top: 14px; max-width: 760px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 34px;
+      border-radius: 34px;
+      background: var(--paper-solid);
+      box-shadow: var(--shadow-small);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 56px); }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      display: block;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      color: #33372e;
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: var(--coffee); }
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .final-cta {
+      padding: 82px 0;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      align-items: center;
+      gap: 30px;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 38px;
+      background: #202116;
+      color: #fffdf7;
+      box-shadow: var(--shadow);
+    }
+    .cta-box h2 { color: #fffdf7; }
+    .cta-box p { margin-top: 16px; color: rgba(255,253,247,.72); max-width: 640px; }
+    .cta-box .btn.secondary {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+    }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer {
+      padding: 30px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .price-callout,
+      .contact-grid,
+      .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card:nth-child(2) { margin-top: 0; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .btn { width: 100%; }
+      .hero-meta { font-size: 11px; }
+      .photo-note { position: static; border-radius: 0; }
+      .trust-card, .panel, .price-main, .price-side, .contact-card { padding: 24px; border-radius: 24px; }
+      #map { height: 360px; border-radius: 24px; }
+      .footer-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Caffé zone">
+        <img src="https://www.caffezone.cz/img/caffezone-logo-1635945588.jpg" alt="Caffé zone">
+      </a>
+      <div class="nav-links">
+        <a href="#sortiment">Sortiment</a>
+        <a href="#kurzy">Kurzy</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn secondary" href="tel:+420573035060">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Prodejna & kavárna · Zlín</div>
+        <h1 id="hero-title">Italská káva ve Zlíně</h1>
+        <p class="lead">Přijďte ochutnat šálek kávy v Caffé zone, vybrat zrnkovou kávu domů nebo se poradit o kávovaru, mlýnku a přípravě.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420573035060">+420 573 035 060</a>
+          <a class="btn secondary" href="#kontakt">Kudy k nám</a>
+        </div>
+        <div class="hero-meta">
+          <span class="meta-chip">Partyzánská, Zlín</span>
+          <span class="meta-chip">Hodnocení 4,6 · 55 recenzí</span>
+          <span class="meta-chip">info@caffezone.cz</span>
+        </div>
+      </div>
+      <figure class="hero-photo" aria-label="Kavárenská atmosféra">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <figcaption class="photo-note">
+          <span>CAFFÉ ZONE</span>
+          <span>Káva · čokoláda · servis</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="sortiment">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co u nás najdete</h2>
+          <p>Sortiment stojí na kvalitních italských kávách, horké čokoládě a vybavení pro domácí i profesionální přípravu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Kamenná prodejna s kavárnou</h3>
+            <p>Kávu si můžete rovnou vybrat, ochutnat a odnést domů.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Italské kávy a čokolády</h3>
+            <p>Mauro, Epos, Mokaflor, Lucaffé, Caffé VERO i Moretto.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Kávovary, mlýnky a servis</h3>
+            <p>Výběr vybavení, příslušenství a servisní zázemí pro kávovou techniku.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust">
+        <article class="trust-card">
+          <strong>4,6</strong>
+          <span>hodnocení podle dostupných recenzí</span>
+        </article>
+        <article class="trust-card">
+          <strong>55</strong>
+          <span>recenzí zákazníků</span>
+        </article>
+        <article class="trust-card">
+          <strong>2 500 Kč</strong>
+          <span>doprava zdarma při hodnotě objednávky nad tuto částku s DPH</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="kurzy">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <article class="panel">
+          <div class="eyebrow">Baristické zázemí</div>
+          <h2>Od zrna po šálek</h2>
+          <p>Caffé zone pořádá kávové kurzy pro domácí i profesionální přípravu. Pokud chcete lépe nastavit mlýnek, vybrat kávovar nebo pochopit rozdíl mezi směsmi, začněte tady.</p>
+          <div class="spec-list">
+            <div><b>Kurzy</b><span>Home Barista · Profi Barista</span></div>
+            <div><b>Technika</b><span>kávovary · kávomlýnky · servis</span></div>
+            <div><b>Sortiment</b><span>zrnková káva · čaje · horká čokoláda</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="partner-title">
+      <div class="wrap price-callout">
+        <article class="price-main">
+          <div class="eyebrow">Velkoobchod</div>
+          <h2 id="partner-title">Káva pro provozy</h2>
+          <p>Pro kavárny, restaurace a kanceláře je k dispozici velkoobchodní spolupráce a dovoz vybraných italských káv.</p>
+          <strong>Mauro · Epos</strong>
+        </article>
+        <aside class="price-side">
+          <p>Výhradní dovozce kvalitních italských káv Mauro, Epos a horkých čokolád Moretto.</p>
+          <a class="btn secondary" href="mailto:info@caffezone.cz">Napsat o spolupráci</a>
+        </aside>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Na kávu i pro zásoby</h2>
+          <p>Zastavte se v prodejně, ochutnejte kávu v kavárně a vyberte si zboží skladem pro další přípravu doma.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="faq-title">Časté dotazy</h2>
+          <p>Nejrychleji vše domluvíte telefonicky nebo e-mailem. Prodejna je na adrese Partyzánská ve Zlíně.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Prodáváte kávu také přes e-shop?</summary>
+            <p>Ano. V nabídce jsou zrnkové kávy, čaje, horké čokolády, kávovary, mlýnky i příslušenství.</p>
+          </details>
+          <details>
+            <summary>Mohu přijít jen na kávu?</summary>
+            <p>Ano. Caffé zone funguje jako specializovaná prodejna i kavárna.</p>
+          </details>
+          <details>
+            <summary>Máte zboží skladem?</summary>
+            <p>Podle dostupných informací je široký sortiment skladem a objednávky se odesílají okamžitě.</p>
+          </details>
+          <details>
+            <summary>Děláte baristické kurzy?</summary>
+            <p>Ano. V nabídce jsou kurzy Home Barista a Profi Barista.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Zastavte se ve Zlíně</h2>
+          <div class="contact-lines">
+            <span>Partyzánská, 760 01 Zlín-Zlín 1</span>
+            <a href="tel:+420573035060">+420 573 035 060</a>
+            <a href="mailto:info@caffezone.cz">info@caffezone.cz</a>
+            <a href="https://www.caffezone.cz/">www.caffezone.cz</a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa Caffé zone ve Zlíně"></div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Vyberte si další kávu</h2>
+          <p>Zavolejte, napište nebo se stavte v prodejně s kavárnou. Pomůžeme vám s kávou, technikou i velkoobchodní spoluprací.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420573035060">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@caffezone.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>© Caffé zone · Partyzánská, Zlín</span>
+      <span class="webflex-disclaimer">Prezentační stránku připravilo Webflex. <a href="https://webflex.cz/remove?TOKEN=1fhk1f8">Odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6819688, 49.2335692],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0A060' })
+      .setLngLat([17.6819688, 49.2335692])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
