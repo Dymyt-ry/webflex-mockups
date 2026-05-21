@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Mellō café | Pardubice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f1e8;
+      --bg-soft: #fffaf2;
+      --surface: rgba(255, 250, 242, 0.82);
+      --surface-strong: #fffdfa;
+      --ink: #1d1712;
+      --muted: #756a60;
+      --faint: #a99d92;
+      --line: rgba(29, 23, 18, 0.09);
+      --accent: #E06020;
+      --accent-dark: #aa4218;
+      --coffee: #4a2d1f;
+      --leaf: #214b35;
+      --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 140px);
+      --shadow: 0 32px 90px rgba(74, 45, 31, 0.10);
+      --shadow-soft: 0 18px 60px rgba(74, 45, 31, 0.08);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(29, 23, 18, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29, 23, 18, 0.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 10%, rgba(224, 96, 32, 0.10), transparent 32vw),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    main, header, footer { position: relative; z-index: 1; }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+    button, input, textarea { font: inherit; }
+
+    .container { max-width: 1320px; margin-inline: auto; padding-inline: var(--gutter); }
+    .narrow { max-width: 1120px; margin-inline: auto; padding-inline: var(--gutter); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      letter-spacing: 0;
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, .menu-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fffdfa;
+      box-shadow: 0 18px 34px rgba(224, 96, 32, 0.24);
+    }
+    .btn-primary:hover { background: var(--accent-dark); box-shadow: 0 20px 42px rgba(224, 96, 32, 0.32); }
+    .btn-secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn-secondary:hover { background: rgba(29, 23, 18, 0.045); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 241, 232, 0.82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+    }
+    .wordmark span { color: var(--accent); }
+    .navlinks { display: flex; align-items: center; gap: clamp(18px, 3vw, 38px); }
+    .navlinks a {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+      transition: color 180ms ease;
+    }
+    .navlinks a:hover { color: var(--ink); }
+
+    .hero {
+      padding-block: clamp(54px, 8vw, 110px) clamp(72px, 9vw, 132px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(40%, 1fr);
+      align-items: center;
+      gap: clamp(36px, 5vw, 78px);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      max-width: 10ch;
+      margin-top: 18px;
+    }
+    .hero-lead {
+      margin-top: 24px;
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: clamp(17px, 1.35vw, 20px);
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 660px;
+    }
+    .fact {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .fact span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .hero-media {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 42px 120px rgba(74, 45, 31, 0.18);
+      background: var(--coffee);
+    }
+    .hero-media img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.94) contrast(1.02); }
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(29, 23, 18, 0.54));
+    }
+    .media-badge {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: end;
+      color: white;
+    }
+    .media-badge b { font-family: var(--font-display); font-size: clamp(22px, 3vw, 38px); line-height: 1; }
+    .media-badge span { font-family: var(--font-mono); font-size: 12px; }
+
+    section { padding-block: var(--section); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: 17px; line-height: 1.7; }
+
+    .offer-list {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .offer-feature, .offer-rows {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .offer-feature img { width: 100%; height: 330px; object-fit: cover; }
+    .offer-feature .pad { padding: clamp(24px, 4vw, 42px); }
+    .offer-feature h3 { font-family: var(--font-display); font-size: clamp(28px, 3.2vw, 44px); line-height: 1.04; margin-bottom: 16px; }
+    .offer-feature p { color: var(--muted); max-width: 58ch; }
+    .offer-rows { padding: 10px clamp(18px, 3vw, 30px); }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 18px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row code {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .offer-row h3 { font-size: 20px; margin-bottom: 6px; }
+    .offer-row p { color: var(--muted); font-size: 15px; }
+
+    .trust {
+      padding-block: 46px;
+      background: rgba(255, 253, 250, 0.46);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 160px;
+      padding: clamp(22px, 3vw, 34px);
+      border-radius: 24px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .trust-card .num {
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 70px);
+      line-height: 0.9;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .trust-card p { color: var(--muted); font-weight: 700; }
+
+    .menu-wrap {
+      display: grid;
+      grid-template-columns: 0.55fr 1fr;
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+    }
+    .menu-intro {
+      position: sticky;
+      top: 110px;
+    }
+    .menu-intro h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      margin: 16px 0 18px;
+      overflow-wrap: anywhere;
+    }
+    .menu-intro p { color: var(--muted); line-height: 1.7; }
+    .price-table {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(12px, 2vw, 22px);
+    }
+    .price-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 18px;
+      padding: 17px clamp(12px, 2vw, 20px);
+      border-bottom: 1px solid var(--line);
+    }
+    .price-row:last-child { border-bottom: 0; }
+    .price-row span:first-child { font-weight: 800; }
+    .price-row span:last-child {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .atmosphere {
+      overflow: hidden;
+    }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 0.82fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 360px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease;
+    }
+    .gallery-card:hover { transform: translateY(-3px); box-shadow: 0 28px 90px rgba(74, 45, 31, 0.14); }
+    .gallery-card:active { transform: translateY(1px); }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-card:nth-child(2) { margin-top: 48px; min-height: 300px; }
+
+    .contact {
+      padding-bottom: clamp(64px, 8vw, 110px);
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-panel, .map-panel {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 42px);
+    }
+    .contact-panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      margin: 14px 0 24px;
+      overflow-wrap: anywhere;
+    }
+    .contact-lines { display: grid; gap: 14px; margin-bottom: 28px; }
+    .contact-lines a, .contact-lines span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .contact-lines small {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hours {
+      display: grid;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .hour-row {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: rgba(29, 23, 18, 0.035);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hour-row.today {
+      background: rgba(224, 96, 32, 0.12);
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    #map {
+      height: 420px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #eadfce;
+    }
+
+    .final-cta {
+      padding-block: clamp(58px, 8vw, 96px);
+      background: var(--coffee);
+      color: #fffaf2;
+    }
+    .cta-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta-inner h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 1;
+      max-width: 12ch;
+      overflow-wrap: anywhere;
+    }
+    .cta-inner p { color: rgba(255, 250, 242, 0.72); margin-top: 16px; max-width: 48ch; }
+    .final-cta .btn-secondary { color: #fffaf2; border-color: rgba(255,255,255,0.45); }
+    .final-cta .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 28px var(--gutter);
+      background: #17110d;
+      color: rgba(255,250,242,0.64);
+      font-size: 12px;
+    }
+    .footer-inner {
+      max-width: 1320px;
+      margin-inline: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .offer-list, .menu-wrap, .contact-grid, .cta-inner { grid-template-columns: 1fr; }
+      .hero-copy { max-width: none; }
+      .hero h1 { max-width: 12ch; }
+      .menu-intro { position: static; }
+      .cta-actions { justify-content: flex-start; }
+      .section-head { grid-template-columns: 1fr; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card:nth-child(2) { min-height: 280px; margin-top: 0; }
+    }
+    @media (max-width: 720px) {
+      .navlinks { display: none; }
+      .hero-facts, .trust-grid { grid-template-columns: 1fr; }
+      .media-badge { align-items: start; flex-direction: column; }
+      .offer-row { grid-template-columns: 1fr; gap: 8px; }
+      .contact-lines a, .contact-lines span { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="wordmark" href="#top" aria-label="Mellō café">Mellō <span>café</span></a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#menu">Menu</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420776639091">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">tř. Míru 58 · Pardubice</div>
+          <h1>Stay mellow.</h1>
+          <p class="hero-lead">V srdci Pardubic najdete klidné místo pro práci, setkání i chvíli jen pro sebe. Káva ze 100% arabiky, domácí limonády, rychlá Wi-Fi a tempo, které si určíte sami.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#menu">Prohlédnout menu</a>
+            <a class="btn btn-secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-facts" aria-label="Základní informace">
+            <div class="fact"><strong>Po-So 8-20</strong><span>Neděle 12:00-20:00</span></div>
+            <div class="fact"><strong>4,5 / 5</strong><span>Hodnocení z 330 recenzí</span></div>
+            <div class="fact"><strong>100%</strong><span>Arabica v kávové nabídce</span></div>
+          </div>
+        </div>
+        <figure class="hero-media" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="media-badge">
+            <b>Vaše tempo</b>
+            <span>káva · práce · posezení</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" class="narrow">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">O kavárně</div>
+          <h2 class="display">Prostor, kde se dá zpomalit.</h2>
+        </div>
+        <p>Nejde jen o šálek kávy. Mellō café staví na atmosféře, vůni čerstvě připravené kávy a pohodlí pro každodenní zastavení v centru Pardubic.</p>
+      </div>
+      <div class="offer-list">
+        <article class="offer-feature">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="pad">
+            <h3>Káva, čaj a klidný stůl.</h3>
+            <p>Přijďte na espresso, cappuccino, flat white, čaj, teplý nápoj, fresh nebo domácí limonádu. Pro práci je tu rychlé Wi-Fi připojení a příjemné prostředí bez spěchu.</p>
+          </div>
+        </article>
+        <div class="offer-rows">
+          <article class="offer-row">
+            <code>01</code>
+            <div><h3>Káva</h3><p>Ristretto, espresso, lungo, americano, cappuccino, caffé latte, flat white i Vídeňská káva.</p></div>
+          </article>
+          <article class="offer-row">
+            <code>02</code>
+            <div><h3>Teplé a ledové nápoje</h3><p>Čaj, teplé nápoje, ledové nápoje a nealkoholické nápoje podle aktuální nabídky.</p></div>
+          </article>
+          <article class="offer-row">
+            <code>03</code>
+            <div><h3>Domácí limonáda a fresh</h3><p>Svěží volba pro odpolední posezení, práci u notebooku nebo setkání po cestě městem.</p></div>
+          </article>
+          <article class="offer-row">
+            <code>04</code>
+            <div><h3>Extras</h3><p>Sladší kávové varianty jako caramel macchiato nebo Baileys latte se šlehačkou.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra">
+      <div class="container trust-grid">
+        <div class="trust-card"><div class="num">4,5</div><p>Průměrné hodnocení hostů</p></div>
+        <div class="trust-card"><div class="num">330</div><p>Recenzí od návštěvníků</p></div>
+        <div class="trust-card"><div class="num">7 dní</div><p>Otevřeno každý den v týdnu</p></div>
+      </div>
+    </section>
+
+    <section id="menu" class="container">
+      <div class="menu-wrap">
+        <aside class="menu-intro">
+          <div class="eyebrow">Menu</div>
+          <h2 class="display">Kávový základ.</h2>
+          <p>Vybrané položky z kávové nabídky. Ceny jsou uvedené v korunách tak, jak je hosté najdou u Mellō café.</p>
+        </aside>
+        <div class="price-table" aria-label="Ceník kávy">
+          <div class="price-row"><span>Ristretto</span><span>54 Kč</span></div>
+          <div class="price-row"><span>Espresso</span><span>54 Kč</span></div>
+          <div class="price-row"><span>Espresso Macchiato</span><span>58 Kč</span></div>
+          <div class="price-row"><span>Espresso Double</span><span>72 Kč</span></div>
+          <div class="price-row"><span>Americano</span><span>72 Kč</span></div>
+          <div class="price-row"><span>Caffé Latte</span><span>62 Kč</span></div>
+          <div class="price-row"><span>Flat White</span><span>78 Kč</span></div>
+          <div class="price-row"><span>Melange</span><span>74 Kč</span></div>
+          <div class="price-row"><span>Vídeňská káva</span><span>78 Kč</span></div>
+          <div class="price-row"><span>Caramel macchiato</span><span>78 Kč</span></div>
+          <div class="price-row"><span>Cappuccino</span><span>78 Kč</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="atmosphere">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 class="display">Na práci i posezení.</h2>
+          </div>
+          <p>Interiér drží klidnou náladu přes den i večer: světlo, pohodlné sezení a dost prostoru na rozhovor i soustředění.</p>
+        </div>
+        <div class="gallery-strip" aria-label="Fotografie atmosféry">
+          <figure class="gallery-card"><img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus."></figure>
+          <figure class="gallery-card"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure class="gallery-card"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact container">
+      <div class="contact-grid">
+        <div class="contact-panel">
+          <div class="eyebrow">Kontakt</div>
+          <h2 class="display">Stavte se dnes.</h2>
+          <div class="contact-lines">
+            <span><small>Adresa</small> tř. Míru 58, Pardubice</span>
+            <a href="tel:+420776639091"><small>Telefon</small> +420 776 639 091</a>
+            <a href="mailto:info@mellocafe.cz"><small>Email</small> info@mellocafe.cz</a>
+          </div>
+          <div class="eyebrow">Otevírací doba</div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hour-row"><span>Po</span><span>8:00-20:00</span></div>
+            <div class="hour-row"><span>Út</span><span>8:00-20:00</span></div>
+            <div class="hour-row"><span>St</span><span>8:00-20:00</span></div>
+            <div class="hour-row today"><span>Čt</span><span>8:00-20:00</span></div>
+            <div class="hour-row"><span>Pá</span><span>8:00-20:00</span></div>
+            <div class="hour-row"><span>So</span><span>8:00-20:00</span></div>
+            <div class="hour-row"><span>Ne</span><span>12:00-20:00</span></div>
+          </div>
+        </div>
+        <div class="map-panel">
+          <div id="map" aria-label="Mapa Mellō café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="container cta-inner">
+        <div>
+          <div class="eyebrow" style="color:#ffb38d">Mellō café Pardubice</div>
+          <h2>Máte chuť?</h2>
+          <p>Jsme na třídě Míru 58. Zavolejte, napište nebo se jednoduše zastavte na kávu.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="tel:+420776639091">+420 776 639 091</a>
+          <a class="btn btn-secondary" href="mailto:info@mellocafe.cz">Napsat email</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Toto je nezávazný návrh od Webflexu. Nejste-li adresátem, můžete stránku smazat.</span>
+      <a href="https://webflex.cz/remove/jwo4a0v" rel="nofollow">Smazat tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.776390999999998, 50.037442999999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E06020' })
+      .setLngLat([15.776390999999998, 50.037442999999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
