@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Park Café Zlín | Káva, snídaně, vína a koktejly</title>
+  <meta name="description" content="Park Café Zlín na adrese Soudní 5549. Snídaně, italská káva, vína, koktejly, akce a rezervace v centru Zlína.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.82);
+      --surface-solid: #ffffff;
+      --soft: #f1f0ec;
+      --ink: #10131a;
+      --muted: #656a72;
+      --line: rgba(16, 19, 26, .09);
+      --accent: #B08A52;
+      --accent-dark: #8d6b3c;
+      --accent-soft: rgba(176, 138, 82, .14);
+      --shadow: 0 34px 110px rgba(32, 36, 44, .09);
+      --shadow-soft: 0 22px 80px rgba(32, 36, 44, .065);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(16,19,26,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,19,26,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      hyphens: none;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 62px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 800;
+      text-transform: none;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease), box-shadow 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 18px 42px rgba(176, 138, 82, .24);
+    }
+    .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn.secondary { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn.secondary:hover { background: rgba(16,19,26,.055); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .84);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 240px;
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 82px;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      gap: clamp(36px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 640px;
+      margin-top: 24px;
+      color: #454b55;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 38px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .meta-pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery-item img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      box-shadow: 0 18px 50px rgba(16,19,26,.11);
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; }
+
+    .offer-list {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(180px, .32fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row:hover { background: rgba(176,138,82,.06); transform: translateY(-1px); }
+    .offer-code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      color: var(--accent-dark);
+    }
+    .offer-tag {
+      justify-self: end;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat-card {
+      min-height: 180px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .stat-number {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat-card p { max-width: 300px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .86fr) minmax(0, 1fr);
+      gap: clamp(34px, 6vw, 78px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .split-panel {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .timeline {
+      margin-top: 30px;
+      display: grid;
+      gap: 0;
+    }
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .timeline-no {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-weight: 650;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .82fr .82fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-item.large { min-height: 430px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .42fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card, .hours-card {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 28px;
+    }
+    .contact-card {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .contact-line {
+      display: grid;
+      gap: 4px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line:first-of-type { border-top: 0; padding-top: 0; }
+    .contact-line strong { font-size: 18px; }
+    .contact-line span, .contact-line a {
+      color: var(--muted);
+      transition: color 180ms var(--ease);
+    }
+    .contact-line a:hover { color: var(--accent-dark); }
+    .hours {
+      margin-top: 22px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-row.today {
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      border-bottom-color: transparent;
+      font-weight: 650;
+    }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 172px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq-item p { margin-top: 12px; }
+
+    .final-cta {
+      padding: 88px 0 98px;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 34px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 56px);
+      border-radius: 32px;
+      background: #11151c;
+      color: #ffffff;
+      box-shadow: 0 38px 120px rgba(17,21,28,.18);
+    }
+    .cta-box h2 { color: #ffffff; max-width: 720px; }
+    .cta-box p { color: rgba(255,255,255,.72); margin-top: 14px; max-width: 560px; }
+    .cta-box .btn.secondary {
+      color: #ffffff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer {
+      padding: 36px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .credits {
+      max-width: 760px;
+      color: #7a8088;
+      font-size: 12px;
+    }
+    .webflex-disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: #7a8088;
+      font-size: 12px;
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .brand-logo img { max-height: 40px; max-width: 205px; }
+      .hero { min-height: auto; padding: 46px 0 64px; }
+      .hero-grid, .split, .contact-grid, .section-head, .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { aspect-ratio: 4 / 3; }
+      .offer-row { grid-template-columns: 1fr; gap: 12px; }
+      .offer-tag { justify-self: start; }
+      .trust-strip, .faq-list, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item, .gallery-item.large { min-height: 260px; }
+      .cta-actions { justify-content: flex-start; }
+      section { padding: 62px 0; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      body { font-size: 16px; }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+      h2 { font-size: clamp(32px, 11vw, 48px); }
+      .btn { width: 100%; }
+      .hero-actions, .cta-actions { width: 100%; }
+      .stat-card, .contact-card, .hours-card, .faq-item, .split-panel { border-radius: 22px; }
+      #map { height: 340px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="brand-logo" href="#top" aria-label="Park Café Zlín">
+        <img src="https://www.parkcafezlin.cz/media/cache/resolve/thumb_xs/images/template/setting/6567430c63342402318446.png" alt="Park Café Zlín">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420771298942">Rezervace</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Soudní 5549 · centrum Zlína</div>
+          <h1>Park Café v centru Zlína</h1>
+          <p class="hero-lead">Originální designová kavárna pro snídaně, šálek italské kávy, víno i večerní koktejl. Přijďte posedět, nebo si zavolejte o rezervaci.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420771298942">Zavolat +420 771 298 942</a>
+            <a class="btn secondary" href="#kontakt">Adresa a otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4,5 hodnocení</span>
+            <span class="meta-pill">144 recenzí</span>
+            <span class="meta-pill">info@parkcafezlin.cz</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">Snídaně · káva · vína · koktejly</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2>Od rána do večera</h2>
+          </div>
+          <p>Park Café staví na vynikající kvalitě a pohodové atmosféře v centru Zlína. Nabídka se přirozeně mění od snídaňového tempa po večerní posezení.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <div class="offer-code">01 / RÁNO</div>
+            <div>
+              <h3>Snídaně a první káva</h3>
+              <p>Ranní zastavení ve městě, šálek italské kávy a klidný začátek dne.</p>
+            </div>
+            <span class="offer-tag">od 8:00</span>
+          </article>
+          <article class="offer-row">
+            <div class="offer-code">02 / DEN</div>
+            <div>
+              <h3>Gastronomie pro milovníky kvality</h3>
+              <p>Pro hosty, kteří si chtějí dát něco dobrého mezi schůzkami, procházkou městem nebo návštěvou centra.</p>
+            </div>
+            <span class="offer-tag">centrum Zlína</span>
+          </article>
+          <article class="offer-row">
+            <div class="offer-code">03 / VEČER</div>
+            <div>
+              <h3>Vína a koktejly</h3>
+              <p>Večerní posezení u sklenky vína, koktejlu nebo další kávy v příjemném interiéru.</p>
+            </div>
+            <span class="offer-tag">pá a so do 21:00</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="wrap trust-strip">
+        <article class="stat-card">
+          <div class="eyebrow">Hodnocení hostů</div>
+          <div class="stat-number">4,5</div>
+          <p>Průměrné hodnocení podle veřejného profilu podniku.</p>
+        </article>
+        <article class="stat-card">
+          <div class="eyebrow">Recenze</div>
+          <div class="stat-number">144</div>
+          <p>Zkušenosti hostů, kteří Park Café navštívili.</p>
+        </article>
+        <article class="stat-card">
+          <div class="eyebrow">Adresa</div>
+          <div class="stat-number">5549</div>
+          <p>Soudní 5549, 760 01 Zlín-Zlín 1.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </figure>
+        <div class="split-panel">
+          <div class="eyebrow">Akce v Park Café</div>
+          <h2>Program sledujte online</h2>
+          <p style="margin-top:18px;">Aktuální akce Park Café zveřejňuje na Facebooku. Pro rezervaci místa nebo rychlý dotaz je nejlepší zavolat přímo do kavárny.</p>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-no">01</div>
+              <div><h3>Zkontrolujte aktuální akce</h3><p>Události a novinky najdete na facebookovém profilu Park Café.</p></div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-no">02</div>
+              <div><h3>Rezervujte si místo</h3><p>Zavolejte na +420 771 298 942 a domluvte si čas návštěvy.</p></div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-no">03</div>
+              <div><h3>Dorazte do centra</h3><p>Kavárnu najdete na adrese Soudní 5549 ve Zlíně.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra Park Café">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Místo pro delší posezení</h2>
+          </div>
+          <p>Teplé světlo, sklenice na stole, vůně kávy a prostor, kde má návštěva plynout bez spěchu.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item large">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Rezervace a cesta</h2>
+          </div>
+          <p>Park Café najdete v centru Zlína. Pro rezervaci nebo dotaz použijte telefon, e-mail nebo navigaci v mapě.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div class="contact-line">
+              <strong>Adresa</strong>
+              <span>Soudní 5549, 760 01 Zlín-Zlín 1</span>
+            </div>
+            <div class="contact-line">
+              <strong>Telefon</strong>
+              <a href="tel:+420771298942">+420 771 298 942</a>
+            </div>
+            <div class="contact-line">
+              <strong>E-mail</strong>
+              <a href="mailto:info@parkcafezlin.cz">info@parkcafezlin.cz</a>
+            </div>
+            <div class="hours-card" style="padding:0; box-shadow:none; background:transparent;">
+              <div class="eyebrow">Otevírací doba</div>
+              <div class="hours">
+                <div class="hours-row"><span>Po</span><span>8:00-20:00</span></div>
+                <div class="hours-row"><span>Út</span><span>8:00-20:00</span></div>
+                <div class="hours-row"><span>St</span><span>8:00-20:00</span></div>
+                <div class="hours-row today"><span>Čt</span><span>8:00-20:00</span></div>
+                <div class="hours-row"><span>Pá</span><span>8:00-21:00</span></div>
+                <div class="hours-row"><span>So</span><span>9:00-21:00</span></div>
+                <div class="hours-row"><span>Ne</span><span>Zavřeno</span></div>
+              </div>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Park Café Zlín"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prakticky</div>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Krátké informace pro hosty, kteří si chtějí naplánovat snídani, kávu nebo večerní posezení.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Je možné udělat rezervaci?</h3>
+            <p>Ano. Nejlepší je zavolat na +420 771 298 942.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kdy máte otevřeno o víkendu?</h3>
+            <p>V sobotu od 9:00 do 21:00. V neděli je zavřeno.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde najdu aktuální akce?</h3>
+            <p>Park Café zveřejňuje aktuální akce na svém Facebooku.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co si u vás mohu dát?</h3>
+            <p>Snídaně, italskou kávu, vína, koktejly a další gastronomii podle aktuální nabídky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="cta-box">
+          <div>
+            <div class="eyebrow" style="color:#d7b77e;">Park Café Zlín</div>
+            <h2>Domluvte si stůl</h2>
+            <p>Zavolejte do kavárny, napište e-mail nebo se zastavte na Soudní 5549 v centru Zlína.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn primary" href="tel:+420771298942">Zavolat</a>
+            <a class="btn secondary" href="mailto:info@parkcafezlin.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>© 2026 / PARK CAFÉ ZLÍN</div>
+        <div>Soudní 5549 · Zlín · +420 771 298 942</div>
+      </div>
+      <p class="credits">Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN a Việt Anh Nguyễn přes Pexels.</p>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravilo studio Webflex jako nezávaznou ukázku pro Park Café Zlín. Pro odstranění použijte <a href="https://webflex.cz/delete/dc9uj4l">https://webflex.cz/delete/dc9uj4l</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6646128, 49.2259948],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#B08A52' })
+      .setLngLat([17.6646128, 49.2259948])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
