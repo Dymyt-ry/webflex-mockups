@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossCafe Třída Míru | Kavárna v centru Pardubic</title>
+  <meta name="description" content="CrossCafe Třída Míru v pěší zóně Pardubic. Výběrová káva, Wi-Fi, zahrádka, dětský koutek, dog friendly prostředí a posezení s výhledem na Zelenou bránu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Geist+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --soft: #f2f2ef;
+      --ink: #141414;
+      --muted: #62615d;
+      --line: rgba(20, 20, 20, .1);
+      --accent: #A00020;
+      --accent-deep: #740017;
+      --accent-soft: #f4e7ea;
+      --shadow: 0 30px 90px rgba(37, 28, 24, .1);
+      --shadow-soft: 0 22px 70px rgba(37, 28, 24, .07);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(160,0,32,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(160,0,32,.024) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.2vw, 58px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 23px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: var(--wrap);
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      transition: transform 210ms var(--ease), border-color 210ms var(--ease), background 210ms var(--ease), color 210ms var(--ease), box-shadow 210ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 16px 34px rgba(160, 0, 32, .22);
+    }
+    .btn.primary:hover { background: var(--accent-deep); }
+    .btn.secondary {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(20,20,20,.05); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 250, .86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: #4f4e4a;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: clamp(48px, 7vw, 86px) 0 86px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .82fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { margin-bottom: 22px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: #46433f;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 36px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      color: #6d6661;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .meta-pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 26px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.03);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      max-width: calc(100% - 36px);
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.84);
+      backdrop-filter: blur(14px);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 14px 40px rgba(0,0,0,.13);
+    }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .52fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 42px;
+    }
+    .section-head .eyebrow { margin-bottom: 14px; }
+    .section-head p {
+      font-size: 18px;
+      color: #5b5854;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .feature-card {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 26px;
+      padding: 28px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+    }
+    .feature-card span {
+      width: 42px;
+      height: 42px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .feature-card p { margin-top: 12px; }
+
+    .stats {
+      padding: 56px 0;
+      background: #151515;
+      color: #fff;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .stat {
+      padding: 28px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.06);
+      min-height: 158px;
+    }
+    .stat strong {
+      display: block;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+    .stat span {
+      color: rgba(255,255,255,.72);
+      font-weight: 600;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .76fr) minmax(0, 1fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .line-list {
+      margin-top: 34px;
+      display: grid;
+      gap: 0;
+    }
+    .line-item {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 22px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+    .line-item:last-child { border-bottom: 1px solid var(--line); }
+    .line-item b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .hours-card {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(360px, .9fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-panel,
+    .hours-panel {
+      padding: 30px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 32px;
+    }
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+      margin-top: 26px;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      display: block;
+      font-weight: 700;
+    }
+    .contact-lines small {
+      display: block;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .hours-table {
+      margin-top: 26px;
+      display: grid;
+      gap: 10px;
+    }
+    .hours-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .hours-row.today {
+      color: #fff;
+      background: var(--accent);
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 320px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card.tall { min-height: 420px; }
+
+    .faq-list {
+      display: grid;
+      gap: 12px;
+      max-width: 900px;
+      margin-inline: auto;
+    }
+    details {
+      border-radius: 18px;
+      background: rgba(255,255,255,.84);
+      box-shadow: var(--shadow-soft);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff; }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      padding: 22px 26px;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p {
+      padding: 0 26px 24px;
+      max-width: 760px;
+    }
+
+    .cta {
+      padding: 86px 0 110px;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 54px);
+      border-radius: 28px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 32px 90px rgba(160, 0, 32, .25);
+    }
+    .cta-box h2 { color: #fff; max-width: 780px; }
+    .cta-box p {
+      color: rgba(255,255,255,.82);
+      margin-top: 16px;
+      max-width: 620px;
+    }
+    .cta-box .btn {
+      background: #fff;
+      color: var(--accent-deep);
+      white-space: nowrap;
+    }
+    .cta-box .btn:hover { background: #f4f4f1; }
+
+    .site-footer {
+      padding: 34px 0;
+      background: #101010;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .site-footer a {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .hours-card,
+      .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        padding-top: 48px;
+      }
+      .hero-photo,
+      .split-photo {
+        aspect-ratio: 16 / 10;
+      }
+      .feature-grid,
+      .stats-grid,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .gallery-card,
+      .gallery-card.tall {
+        min-height: 280px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .nav { min-height: 68px; }
+      .logo img { max-height: 34px; }
+      .nav-links .btn { min-height: 42px; padding: 0 14px; }
+      section { padding: 72px 0; }
+      .feature-card,
+      .contact-panel,
+      .hours-panel {
+        padding: 22px;
+      }
+      .line-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .hours-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="CrossCafe Třída Míru">
+        <img src="https://www.crosscafe.cz//images/logo.svg" alt="CrossCafe Třída Míru">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">V kavárně</a>
+        <a href="#prostor">Prostor</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420770122803">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wrap">
+        <div class="hero-copy">
+          <div class="eyebrow">Pardubice · pěší zóna</div>
+          <h1>Káva na Třídě Míru</h1>
+          <p class="hero-lead">Zastavte se na oblíbený šálek, snídani nebo něco sladkého přímo v centru Pardubic. Kavárna má posezení v patře, výhled na Zelenou bránu i místo pro děti.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn secondary" href="mailto:tridamiru@crosscafe.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Vybavení kavárny">
+            <span class="meta-pill">Wi-Fi</span>
+            <span class="meta-pill">Dog friendly</span>
+            <span class="meta-pill">Zahrádka</span>
+            <span class="meta-pill">Přijímáme karty</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-label">Třída Míru 110 · Zelené Předměstí</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co u nás najdete</div>
+            <h2>Kavárna pro práci, odpočinek i rodinu</h2>
+          </div>
+          <p>V centru města si můžete dát výběrovou kávu, posedět v klimatizovaném patře, využít dětský koutek nebo si vybrat místo na zahrádce.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span>01</span>
+            <div>
+              <h3>Výběrová káva</h3>
+              <p>Espresso, mléčné kávy i nápoje s sebou pro rychlou zastávku během dne.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <span>02</span>
+            <div>
+              <h3>Posezení v patře</h3>
+              <p>Horní klimatizované patro nabízí výhled na Třídu Míru a Zelenou bránu.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <span>03</span>
+            <div>
+              <h3>Pro děti a studenty</h3>
+              <p>Dětský koutek, stoly s lampičkami a velká tabule pro poznámky nebo procvičování.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Důležité informace">
+      <div class="stats-grid wrap">
+        <div class="stat">
+          <strong>4,5</strong>
+          <span>hodnocení návštěvníků</span>
+        </div>
+        <div class="stat">
+          <strong>510</strong>
+          <span>recenzí od hostů</span>
+        </div>
+        <div class="stat">
+          <strong>7:00</strong>
+          <span>otevřeno v pracovní dny</span>
+        </div>
+        <div class="stat">
+          <strong>19:00</strong>
+          <span>zavíráme každý den</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="prostor">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div>
+          <div class="eyebrow">Místo v centru</div>
+          <h2>Od kávy po piknikový koš</h2>
+          <div class="line-list">
+            <div class="line-item">
+              <b>Centrum</b>
+              <p>Kavárna stojí přímo v pěší zóně na Třídě Míru, pár kroků od Zelené brány.</p>
+            </div>
+            <div class="line-item">
+              <b>Park</b>
+              <p>Když preferujete posezení venku, můžete využít možnost pronájmu piknikového koše.</p>
+            </div>
+            <div class="line-item">
+              <b>Přístup</b>
+              <p>Bezbariérový přístup, platba kartou, Wi-Fi, klimatizace a dog friendly prostředí.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kavárny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, klidné stoly, město za oknem</h2>
+          </div>
+          <p>Pro rychlou kávu před schůzkou, delší práci u stolu i odpoledne s rodinou.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Zastavte se na Třídě Míru 110</h2>
+          </div>
+          <p>Jsme v Pardubicích na Zeleném Předměstí. V pracovní dny otevíráme v 7:00, o víkendu v 8:00.</p>
+        </div>
+        <div class="hours-card">
+          <article class="contact-panel">
+            <div>
+              <h3>CrossCafe Třída Míru</h3>
+              <div class="contact-lines">
+                <span><small>Adresa</small>tř. Míru 110, Zelené Předměstí, 530 02 Pardubice-Pardubice I</span>
+                <a href="tel:+420770122803"><small>Telefon</small>+420 770 122 803</a>
+                <a href="mailto:tridamiru@crosscafe.cz"><small>E-mail</small>tridamiru@crosscafe.cz</a>
+              </div>
+            </div>
+            <a class="btn primary" href="tel:+420770122803">Zavolat do kavárny</a>
+          </article>
+          <article class="hours-panel">
+            <h3>Otevírací doba</h3>
+            <div class="hours-table">
+              <div class="hours-row today"><span>Čtvrtek</span><span>7:00 - 19:00</span></div>
+              <div class="hours-row"><span>Po - Pá</span><span>7:00 - 19:00</span></div>
+              <div class="hours-row"><span>So - Ne</span><span>8:00 - 19:00</span></div>
+            </div>
+          </article>
+        </div>
+        <div style="margin-top: 24px;">
+          <div id="map" aria-label="Mapa umístění kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté dotazy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prakticky</div>
+            <h2>Než vyrazíte</h2>
+          </div>
+          <p>Krátké odpovědi k vybavení, poloze a návštěvě kavárny.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Je kavárna vhodná pro návštěvu s dětmi?</summary>
+            <p>Ano. V kavárně je dětský koutek a prostor pro rodinné posezení.</p>
+          </details>
+          <details>
+            <summary>Můžu přijít se psem?</summary>
+            <p>Ano, kavárna je dog friendly.</p>
+          </details>
+          <details>
+            <summary>Dá se v kavárně pracovat nebo učit?</summary>
+            <p>Ano. Studentům se hodí stoly s lampičkami, Wi-Fi a velká tabule na zdi pro poznámky.</p>
+          </details>
+          <details>
+            <summary>Je k dispozici venkovní posezení?</summary>
+            <p>Ano, kavárna má zahrádku a v blízkosti můžete využít také pronájem piknikového koše.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Máte cestu centrem Pardubic?</h2>
+          <p>Jsme na pěší zóně Třídy Míru. Přijďte na kávu, snídani nebo klidné odpolední posezení.</p>
+        </div>
+        <a class="btn" href="#kontakt">Najít kavárnu</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid wrap">
+      <span>Prezentační stránka připravená službou Webflex pro interní posouzení. Nejde o oficiální web provozovatele.</span>
+      <a href="https://webflex.cz/remove/y2u74h0">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7752416, 50.037378],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A00020' })
+      .setLngLat([15.7752416, 50.037378])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
