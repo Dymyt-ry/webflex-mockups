@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boardgame cafe | Pardubice</title>
+  <meta name="description" content="Boardgame cafe v Pardubicích: káva, občerstvení, deskové hry, W40K figurky, dračí doupě a rezervace stolu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f4ed;
+      --paper: #fffcf4;
+      --ink: #1b1a16;
+      --muted: #686151;
+      --line: rgba(27, 26, 22, .14);
+      --line-strong: rgba(27, 26, 22, .24);
+      --accent: #8BA33B;
+      --accent-dark: #5f7423;
+      --accent-soft: rgba(139, 163, 59, .16);
+      --dark: #171713;
+      --font-display: "Manrope", system-ui, sans-serif;
+      --font-body: "Manrope", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --font-accent: "Instrument Serif", Georgia, serif;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --container: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(27,26,22,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(27,26,22,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 244, 237, .88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      width: var(--container);
+      margin: 0 auto;
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; font-weight: 700; }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #111307; }
+    .btn-primary:hover { background: #9ab54a; transform: translateY(-1px); }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(27,26,22,.06); transform: translateY(-1px); }
+    .btn:active, .card-link:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    main { overflow: hidden; }
+    section { padding: 92px 0; }
+    .container { width: var(--container); margin: 0 auto; }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 72px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      font-weight: 800;
+    }
+    .hero-lead {
+      max-width: 640px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #403b31;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 54px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-fact { padding: 18px 18px 18px 0; border-right: 1px solid var(--line); }
+    .hero-fact:last-child { border-right: 0; padding-right: 0; padding-left: 18px; }
+    .hero-fact strong { display: block; font-family: var(--font-mono); font-size: 16px; }
+    .hero-fact span { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(27,26,22,.18);
+      background: #302416;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(0,0,0,.42));
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    h2 { margin-top: 10px; font-size: clamp(32px, 4vw, 58px); line-height: 1; font-weight: 800; overflow-wrap: anywhere; }
+    .section-head p { max-width: 610px; font-size: 18px; }
+
+    .service-list { border-top: 1px solid var(--line-strong); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) minmax(220px, .44fr);
+      gap: 34px;
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+    .service-row h3 { font-size: 26px; line-height: 1.1; }
+    .service-row p { font-size: 16px; }
+    .tagline { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+    .split-band {
+      background: var(--dark);
+      color: #fffaf0;
+      padding: 96px 0;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .9fr) minmax(0, 1fr);
+      gap: 50px;
+      align-items: center;
+    }
+    .split figure { margin: 0; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 18px; border: 1px solid rgba(255,255,255,.16); }
+    .split figure img { width: 100%; height: 100%; object-fit: cover; }
+    .split h2 { color: #fffaf0; }
+    .split p { color: rgba(255,250,240,.72); }
+    .quote {
+      margin-top: 30px;
+      font-family: var(--font-accent);
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.04;
+      color: #fffaf0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      background: rgba(255,252,244,.66);
+      align-items: stretch;
+    }
+    .stat { padding: 34px; border-right: 1px solid var(--line); min-height: 170px; }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-card {
+      min-height: 260px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      background: rgba(255,252,244,.72);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+    }
+    .menu-card:hover { transform: translateY(-2px); border-color: rgba(139,163,59,.5); background: var(--paper); }
+    .menu-card h3 { font-size: 28px; margin-bottom: 12px; }
+    .menu-card .mono { margin-top: 26px; font-family: var(--font-mono); font-size: 13px; color: var(--accent-dark); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; border: 1px solid var(--line); }
+    .gallery-main { aspect-ratio: 16 / 10; }
+    .gallery-side { display: grid; gap: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      padding: 28px;
+    }
+    .contact-card h3 { font-size: 28px; margin-bottom: 18px; }
+    .contact-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span:first-child { color: var(--muted); }
+    .today { background: var(--accent-soft); margin-inline: -10px; padding-inline: 10px; border-radius: 10px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
+
+    .faq-list { border-top: 1px solid var(--line-strong); }
+    details { border-bottom: 1px solid var(--line); padding: 24px 0; }
+    summary { cursor: pointer; font-weight: 800; font-size: 19px; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details p { max-width: 760px; margin-top: 12px; }
+
+    .final-cta {
+      padding: 76px 0;
+      background: var(--accent);
+      color: #111307;
+    }
+    .cta-inner {
+      width: var(--container);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(34px, 5vw, 72px); }
+    .final-cta p { color: rgba(17,19,7,.72); max-width: 620px; margin-top: 12px; }
+    .final-cta .btn-primary { background: #111307; color: #fffaf0; }
+    .final-cta .btn-outline { color: #111307; }
+
+    footer {
+      padding: 34px 0;
+      background: #11110e;
+      color: rgba(255,250,240,.72);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: var(--container);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .footer-inner a { color: #fffaf0; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta-inner { grid-template-columns: 1fr; }
+      .hero-photo, .split figure { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .menu-grid, .gallery { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 640px) {
+      :root { --container: min(100vw - 24px, 1180px); }
+      section { padding: 64px 0; }
+      .hero { padding-top: 34px; }
+      .hero-grid { gap: 34px; }
+      .hero-facts { grid-template-columns: 1fr; }
+      .hero-fact, .hero-fact:last-child { border-right: 0; border-bottom: 1px solid var(--line); padding: 16px 0; }
+      .hero-fact:last-child { border-bottom: 0; }
+      .hero-actions, .final-cta .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .photo-note { flex-direction: column; }
+      .contact-line { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Boardgame cafe">
+        <img src="https://boardgame-cafe.cz/logo/logo_mini.svg" alt="Boardgame cafe">
+      </a>
+      <div class="nav-links">
+        <a href="#hry">Hry</a>
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420734728053">Rezervace</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker"><span class="dot"></span>Pardubice · Sladkovského 530/02</div>
+          <h1>Káva, deskovky a večery v Pardubicích</h1>
+          <p class="hero-lead">Přijďte si s přáteli zahrát deskovku, posadit ke stolu W40K figurky nebo ulovit draka v jeho doupěti. K tomu káva, koktejly a občerstvení.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420734728053">Zavolat pro rezervaci</a>
+            <a class="btn btn-outline" href="mailto:rezervace@boardgame-cafe.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-facts" aria-label="Rychlé informace">
+            <div class="hero-fact"><strong>4.7</strong><span>hodnocení Google</span></div>
+            <div class="hero-fact"><strong>9</strong><span>veřejných recenzí</span></div>
+            <div class="hero-fact"><strong>Út–So</strong><span>12:00–20:00</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-note"><span>stůl pro partu</span><span>káva · hry · večer</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="hry">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co si u nás zahrajete</div>
+            <h2>Od krátké hry po dlouhou výpravu</h2>
+          </div>
+          <p>Výběr deskových her pravidelně rozšiřujeme. Když nevíte, po čem sáhnout, obsluha poradí podle nálady, času i zkušeností celé skupiny.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <div><h3>Deskové hry pro začátečníky</h3></div>
+            <p>Krátké hry, které vysvětlíte během pár minut a zvládnete i mezi dvěma šálky kávy.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <div><h3>Epické deskovky pro dobrodruhy</h3></div>
+            <p>Delší příběhy, tahové strategie a večery, kdy se stůl stane mapou celé kampaně.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <div><h3>W40K figurky a dračí doupě</h3></div>
+            <p>Prostor pro vaše vymazlené figurky, domluvené party i fantasy dobrodružství s partou.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="split-band">
+      <div class="container split">
+        <figure>
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        </figure>
+        <div>
+          <div class="eyebrow">Atmosféra</div>
+          <h2>Místo, kde se večer nerozpadne po první kávě</h2>
+          <p>Ke stolu patří občerstvení, koktejly i kávové nápoje. Nabídka se průběžně aktualizuje, aby bylo co ochutnat při další návštěvě.</p>
+          <div class="quote">„Dejte si tah navíc. My pohlídáme kávu.“</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="stats">
+          <div class="stat"><strong>4.7</strong><span>Google hodnocení podle dostupných veřejných recenzí.</span></div>
+          <div class="stat"><strong>9</strong><span>recenzí od hostů, kteří kavárnu našli v Pardubicích.</span></div>
+          <div class="stat"><strong>5</strong><span>dní v týdnu otevřeno od úterý do soboty.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2>Káva, koktejly a něco ke hře</h2>
+          </div>
+          <p>Menu zahrnuje občerstvení, koktejly a kávové nápoje. Sezónní speciality se obměňují, takže se vyplatí podívat i při další rezervaci.</p>
+        </div>
+        <div class="menu-grid">
+          <article class="menu-card">
+            <div>
+              <h3>Káva a nápoje</h3>
+              <p>Šálek ke krátké partii, limonáda ke strategii i něco večerního ke kampani.</p>
+            </div>
+            <div class="mono">nápoje · káva · koktejly</div>
+          </article>
+          <article class="menu-card">
+            <div>
+              <h3>Občerstvení</h3>
+              <p>Jídlo a drobnosti ke stolu, které se hodí, když se jedna hra protáhne na další.</p>
+            </div>
+            <div class="mono">průběžně aktualizováno</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Galerie</div>
+            <h2>Teplý stůl, světla a klid na hru</h2>
+          </div>
+          <p>Vybrané snímky drží jednu náladu: tlumené světlo, dřevěný stůl a prostředí, kde se dá sedět déle než jednu partii.</p>
+        </div>
+        <div class="gallery">
+          <img class="gallery-main" src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          <div class="gallery-side">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Rezervace a otevírací doba</h2>
+          </div>
+          <p>Stůl si domluvte telefonicky nebo e-mailem. Najdete nás na adrese Sladkovského 530/02, Pardubice I.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Boardgame cafe</h3>
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420734728053">+420 734 728 053</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:rezervace@boardgame-cafe.cz">rezervace@boardgame-cafe.cz</a></div>
+            <div class="contact-line"><span>Adresa</span><span>Sladkovského 530/02, Pardubice I</span></div>
+            <div class="contact-line"><span>Pondělí</span><span>Zavřeno</span></div>
+            <div class="contact-line today"><span>Čtvrtek</span><span>12:00–20:00</span></div>
+            <div class="contact-line"><span>Úterý–Sobota</span><span>12:00–20:00</span></div>
+            <div class="contact-line"><span>Neděle</span><span>Zavřeno</span></div>
+          </div>
+          <div id="map" aria-label="Mapa Boardgame cafe v Pardubicích"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté otázky</div>
+            <h2>Než dorazíte ke stolu</h2>
+          </div>
+          <p>Krátké odpovědi pro hosty, kteří si chtějí dopředu ujasnit rezervaci, hry a výběr z nabídky.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Pomůžete nám vybrat hru?</summary>
+            <p>Ano. Když nevíte, co z nabídky vybrat, obsluha poradí podle toho, kolik máte času a jak zkušená je vaše skupina.</p>
+          </details>
+          <details>
+            <summary>Dá se přijít s W40K figurkami?</summary>
+            <p>Ano, kavárna počítá i s hráči, kteří si chtějí zahrát s vlastními W40K figurkami.</p>
+          </details>
+          <details>
+            <summary>Jak si domluvíme místo?</summary>
+            <p>Pro domluvu místa zavolejte na +420 734 728 053 nebo napište na rezervace@boardgame-cafe.cz.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="cta-inner">
+        <div>
+          <h2>Domluvte si herní večer.</h2>
+          <p>Rezervujte stůl pro partu a vyberte si hru až na místě.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420734728053">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:rezervace@boardgame-cafe.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© 2026 Boardgame cafe. Kontaktní údaje vycházejí z veřejně dostupných informací.</span>
+      <span>Vytvořil Webflex · <a href="https://webflex.cz/remove/orxmkaa">odstranit stránku</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7746302, 50.033631199999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#8BA33B' })
+      .setLngLat([15.7746302, 50.033631199999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
