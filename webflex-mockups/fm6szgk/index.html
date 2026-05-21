@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Art Cafe | Snídaně, polední menu a pizza v Pardubicích</title>
+  <meta name="description" content="Art Cafe v Pardubicích: snídaňové menu, polední menu, stálý jídelní lístek, pizza 2+1, rezervace a rozvoz.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --paper: rgba(255,255,255,.075);
+      --paper-strong: rgba(255,255,255,.11);
+      --ink: #f8f7f3;
+      --muted: rgba(248,247,243,.7);
+      --soft: rgba(248,247,243,.08);
+      --line: rgba(248,247,243,.13);
+      --accent: #E31B23;
+      --accent-dark: #b8121a;
+      --accent-ink: #ffffff;
+      --shadow: 0 28px 90px rgba(0,0,0,.22);
+      --font-display: "Archivo Black", "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 82% 8%, rgba(227,27,35,.17), transparent 34%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; text-transform: uppercase; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: -64px;
+      z-index: 30;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,20,.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .links a {
+      padding: 8px 0;
+      transition: color .18s var(--ease);
+    }
+    .links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 18px 48px rgba(227,27,35,.22); }
+    .btn.primary:hover { background: #ff3038; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { border-color: var(--accent); color: #fff; background: rgba(227,27,35,.14); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 56px 0 76px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0,.94fr) minmax(420px,.86fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 78px);
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .kicker::before { content: ""; width: 42px; height: 2px; background: var(--accent); }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+      color: rgba(248,247,243,.78);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 30px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(248,247,243,.66);
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,.07);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 22px;
+      background: #18191d;
+      box-shadow: 0 34px 110px rgba(0,0,0,.34);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.95) contrast(1.05);
+      opacity: .9;
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.62));
+      pointer-events: none;
+    }
+
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #fff;
+    }
+    .photo-caption strong { display: block; font-family: var(--font-display); font-size: 18px; text-transform: uppercase; }
+
+    section { padding: 86px 0; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0,.74fr) minmax(280px,.44fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p { font-size: 18px; }
+
+    .menu-board {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .menu-list { padding: 8px 0; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0,1fr) auto;
+      gap: 18px;
+      align-items: baseline;
+      padding: 19px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .time, .price, .number {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .menu-row h3 {
+      font-family: var(--font-body);
+      font-size: 17px;
+      text-transform: none;
+      font-weight: 800;
+    }
+    .menu-row p { margin-top: 5px; font-size: 14px; }
+
+    .feature-card {
+      min-height: 100%;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(145deg, rgba(227,27,35,.22), rgba(255,255,255,.065));
+    }
+    .feature-card .display {
+      font-family: var(--font-display);
+      font-size: clamp(54px, 9vw, 118px);
+      line-height: .86;
+      color: var(--ink);
+      opacity: .96;
+    }
+    .feature-card p { margin-top: 24px; font-size: 18px; color: rgba(248,247,243,.78); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 178px;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.07);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat .number { font-size: clamp(34px, 5vw, 58px); font-weight: 700; }
+    .stat p { color: rgba(248,247,243,.76); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px,.9fr) minmax(0,1fr);
+      align-items: center;
+      gap: 48px;
+    }
+
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 32px 100px rgba(0,0,0,.32);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 66px 1fr;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.065);
+      box-shadow: 0 20px 70px rgba(0,0,0,.16);
+    }
+    .step b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+    .step h3 {
+      font-family: var(--font-body);
+      font-size: 18px;
+      text-transform: none;
+      font-weight: 800;
+    }
+    .step p { margin-top: 4px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h3 {
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 122px 1fr;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span:first-child {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .contact-line a,
+    .contact-line strong { color: var(--ink); font-weight: 800; }
+
+    #map {
+      height: 420px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #16181c;
+    }
+
+    .final {
+      padding: 72px 0 92px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 54px);
+      border-radius: 24px;
+      background: #f8f7f3;
+      color: #111214;
+      box-shadow: 0 34px 110px rgba(0,0,0,.32);
+    }
+    .final-box h2 {
+      color: #111214;
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    .final-box p {
+      margin-top: 14px;
+      color: rgba(17,18,20,.68);
+      max-width: 620px;
+    }
+    .final-box .btn.secondary {
+      border-color: rgba(17,18,20,.35);
+      color: #111214;
+    }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: rgba(248,247,243,.58);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .links { display: none; }
+      .hero-grid,
+      .section-head,
+      .menu-board,
+      .split,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .stats,
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .nav { min-height: 68px; }
+      .brand img { max-height: 36px; }
+      .hero { padding: 42px 0 58px; }
+      .hero-grid { gap: 30px; }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+      .step { grid-template-columns: 1fr; }
+      .contact-line { grid-template-columns: 1fr; gap: 5px; }
+      .btn { width: 100%; }
+      .hero-actions,
+      .final-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Art Cafe">
+        <img src="https://art-cafe.cz/wp-content/uploads/2021/11/logo-white-3.png" alt="Art Cafe">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#rozvoz">Rozvoz</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420773668283">Rezervace</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap" id="top">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker">Pardubice I · Jindřišská 2028</div>
+          <h1>Art Cafe Pardubice</h1>
+          <p class="lead">Snídaně od rána, polední menu v pracovní dny, stálý jídelní lístek a pizza 2+1 pro vyzvednutí i rozvoz.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420773668283">Volat 773 668 283</a>
+            <a class="btn secondary" href="#menu">Dnešní nabídka</a>
+          </div>
+          <div class="hero-meta">
+            <span class="chip">Snídaně 8:30-10:00</span>
+            <span class="chip">Polední menu 11:00-14:00</span>
+            <span class="chip">Hodnocení 4,2 · 750 recenzí</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-caption">
+            <span><strong>Snídaně · oběd · večer</strong>Rezervace a objednávky telefonicky</span>
+            <span>530 12</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si dáte dnes</h2>
+          <p>Nabídka stojí na jídlech, která Art Cafe uvádí přímo v menu: snídaně, polední talíře, těstoviny, calzone a pizza.</p>
+        </div>
+        <div class="menu-board">
+          <div class="panel menu-list">
+            <div class="menu-row">
+              <span class="time">8:30</span>
+              <div>
+                <h3>Piadina con frittata</h3>
+                <p>Italská pšeničná placka s vaječnou omeletou, šunkou, rajčaty a mozzarellou.</p>
+              </div>
+              <span class="price">155 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="time">8:30</span>
+              <div>
+                <h3>Ciabatta s uzeným lososem</h3>
+                <p>Sušená rajčata, rukola a koprový dip.</p>
+              </div>
+              <span class="price">155 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="time">11:00</span>
+              <div>
+                <h3>Lasagne bolognese</h3>
+                <p>Sekaného maso v rajčatové omáčce, kořenová zelenina, mozzarella a bešamel.</p>
+              </div>
+              <span class="price">165 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="time">33 cm</span>
+              <div>
+                <h3>Pizza Napoli</h3>
+                <p>Sugo, mozzarella, salám Napoli, plátky rajčat a Gran Biraghi.</p>
+              </div>
+              <span class="price">180 Kč</span>
+            </div>
+          </div>
+          <aside class="panel feature-card">
+            <div>
+              <div class="kicker">Stálá linka</div>
+              <div class="display">2+1</div>
+            </div>
+            <p>Pizza akce pro chvíle, kdy chcete vzít jídlo domů nebo objednat pro stůl. Podrobnosti vám obsluha potvrdí při objednávce.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap stats">
+        <div class="stat">
+          <span class="number">4,2</span>
+          <p>Hodnocení hostů podle dostupných veřejných údajů.</p>
+        </div>
+        <div class="stat">
+          <span class="number">750</span>
+          <p>Recenzí od lidí, kteří Art Cafe navštívili.</p>
+        </div>
+        <div class="stat">
+          <span class="number">3</span>
+          <p>Hlavní denní rytmy: snídaně, polední menu a stálý lístek.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="rozvoz">
+      <div class="wrap split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+        <div>
+          <div class="section-head" style="display:block;margin-bottom:28px;">
+            <h2>Rezervace a objednávky</h2>
+            <p style="margin-top:18px;">Pro stůl, polední menu nebo rozvoz volejte přímo do restaurace. Obsluha vám potvrdí dostupnost jídel z aktuální nabídky.</p>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <b>01</b>
+              <div>
+                <h3>Zavolejte do Art Cafe</h3>
+                <p>Rezervace a objednávky přijímá restaurace na čísle 773 668 283.</p>
+              </div>
+            </div>
+            <div class="step">
+              <b>02</b>
+              <div>
+                <h3>Vyberte snídani, oběd nebo pizzu</h3>
+                <p>Polední menu běží od 11:00 do 14:00, snídaňové položky od 8:30 do 10:00.</p>
+              </div>
+            </div>
+            <div class="step">
+              <b>03</b>
+              <div>
+                <h3>Dorazte na Jindřišskou</h3>
+                <p>Restauraci najdete na adrese Jindřišská 2028, Pardubice I.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostor">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Večer v měkkém světle</h2>
+          <p>Interiér a stoly ladí s tím, co se na lístku objevuje přes den: káva, snídaně, oběd a neformální večeře.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>Adresa, telefon a e-mail pro rezervaci stolu, objednávku jídla nebo rychlý dotaz k denní nabídce.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Art Cafe</h3>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Jindřišská 2028, 530 12 Pardubice I</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420773668283">+420 773 668 283</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@art-cafe.cz">info@art-cafe.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Menu</span>
+              <strong>Snídaně 8:30-10:00 · polední 11:00-14:00</strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Art Cafe"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Stůl čeká v Pardubicích</h2>
+          <p>Zavolejte pro rezervaci, polední menu nebo objednávku rozvozu. Přímá domluva s obsluhou vám potvrdí aktuální nabídku.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420773668283">Volat restauraci</a>
+          <a class="btn secondary" href="mailto:info@art-cafe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Neoficiální prezentační stránka připravená službou Webflex pro ukázání možné podoby veřejné prezentace. Nejste-li adresátem, můžete ji odstranit.</span>
+      <a href="https://webflex.cz/delete/fm6szgk">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.776995200000002, 50.035660799999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E31B23' })
+      .setLngLat([15.776995200000002, 50.035660799999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
