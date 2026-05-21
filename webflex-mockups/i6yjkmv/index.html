@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Velkokavárna GULLIVER | Café, bar a klub ve Zlíně</title>
+  <meta name="description" content="Velkokavárna GULLIVER ve Zlíně: atmosférický café-bar-klub, vlastní limonády SYFOTEUS, tousty, kulturní program a výjezdní občerstvení." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fbfbfb;
+      --paper: #ffffff;
+      --paper-soft: #f4f4f1;
+      --ink: #111111;
+      --muted: #5f5f5a;
+      --line: rgba(17, 17, 17, 0.18);
+      --line-strong: rgba(17, 17, 17, 0.82);
+      --accent: #E02020;
+      --accent-dark: #b41414;
+      --cream: #f7f2e8;
+      --font-display: "Archivo Black", "Inter Tight", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(17,17,17,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,17,0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1200px, calc(100% - 40px)); margin-inline: auto; }
+    .rule { border-top: 2px solid var(--ink); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,251,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 2px solid var(--ink);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 2px solid transparent;
+      border-radius: 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 6px 6px 0 var(--ink); }
+    .btn:active { transform: translateY(1px); box-shadow: 2px 2px 0 var(--ink); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+    .btn-outline { background: transparent; border-color: currentColor; color: var(--ink); }
+    .btn-outline:hover { background: var(--ink); color: #fff; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+      align-items: center;
+      gap: 54px;
+      padding: 72px 0 66px;
+      min-height: calc(100svh - 76px);
+    }
+    .kicker {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .kicker::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: currentColor;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: 0.96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 1.6vw, 22px);
+      color: var(--muted);
+      line-height: 1.55;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .hero-facts span {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      padding: 9px 11px;
+    }
+    .hero-media {
+      position: relative;
+      min-width: 0;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      box-shadow: 14px 14px 0 var(--ink);
+    }
+    .hero-media img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      filter: contrast(1.08) saturate(.72);
+    }
+    .stamp {
+      position: absolute;
+      left: -2px;
+      bottom: -2px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      width: min(420px, 82%);
+      border: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .stamp strong {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 34px;
+      line-height: 1;
+    }
+    .stamp span {
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-num {
+      font-family: var(--font-display);
+      font-size: clamp(62px, 9vw, 132px);
+      line-height: .78;
+      color: var(--accent);
+    }
+    .section-head h2 {
+      max-width: 900px;
+      font-size: clamp(34px, 4.8vw, 68px);
+      text-transform: uppercase;
+    }
+
+    .service-list {
+      border-top: 2px solid var(--ink);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, .9fr) minmax(260px, .7fr);
+      gap: 30px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line-strong);
+      align-items: start;
+    }
+    .service-row .code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .service-row h3 { font-size: clamp(24px, 3vw, 42px); text-transform: uppercase; }
+    .service-row p { margin: 0; color: var(--muted); font-size: 17px; hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+      gap: 46px;
+      align-items: stretch;
+    }
+    .poster {
+      border: 2px solid var(--ink);
+      background: var(--ink);
+      color: #fff;
+      padding: 34px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .poster .big {
+      font-family: var(--font-display);
+      font-size: clamp(58px, 10vw, 142px);
+      line-height: .82;
+      color: var(--accent);
+    }
+    .poster p {
+      margin: 24px 0 0;
+      max-width: 500px;
+      font-size: 21px;
+      line-height: 1.5;
+      color: rgba(255,255,255,.82);
+    }
+    .poster small { font-family: var(--font-mono); color: rgba(255,255,255,.72); text-transform: uppercase; }
+    .photo-stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 20px;
+    }
+    .photo-tile {
+      position: relative;
+      min-height: 250px;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      background: var(--paper-soft);
+    }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.06) saturate(.78); }
+    .photo-tile span {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      padding: 10px 12px;
+      background: var(--paper);
+      border-top: 2px solid var(--ink);
+      border-right: 2px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .stat {
+      min-height: 210px;
+      padding: 28px;
+      border-right: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-display);
+      font-size: clamp(46px, 6vw, 86px);
+      line-height: .9;
+      color: var(--accent);
+    }
+    .stat span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .program {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+      gap: 40px;
+      align-items: start;
+    }
+    .program-copy {
+      border-left: 10px solid var(--accent);
+      padding-left: 24px;
+    }
+    .program-copy h2 { font-size: clamp(34px, 5vw, 72px); text-transform: uppercase; }
+    .program-copy p { color: var(--muted); font-size: 19px; line-height: 1.6; hyphens: auto; }
+    .line-table {
+      border-top: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .line-table div {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 22px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .line-table dt {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .line-table dd { margin: 0; font-size: 20px; font-weight: 800; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      min-height: 330px;
+      overflow: hidden;
+    }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.05) saturate(.7); }
+    .gallery-card.tall { min-height: 440px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .contact-card h2 { font-size: clamp(36px, 5vw, 74px); text-transform: uppercase; }
+    .contact-lines {
+      display: grid;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .contact-lines span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    #map {
+      height: 420px;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      background: var(--paper-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    details {
+      padding: 24px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    details:nth-child(2n) { border-right: 0; }
+    details:nth-last-child(-n+2) { border-bottom: 0; }
+    summary {
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 22px;
+      text-transform: uppercase;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { color: var(--muted); margin: 14px 0 0; font-size: 17px; line-height: 1.55; }
+    details[open] summary { color: var(--accent); }
+
+    .final-cta {
+      margin: 26px 0 0;
+      padding: 44px;
+      border: 2px solid var(--ink);
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(34px, 5vw, 72px); text-transform: uppercase; }
+    .final-cta p { margin: 14px 0 0; max-width: 620px; font-size: 18px; color: rgba(255,255,255,.88); }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.7); }
+    .final-cta .btn-outline:hover { background: #fff; color: var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,.7); }
+
+    .site-footer {
+      border-top: 2px solid var(--ink);
+      padding: 28px 0 34px;
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+    .credits {
+      margin-top: 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+    .disclaimer {
+      max-width: 720px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .delete-link {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero, .split, .program, .contact-grid, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-media { box-shadow: 8px 8px 0 var(--ink); }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .gallery-strip, .faq { grid-template-columns: 1fr; }
+      .stat, details, details:nth-child(2n) { border-right: 0; }
+      details:nth-last-child(-n+2) { border-bottom: 1px solid var(--line-strong); }
+      details:last-child { border-bottom: 0; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, 1200px); }
+      section { padding: 62px 0; }
+      .hero { gap: 34px; }
+      .stamp { position: static; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; }
+      .poster { min-height: 420px; padding: 24px; }
+      .line-table div { grid-template-columns: 1fr; gap: 8px; }
+      .final-cta { padding: 28px; }
+      .brand img { max-height: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Velkokavárna GULLIVER">
+        <img src="https://www.gulliverzlin.cz/wpress/wp-content/uploads/2018/12/wordpress_lista_velkokavarna.png" alt="Velkokavárna GULLIVER">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#program">Program</a>
+        <a href="#vyjezdni">Výjezdní</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420778494780">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero">
+      <div>
+        <div class="kicker">Zlín · café · bar · klub</div>
+        <h1>Velkokavárna GULLIVER</h1>
+        <p class="lead">Atmosférický podnik s kulturním programem, vlastními limonádami SYFOTEUS, čaji, alko i nealko nápoji a tousty pro masomilce, vegetariány i vegany.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#program">Kulturní program</a>
+          <a class="btn btn-outline" href="#kontakt">Kudy k nám</a>
+        </div>
+        <div class="hero-facts">
+          <span>tř. Tomáše Bati 3705</span>
+          <span>4,7 z 193 recenzí</span>
+          <span>+420 778 494 780</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+        <div class="stamp">
+          <strong>11</strong>
+          <span>Druhů toustů podle vlastních receptur</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="rule">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">01</div>
+          <h2>Co si u nás dáte</h2>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="code">SYFOTEUS</div>
+            <h3>Vlastní originální limonády</h3>
+            <p>Luhované ze směsí bylin, čajů a sušeného ovoce. Domácí chuť, která k Velkokavárně patří stejně jako večerní program.</p>
+          </article>
+          <article class="service-row">
+            <div class="code">Bar</div>
+            <h3>Alko, nealko, čaje</h3>
+            <p>Výběr kvalitních nápojů od prémiových výrobců i z vlastní produkce pro posezení přes den i pozdní večer.</p>
+          </article>
+          <article class="service-row">
+            <div class="code">Tousty</div>
+            <h3>Receptury pro každého</h3>
+            <p>Jedenáct druhů toustů pro masomilce, vegetariány i vegany. Rychlé občerstvení bez zbytečné uniformity.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule">
+      <div class="wrap split">
+        <div class="poster">
+          <div>
+            <small>Velkokavárna v číslech</small>
+            <div class="big">4,7</div>
+            <p>Hodnocení hostů na Googlu vychází ze 193 recenzí. Nejvíc mluví atmosféra, bar a místo, kam se chodí i za programem.</p>
+          </div>
+          <a class="btn btn-outline" href="mailto:info@gulliverzlin.cz">info@gulliverzlin.cz</a>
+        </div>
+        <div class="photo-stack">
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <span>Barová atmosféra</span>
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+            <span>Posezení ve Zlíně</span>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="program" class="rule">
+      <div class="wrap program">
+        <div class="program-copy">
+          <h2>Kulturní program</h2>
+          <p>GULLIVER není jen kavárna. Pravidelně se tu potkávají koncerty, přednášky, besedy, promítání a divadlo.</p>
+        </div>
+        <dl class="line-table">
+          <div>
+            <dt>Večery</dt>
+            <dd>Koncerty a živý kulturní program</dd>
+          </div>
+          <div>
+            <dt>Setkání</dt>
+            <dd>Přednášky, besedy, promítání</dd>
+          </div>
+          <div>
+            <dt>Scéna</dt>
+            <dd>Divadlo, kurzy, workshopy a komunitní akce</dd>
+          </div>
+          <div>
+            <dt>Rezervace</dt>
+            <dd>Soukromé oslavy, firemní akce a večírky</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="vyjezdni" class="rule">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">02</div>
+          <h2>Výjezdní Velkokavárna</h2>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>01</strong>
+            <span>Festivaly, komunitní a firemní akce</span>
+          </div>
+          <div class="stat">
+            <strong>02</strong>
+            <span>Oslavy, party a večírky</span>
+          </div>
+          <div class="stat">
+            <strong>03</strong>
+            <span>Cateringové služby s vlastní nabídkou</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule" aria-label="Atmosféra podniku">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">03</div>
+          <h2>Večer, bar, stoly, světla</h2>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+          </div>
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-num">04</div>
+          <h2>Než dorazíte</h2>
+        </div>
+        <div class="faq">
+          <details open>
+            <summary>Máte veganské tousty?</summary>
+            <p>Ano. Nabídka toustů počítá s masomilci, vegetariány i vegany.</p>
+          </details>
+          <details>
+            <summary>Děláte soukromé akce?</summary>
+            <p>Ano. GULLIVER se hodí pro soukromé oslavy, firemní akce a večírky.</p>
+          </details>
+          <details>
+            <summary>Přijedete mimo podnik?</summary>
+            <p>Ano. Výjezdní Velkokavárna umí občerstvit festival, oslavu, party, komunitní i firemní akci.</p>
+          </details>
+          <details>
+            <summary>Kde najdu program?</summary>
+            <p>Kulturní program a předprodej hledejte přes oficiální kanály Velkokavárny GULLIVER.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="rule">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div>
+            <div class="kicker">Kontakt</div>
+            <h2>Kudy do GULLIVERU</h2>
+          </div>
+          <div class="contact-lines">
+            <div><span>Adresa</span>tř. Tomáše Bati 3705, 760 01 Zlín-Zlín 1</div>
+            <div><span>Telefon</span><a href="tel:+420778494780">+420 778 494 780</a></div>
+            <div><span>E-mail</span><a href="mailto:info@gulliverzlin.cz">info@gulliverzlin.cz</a></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Velkokavárny GULLIVER"></div>
+      </div>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Stavte se ve Zlíně</h2>
+          <p>Na kávu, limonádu SYFOTEUS, toust, večerní program nebo domluvu výjezdního občerstvení.</p>
+        </div>
+        <a class="btn btn-outline" href="tel:+420778494780">+420 778 494 780</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Velkokavárna GULLIVER</strong>
+        <div class="credits">Fotografie: Wing Yi Yong, Zain Ali, Ruslan Alekso, Engin Akyurt, Efrem Efre, Simeon Stoilov / Pexels</div>
+      </div>
+      <div class="disclaimer">
+        Toto je nezávazná vizuální ukázka od Webflexu vytvořená pro Velkokavárna GULLIVER. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde:
+        <a class="delete-link" href="https://webflex.cz/remove/i6yjkmv">odstranit stránku</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6548598, 49.220901999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#E02020' })
+      .setLngLat([17.6548598, 49.220901999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
