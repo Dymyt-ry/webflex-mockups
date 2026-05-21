@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KostkoPark Zlín | Dětská herna</title>
+  <meta name="description" content="KostkoPark Zlín: dětská herna, kreativní aktivity, kavárna pro rodiče, oslavy narozenin a pronájem prostoru ve Vavrečkově ulici." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f8f3ea;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #1f211d;
+      --muted: #6f6b61;
+      --line: rgba(31, 33, 29, 0.08);
+      --accent: #FFC21A;
+      --accent-ink: #2b2200;
+      --accent-soft: rgba(255, 194, 26, 0.22);
+      --mint: #d6eadf;
+      --rose: #f2d7ce;
+      --sky: #dbe9f4;
+      --shadow: 0 34px 90px rgba(54, 43, 23, 0.10);
+      --shadow-small: 0 20px 58px rgba(54, 43, 23, 0.08);
+      --radius: 30px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(31,33,29,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31,33,29,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 88% 12%, rgba(255,194,26,0.24), transparent 28rem),
+        radial-gradient(circle at 14% 48%, rgba(214,234,223,0.58), transparent 26rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(248, 243, 234, 0.84);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .nav-links a,
+    .footer-links a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .footer-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(31,33,29,0.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #ffd24c; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(31,33,29,0.05); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 54px;
+      padding: 62px 0 58px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      color: #806000;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 690px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 610px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.45vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .hero-media { position: relative; min-width: 0; }
+    .play-panel {
+      aspect-ratio: 4 / 3;
+      position: relative;
+      overflow: hidden;
+      border-radius: 42px;
+      background:
+        radial-gradient(circle at 24% 26%, #ffffff 0 9%, transparent 10%),
+        radial-gradient(circle at 74% 22%, var(--accent) 0 11%, transparent 12%),
+        radial-gradient(circle at 52% 70%, var(--mint) 0 16%, transparent 17%),
+        linear-gradient(135deg, #fffef9, #f0e7d7);
+      box-shadow: var(--shadow);
+    }
+
+    .block {
+      position: absolute;
+      border-radius: 22px;
+      box-shadow: 0 22px 54px rgba(31,33,29,0.10);
+    }
+
+    .block.one { width: 31%; height: 27%; left: 12%; top: 18%; background: var(--accent); transform: rotate(-7deg); }
+    .block.two { width: 26%; height: 34%; right: 16%; top: 26%; background: var(--sky); transform: rotate(9deg); }
+    .block.three { width: 36%; height: 24%; left: 29%; bottom: 16%; background: var(--rose); transform: rotate(3deg); }
+    .block.four { width: 18%; height: 18%; right: 10%; bottom: 12%; background: #fff; transform: rotate(-12deg); }
+
+    .floating-hours {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(326px, 82%);
+      padding: 22px;
+      background: rgba(255,255,255,0.88);
+      border-radius: 26px;
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(20px);
+    }
+
+    .floating-hours strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .floating-hours span { display: flex; justify-content: space-between; gap: 18px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(280px, 0.56fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    h3 { font-size: clamp(22px, 2.2vw, 34px); }
+    .section-head p,
+    .soft-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      hyphens: auto;
+    }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) minmax(220px, 0.45fr);
+      align-items: center;
+      gap: 26px;
+      min-height: 124px;
+      padding: 28px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-small);
+    }
+
+    .service-row .num {
+      color: #806000;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat-card,
+    .surface-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-small);
+    }
+
+    .stat-card {
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+    }
+
+    .stat-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+    }
+
+    .stat-card span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.92fr) minmax(0, 1.08fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .surface-card { padding: 34px; }
+    .surface-card .tag {
+      display: inline-flex;
+      margin-bottom: 42px;
+      color: #806000;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .checks {
+      display: grid;
+      gap: 12px;
+      margin-top: 28px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .checks li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .checks b { color: var(--ink); }
+
+    .price-board {
+      display: grid;
+      gap: 12px;
+    }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 24px 28px;
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-small);
+    }
+
+    .price-row strong { font-size: 20px; }
+    .price-row p { margin: 5px 0 0; color: var(--muted); }
+    .price-row .price {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .photo-tile {
+      min-height: 300px;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow-small);
+      background: var(--surface);
+    }
+
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-stack { display: grid; gap: 16px; }
+    .photo-stack .photo-tile { min-height: 142px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.78fr) minmax(0, 1.22fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hours-table {
+      display: grid;
+      gap: 8px;
+      margin-top: 28px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hours-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .hours-table .today {
+      margin-inline: -14px;
+      padding-inline: 14px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-small);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    details {
+      padding: 24px 26px;
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-small);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+
+    details:hover { transform: translateY(-1px); background: rgba(255,255,255,0.9); }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); line-height: 1.65; hyphens: auto; }
+
+    .cta {
+      padding: 50px;
+      border-radius: 40px;
+      background:
+        radial-gradient(circle at 88% 18%, rgba(255,255,255,0.42), transparent 18rem),
+        var(--accent);
+      color: var(--accent-ink);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .cta h2 { max-width: 760px; }
+    .cta .btn-outline { color: var(--accent-ink); border-color: rgba(43,34,0,0.48); }
+
+    footer {
+      padding: 46px 0 30px;
+      color: var(--muted);
+    }
+
+    .footer-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 18px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .disclaimer {
+      margin-top: 24px;
+      color: rgba(111,107,97,0.78);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .contact-grid,
+      .gallery,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-strip,
+      .faq { grid-template-columns: 1fr; }
+      .floating-hours { right: 12px; bottom: 12px; }
+      .cta { padding: 34px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .hero { gap: 34px; }
+      .hero-media { min-width: 0; }
+      .play-panel { border-radius: 30px; }
+      .floating-hours { position: static; width: 100%; margin-top: 12px; }
+      .price-row { grid-template-columns: 1fr; }
+      .footer-main { align-items: flex-start; flex-direction: column; }
+      .btn { width: 100%; }
+      .hero-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="KostkoPark Zlín">
+        <img src="img/Logo.png" alt="KostkoPark Zlín">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#aktivity">Aktivity</a>
+        <a href="#oslavy">Oslavy</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420731418192">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow">Vavrečkova 7074 · Zlín</span>
+        <h1 id="hero-title">Hrajte si v KostkoParku</h1>
+        <p class="lead">Dětská herna plná stavebnic, balónků, tvoření a bezpečných koutků. Děti objevují a rodiče si dají kávu v klidném zázemí.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420731418192">Rezervovat oslavu</a>
+          <a class="btn btn-outline" href="#aktivity">Co vás čeká</a>
+        </div>
+        <div class="hero-meta">
+          <span>Út-Pá 10:00-18:00</span>
+          <span>So-Ne 10:00-18:00</span>
+          <span>731 418 192</span>
+        </div>
+      </div>
+      <div class="hero-media" aria-hidden="true">
+        <div class="play-panel">
+          <span class="block one"></span>
+          <span class="block two"></span>
+          <span class="block three"></span>
+          <span class="block four"></span>
+        </div>
+        <div class="floating-hours">
+          <strong>Máme otevřeno</strong>
+          <span><b>Út-Pá</b><em>10:00-18:00</em></span>
+          <span><b>So-Ne</b><em>10:00-18:00</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="aktivity">
+      <div class="section-head">
+        <h2>Co vás u nás čeká</h2>
+        <p>Prostor je rozdělený tak, aby si děti mohly hrát, stavět, tvořit a zároveň měly bezpečné zázemí pro pohyb i odpočinek.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Balónkový bazének</h3>
+          <p>Bezpečný prostor pro nejmenší i větší děti, které potřebují měkké a hravé prostředí.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Kreativní tvoření</h3>
+          <p>Workshopy a aktivity pro rozvoj fantazie, stavění a společné objevování.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Kavárna pro rodiče</h3>
+          <p>Pohodlné posezení s kvalitní kávou, zatímco si děti užívají herní koutky.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <h3>Oslavy narozenin</h3>
+          <p>Program, dekorace, zábava a pomoc s organizací podle domluveného tématu.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="trust-strip">
+        <div class="stat-card">
+          <span>Hodnocení na Googlu</span>
+          <strong>5/5</strong>
+        </div>
+        <div class="stat-card">
+          <span>Recenze</span>
+          <strong>2</strong>
+        </div>
+        <div class="stat-card">
+          <span>Adresa</span>
+          <strong>Zlín</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="oslavy">
+      <div class="split">
+        <article class="surface-card">
+          <span class="tag">Oslavy a akce</span>
+          <h2>Den, který si děti zapamatují</h2>
+          <p class="soft-copy" style="margin-top: 22px;">Narozeninové oslavy připravíme včetně programu, občerstvení a zábavy pro hosty. Prostor lze pronajmout také na menší setkání, firemní akci nebo vlastní program.</p>
+        </article>
+        <article class="surface-card">
+          <span class="tag">Co zajišťujeme</span>
+          <ul class="checks">
+            <li><b>Dekorace</b><span>dle tématu oslavy</span></li>
+            <li><b>Program</b><span>zábava pro děti</span></li>
+            <li><b>Hosteska</b><span>pomoc s organizací</span></li>
+            <li><b>Prostředí</b><span>čisté a bezpečné</span></li>
+            <li><b>Pomůcky</b><span>vše potřebné na místě</span></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" id="cenik">
+      <div class="section-head">
+        <h2>Ceník pro hry i oslavy</h2>
+        <p>U oslav a větších akcí se cena domlouvá podle rozsahu, termínu a občerstvení. Termín je dobré řešit s předstihem.</p>
+      </div>
+      <div class="price-board">
+        <div class="price-row">
+          <div>
+            <strong>Narozeninové oslavy</strong>
+            <p>Kompletní organizace párty včetně programu, občerstvení a zábavy.</p>
+          </div>
+          <span class="price">Cena dohodou</span>
+        </div>
+        <div class="price-row">
+          <div>
+            <strong>Pronájem na hodiny</strong>
+            <p>Pro menší oslavy, setkání nebo vlastní program v prostoru herny.</p>
+          </div>
+          <span class="price">1300 Kč / hodina</span>
+        </div>
+        <div class="price-row">
+          <div>
+            <strong>Celodenní pronájem</strong>
+            <p>Pro větší akce, firemní setkání nebo speciální události.</p>
+          </div>
+          <span class="price">Cena dohodou</span>
+        </div>
+        <div class="price-row">
+          <div>
+            <strong>Zajištění cateringu</strong>
+            <p>Občerstvení přizpůsobené věku dětí a typu akce.</p>
+          </div>
+          <span class="price">Cena dohodou</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Atmosféra">
+      <div class="gallery">
+        <div class="photo-tile">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="photo-stack">
+          <div class="photo-tile">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </div>
+          <div class="photo-tile">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="kontakt">
+      <div class="section-head">
+        <h2>Najdete nás ve Zlíně</h2>
+        <p>Jsme na adrese Vavrečkova 7074. Pro rezervaci oslavy nebo dotaz k pronájmu nám zavolejte nebo napište.</p>
+      </div>
+      <div class="contact-grid">
+        <article class="surface-card">
+          <span class="tag">Kontakt</span>
+          <h3>KostkoPark Zlín</h3>
+          <p class="soft-copy" style="margin-top: 18px;">Vavrečkova 7074 760 01, 1 Zlín 1</p>
+          <p class="soft-copy" style="margin-top: 12px;"><a href="tel:+420731418192">731 418 192</a><br><a href="mailto:pekacekk2006@icloud.com">pekacekk2006@icloud.com</a></p>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div><span>Pondělí</span><span>dle domluvy</span></div>
+            <div><span>Úterý</span><span>10:00-18:00</span></div>
+            <div><span>Středa</span><span>10:00-18:00</span></div>
+            <div class="today"><span>Čtvrtek</span><span>10:00-18:00</span></div>
+            <div><span>Pátek</span><span>10:00-18:00</span></div>
+            <div><span>Sobota</span><span>10:00-18:00</span></div>
+            <div><span>Neděle</span><span>10:00-18:00</span></div>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa KostkoPark Zlín"></div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Časté dotazy">
+      <div class="section-head">
+        <h2>Než dorazíte</h2>
+        <p>Krátké odpovědi k návštěvě, oslavám a pronájmu prostoru.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Je prostor vhodný pro menší děti?</summary>
+          <p>Ano, součástí herny je balónkový bazének a zóny přizpůsobené věku dětí.</p>
+        </details>
+        <details>
+          <summary>Můžeme u vás uspořádat narozeniny?</summary>
+          <p>Ano, oslavy připravujeme s programem, dekorací, občerstvením a pomocí s organizací.</p>
+        </details>
+        <details>
+          <summary>Dá se pronajmout celý prostor?</summary>
+          <p>Ano, prostor lze pronajmout na hodiny nebo na celý den podle typu akce.</p>
+        </details>
+        <details>
+          <summary>Máte zázemí pro rodiče?</summary>
+          <p>Ano, rodiče mohou využít kavárnu a pohodlné posezení přímo v herně.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="cta">
+        <h2>Domluvte dětem den plný hraní</h2>
+        <a class="btn btn-outline" href="tel:+420731418192">Zavolat 731 418 192</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>KostkoPark Zlín</strong>
+        <div class="footer-links">
+          <a href="#aktivity">Aktivity</a>
+          <a href="#cenik">Ceník</a>
+          <a href="#kontakt">Kontakt</a>
+        </div>
+      </div>
+      <p class="disclaimer">Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/untzk5p">webflex.cz/delete/untzk5p</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6591897, 49.224430899999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#FFC21A' })
+      .setLngLat([17.6591897, 49.224430899999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
