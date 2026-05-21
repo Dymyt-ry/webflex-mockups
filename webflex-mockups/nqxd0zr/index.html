@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPACE CAFÉ & BAR | Kavárna a bar v centru Ústí nad Labem</title>
+  <meta name="description" content="SPACE CAFÉ & BAR ve Velké hradební v Ústí nad Labem. Káva, nápoje, drinky, sladké a slané snacky, věrnostní karta a pronájem prostoru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --soft: #f0eeeb;
+      --ink: #211713;
+      --muted: #685d58;
+      --line: rgba(33, 23, 19, .1);
+      --line-strong: rgba(33, 23, 19, .18);
+      --accent: #A02000;
+      --accent-deep: #6f1700;
+      --accent-soft: #f3ded8;
+      --shadow: 0 28px 90px rgba(48, 32, 24, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 36px));
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(160, 32, 0, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(160, 32, 0, .018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(32px, 4.4vw, 58px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 21px;
+      line-height: 1.12;
+      font-weight: 800;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      margin-bottom: 18px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+    .btn.secondary {
+      color: var(--ink);
+      border-color: currentColor;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(160, 32, 0, .07); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 251, 250, .88);
+      backdrop-filter: blur(20px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo { display: inline-flex; align-items: center; min-width: 0; }
+    .logo img {
+      width: auto;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: rgba(33, 23, 19, .72);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(430px, .82fr);
+      gap: clamp(36px, 6vw, 88px);
+      align-items: center;
+      padding: 58px 0 78px;
+    }
+    .hero-copy { max-width: 720px; }
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      color: #4c403b;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .meta-chip {
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .72);
+      box-shadow: 0 18px 60px rgba(48, 32, 24, .05);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img,
+    .gallery-item img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.03);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(33, 23, 19, .52));
+      pointer-events: none;
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 470px);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list {
+      overflow: hidden;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, .8fr) minmax(260px, 1fr);
+      gap: 28px;
+      align-items: start;
+      padding: 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 650;
+      padding-top: 5px;
+    }
+    .offer-row p { max-width: 40rem; }
+
+    .trust-band {
+      width: 100%;
+      padding: 80px 0;
+      background: #211713;
+      color: #fff8f5;
+    }
+    .trust-band h2,
+    .trust-band h3 { color: #fff8f5; }
+    .trust-band p { color: rgba(255, 248, 245, .72); }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 44px;
+      align-items: stretch;
+    }
+    .stat-panel {
+      display: grid;
+      align-content: space-between;
+      min-height: 360px;
+      padding: 34px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.08);
+      box-shadow: 0 30px 100px rgba(0,0,0,.22);
+    }
+    .rating {
+      font-family: var(--font-mono);
+      font-size: clamp(56px, 9vw, 116px);
+      line-height: .9;
+      color: #fff;
+    }
+    .principles {
+      display: grid;
+      gap: 12px;
+    }
+    .principle {
+      padding: 22px 24px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.075);
+    }
+    .principle strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .86fr) minmax(0, 1fr);
+      gap: clamp(34px, 5vw, 70px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .rent-card {
+      padding: clamp(28px, 4vw, 46px);
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .rent-card ul {
+      display: grid;
+      gap: 14px;
+      margin: 26px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .rent-card li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      color: #4c403b;
+    }
+    .rent-card li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.05fr .75fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      position: relative;
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .gallery-item:nth-child(2) { min-height: 390px; }
+    .gallery-label {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.82);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .75fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: var(--accent); }
+    .hours {
+      width: 100%;
+      margin-top: 24px;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours td:last-child {
+      text-align: right;
+      color: var(--accent-deep);
+      font-weight: 650;
+    }
+    .map-wrap {
+      min-height: 420px;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+    }
+    #map { height: 420px; }
+
+    .final-cta {
+      width: var(--wrap);
+      margin: 0 auto 34px;
+      padding: clamp(34px, 5vw, 58px);
+      border-radius: 34px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 34px 100px rgba(160, 32, 0, .2);
+    }
+    .final-cta h2 { color: #fff; }
+    .final-cta p { color: rgba(255,255,255,.82); }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta .btn.primary {
+      background: #fff;
+      color: var(--accent-deep);
+      border-color: #fff;
+    }
+    .final-cta .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.55);
+    }
+    .final-cta .btn.secondary:hover { background: rgba(255,255,255,.12); }
+
+    .site-footer {
+      padding: 34px 0 46px;
+      color: rgba(33, 23, 19, .58);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .trust-grid,
+      .split,
+      .contact-grid,
+      .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-photo { min-width: 0; }
+      .offer-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item,
+      .gallery-item:nth-child(2) { min-height: 290px; }
+      .final-grid .hero-actions { margin-top: 0; }
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 16px; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { gap: 30px; }
+      section { padding: 62px 0; }
+      .hero-actions,
+      .final-grid .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .photo-caption { flex-direction: column; gap: 5px; }
+      .contact-card,
+      .hours-card,
+      .stat-panel,
+      .rent-card { padding: 24px; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="SPACE CAFÉ & BAR">
+        <img src="https://space.icuk.cz/media/2020/05/hradebni_icuk_space_logo_1.2.png" alt="SPACE CAFÉ & BAR">
+      </a>
+      <div class="nav-links">
+        <a href="#sortiment">Sortiment</a>
+        <a href="#prostor">Pronájem</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420606474036">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow">Velká hradební 2800/54 · Ústí nad Labem</div>
+        <h1 id="hero-title">Káva pro každý den</h1>
+        <p class="lead">SPACE CAFÉ & BAR najdete přímo v centru města v budově ICUK SPACE Hradební. Přijďte si posedět, popracovat, popovídat si nebo si vzít šálek s sebou.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#kontakt">Kde nás najdete</a>
+          <a class="btn secondary" href="mailto:kavarna@icuk.cz">Napsat e-mail</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <span class="meta-chip">Po-pá 08:00-16:00</span>
+          <span class="meta-chip">Hodnocení 4,7 / 21 recenzí</span>
+          <span class="meta-chip">7. káva zdarma</span>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <figcaption class="photo-caption">
+          <span>SPACE CAFÉ & BAR</span>
+          <span>Káva · bar · snacky</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="sortiment" class="wrap" aria-labelledby="sortiment-title">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Náš sortiment</div>
+          <h2 id="sortiment-title">Do hrníčku, kelímku i tašky.</h2>
+        </div>
+        <p>Skvělá káva na stůl i s sebou, balená zrnková káva, nealko a alko nápoje, míchané drinky a k tomu sladké i slané snacky.</p>
+      </div>
+      <div class="offer-list">
+        <article class="offer-row">
+          <span class="num">01</span>
+          <h3>Káva na místě i s sebou</h3>
+          <p>Espresso pauza, šálek ke schůzce nebo kelímek do ruky, když máte den v pohybu.</p>
+        </article>
+        <article class="offer-row">
+          <span class="num">02</span>
+          <h3>Nápoje a míchané drinky</h3>
+          <p>Nealko, alko, míchané drinky a něco ostřejšího pro odpolední setkání i menší večírek.</p>
+        </article>
+        <article class="offer-row">
+          <span class="num">03</span>
+          <h3>Sladké a slané snacky</h3>
+          <p>Na chuť během práce, po cestě městem nebo k posezení s kolegy a přáteli.</p>
+        </article>
+        <article class="offer-row">
+          <span class="num">04</span>
+          <h3>Balená zrnková káva</h3>
+          <p>Oblíbenou kávu si můžete odnést i domů. S věrnostní kartou sbíráte razítka a sedmá káva je zdarma.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="trust-band" aria-labelledby="duvod-title">
+      <div class="wrap trust-grid">
+        <div class="stat-panel">
+          <div>
+            <div class="eyebrow">Hodnocení hostů</div>
+            <div class="rating">4,7</div>
+          </div>
+          <p>Průměr z 21 veřejných recenzí. Místo pro rychlou kávu, klidné posezení i setkání v centru Ústí nad Labem.</p>
+        </div>
+        <div>
+          <div class="eyebrow">Sociální podnikání</div>
+          <h2 id="duvod-title">Kavárna s přesahem.</h2>
+          <div class="principles">
+            <div class="principle">
+              <strong>Sociální prospěch</strong>
+              <p>Podíl zaměstnanců ze znevýhodněných skupin je u kavárny uváděn jako 50 %.</p>
+            </div>
+            <div class="principle">
+              <strong>Ekonomický prospěch</strong>
+              <p>51 % případného zisku se vrací do rozvoje kavárny a dalšího růstu týmu.</p>
+            </div>
+            <div class="principle">
+              <strong>Místní prospěch</strong>
+              <p>Kavárna zaměstnává lidi z Ústeckého kraje a spolupracuje s místními dodavateli.</p>
+            </div>
+            <div class="principle">
+              <strong>Šetrný provoz</strong>
+              <p>V provozu se třídí odpad, používají recyklovatelné kelímky a omezuje spotřeba igelitových obalů.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prostor" class="wrap split" aria-labelledby="prostor-title">
+      <div class="split-photo">
+        <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+      </div>
+      <div class="rent-card">
+        <div class="eyebrow">Pronájem prostoru</div>
+        <h2 id="prostor-title">Uzavřená společnost ve SPACE.</h2>
+        <p class="lead">Hledáte příjemný prostor pro firemní akci, večírek nebo společné sledování oblíbeného zápasu? Ozvěte se přímo kavárně.</p>
+        <ul>
+          <li>Firemní setkání a menší týmové akce.</li>
+          <li>Večírek se zajištěným pitím a drobným občerstvením.</li>
+          <li>Samostatný vchod z přilehlého parkoviště i průchod přes Work Space.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="atmosfera-title">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Atmosféra</div>
+          <h2 id="atmosfera-title">Místo na práci i povídání.</h2>
+        </div>
+        <p>Rychlá Wi-Fi je připravená, ale nejlépe tu funguje setkání u kávy, drinku a rozhovoru.</p>
+      </div>
+      <div class="gallery-strip">
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          <figcaption class="gallery-label">světlo</figcaption>
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <figcaption class="gallery-label">bar</figcaption>
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="gallery-label">posezení</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap" aria-labelledby="kontakt-title">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Kontakt</div>
+          <h2 id="kontakt-title">V centru města.</h2>
+        </div>
+        <p>Najdete nás v budově ICUK SPACE Hradební. Vchod je přes Work Space nebo samostatně z přilehlého parkoviště.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h3>SPACE CAFÉ & BAR</h3>
+          <div class="contact-lines">
+            <span>Velká hradební 2800/54, 400 01 Ústí nad Labem-město</span>
+            <a href="tel:+420606474036">+420 606 474 036</a>
+            <a href="mailto:kavarna@icuk.cz">kavarna@icuk.cz</a>
+          </div>
+        </div>
+        <div class="hours-card">
+          <h3>Otevírací doba</h3>
+          <table class="hours" aria-label="Otevírací doba">
+            <tr><td>Pondělí-pátek</td><td>08:00-16:00</td></tr>
+            <tr><td>Víkendy</td><td>zavřeno</td></tr>
+            <tr><td>Svátky</td><td>zavřeno</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="map-wrap" style="margin-top: 28px;">
+        <div id="map" aria-label="Mapa polohy SPACE CAFÉ & BAR"></div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="cta-title">
+      <div class="final-grid">
+        <div>
+          <div class="eyebrow" style="color: rgba(255,255,255,.75);">Káva, drink nebo prostor</div>
+          <h2 id="cta-title">Zastavte se ve SPACE.</h2>
+          <p class="lead">Na špatný den? Káva. Na dobrý den? Káva. Na inspiraci? Taky káva.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420606474036">Zavolat</a>
+          <a class="btn secondary" href="mailto:kavarna@icuk.cz">Rezervace prostoru</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>SPACE CAFÉ & BAR</strong><br>
+        <span>Velká hradební 2800/54 · Ústí nad Labem</span>
+      </div>
+      <p class="disclaimer">Tuto prezentační stránku připravila služba Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/nqxd0zr">webflex.cz/delete/nqxd0zr</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0404793, 50.6614692],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A02000' })
+      .setLngLat([14.0404793, 50.6614692])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
