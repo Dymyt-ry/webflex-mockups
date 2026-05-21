@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Heiwa kafé | Japonská kavárna v Ostravě</title>
+  <meta name="description" content="Heiwa kafé v Moravské Ostravě. Japonské čaje, káva, wagashi, salátky, zákusky, pracovní klid a rezervace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f3f1ee;
+      --ink: #200000;
+      --muted: #6f625f;
+      --faint: #9a8f8b;
+      --line: rgba(32, 0, 0, .10);
+      --line-strong: rgba(32, 0, 0, .18);
+      --accent: #200000;
+      --accent-soft: #eadfda;
+      --photo-shadow: 0 28px 90px rgba(32, 0, 0, .09);
+      --soft-shadow: 0 26px 80px rgba(32, 0, 0, .075);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100% - 32px));
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 40px;
+      --s6: 64px;
+      --s7: 96px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,0,0,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,0,0,.022) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 56px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.1; }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: #3a0808; border-color: #3a0808; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: rgba(32,0,0,.055); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,250,.86);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo { display: inline-flex; align-items: center; }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: #625453;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 170ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero { padding: clamp(56px, 8vw, 104px) 0 var(--s7); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .8fr);
+      gap: clamp(40px, 6vw, 88px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: #564947;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 18px 60px rgba(32,0,0,.06);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--photo-shadow);
+    }
+    .hero-photo img, .gallery-card img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.88);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 520px);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: var(--s6);
+    }
+    .section-head p { font-size: 19px; }
+
+    .menu-list {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 170px 1fr minmax(90px, auto);
+      gap: var(--s4);
+      align-items: baseline;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-kicker, .price {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .menu-title { color: var(--ink); font-weight: 800; font-size: 21px; }
+    .menu-note { margin-top: 4px; color: var(--muted); }
+    .price { justify-self: end; color: var(--ink); white-space: nowrap; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: var(--s3);
+    }
+    .stat {
+      min-height: 168px;
+      padding: var(--s5);
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--soft-shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4.3vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(0, 1fr);
+      gap: clamp(34px, 6vw, 82px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--photo-shadow);
+      background: var(--surface-soft);
+    }
+    .feature-list {
+      margin-top: var(--s5);
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line-strong);
+    }
+    .feature {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: var(--s3);
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature b {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .feature strong { display: block; color: var(--ink); font-size: 18px; margin-bottom: 3px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 260px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--soft-shadow);
+    }
+    .gallery-card.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .8fr) minmax(0, 1fr);
+      gap: var(--s4);
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 28px;
+      background: var(--surface);
+      padding: var(--s5);
+      box-shadow: var(--soft-shadow);
+    }
+    .hours {
+      margin-top: var(--s4);
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-links { display: grid; gap: 12px; margin-top: var(--s5); font-weight: 800; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--soft-shadow);
+      background: var(--surface-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .qa {
+      padding: var(--s5);
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--soft-shadow);
+    }
+    .qa p { margin-top: 12px; }
+
+    .final {
+      padding: var(--s7) 0;
+      background: var(--accent);
+      color: #fff;
+    }
+    .final h2, .final p { color: #fff; }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final .btn.primary { background: #fff; color: var(--accent); border-color: #fff; }
+    .final .btn.secondary { border-color: rgba(255,255,255,.55); color: #fff; }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.1); }
+
+    footer {
+      padding: var(--s5) 0;
+      background: #130000;
+      color: rgba(255,255,255,.76);
+      font-size: 13px;
+    }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .stats, .faq, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card.tall { min-height: 260px; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 16px; }
+      section { padding: 72px 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 6px; }
+      .price { justify-self: start; }
+      .contact-card, .stat, .qa { padding: 28px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Heiwa kafé">
+        <img src="https://heiwa.japanova.cz/wp-content/uploads/2025/09/logo-dark.svg" alt="Heiwa kafé">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Prostředí</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420603396936">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Moravská Ostrava · japonská kavárna</div>
+          <h1>Kousek Japonska v Ostravě</h1>
+          <p class="hero-lead">Čaje z vyhlášených plantáží, jemně pražená káva, wagashi a klidné místo pro práci v Heiwa kafé na Čs. legií.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420603396936">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#menu">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta">
+            <span class="pill">Po-Pá · 14:00-20:00</span>
+            <span class="pill">4,6 · 51 hodnocení</span>
+            <span class="pill">WiFi zdarma</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Interiér kavárny">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-label">Čaj · káva · wagashi</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2>To, co jinde nemají.</h2>
+          </div>
+          <p>Každý den se mění nabídka salátků a zákusků. Vedle čaje a kávy najdete japonské pochutiny z originálních surovin.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <div class="menu-kicker">Salátky</div>
+            <div>
+              <div class="menu-title">Harusame, Sunomono, Tako Su Namasu</div>
+              <p class="menu-note">Lehké japonské salátky podle denní nabídky.</p>
+            </div>
+            <div class="price">55 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Tsukemono</div>
+            <div>
+              <div class="menu-title">Nakládaná zelenina</div>
+              <p class="menu-note">Daikon, lilek, okurka, mrkev a další druhy.</p>
+            </div>
+            <div class="price">45 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Wagashi</div>
+            <div>
+              <div class="menu-title">Nerikiri, Dango, Daifuku</div>
+              <p class="menu-note">Japonské cukrovinky k čaji nebo kávě podle denní nabídky.</p>
+            </div>
+            <div class="price">65 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-kicker">Zákusky</div>
+            <div>
+              <div class="menu-title">Cheesecake, chiffon cake, mousse dortík</div>
+              <p class="menu-note">Japonské zákusky připravované ke každodennímu posezení.</p>
+            </div>
+            <div class="price">60 Kč</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap stats">
+        <div class="stat">
+          <strong>14:00</strong>
+          <span>Otevíráme vždy ve 14:00.</span>
+        </div>
+        <div class="stat">
+          <strong>4,6</strong>
+          <span>Hodnocení od návštěvníků.</span>
+        </div>
+        <div class="stat">
+          <strong>51</strong>
+          <span>Veřejných hodnocení kavárny.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="eyebrow">Rituál a klid</div>
+          <h2>Čaj vyžaduje přesnost.</h2>
+          <p class="hero-lead">V Heiwa kafé se dodržují tradiční postupy při přípravě čajů a kávy. Čaje putují přímo z Japonska, káva se čerstvě praží a prostor zůstává otevřený i pro ty, kdo v kavárně pracují.</p>
+          <div class="feature-list">
+            <div class="feature">
+              <b>01</b>
+              <div><strong>Japonské čaje</strong><p>Vybrané zelené, černé, bílé i žluté čaje připravované delikátním způsobem.</p></div>
+            </div>
+            <div class="feature">
+              <b>02</b>
+              <div><strong>Káva po japonsku</strong><p>Jemně pražená 100% Arabica s důrazem na čistou chuť.</p></div>
+            </div>
+            <div class="feature">
+              <b>03</b>
+              <div><strong>Pracovní prostor</strong><p>Klid pro práci, WiFi zdarma a prostředí nakloněné kavárenským nomádům.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Měkké světlo, tichý stůl.</h2>
+          </div>
+          <p>Přijďte na šálek čaje, kávu, Yuzu ALE nebo sladkost k odpolednímu posezení.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-card tall"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></div>
+          <div class="gallery-card"><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></div>
+          <div class="gallery-card tall"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté otázky</div>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p>Praktické informace pro návštěvu kavárny v odpoledních hodinách.</p>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Máte otevřeno o víkendu?</h3>
+            <p>Uvedená provozní doba je od pondělí do pátku 14:00-20:00.</p>
+          </article>
+          <article class="qa">
+            <h3>Dá se u vás pracovat?</h3>
+            <p>Ano. Kavárna počítá s lidmi, kteří pracují v klidném prostředí, a WiFi je zdarma.</p>
+          </article>
+          <article class="qa">
+            <h3>Je nabídka každý den stejná?</h3>
+            <p>Nabídka salátků a zákusků se každý den mění podle aktuální přípravy.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Čs. legií 7</h2>
+          <p class="hero-lead">3058, Čs. legií 7, 702 00 Moravská Ostrava a Přívoz</p>
+          <div class="hours" aria-label="Provozní doba">
+            <div><span>Pondělí</span><strong>14:00-20:00</strong></div>
+            <div><span>Úterý</span><strong>14:00-20:00</strong></div>
+            <div><span>Středa</span><strong>14:00-20:00</strong></div>
+            <div><span>Čtvrtek</span><strong>14:00-20:00</strong></div>
+            <div><span>Pátek</span><strong>14:00-20:00</strong></div>
+          </div>
+          <div class="contact-links">
+            <a href="tel:+420603396936">+420 603 396 936</a>
+            <a href="mailto:heiwa@japanova.cz">heiwa@japanova.cz</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Heiwa kafé"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <div class="eyebrow" style="color:#fff;">Rezervace</div>
+          <h2>Odpoledne s čajem?</h2>
+          <p class="hero-lead">Zavolejte a domluvte si místo v Heiwa kafé.</p>
+        </div>
+        <div class="hero-actions" style="margin-top:0;">
+          <a class="btn primary" href="tel:+420603396936">Zavolat</a>
+          <a class="btn secondary" href="mailto:heiwa@japanova.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Heiwa kafé · Čs. legií 7 · Moravská Ostrava</span>
+      <span>Tuto prezentační stránku připravil Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/zrdfxpa">https://webflex.cz/delete/zrdfxpa</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2893269, 49.8366313],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#200000' })
+      .setLngLat([18.2893269, 49.8366313])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
