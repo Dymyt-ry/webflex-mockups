@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SKELET KAFE | Kavárna a multifunkční prostor v Ostravě</title>
+  <meta name="description" content="SKELET KAFE v centru Ostravy: výběrová káva, coworking bez členství, schůzky, kulturní a firemní akce až pro 100 osob.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101010;
+      --paper: #171717;
+      --panel: #f4f1ea;
+      --ink: #f8f4e8;
+      --muted: rgba(248, 244, 232, .72);
+      --line: rgba(248, 244, 232, .18);
+      --dark-line: rgba(16, 16, 16, .16);
+      --accent: #F2D13D;
+      --accent-ink: #171200;
+      --font-display: "Archivo Black", "Inter Tight", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      line-height: 1.45;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .045;
+      mix-blend-mode: screen;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .hair { border-top: 1px solid var(--line); }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: -60px;
+      z-index: 20;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 900;
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16,16,16,.9);
+      backdrop-filter: blur(16px);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 150px;
+    }
+    .brand img {
+      max-height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+    .brand span {
+      font-family: var(--font-display);
+      font-size: 14px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .links a {
+      padding: 8px 0;
+      color: var(--muted);
+      transition: color .18s var(--ease);
+    }
+    .links a:hover { color: var(--ink); }
+    .links a:focus-visible,
+    .btn:focus-visible,
+    .service-row:focus-visible,
+    .gallery a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.primary:hover { background: #ffe36a; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 56px 0 64px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .kicker::before {
+      content: "";
+      width: 38px;
+      height: 2px;
+      background: var(--accent);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 23px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #0b0b0b;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.1);
+      opacity: .88;
+    }
+    .stamp {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      max-width: calc(100% - 36px);
+      padding: 10px 12px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+      margin-bottom: 38px;
+    }
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(58px, 9vw, 122px);
+      line-height: .8;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(248,244,232,.32);
+      overflow-wrap: anywhere;
+    }
+    .section-head h2 {
+      max-width: 920px;
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: .95;
+      overflow-wrap: anywhere;
+    }
+    .section-head p {
+      max-width: 670px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .services { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .service-list { border-top: 1px solid var(--line); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(260px, .55fr);
+      gap: 28px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+      transition: color .18s var(--ease), transform .18s var(--ease);
+    }
+    .service-row:hover { transform: translateX(4px); color: var(--accent); }
+    .service-row:active { transform: translateX(2px); }
+    .service-row .code {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .service-row h3 {
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .service-row p {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .trust {
+      background: var(--panel);
+      color: #151515;
+    }
+    .trust .section-head p { color: rgba(21,21,21,.72); }
+    .trust .num {
+      -webkit-text-stroke-color: rgba(21,21,21,.28);
+    }
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--dark-line);
+    }
+    .stat {
+      min-height: 180px;
+      padding: 24px;
+      border-right: 1px solid var(--dark-line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: .85;
+      overflow-wrap: anywhere;
+    }
+    .stat span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: rgba(21,21,21,.62);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 48px;
+      align-items: stretch;
+    }
+    .split-copy {
+      border: 1px solid var(--line);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 440px;
+    }
+    .split-copy h2 {
+      font-size: clamp(32px, 4.4vw, 64px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    .split-copy p {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .specs {
+      margin-top: 34px;
+      border-top: 1px solid var(--line);
+    }
+    .specs div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.25) contrast(1.05);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery a {
+      position: relative;
+      min-height: 290px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      transition: transform .2s var(--ease), border-color .2s var(--ease);
+    }
+    .gallery a:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .gallery a:active { transform: translateY(1px); }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.7);
+      transition: transform .28s var(--ease), filter .28s var(--ease);
+    }
+    .gallery a:hover img { transform: scale(1.035); filter: grayscale(.1); }
+    .gallery span {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      padding: 8px 10px;
+      background: rgba(16,16,16,.82);
+      border: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .contact {
+      background: var(--panel);
+      color: #151515;
+      padding-bottom: 0;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .75fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--dark-line);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 420px;
+    }
+    .contact-card h2 {
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    .contact-lines {
+      margin-top: 28px;
+      display: grid;
+      gap: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .contact-lines a,
+    .contact-lines span {
+      border-top: 1px solid var(--dark-line);
+      padding-top: 12px;
+    }
+    .contact-lines a {
+      transition: color .18s var(--ease);
+    }
+    .contact-lines a:hover { color: #6b5700; }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--dark-line);
+    }
+
+    .final {
+      padding: 64px 0;
+      background: #151515;
+      color: var(--ink);
+      border-top: 1px solid var(--line);
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final h2 {
+      font-size: clamp(34px, 5.5vw, 76px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: rgba(248,244,232,.62);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid,
+      .split,
+      .contact-grid,
+      .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-photo { min-width: 0; }
+      .section-head {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .num { font-size: 58px; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .stat-strip,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .stat {
+        border-right: 0;
+        border-bottom: 1px solid var(--dark-line);
+      }
+      .stat:last-child { border-bottom: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      section { padding: 64px 0; }
+      .nav { min-height: 68px; }
+      .hero { padding-top: 34px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .split-copy,
+      .contact-card { padding: 22px; }
+      .gallery a { min-height: 230px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="SKELET KAFE domů">
+        <img src="https://static.wixstatic.com/media/45b3b6_26a8ad49b5474998b3f3127dfff42b91~mv2.png/v1/fill/w_52,h_35,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/skelet%20logo.png" alt="SKELET KAFE">
+        <span>SKELET KAFE</span>
+      </a>
+      <div class="links">
+        <a href="#coworking">Coworking</a>
+        <a href="#akce">Akce</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420774539559">Rezervovat stůl</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Ostrava · 28. října 3388</div>
+          <h1 id="hero-title">Káva, práce, akce</h1>
+          <p class="lead">Kavárna a multifunkční prostor v Moravské Ostravě. Přijďte na výběrovou kávu, pracovní schůzku, prezentaci nebo večírek až pro 100 osob.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420774539559">Zavolat +420 774 539 559</a>
+            <a class="btn secondary" href="#kontakt">Najít na mapě</a>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Interiér kavárny">
+          <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+          <figcaption class="stamp">Bez členství · Wi-Fi zdarma</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="services" id="coworking" aria-labelledby="services-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <div>
+            <h2 id="services-title">Prostor pro den v centru</h2>
+            <p>SKELET KAFE spojuje kavárnu, klidné sezení pro práci a zázemí pro setkání. Vstup je bez členství a bez poplatku za místo.</p>
+          </div>
+        </div>
+        <div class="service-list">
+          <a class="service-row" href="tel:+420774539559">
+            <span class="code">KAFE / 01</span>
+            <h3>Výběrová káva</h3>
+            <p>Káva od vídeňské pražírny Julius Meinl, nápoje s sebou, dorty, dezerty, croissanty a sezónní dobroty.</p>
+          </a>
+          <a class="service-row" href="tel:+420774539559">
+            <span class="code">PRÁCE / 02</span>
+            <h3>Stůl pro schůzku</h3>
+            <p>Klidné prostředí pro práci, obchodní schůzku nebo odpočinek u knihy. Telefonická rezervace stolu je zdarma.</p>
+          </a>
+          <a class="service-row" href="mailto:skeletkafe@gmail.com">
+            <span class="code">AKCE / 03</span>
+            <h3>Firemní i soukromé akce</h3>
+            <p>Prostor pro školení, prezentace, kulturní program, stužkovák, oslavu nebo večírek včetně cateringu.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <div>
+            <h2 id="trust-title">Ostrava ví, kam zajít</h2>
+            <p>Adresa u Krajského úřadu, výborná dopravní dostupnost a prostor, který zvládne běžné posezení i větší program.</p>
+          </div>
+        </div>
+        <div class="stat-strip" aria-label="Důležité údaje">
+          <div class="stat">
+            <b>4,6</b>
+            <span>Google hodnocení</span>
+          </div>
+          <div class="stat">
+            <b>280</b>
+            <span>Recenzí na Googlu</span>
+          </div>
+          <div class="stat">
+            <b>100</b>
+            <span>Osob při akci</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce" aria-labelledby="event-title">
+      <div class="wrap split">
+        <div class="split-copy">
+          <div>
+            <div class="kicker">Lounge · catering · technika</div>
+            <h2 id="event-title">Večírek se zázemím</h2>
+            <p>Pro firemní setkání, školení nebo oslavu připravíte v SKELET KAFE občerstvení, zákusky i dorty na míru. K dispozici je ozvučení, osvětlení a projektor.</p>
+          </div>
+          <div class="specs" aria-label="Parametry prostoru">
+            <div><span>Kapacita</span><strong>až 100 osob</strong></div>
+            <div><span>Vstup do coworkingu</span><strong>bez členství</strong></div>
+            <div><span>Internet</span><strong>optika + Wi-Fi</strong></div>
+          </div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="hair" id="atmosfera" aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <div>
+            <h2 id="gallery-title">Káva přes den, lounge večer</h2>
+            <p>Pohodlné posezení, tlumené světlo, barové detaily a dost místa pro rozhovor i soustředění.</p>
+          </div>
+        </div>
+        <div class="gallery">
+          <a href="#kontakt" aria-label="Kontakt pro rezervaci">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <span>Bar</span>
+          </a>
+          <a href="#kontakt" aria-label="Kontakt pro akci">
+            <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+            <span>Sezení</span>
+          </a>
+          <a href="#kontakt" aria-label="Kontakt pro oslavu">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            <span>Lounge</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact" id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div>
+            <div class="kicker" style="color:#6b5700">Kontakt</div>
+            <h2 id="contact-title">Najdete nás v Ostravě</h2>
+            <div class="contact-lines">
+              <span>28. října 3388, 702 00 Ostrava-Moravská Ostrava a Přívoz</span>
+              <a href="tel:+420774539559">+420 774 539 559</a>
+              <a href="mailto:skeletkafe@gmail.com">skeletkafe@gmail.com</a>
+              <a href="https://www.skeletkafe.cz/">skeletkafe.cz</a>
+            </div>
+          </div>
+          <a class="btn primary" href="tel:+420774539559">Rezervovat telefonicky</a>
+        </div>
+        <div id="map" aria-label="Mapa s polohou SKELET KAFE"></div>
+      </div>
+      <div class="final">
+        <div class="wrap final-grid">
+          <h2>Zastavte se na šálek</h2>
+          <a class="btn primary" href="mailto:skeletkafe@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Nezávazná prezentační stránka připravená týmem Webflex pro SKELET KAFE.</span>
+      <a href="https://webflex.cz/delete/q80yd7i">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2731936, 49.830096999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#F2D13D' })
+      .setLngLat([18.2731936, 49.830096999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
