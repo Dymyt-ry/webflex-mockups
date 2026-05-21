@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MobileCoffeeBar | Mobilní káva a catering</title>
+  <meta name="description" content="MobileCoffeeBar ve Zlíně: výběrová káva, sezonní občerstvení, teplé nápoje, panini, hot dogy a mobilní catering na akcích." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101010;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.115);
+      --ink: #f7f3ee;
+      --muted: rgba(247, 243, 238, 0.68);
+      --line: rgba(247, 243, 238, 0.10);
+      --accent: #804020;
+      --accent-bright: #b86539;
+      --coffee: #211610;
+      --shadow: 0 34px 110px rgba(0, 0, 0, 0.34);
+      --soft-shadow: 0 28px 90px rgba(0, 0, 0, 0.22);
+      --radius: 26px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 6%, rgba(128,64,32,0.34), transparent 31rem),
+        radial-gradient(circle at 4% 44%, rgba(255,255,255,0.055), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(16,16,16,0.76);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(20px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 220px;
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 190ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), box-shadow 190ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 42px rgba(0,0,0,0.20); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fffaf5; }
+    .btn-primary:hover { background: #96502a; }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #ffffff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 56px;
+      padding: 68px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-bright);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-bright);
+      box-shadow: 0 0 0 8px rgba(184,101,57,0.16);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.45vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 42px;
+      overflow: hidden;
+      background: var(--coffee);
+      box-shadow: var(--shadow);
+    }
+    .hero-card img, .gallery-img img { width: 100%; height: 100%; object-fit: cover; }
+    .float-panel {
+      position: absolute;
+      right: -18px;
+      bottom: -26px;
+      width: min(330px, 78%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(28, 21, 17, 0.82);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(20px);
+    }
+    .float-panel strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .float-panel span { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(280px, 0.54fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(230px, 0.45fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      transition: transform 190ms var(--ease), background 190ms var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row .num { color: var(--accent-bright); font-family: var(--font-mono); font-weight: 700; }
+    .service-row h3 { font-size: clamp(23px, 2.4vw, 36px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 188px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .stat b {
+      display: block;
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 13px;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+    }
+    .stat span { display: block; margin-top: 14px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.14fr);
+      gap: 44px;
+      align-items: center;
+    }
+    .split-media {
+      aspect-ratio: 16 / 10;
+      border-radius: 38px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .menu-board {
+      display: grid;
+      gap: 10px;
+      padding: 28px;
+      border-radius: 32px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: var(--soft-shadow);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row strong { font-size: 17px; }
+    .menu-row span { color: var(--muted); hyphens: auto; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 236px;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .step b { font-family: var(--font-mono); color: var(--accent-bright); }
+    .step h3 { margin-top: 42px; font-size: 24px; line-height: 1.05; }
+    .step p { margin: 14px 0 0; color: var(--muted); hyphens: auto; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .gallery-img {
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--soft-shadow);
+      background: var(--coffee);
+    }
+    .gallery-img.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 32px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .contact-card h3 { font-size: clamp(28px, 3vw, 42px); }
+    .contact-list {
+      display: grid;
+      gap: 14px;
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .contact-list li {
+      display: grid;
+      grid-template-columns: 110px minmax(0,1fr);
+      gap: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .contact-list b { color: var(--ink); font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
+    #map { height: 420px; border-radius: 32px; overflow: hidden; box-shadow: var(--soft-shadow); }
+
+    .final-cta {
+      padding: 64px;
+      border-radius: 42px;
+      background:
+        radial-gradient(circle at 82% 14%, rgba(255,255,255,0.13), transparent 18rem),
+        linear-gradient(135deg, rgba(128,64,32,0.88), rgba(50,25,14,0.82));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(34px, 4.6vw, 72px); }
+    .final-cta p { max-width: 620px; margin: 18px 0 0; color: rgba(255,255,255,0.76); font-size: 18px; line-height: 1.7; }
+
+    .site-footer {
+      padding: 44px 0 34px;
+      color: rgba(247,243,238,0.58);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .wf-disclaimer { max-width: 760px; }
+    .wf-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero, .split, .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 34px;
+      }
+      .hero { padding-top: 46px; }
+      .hero-card { border-radius: 32px; }
+      .float-panel { right: 14px; bottom: 14px; }
+      .section-head, .final-cta {
+        grid-template-columns: 1fr;
+        padding: 42px 0;
+      }
+      .service-row, .menu-row, .contact-list li { grid-template-columns: 1fr; }
+      .trust, .timeline, .gallery { grid-template-columns: 1fr; }
+      .gallery-img, .gallery-img.tall { min-height: 300px; }
+      .final-cta { padding: 38px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .nav { min-height: 68px; }
+      .brand-logo img { max-height: 38px; max-width: 170px; }
+      .nav .btn { display: none; }
+      section { padding: 64px 0; }
+      .service-row, .stat, .step, .menu-board, .contact-card { padding: 22px; border-radius: 22px; }
+      .float-panel { position: static; width: 100%; margin-top: 12px; }
+      #map { height: 340px; border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="MobileCoffeeBar">
+        <img src="https://9c817a5ebe.cbaul-cdnwnd.com/f244f30fa2c0c7a000cd88c0e2874546/200005098-c0803c0805/stažený soubor (65).jpgd.jpg" alt="MobileCoffeeBar">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kava">Káva</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420777669262">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-label="Úvod">
+      <div>
+        <span class="eyebrow">Zlín · mobilní kávový servis</span>
+        <h1>Káva, která přijede za vámi</h1>
+        <p class="lead">MobileCoffeeBar připravuje výběrovou kávu, sezonní občerstvení a teplé i studené nápoje z mobilního auta a přívěsu pro akce, setkání i běžný provoz.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420777669262">Rezervovat kávový servis</a>
+          <a class="btn btn-outline" href="mailto:mobilecoffeebar@email.cz">Napsat e-mail</a>
+        </div>
+        <div class="hero-note">
+          <span>Restaurant Guru ocenění</span>
+          <span>4,6 / 13 recenzí</span>
+          <span>Nad Vývozem, Zlín</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="float-panel">
+          <strong>V nabídce podle sezóny</strong>
+          <span><em>Káva</em><em>frappé</em></span>
+          <span><em>Panini</em><em>punč</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="nabidka">
+      <div class="section-head">
+        <h2>Co si dáte u baru</h2>
+        <p>Nabídka stojí na výběrové kávě a mění se podle počasí, sezóny a typu akce. Sladké, slané, studené i horké položky drží pohromadě jeden mobilní bar.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Výběrová káva</h3>
+          <p>Ristretto, espresso, macchiato, doppio, lungo, cappuccino, flat white, caffe latte i turecká káva.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Letní občerstvení</h3>
+          <p>Točená zmrzlina, pravé řecké frappé, milkshake, ledová tříšť a alko i nealko míchané nápoje.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Gril a sladká tečka</h3>
+          <p>Panini, hot dogy, XXL párky v rohlíku, lázeňské oplatky, rakvičky se šlehačkou a Honzovy buchty.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <h3>Zimní nápoje</h3>
+          <p>Svařená vína, grogy, punče, bombardino, horká čokoláda se šlehačkou, dětské cappuccino a dětský punč.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="trust">
+        <article class="stat">
+          <b>HODNOCENÍ</b>
+          <strong>4,6</strong>
+          <span>Průměr z 13 veřejných recenzí.</span>
+        </article>
+        <article class="stat">
+          <b>OCENĚNÍ</b>
+          <strong>Guru</strong>
+          <span>MobileCoffeeBar získal ocenění podle recenzí návštěvníků v Restaurant Guru.</span>
+        </article>
+        <article class="stat">
+          <b>FORMÁT</b>
+          <strong>Auto + přívěs</strong>
+          <span>Mobilní auto a nadčasový přívěs vlastní výroby pro cateringové služby.</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap split" id="kava">
+      <div class="split-media">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+      </div>
+      <div class="menu-board">
+        <div class="section-head" style="display:block;margin-bottom:10px;">
+          <h2>Zrna na mlýnku</h2>
+          <p style="margin-top:18px;">Káva je hlavní specializace baru. Zrna se melou denně na dvou mlýncích.</p>
+        </div>
+        <div class="menu-row">
+          <strong>No1 BRCOIN</strong>
+          <span>Směs arabiky z Brazílie a Kolumbie s mokře zpracovanou robustou z Indie. Chuť hořké čokolády, oříšků, karamelu a borůvkových tónů.</span>
+        </div>
+        <div class="menu-row">
+          <strong>ETHIOPIA</strong>
+          <span>100% arabica s citrusovou vůní, květinovým profilem, sladkostí a nádechem melounu. Hodí se pro cappuccino a caffe latte.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Jak bar funguje na akci</h2>
+        <p>Mobilní provoz je připravený pro místa, kde má být kvalitní káva a občerstvení bez pevného zázemí.</p>
+      </div>
+      <div class="timeline">
+        <article class="step">
+          <b>01</b>
+          <h3>Domluva termínu</h3>
+          <p>Zavoláte nebo napíšete e-mail s místem, datem a typem akce.</p>
+        </article>
+        <article class="step">
+          <b>02</b>
+          <h3>Výběr nabídky</h3>
+          <p>Podle sezóny se skládá káva, studené nápoje, teplé nápoje i občerstvení.</p>
+        </article>
+        <article class="step">
+          <b>03</b>
+          <h3>Příjezd baru</h3>
+          <p>Mobilní auto nebo přívěs se postará o profesionální servis na místě.</p>
+        </article>
+        <article class="step">
+          <b>04</b>
+          <h3>Baristická příprava</h3>
+          <p>Kávové nápoje vznikají z čerstvě mletých zrn a profesionálního kávovaru.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Atmosféra u šálku</h2>
+        <p>Teplé světlo, vůně kávy a jednoduchý servis pro návštěvníky, kteří chtějí něco dobrého do ruky i na chvíli u baru.</p>
+      </div>
+      <div class="gallery" aria-label="Fotografie atmosféry">
+        <div class="gallery-img tall">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div class="gallery-img">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="gallery-img tall">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="kontakt">
+      <div class="section-head">
+        <h2>Kde se spojíme</h2>
+        <p>Pro termíny akcí, aktuální nabídku a domluvu mobilního kávového servisu použijte telefon nebo e-mail.</p>
+      </div>
+      <div class="contact-grid">
+        <article class="contact-card">
+          <h3>MobileCoffeeBar</h3>
+          <ul class="contact-list">
+            <li><b>Telefon</b><a href="tel:+420777669262">+420 777 669 262</a></li>
+            <li><b>E-mail</b><a href="mailto:mobilecoffeebar@email.cz">mobilecoffeebar@email.cz</a></li>
+            <li><b>Adresa</b><span>Nad Vývozem, 760 05 Zlín-Zlín 5</span></li>
+            <li><b>Web</b><a href="https://www.mobilecoffeebar.cz/">mobilecoffeebar.cz</a></li>
+          </ul>
+        </article>
+        <div id="map" aria-label="Mapa lokality MobileCoffeeBar"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final-cta">
+        <div>
+          <h2>Domluvte kávu na akci</h2>
+          <p>Stačí poslat termín, místo a představu o nabídce. MobileCoffeeBar se ozve s možnostmi pro váš provoz nebo událost.</p>
+        </div>
+        <a class="btn btn-outline" href="mailto:mobilecoffeebar@email.cz">mobilecoffeebar@email.cz</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-row">
+      <span>MobileCoffeeBar · Nad Vývozem, Zlín</span>
+      <span class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/xfd4kf7">webflex.cz/delete/xfd4kf7</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6720293, 49.234158699999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#804020' })
+      .setLngLat([17.6720293, 49.234158699999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
