@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BANAN&CAFÉ | Dětská herna s kavárnou v Pardubicích</title>
+  <meta name="description" content="BANAN&CAFÉ je dětská herna s kavárnou v centru Pardubic. Herní hrad, tobogány, trampolína, oslavy, poukazy a občerstvení pro rodiče.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #151515;
+      --muted: #66645d;
+      --soft: #efeee9;
+      --accent: #FFC107;
+      --accent-deep: #ba8700;
+      --shadow: 0 28px 90px rgba(20, 20, 18, .08);
+      --shadow-sm: 0 14px 45px rgba(20, 20, 18, .06);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(21,21,21,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,21,21,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; letter-spacing: 0; }
+    h1, h2 { font-family: var(--font-display); text-transform: uppercase; }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 23px; line-height: 1.05; }
+
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.82);
+      border-bottom: 1px solid rgba(21,21,21,.06);
+    }
+    .nav-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: #3d3b35;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color .2s var(--ease), transform .2s var(--ease); }
+    .nav-links a:hover { color: var(--accent-deep); transform: translateY(-1px); }
+    .nav-links a:focus-visible, .btn:focus-visible, .tile:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #17130a; box-shadow: 0 12px 35px rgba(255,193,7,.24); }
+    .btn-primary:hover { background: #ffd247; }
+    .btn-outline { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(21,21,21,.05); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      align-items: center;
+      padding: 56px 0 72px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #514f48;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+      color: #3d3b35;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      padding: 16px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-card img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 22px;
+    }
+    .floating-note {
+      position: absolute;
+      right: 28px;
+      bottom: 28px;
+      max-width: 220px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow-sm);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #2b2924;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 1fr;
+      align-items: stretch;
+      gap: 18px;
+    }
+    .service-card, .soft-panel, .stat, .faq-item {
+      background: var(--surface-strong);
+      border-radius: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .service-card {
+      min-height: 250px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .service-card span, .number {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .82fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .soft-panel { padding: 34px; }
+    .feature-list { display: grid; gap: 0; margin-top: 22px; }
+    .feature-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 20px;
+      padding: 18px 0;
+      border-top: 1px solid rgba(21,21,21,.08);
+    }
+    .feature-row b { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; }
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+    }
+    .photo-strip img {
+      height: 100%;
+      min-height: 360px;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat { padding: 30px; }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .prices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(21,21,21,.08);
+    }
+    .price-line:last-child { border-bottom: 0; }
+    .price-line strong { font-family: var(--font-mono); white-space: nowrap; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .75fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .hours {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(21,21,21,.08);
+    }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-sm); }
+
+    .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { margin-bottom: 10px; }
+
+    .final {
+      padding: 70px 0 92px;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+      padding: 42px;
+      border-radius: 30px;
+      background: #171714;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .final-panel p { color: rgba(255,255,255,.74); }
+    .final-panel .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 28px 0;
+      color: #77736b;
+      font-size: 13px;
+      border-top: 1px solid rgba(21,21,21,.08);
+    }
+    .footer-flex { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .footer-flex a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .prices, .contact-grid, .final-panel { grid-template-columns: 1fr; }
+      .hero-grid { gap: 30px; }
+      .hero-card { order: -1; }
+      .services, .stats, .faq { grid-template-columns: 1fr; }
+      .photo-strip { grid-template-columns: 1fr; }
+      .photo-strip img { min-height: 260px; }
+      .feature-row { grid-template-columns: 1fr; gap: 6px; }
+      section { padding: 62px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="logo" href="#top" aria-label="BANAN&CAFÉ">
+        <img src="https://www.banancafe.cz/template/default/images/banancafe.svg" alt="BANAN&CAFÉ">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#herna">Herna</a>
+        <a href="#oslavy">Oslavy</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420702000846">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow"><span class="dot"></span>Pardubice · dětská herna s kavárnou</div>
+          <h1>Hra pro děti. Káva pro vás.</h1>
+          <p class="lead">BANAN&CAFÉ spojuje velkou dětskou hernu, narozeninové oslavy a kavárnu, kde máte děti na očích a můžete si v klidu odpočinout.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420702000846">Rezervovat oslavu</a>
+            <a class="btn btn-outline" href="#kontakt">Adresa a kontakt</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <div class="floating-note">J. z Poděbrad 2593 · centrum Pardubic</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="herna">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prostor na celé odpoledne</h2>
+          <p>Herní centrum je připravené pro děti od prvních her až po větší výpravy hradem, zatímco kavárna drží rodiče blízko dění.</p>
+        </div>
+        <div class="services">
+          <article class="service-card">
+            <span>01</span>
+            <div><h3>Dětská herna</h3><p>Dětský hrad, prolézací prvky, tobogány, skluzavky, trampolína, odrážedla a dva bazénky s balonky pro děti od 2 do 10 let.</p></div>
+          </article>
+          <article class="service-card">
+            <span>02</span>
+            <div><h3>Kavárna</h3><p>Káva, limonády, Prosecco, sladké i slané občerstvení, wrapy, toasty a pizza k posezení přímo u herny.</p></div>
+          </article>
+          <article class="service-card">
+            <span>03</span>
+            <div><h3>Pro nejmenší</h3><p>Samostatné herničky pro děti do 5 let s dřevěnými prvky, kuchyňkami, ponkem, vláčkovou dráhou a hračkami.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="oslavy">
+      <div class="wrap split">
+        <div class="soft-panel">
+          <div class="eyebrow"><span class="dot"></span>Dětské oslavy</div>
+          <h2>Party bez příprav a úklidu</h2>
+          <p style="margin-top:18px">Narozeniny, svátky i rodinné akce připraví tým BANAN&CAFÉ podle vašich požadavků. Vy si užijete čas s dětmi, prostor a zázemí řeší podnik.</p>
+          <div class="feature-list">
+            <div class="feature-row"><b>Oslavy</b><p>Narozeninová oslava nebo dětská party na míru.</p></div>
+            <div class="feature-row"><b>Poukazy</b><p>Dárkové vouchery v hodnotě 200 Kč a 500 Kč s roční platností.</p></div>
+            <div class="feature-row"><b>Věrnost</b><p>Pro stálé návštěvníky je k dispozici karta s každým desátým vstupem zdarma.</p></div>
+            <div class="feature-row"><b>Pronájem</b><p>Možnost využití prostoru pro zájmové skupiny nebo pronájem celého prostoru.</p></div>
+          </div>
+        </div>
+        <div class="photo-strip">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <article class="stat"><strong>4,4</strong><p>Hodnocení návštěvníků podle údajů v profilu podniku.</p></article>
+          <article class="stat"><strong>415</strong><p>Recenzí od rodičů a hostů, kteří BANAN&CAFÉ navštívili.</p></article>
+          <article class="stat"><strong>2–10</strong><p>Věková skupina pro velký hrad s prolézacími a adrenalinovými prvky.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap prices">
+        <div class="soft-panel">
+          <div class="eyebrow"><span class="dot"></span>Ceník a poukazy</div>
+          <h2>Vstup, káva, radost</h2>
+          <p style="margin-top:18px">Ceník vstupu si ověříte přímo u podniku. Dárkové poukazy jsou dostupné ve dvou jasných hodnotách a dají se využít na vstup i konzumaci.</p>
+        </div>
+        <div class="soft-panel">
+          <div class="price-line"><span>Dárkový poukaz</span><strong>200 Kč</strong></div>
+          <div class="price-line"><span>Dárkový poukaz</span><strong>500 Kč</strong></div>
+          <div class="price-line"><span>Platnost poukazu</span><strong>1 rok</strong></div>
+          <div class="price-line"><span>Každý desátý vstup</span><strong>zdarma</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Otázky před návštěvou</h2>
+          <p>Praktické informace pro rodiče, kteří chtějí dorazit s dětmi, domluvit oslavu nebo využít kavárnu během hraní.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Mohu si přinést vlastní jídlo?</h3><p>V prostoru herny platí omezení konzumace vlastních potravin a nápojů. Kavárna nabízí nápoje i občerstvení.</p></article>
+          <article class="faq-item"><h3>Je herna i pro menší děti?</h3><p>Ano. Pro děti do 5 let jsou připravené menší herničky s dřevěnými interaktivními prvky a hračkami.</p></article>
+          <article class="faq-item"><h3>Pořádáte narozeninové oslavy?</h3><p>Ano. BANAN&CAFÉ připravuje narozeninové oslavy, svátky i další dětské akce na míru.</p></article>
+          <article class="faq-item"><h3>Kde vás najdu?</h3><p>Na adrese J. z Poděbrad 2593, 530 02 Pardubice I-Zelené Předměstí.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="soft-panel">
+          <div class="eyebrow"><span class="dot"></span>Kontakt</div>
+          <h2>Stavte se v Pardubicích</h2>
+          <div class="hours">
+            <div><span>Adresa</span><strong>J. z Poděbrad 2593</strong></div>
+            <div><span>Telefon</span><strong><a href="tel:+420702000846">+420 702 000 846</a></strong></div>
+            <div><span>E-mail</span><strong><a href="mailto:info@banancafe.cz">info@banancafe.cz</a></strong></div>
+            <div><span>Město</span><strong>Pardubice</strong></div>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420702000846">Zavolat do kavárny</a>
+            <a class="btn btn-outline" href="mailto:info@banancafe.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou BANAN&CAFÉ"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <h2>Máte chuť dorazit?</h2>
+          <p style="margin-top:14px">Zavolejte, napište nebo přijďte s dětmi do BANAN&CAFÉ v centru Pardubic.</p>
+        </div>
+        <div class="hero-actions" style="margin-top:0">
+          <a class="btn btn-primary" href="tel:+420702000846">+420 702 000 846</a>
+          <a class="btn btn-outline" href="#kontakt">Zobrazit mapu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-flex">
+      <span>Nezávislá vizualizace veřejné stránky od Webflex. Nejste-li správce podniku, ignorujte prosím tento odkaz.</span>
+      <a href="https://webflex.cz/remove/izdzlty" rel="nofollow">Odstranit vizualizaci</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7784742, 50.0349369],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#FFC107' })
+      .setLngLat([15.7784742, 50.0349369])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
