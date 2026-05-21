@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FRATELLI Ostrava</title>
+  <meta name="description" content="Káva, snídaně, domácí zákusky, zmrzlina a denní menu na Masarykově náměstí v Ostravě.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111214;
+      --bg-2: #181a1d;
+      --fg: #f7f5f0;
+      --muted: rgba(247, 245, 240, .70);
+      --soft: rgba(247, 245, 240, .10);
+      --line: rgba(247, 245, 240, .16);
+      --accent: #2E8797;
+      --accent-2: #51B2F8;
+      --paper: #f7f5f0;
+      --paper-ink: #171717;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .7, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: geometricPrecision;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(17,18,20,.86), rgba(17,18,20,.38) 70%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .nav-inner {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      font-size: 14px;
+      color: rgba(247,245,240,.78);
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #389bac; }
+    .btn-outline {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+      background: rgba(255,255,255,.03);
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,.72); background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 112px 0 var(--s6);
+      isolation: isolate;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(17,18,20,.94) 0%, rgba(17,18,20,.68) 42%, rgba(17,18,20,.20) 100%),
+        linear-gradient(180deg, transparent 70%, var(--bg) 100%);
+      z-index: -1;
+    }
+    .hero-photo {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.08);
+    }
+    .hero-copy {
+      max-width: 680px;
+      display: grid;
+      gap: var(--s4);
+    }
+    .kicker, .mono {
+      font-family: var(--font-mono);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent-2);
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      margin: 0;
+      hyphens: none;
+    }
+    h1 {
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      max-width: 720px;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: 1;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 24px; line-height: 1.1; font-weight: 600; }
+    p { margin: 0; color: var(--muted); }
+    .lead { font-size: clamp(19px, 2vw, 24px); line-height: 1.35; color: rgba(247,245,240,.84); max-width: 620px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s4);
+      color: rgba(247,245,240,.76);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hero-meta span { border-left: 2px solid var(--accent); padding-left: var(--s3); }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .6fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; }
+
+    .menu-list {
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, .42fr);
+      gap: var(--s5);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .menu-row p { margin-top: var(--s2); max-width: 660px; }
+    .tagline {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(247,245,240,.62);
+      text-align: right;
+    }
+
+    .trust-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+      padding: var(--s6) 0;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(23,23,23,.16);
+      align-items: stretch;
+    }
+    .stat {
+      background: var(--paper);
+      padding: var(--s5);
+      min-height: 190px;
+      display: grid;
+      align-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--paper-ink);
+    }
+    .stat span { color: rgba(23,23,23,.66); font-weight: 600; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(380px, .78fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 0;
+      background: var(--bg-2);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .details {
+      display: grid;
+      gap: var(--s4);
+    }
+    .detail {
+      border-top: 1px solid var(--line);
+      padding-top: var(--s4);
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: var(--s3);
+    }
+    .detail b {
+      font-family: var(--font-mono);
+      color: var(--accent-2);
+      font-size: 13px;
+    }
+
+    .hours-wrap {
+      display: grid;
+      grid-template-columns: minmax(320px, .8fr) minmax(420px, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line);
+      padding: var(--s5);
+      display: grid;
+      gap: var(--s4);
+      background: rgba(255,255,255,.035);
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours td {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 0;
+    }
+    .hours td:last-child { text-align: right; color: rgba(247,245,240,.78); }
+    .hours tr.today td { color: #fff; }
+    .hours tr.today td:first-child { color: var(--accent-2); }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      min-height: 300px;
+      background: var(--bg-2);
+    }
+    .gallery figure:first-child { min-height: 560px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.9); }
+    .gallery-stack { display: grid; gap: var(--s3); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .7fr 1fr;
+      gap: var(--s6);
+      align-items: start;
+    }
+    details {
+      border-top: 1px solid var(--line);
+      padding: var(--s4) 0;
+    }
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary {
+      cursor: pointer;
+      list-style: none;
+      font-family: var(--font-display);
+      font-size: 22px;
+      transition: color 180ms var(--ease);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { color: var(--accent-2); }
+    details p { margin-top: var(--s3); max-width: 760px; }
+
+    .final {
+      padding: var(--s8) 0;
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .final .shell {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+    .final p { color: rgba(23,23,23,.68); font-size: 20px; margin-top: var(--s3); }
+    .final .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--paper-ink);
+      background: transparent;
+    }
+
+    footer {
+      padding: var(--s5) 0;
+      color: rgba(247,245,240,.56);
+      font-size: 13px;
+    }
+    footer .shell {
+      display: grid;
+      gap: var(--s3);
+    }
+    .disclaimer-block {
+      border-top: 1px solid var(--line);
+      padding-top: var(--s4);
+      color: rgba(247,245,240,.50);
+    }
+    .disclaimer-block a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero { min-height: 760px; }
+      .section-head, .menu-row, .split, .hours-wrap, .gallery, .faq, .final .shell {
+        grid-template-columns: 1fr;
+      }
+      .tagline { text-align: left; }
+      .stats { grid-template-columns: 1fr; }
+      .gallery figure:first-child, .gallery figure { min-height: 320px; }
+      section { padding: var(--s6) 0; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      .nav-inner { height: 70px; }
+      .logo img { max-height: 34px; }
+      .btn { width: 100%; }
+      .hero-actions { align-items: stretch; }
+      .contact-card, .stat { padding: var(--s4); }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+      h2 { font-size: clamp(32px, 12vw, 48px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav" aria-label="Hlavní navigace">
+    <div class="shell nav-inner">
+      <a class="logo" href="#top" aria-label="FRATELLI Ostrava">
+        <img src="https://fratelliostrava.cz/wp-content/uploads/2022/09/2.png" alt="FRATELLI Ostrava">
+      </a>
+      <nav class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#zahradka">Zahrádka</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420596273136">Rezervovat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      </div>
+      <div class="shell">
+        <div class="hero-copy">
+          <div class="kicker">Masarykovo náměstí 15 · Ostrava</div>
+          <h1 id="hero-title">Káva, menu, večer.</h1>
+          <p class="lead">Usaďte se uvnitř nebo na prostorné zahrádce s výhledem na Masarykovo náměstí. Připravujeme kávu, domácí zákusky, zmrzlinu, snídaně a denní menu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420596273136">Zavolat +420 596 273 136</a>
+            <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta">
+            <span>Kuchyně po-ne 8:00-20:00</span>
+            <span>Hodnocení 4,2 z 429 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="shell" aria-labelledby="menu-title">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Stálá nabídka</div>
+          <h2 id="menu-title">Od snídaně po denní menu</h2>
+        </div>
+        <p>FRATELLI je místo pro ranní šálek, rychlý oběd i klidné posezení po práci. Nabídka stojí na kavárenské klasice a jídlech, kvůli kterým se vyplatí zůstat déle.</p>
+      </div>
+      <div class="menu-list">
+        <article class="menu-row">
+          <div>
+            <h3>Kvalitně připravená káva</h3>
+            <p>Espresso, cappuccino i další kávové nápoje pro zastávku v centru Ostravy.</p>
+          </div>
+          <div class="tagline">každý den od rána</div>
+        </article>
+        <article class="menu-row">
+          <div>
+            <h3>Snídaně a denní menu</h3>
+            <p>Ráno začíná snídaní, přes oběd pokračuje denním menu a kuchyně vaří každý den do 20:00.</p>
+          </div>
+          <div class="tagline">kuchyně 8:00-20:00</div>
+        </article>
+        <article class="menu-row">
+          <div>
+            <h3>Domácí zákusky a zmrzlina</h3>
+            <p>Sladká část nabídky pro odpolední posezení, kávu po obědě i návštěvu s dětmi.</p>
+          </div>
+          <div class="tagline">k zákusku šálek kávy</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="trust-band" aria-labelledby="trust-title">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <div class="mono">Důvěra hostů</div>
+            <h2 id="trust-title">Známá adresa na náměstí</h2>
+          </div>
+          <p style="color: rgba(23,23,23,.68)">Restauraci najdete v OC LASO přímo na Masarykově náměstí v Moravské Ostravě.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4,2</strong><span>hodnocení hostů</span></div>
+          <div class="stat"><strong>429</strong><span>recenzí</span></div>
+          <div class="stat"><strong>7</strong><span>dní v týdnu otevřeno</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="zahradka" class="shell">
+      <div class="split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="details">
+          <div class="kicker">Uvnitř i venku</div>
+          <h2>Zahrádka s výhledem</h2>
+          <p class="lead">Když je hezky, posaďte se na prostornou zahrádku směrem k Masarykovu náměstí. Uvnitř zůstává klidné zázemí pro snídani, oběd i večerní sklenku.</p>
+          <div class="detail">
+            <b>01</b>
+            <div><h3>Centrum Ostravy</h3><p>Adresa Masarykovo nám. 15 je praktická pro schůzku, oběd během dne i večerní zastávku.</p></div>
+          </div>
+          <div class="detail">
+            <b>02</b>
+            <div><h3>Vítáme i psy</h3><p>Na posezení můžete dorazit i se svým čtyřnohým doprovodem.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" aria-label="Atmosféra">
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+        <div class="gallery-stack">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="shell" aria-labelledby="contact-title">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Kontakt</div>
+          <h2 id="contact-title">Rezervace a otevírací doba</h2>
+        </div>
+        <p>Zavolejte pro rezervaci, domluvte stůl na zahrádce nebo si ověřte denní menu.</p>
+      </div>
+      <div class="hours-wrap">
+        <div class="contact-card">
+          <div>
+            <h3>FRATELLI Ostrava</h3>
+            <p>OC LASO, Masarykovo náměstí 15<br>702 00 Moravská Ostrava a Přívoz</p>
+          </div>
+          <div>
+            <p><a href="tel:+420596273136">+420 596 273 136</a></p>
+            <p><a href="mailto:fratelli.ostrava@gmail.com">fratelli.ostrava@gmail.com</a></p>
+          </div>
+          <table class="hours" aria-label="Otevírací doba">
+            <tbody>
+              <tr><td>Pondělí</td><td>8:00-22:00</td></tr>
+              <tr><td>Úterý</td><td>8:00-22:00</td></tr>
+              <tr><td>Středa</td><td>8:00-22:00</td></tr>
+              <tr class="today"><td>Čtvrtek</td><td>8:00-22:00</td></tr>
+              <tr><td>Pátek</td><td>8:00-23:00</td></tr>
+              <tr><td>Sobota</td><td>9:00-23:00</td></tr>
+              <tr><td>Neděle</td><td>9:00-21:30</td></tr>
+            </tbody>
+          </table>
+          <p class="mono">Kuchyně po-ne 8:00-20:00</p>
+        </div>
+        <div id="map" aria-label="Mapa s polohou FRATELLI Ostrava"></div>
+      </div>
+    </section>
+
+    <section class="shell faq" aria-labelledby="faq-title">
+      <div>
+        <div class="kicker">Před návštěvou</div>
+        <h2 id="faq-title">Prakticky</h2>
+      </div>
+      <div>
+        <details open>
+          <summary>Je možné sedět venku?</summary>
+          <p>Ano, k dispozici je prostorná zahrádka s výhledem na Masarykovo náměstí.</p>
+        </details>
+        <details>
+          <summary>Do kdy vaří kuchyně?</summary>
+          <p>Kuchyně je otevřená každý den od 8:00 do 20:00.</p>
+        </details>
+        <details>
+          <summary>Můžeme přijít se psem?</summary>
+          <p>Ano, psi jsou u nás vítáni.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="shell">
+        <div>
+          <h2 id="final-title">Stůl v centru Ostravy</h2>
+          <p>Káva, snídaně, denní menu a posezení na Masarykově náměstí.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420596273136">Zavolat rezervaci</a>
+          <a class="btn btn-outline" href="mailto:fratelli.ostrava@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <p>Fotografie: Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN, Janko Ferlic, Nathan J Hilton / Pexels.</p>
+      <div class="disclaimer-block">
+        <p>Tuto stránku připravil Webflex. Pokud si nepřejete, aby byla dostupná, smažete ji zde: <a href="https://webflex.cz/delete/8ji4lv2">https://webflex.cz/delete/8ji4lv2</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.292576300000004, 49.836405799999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#2E8797' })
+      .setLngLat([18.292576300000004, 49.836405799999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
