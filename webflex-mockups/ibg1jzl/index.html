@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Malá scéna | Káva, snídaně a večery ve Zlíně</title>
+  <meta name="description" content="Café Malá scéna na Štefánikově 2987 ve Zlíně. Káva, snídaňové menu, domácí dortíky, limonády, smoothies a rezervace na telefonu +420 577 018 741.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --mist: #f1f1ee;
+      --ink: #171812;
+      --muted: #686a5f;
+      --accent: #808060;
+      --accent-dark: #5f6046;
+      --line: rgba(23, 24, 18, .08);
+      --shadow: 0 28px 80px rgba(29, 30, 24, .09);
+      --shadow-soft: 0 18px 60px rgba(29, 30, 24, .06);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.22, .8, .22, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(128,128,96,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(128,128,96,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: 400; letter-spacing: 0; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+    .body-copy { hyphens: auto; }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: -60px;
+      z-index: 60;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      transition: top 180ms var(--ease);
+    }
+
+    .skip-link:focus { top: 16px; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(251, 251, 250, .84);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 1px 0 rgba(23,24,18,.06);
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 13px;
+      font-weight: 800;
+      color: rgba(23,24,18,.7);
+    }
+
+    .nav-links a,
+    .footer a,
+    .text-link {
+      transition: color 180ms var(--ease), opacity 180ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .footer a:hover,
+    .text-link:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 16px 38px rgba(128,128,96,.22);
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); }
+
+    .btn-secondary {
+      color: var(--ink);
+      border-color: currentColor;
+      background: transparent;
+    }
+
+    .btn-secondary:hover { background: rgba(128,128,96,.1); }
+
+    .hero {
+      width: var(--wrap);
+      min-height: calc(100vh - 76px);
+      margin: 0 auto;
+      padding: 58px 0 74px;
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 78px);
+    }
+
+    .eyebrow {
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.3;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    h1 {
+      max-width: 690px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+      color: #3d3f35;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      background: var(--mist);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img,
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(23,24,18,0) 50%, rgba(23,24,18,.44));
+      pointer-events: none;
+    }
+
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 82px 0; }
+    .section-inner { width: var(--wrap); margin: 0 auto; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      max-width: 760px;
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: 1;
+    }
+
+    .section-head p {
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    .surface {
+      background: rgba(255,255,255,.82);
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .offer-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      overflow: hidden;
+    }
+
+    .offer-row {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 150px;
+      gap: 28px;
+      align-items: center;
+      padding: 26px 30px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .offer-row:last-child { border-bottom: 0; }
+    .offer-row:hover { background: rgba(128,128,96,.055); }
+
+    .offer-kicker,
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .offer-row h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .offer-row p { margin-top: 6px; }
+    .offer-time { justify-self: end; font-family: var(--font-mono); font-weight: 700; color: var(--ink); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 210px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(42px, 6vw, 78px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .quote-panel {
+      padding: clamp(28px, 4vw, 54px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 460px;
+    }
+
+    .quote-panel blockquote {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4.5vw, 58px);
+      line-height: 1.02;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+
+    .split-photo {
+      min-height: 460px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hours-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(360px, .72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hours-card,
+    .contact-card {
+      padding: 30px;
+    }
+
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .hours-table th,
+    .hours-table td {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .hours-table td { text-align: right; color: var(--ink); font-weight: 700; }
+    .hours-table tr.today th,
+    .hours-table tr.today td { color: var(--accent-dark); }
+
+    .contact-stack {
+      display: grid;
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .contact-item {
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-item a {
+      display: inline-flex;
+      margin-top: 4px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .gallery-card {
+      height: 360px;
+      overflow: hidden;
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      background: var(--mist);
+    }
+
+    .gallery-card:nth-child(2) { height: 430px; }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .55fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .map-copy {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 420px;
+    }
+
+    .final-cta {
+      padding: 96px 0 88px;
+    }
+
+    .cta-panel {
+      padding: clamp(34px, 6vw, 68px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .cta-panel h2 { color: #fff; max-width: 780px; }
+    .cta-panel p { color: rgba(255,255,255,.72); margin-top: 14px; max-width: 620px; }
+    .cta-panel .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .footer {
+      padding: 34px 0 44px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .footer strong { color: var(--ink); }
+    .disclaimer { max-width: 760px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .hours-wrap,
+      .location-grid,
+      .cta-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 42px;
+      }
+
+      .hero-photo { max-width: 680px; }
+      .offer-row { grid-template-columns: 1fr; gap: 10px; }
+      .offer-time { justify-self: start; }
+      .trust-grid,
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card,
+      .gallery-card:nth-child(2) { height: 320px; }
+      .cta-actions { justify-content: flex-start; }
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      :root { --wrap: min(100vw - 28px, 1180px); }
+      .nav { min-height: 68px; }
+      .logo img { max-height: 36px; }
+      .hero { padding-bottom: 52px; }
+      section { padding: 58px 0; }
+      .hero-actions,
+      .cta-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .stat { min-height: 180px; }
+      .hours-card, .contact-card, .map-copy { padding: 22px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Přejít na obsah</a>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#" aria-label="Café Malá scéna">
+        <img src="library/images/logo.png" alt="Café Malá scéna">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#otevreno">Otevřeno</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420577018741">Rezervace</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-label="Úvod">
+      <div>
+        <div class="eyebrow">Zlín · Štefánikova 2987</div>
+        <h1>Café pro celý den</h1>
+        <p class="lead body-copy">Mlhavá rána, rušná poledne i večery u západu slunce. Přijďte na výtečnou kávu, snídaňové menu, domácí dortíky, limonády a čerstvé smoothies.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420577018741">Zavolat pro rezervaci</a>
+          <a class="btn btn-secondary" href="#otevreno">Zobrazit otevírací dobu</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <span class="meta-chip">4,6 / 5 · 768 recenzí</span>
+          <span class="meta-chip">Po-Čt 8:00-23:00</span>
+          <span class="meta-chip">Pá-So do 0:00</span>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <figcaption class="photo-caption">
+          <span>káva · snídaně · dortíky</span>
+          <span>Zlín 1</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="nabidka">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka během dne</div>
+            <h2>Od prvního šálku po večerní setkání</h2>
+          </div>
+          <p class="body-copy">V útulných a stylových prostorách si odpočinete od každodenního shonu, vyřídíte schůzku nebo se zastavíte pro něco sladkého ke kávě.</p>
+        </div>
+        <div class="offer-list surface">
+          <article class="offer-row">
+            <div class="offer-kicker">Ráno</div>
+            <div>
+              <h3>Snídaňové menu</h3>
+              <p class="body-copy">Denně chystané snídaně pro pomalé začátky i pracovní rána v centru Zlína.</p>
+            </div>
+            <div class="offer-time">od 8:00</div>
+          </article>
+          <article class="offer-row">
+            <div class="offer-kicker">Káva</div>
+            <div>
+              <h3>Výtečná káva a nápojový lístek</h3>
+              <p class="body-copy">Espresso, domácí limonády, smoothies a nápoje pro chvíle, kdy je káva vždy dobrý nápad.</p>
+            </div>
+            <div class="offer-time">celý den</div>
+          </article>
+          <article class="offer-row">
+            <div class="offer-kicker">Sladké</div>
+            <div>
+              <h3>Domácí dortíky</h3>
+              <p class="body-copy">Čerstvé zákusky a novinky v nabídce, které se vyplatí sledovat i na Instagramu.</p>
+            </div>
+            <div class="offer-time">denně</div>
+          </article>
+          <article class="offer-row">
+            <div class="offer-kicker">Večer</div>
+            <div>
+              <h3>Schůzky a posezení</h3>
+              <p class="body-copy">Klidnější stoly pro důležité rozhovory i večery s přáteli v příjemné atmosféře.</p>
+            </div>
+            <div class="offer-time">do 23:00+</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="section-inner">
+        <div class="trust-grid">
+          <article class="stat surface">
+            <span class="mono">Hodnocení hostů</span>
+            <div>
+              <strong>4,6</strong>
+              <p>průměrné hodnocení podle dostupných údajů</p>
+            </div>
+          </article>
+          <article class="stat surface">
+            <span class="mono">Zkušenosti</span>
+            <div>
+              <strong>768</strong>
+              <p>recenzí od hostů, kteří se u nás zastavili</p>
+            </div>
+          </article>
+          <article class="stat surface">
+            <span class="mono">Adresa</span>
+            <div>
+              <strong>Zlín</strong>
+              <p>Štefánikova 2987, 760 01 Zlín-Zlín 1</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="section-inner">
+        <div class="split">
+          <div class="quote-panel surface">
+            <div class="eyebrow">Atmosféra Malé scény</div>
+            <blockquote>Každý den o trochu víc času na sebe.</blockquote>
+            <p class="body-copy">Přijďte se podívat. Těšíme se na vaši návštěvu u kávy, domácího dortíku nebo sklenky večer po práci.</p>
+          </div>
+          <div class="split-photo">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="otevreno">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Otevírací doba</div>
+            <h2>Otevřeno od rána do večera</h2>
+          </div>
+          <p class="body-copy">Rezervace přijímáme na telefonu. V pátek a v sobotu můžete zůstat až do půlnoci.</p>
+        </div>
+        <div class="hours-wrap">
+          <div class="hours-card surface">
+            <h3>Dnes a celý týden</h3>
+            <table class="hours-table" aria-label="Otevírací doba">
+              <tbody>
+                <tr class="today"><th>Po-Čt</th><td>8:00-23:00</td></tr>
+                <tr><th>Pá</th><td>8:00-0:00</td></tr>
+                <tr><th>So</th><td>9:00-0:00</td></tr>
+                <tr><th>Ne</th><td>9:00-22:00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="contact-card surface">
+            <div class="eyebrow">Rezervace</div>
+            <h3>Zavolejte nám</h3>
+            <div class="contact-stack">
+              <div class="contact-item">
+                <span class="mono">Telefon</span><br>
+                <a href="tel:+420577018741">+420 577 018 741</a>
+              </div>
+              <div class="contact-item">
+                <span class="mono">E-mail</span><br>
+                <a href="mailto:helena@cafemalascena.cz">helena@cafemalascena.cz</a>
+              </div>
+              <div class="contact-item">
+                <span class="mono">Vedoucí kavárny</span>
+                <p>Helena Větříšková</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie kavárny">
+      <div class="section-inner">
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kde nás najdete</div>
+            <h2>Štefánikova 2987, Zlín</h2>
+          </div>
+          <p class="body-copy">Jsme na adrese Štefánikova 2987, 760 01 Zlín-Zlín 1. Pro jistotu místa u stolu zavolejte předem.</p>
+        </div>
+        <div class="location-grid">
+          <div class="map-copy surface">
+            <div>
+              <span class="mono">Adresa</span>
+              <h3>Centrum Zlína</h3>
+              <p class="body-copy">Café Malá scéna<br>Štefánikova 2987<br>760 01 Zlín-Zlín 1</p>
+            </div>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="tel:+420577018741">Rezervovat stůl</a>
+              <a class="btn btn-secondary" href="mailto:helena@cafemalascena.cz">Napsat e-mail</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Café Malá scéna"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="section-inner">
+        <div class="cta-panel">
+          <div>
+            <div class="eyebrow">Těšíme se na vaši návštěvu</div>
+            <h2>Zastavte se na šálek kávy.</h2>
+            <p>Na snídani, domácí dortík, limonádu nebo klidné večerní posezení ve Zlíně.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420577018741">+420 577 018 741</a>
+            <a class="btn btn-secondary" href="#kontakt">Ukázat mapu</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="disclaimer">
+        <strong>Webflex disclaimer:</strong> Toto je nezávazný vizuální koncept vytvořený agenturou Webflex. Nejste-li oprávněným příjemcem nebo si přejete stránku odstranit, použijte odkaz
+        <a href="https://webflex.cz/delete/ibg1jzl" rel="nofollow">webflex.cz/delete/ibg1jzl</a>.
+      </div>
+      <div class="mono">TOKEN ibg1jzl</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.6799092, 49.2248288],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#808060' })
+      .setLngLat([17.6799092, 49.2248288])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
