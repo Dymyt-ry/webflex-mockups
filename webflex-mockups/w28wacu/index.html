@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CrossCafe Central | Kavárna na náměstí Republiky v Plzni</title>
+  <meta name="description" content="CrossCafe Central na náměstí Republiky v Plzni. Prémiová káva, výhled na katedrálu sv. Bartoloměje, zahrádka, knihovna a dog friendly prostředí.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --soft: #f2f2ef;
+      --ink: #161514;
+      --muted: #6e6962;
+      --line: rgba(22, 21, 20, .09);
+      --accent: #A00020;
+      --accent-deep: #770018;
+      --shadow: 0 34px 100px rgba(28, 22, 18, .10);
+      --shadow-soft: 0 20px 70px rgba(28, 22, 18, .075);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(22,21,20,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22,21,20,.022) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    header, main, footer { position: relative; z-index: 1; }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; }
+
+    .container { width: min(1240px, calc(100% - 40px)); margin-inline: auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.84);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: inline-flex; align-items: center; min-width: 160px; }
+    .brand img { max-height: 42px; width: auto; object-fit: contain; }
+    .navlinks { display: flex; align-items: center; gap: clamp(16px, 3vw, 34px); color: var(--muted); font-size: 14px; font-weight: 700; }
+    .navlinks a { transition: color 180ms var(--ease), transform 180ms var(--ease); }
+    .navlinks a:hover { color: var(--ink); transform: translateY(-1px); }
+    .navlinks a:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 18px 44px rgba(160,0,32,.22); }
+    .btn-primary:hover { background: var(--accent-deep); box-shadow: 0 24px 56px rgba(160,0,32,.26); }
+    .btn-outline { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn-outline:hover { background: rgba(160,0,32,.07); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      align-items: center;
+      padding: clamp(56px, 8vw, 108px) 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(40px, 6vw, 86px);
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .kicker::before { content: ""; width: 34px; height: 1px; background: currentColor; opacity: .55; }
+    h1 {
+      max-width: 720px;
+      margin-top: 24px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.7vw, 22px);
+      line-height: 1.55;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 700px;
+      margin-top: 40px;
+    }
+    .mini {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+    }
+    .mini span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .mini strong { display: block; margin-top: 5px; font-family: var(--font-mono); font-size: 14px; line-height: 1.35; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 34px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "Plzeň, nám. Republiky";
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(16px);
+    }
+
+    section { padding: clamp(68px, 9vw, 122px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: clamp(28px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .feature {
+      min-height: 220px;
+      padding: 28px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .feature:hover { transform: translateY(-3px); box-shadow: 0 28px 86px rgba(28,22,18,.12); }
+    .feature small { color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+    .feature h3 { margin-top: 22px; font-size: 26px; line-height: 1.05; }
+    .feature p { margin-top: 14px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .82fr) minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: center;
+    }
+    .panel {
+      border-radius: 32px;
+      background: rgba(255,255,255,.8);
+      box-shadow: var(--shadow);
+      padding: clamp(28px, 4vw, 50px);
+    }
+    .facts { display: grid; gap: 0; }
+    .fact-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 22px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .fact-row:last-child { border-bottom: 0; }
+    .fact-row b { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+    .fact-row span { font-size: 20px; font-weight: 700; }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: .7fr 1fr;
+      gap: 18px;
+      align-items: end;
+    }
+    .photo-card { overflow: hidden; border-radius: 30px; box-shadow: var(--shadow-soft); background: var(--soft); }
+    .photo-card:first-child { aspect-ratio: 4 / 5; }
+    .photo-card:last-child { aspect-ratio: 16 / 10; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 30px;
+      min-height: 170px;
+      border-radius: 28px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong { display: block; font-family: var(--font-mono); font-size: clamp(34px, 4vw, 58px); line-height: 1; }
+    .stat span { display: block; margin-top: 14px; color: rgba(255,255,255,.72); font-weight: 700; }
+
+    .hours-wrap {
+      display: grid;
+      grid-template-columns: minmax(360px, .65fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .hours, .contact-card {
+      border-radius: 32px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+      padding: clamp(26px, 4vw, 42px);
+    }
+    .hours h3, .contact-card h3 { font-size: 30px; line-height: 1.05; margin-bottom: 22px; }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today { color: var(--accent); font-weight: 700; }
+    .contact-list { display: grid; gap: 15px; color: var(--muted); }
+    .contact-list a { color: var(--ink); font-weight: 800; transition: color 180ms var(--ease), transform 180ms var(--ease); }
+    .contact-list a:hover { color: var(--accent); transform: translateY(-1px); }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:first-child { min-height: 460px; }
+    .gallery-side { display: grid; gap: 18px; }
+    .gallery-side figure { min-height: 221px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease); }
+    .gallery figure:hover img { transform: scale(1.035); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    details {
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+      padding: 24px 26px;
+    }
+    summary { cursor: pointer; font-weight: 800; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 14px; color: var(--muted); }
+
+    .cta {
+      padding: clamp(42px, 6vw, 72px);
+      border-radius: 36px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 34px 100px rgba(160,0,32,.22);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .cta p { margin-top: 14px; color: rgba(255,255,255,.78); font-size: 18px; max-width: 660px; }
+    .cta .btn-primary { background: #fff; color: var(--accent); box-shadow: none; }
+    .cta .btn-primary:hover { background: rgba(255,255,255,.88); }
+    .cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.55); }
+    .cta .btn-outline:hover { background: rgba(255,255,255,.12); }
+
+    .site-footer {
+      padding: 38px 0 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+    .disclaimer {
+      margin-top: 22px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(22,21,20,.04);
+      color: #746f68;
+      font-size: 12px;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .split, .hours-wrap, .gallery, .cta { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .features, .stats, .faq { grid-template-columns: 1fr; }
+      .photo-stack { grid-template-columns: 1fr 1fr; }
+      .cta { align-items: start; }
+    }
+    @media (max-width: 640px) {
+      .container { width: min(100% - 28px, 1240px); }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+      .hero-meta, .photo-stack { grid-template-columns: 1fr; }
+      .fact-row { grid-template-columns: 1fr; gap: 6px; }
+      .gallery figure:first-child, .gallery-side figure { min-height: 260px; }
+      .hours-row { flex-direction: column; gap: 4px; }
+      .brand img { max-height: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="CrossCafe Central">
+        <img src="https://www.crosscafe.cz//images/logo.svg" alt="CrossCafe Central">
+      </a>
+      <div class="navlinks" aria-label="Sekce stránky">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#misto">Místo</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420770164555">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker">Central · náměstí Republiky</div>
+          <h1>Káva přímo u katedrály</h1>
+          <p class="lead">Zastavte se v CrossCafe Central na šálek prémiové kávy, snídani nebo chvíli klidu s výhledem na katedrálu sv. Bartoloměje.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn btn-outline" href="mailto:central@crosscafe.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="mini"><span>Hodnocení</span><strong>4,3 / 5<br>1 061 recenzí</strong></div>
+            <div class="mini"><span>Dnes</span><strong>Čtvrtek<br>7:00 - 20:00</strong></div>
+            <div class="mini"><span>Adresa</span><strong>nám. Republiky<br>358/33</strong></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="container">
+        <div class="section-head">
+          <h2>Co vás čeká</h2>
+          <p>Central spojuje kavárnu v srdci Plzně, výběrovou kávu a praktické zázemí pro rychlou zastávku i delší posezení.</p>
+        </div>
+        <div class="features">
+          <article class="feature">
+            <small>01</small>
+            <div><h3>Výběrová káva</h3><p>Prémiová káva CrossCafe, dezerty a denní kavárenský rytmus přímo v centru města.</p></div>
+          </article>
+          <article class="feature">
+            <small>02</small>
+            <div><h3>Zahrádka a výhled</h3><p>Posezení na náměstí s výhledem na katedrálu sv. Bartoloměje.</p></div>
+          </article>
+          <article class="feature">
+            <small>03</small>
+            <div><h3>Uvnitř i s pejskem</h3><p>Dog friendly kavárna s knihovnou, klimatizací a možností platby kartou.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="misto">
+      <div class="container split">
+        <div class="panel">
+          <div class="kicker">Uvnitř Centralu</div>
+          <div class="facts">
+            <div class="fact-row"><b>VÝHLED</b><span>katedrála sv. Bartoloměje</span></div>
+            <div class="fact-row"><b>GALERIE</b><span>architektonické práce k druhé věži katedrály</span></div>
+            <div class="fact-row"><b>SBÍRKA</b><span>Ze srdce zvon</span></div>
+            <div class="fact-row"><b>ZÁZEMÍ</b><span>parkování, karty, knihovna, zahrádka</span></div>
+          </div>
+        </div>
+        <div class="photo-stack">
+          <div class="photo-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </div>
+          <div class="photo-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="duvera-title">Jasně v centru</h2>
+          <p>Pro schůzku, cestu městem i víkendovou zastávku: adresa, čas a kontakt jsou vždy po ruce.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4,3</strong><span>hodnocení návštěvníků</span></div>
+          <div class="stat"><strong>1 061</strong><span>veřejných recenzí</span></div>
+          <div class="stat"><strong>7:00</strong><span>otevřeno v pracovní dny</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="galerie-title">Atmosféra kavárny</h2>
+          <p>Teplé světlo, klidné stoly a městský ruch za oknem. Přijďte na kávu, dezert nebo jen na chvíli vypnout.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <div class="gallery-side">
+            <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+            <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Kontakt a hodiny</h2>
+          <p>Najdete nás na náměstí Republiky 358/33 v Plzni. Pro rychlý dotaz volejte přímo do kavárny.</p>
+        </div>
+        <div class="hours-wrap">
+          <div class="hours">
+            <h3>Otevírací doba</h3>
+            <div class="hours-row"><span>Po - Pá</span><strong>7:00 - 20:00</strong></div>
+            <div class="hours-row"><span>So</span><strong>8:00 - 20:00</strong></div>
+            <div class="hours-row"><span>Ne</span><strong>9:00 - 19:00</strong></div>
+            <div class="hours-row today"><span>Dnes · Čtvrtek</span><strong>7:00 - 20:00</strong></div>
+          </div>
+          <div class="contact-card">
+            <h3>CrossCafe Central</h3>
+            <div class="contact-list">
+              <span>nám. Republiky 358/33, 301 00 Plzeň 3-Vnitřní Město</span>
+              <a href="tel:+420770164555">+420 770 164 555</a>
+              <a href="mailto:central@crosscafe.cz">central@crosscafe.cz</a>
+              <a href="https://www.crosscafe.cz/kavarny/central/">crosscafe.cz/kavarny/central/</a>
+            </div>
+          </div>
+        </div>
+        <div style="height: 22px"></div>
+        <div id="map" aria-label="Mapa CrossCafe Central v Plzni"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="faq-title">Časté otázky</h2>
+          <p>Krátké odpovědi pro návštěvu bez hledání.</p>
+        </div>
+        <div class="faq">
+          <details><summary>Můžu platit kartou?</summary><p>Ano, v CrossCafe Central přijímáme platební karty.</p></details>
+          <details><summary>Je kavárna dog friendly?</summary><p>Ano, s pejskem můžete přijít také.</p></details>
+          <details><summary>Je v kavárně zahrádka?</summary><p>Ano, Central má zahrádku přímo na náměstí Republiky.</p></details>
+          <details><summary>Je uvnitř klimatizace?</summary><p>Ano, kavárna má klimatizované vnitřní posezení.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Stavte se dnes</h2>
+            <p>Jsme otevření do 20:00. Káva, dezert a výhled na plzeňské náměstí čekají v Centralu.</p>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420770164555">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:central@crosscafe.cz">E-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <span>CrossCafe Central · nám. Republiky 358/33, Plzeň</span>
+        <span>Foto: Pexels · Valeria Boltneva, Daniil Kondrashin, NGUYỄN THÀNH NHƠN, Alari Tammsalu, Việt Anh Nguyễn</span>
+      </div>
+      <div class="disclaimer">
+        Tato prezentační stránka byla vytvořena společností Webflex jako nezávazný soukromý podklad pro provozovatele. Pokud si přejete stránku odstranit, použijte odkaz <a href="https://www.webflex.cz/delete/w28wacu">webflex.cz/delete/w28wacu</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.376639, 49.7473929],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A00020' })
+      .setLngLat([13.376639, 49.7473929])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
