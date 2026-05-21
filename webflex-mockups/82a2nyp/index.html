@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minikino Kavárna | Program, káva a vstupenky v Ostravě</title>
+  <meta name="description" content="Minikino Kavárna na Kostelní 3 v Moravské Ostravě. Program projekcí, káva před filmem, vstupenky online a pokladna kina.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101113;
+      --panel: #17181b;
+      --panel-2: #1e2024;
+      --ink: #f7f3ec;
+      --muted: #b9b0a5;
+      --dim: #81796f;
+      --line: rgba(247, 243, 236, .14);
+      --line-strong: rgba(247, 243, 236, .28);
+      --accent: #C0A080;
+      --accent-ink: #14100c;
+      --danger: #d86148;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,19,.86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .navlinks a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease);
+    }
+    .navlinks a:hover { border-color: var(--line); color: var(--ink); background: rgba(255,255,255,.04); }
+    .navlinks a:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.secondary { background: transparent; color: var(--ink); border-color: rgba(255,255,255,.45); }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary:hover { background: #d1b392; }
+    .btn.secondary:hover { border-color: var(--accent); color: var(--accent); background: rgba(192,160,128,.08); }
+    .btn:active { transform: translateY(1px); }
+
+    .hero {
+      padding: 76px 0 54px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      gap: 52px;
+      align-items: center;
+    }
+    .kicker, .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: .02em;
+    }
+    h1 {
+      margin: 16px 0 22px;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 640px;
+      margin: 0 0 28px;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      box-shadow: 0 20px 80px rgba(0,0,0,.28);
+    }
+    .hours-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 54px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row strong, .hours-row span { padding: 15px 18px; }
+    .hours-row strong {
+      border-right: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: var(--ink);
+    }
+    .hours-row span { color: var(--muted); }
+    .hours-row.today { background: rgba(192,160,128,.12); }
+    .hours-row.today strong, .hours-row.today span { color: var(--ink); }
+
+    section { padding: 74px 0; border-bottom: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(280px, 420px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 104px);
+      line-height: .8;
+      color: rgba(192,160,128,.22);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    .program-table {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th {
+      position: sticky;
+      top: 73px;
+      z-index: 3;
+      background: #202126;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    td.time, td.price, td.place { font-family: var(--font-mono); white-space: nowrap; }
+    td.price { color: var(--accent); font-weight: 700; }
+    .movie { font-weight: 700; font-size: 18px; }
+    .note-row td { background: rgba(255,255,255,.035); color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .photo-panel {
+      min-height: 430px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .photo-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      aspect-ratio: 16 / 10;
+      filter: saturate(.86) contrast(1.04);
+    }
+    .line-list {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .line-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 22px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .line-item:last-child { border-bottom: 0; }
+    .line-item .tag { font-family: var(--font-mono); color: var(--accent); font-size: 12px; text-transform: uppercase; }
+    .line-item h3 { margin: 0 0 6px; font-size: 23px; line-height: 1.1; }
+    .line-item p { margin: 0; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .stat {
+      min-height: 190px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat span { color: var(--muted); max-width: 260px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .gallery-strip img { width: 100%; height: 300px; object-fit: cover; filter: saturate(.82); }
+    .gallery-strip figcaption {
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--dim);
+      text-transform: uppercase;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .contact-card h3 { margin: 0; font-size: 28px; line-height: 1.1; }
+    .contact-lines {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 16px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line span:first-child { font-family: var(--font-mono); color: var(--accent); font-size: 12px; text-transform: uppercase; }
+    .contact-line span:last-child, .contact-line a { color: var(--muted); overflow-wrap: anywhere; }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--panel-2);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    details {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 20px;
+      transition: border-color .18s var(--ease), background .18s var(--ease);
+    }
+    details:hover { border-color: rgba(192,160,128,.5); background: rgba(192,160,128,.055); }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 12px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 70px 0;
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-bottom: 0;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { color: var(--accent-ink); max-width: 760px; }
+    .final-cta p { margin: 12px 0 0; color: rgba(20,16,12,.74); font-size: 20px; }
+    .final-cta .btn.primary { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--ink); }
+    .final-cta .btn.primary:hover { background: #2a2118; }
+
+    footer {
+      padding: 34px 0;
+      color: var(--dim);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+    footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { align-items: flex-start; flex-direction: column; padding: 16px 0; }
+      .navlinks { flex-wrap: wrap; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-grid { grid-template-columns: 1fr; }
+      .section-head { gap: 12px; }
+      .stats, .gallery-strip, .faq { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      th { top: 0; }
+      .photo-panel { min-height: auto; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 44px; }
+      section { padding: 54px 0; }
+      .hours-row, .line-item, .contact-line { grid-template-columns: 1fr; gap: 4px; }
+      .hours-row strong { border-right: 0; border-bottom: 1px solid var(--line); }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .gallery-strip img { height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a href="#" class="wordmark">Minikino Kavárna</a>
+      <div class="navlinks">
+        <a href="#program">Program</a>
+        <a href="#kavarna">Kavárna</a>
+        <a href="#vstupenky">Vstupenky</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Ostrava · Kostelní 3</div>
+          <h1>Kino, káva, večer.</h1>
+          <p class="lead">Přijďte na projekci do Minikina a zastavte se v kavárně před filmem nebo po titulcích. Vstupenky koupíte online i na pokladně kina.</p>
+          <div class="actions">
+            <a class="btn primary" href="#program">Zobrazit program</a>
+            <a class="btn secondary" href="tel:+420604777537">+420 604 777 537</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Provozní informace">
+          <div class="hours-head"><span>Pokladna</span><span>21. 5. 2026</span></div>
+          <div class="hours-row today"><strong>ČT</strong><span>16:00-19:30 · dnes hrajeme 17:00 a 19:30</span></div>
+          <div class="hours-row"><strong>PO</strong><span>16:00-19:30 · pokladna v čase programu</span></div>
+          <div class="hours-row"><strong>ÚT</strong><span>16:00-19:30 · pokladna v čase programu</span></div>
+          <div class="hours-row"><strong>ST</strong><span>14:00-15:00 a 16:00-19:30</span></div>
+          <div class="hours-row"><strong>ČT</strong><span>16:00-19:30 · pokladna v čase programu</span></div>
+          <div class="hours-row"><strong>INFO</strong><span>Pokladna je otevřena vždy hodinu před začátkem představení.</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="program">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Nejbližší program</h2>
+          <p>Výběr z aktuálních projekcí v Minikinu. Rezervace na filmová představení jsou dočasně zrušené, vstupenky zůstávají v online prodeji.</p>
+        </div>
+        <div class="program-table" role="region" aria-label="Program projekcí">
+          <table>
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Čas</th>
+                <th>Název akce</th>
+                <th>Místo</th>
+                <th>Cena</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>čt 21.5.2026</td><td class="time">17:00</td><td><span class="movie">Neděle</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr><td>čt 21.5.2026</td><td class="time">19:30</td><td><span class="movie">Neboj, dýchej, čaruj</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr><td>pá 22.5.2026</td><td class="time">17:00</td><td><span class="movie">Ďábel nosí Pradu 2</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr><td>pá 22.5.2026</td><td class="time">19:30</td><td><span class="movie">Zmizení Josefa Mengeleho</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr><td>so 23.5.2026</td><td class="time">12:30</td><td><span class="movie">Michael</span></td><td class="place">MINIKINO</td><td class="price">100 Kč</td></tr>
+              <tr><td>so 23.5.2026</td><td class="time">15:00</td><td><span class="movie">Na plný plyn</span></td><td class="place">MINIKINO</td><td class="price">200 Kč</td></tr>
+              <tr><td>so 23.5.2026</td><td class="time">17:00</td><td><span class="movie">Bláznivý Marsupilami</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr><td>so 23.5.2026</td><td class="time">19:30</td><td><span class="movie">Co nám zbylo z lásky</span></td><td class="place">MINIKINO</td><td class="price">140 Kč</td></tr>
+              <tr class="note-row"><td colspan="5">Další termíny: Malá Amélie, Šampión, Slepice, Drama, Zlatá vařečka, Hamnet, Bouřlivé výšiny a další.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarna">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Kavárna u sálu</h2>
+          <p>Komorní místo v centru Ostravy pro šálek kávy, sklenku vína a krátké setkání před filmem.</p>
+        </div>
+        <div class="split">
+          <div class="photo-panel">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+          <div class="line-list">
+            <div class="line-item">
+              <div class="tag">Před filmem</div>
+              <div><h3>Káva a klidné sezení</h3><p>Doražte s předstihem, vyzvedněte vstupenky a dejte si chvíli stranou od ruchu Stodolní a centra.</p></div>
+            </div>
+            <div class="line-item">
+              <div class="tag">Po titulcích</div>
+              <div><h3>Rozhovor bez spěchu</h3><p>Malý sál a kavárna drží stejný rytmus: film, debata, druhý šálek, cesta domů.</p></div>
+            </div>
+            <div class="line-item">
+              <div class="tag">Vstupenky</div>
+              <div><h3>Online i na pokladně</h3><p>Nákup běží online na minikino.cz, na pobočkách Ostravského informačního servisu a na pokladně kina.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vstupenky">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <h2>Ceny a důvěra</h2>
+          <p>Program používá pevně uvedené ceny u každé projekce. Hodnocení vychází z veřejného profilu podniku.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>4.5</b><span>Průměrné hodnocení návštěvníků.</span></div>
+          <div class="stat"><b>974</b><span>Veřejných recenzí u profilu Minikino Kavárna.</span></div>
+          <div class="stat"><b>70-200 Kč</b><span>Rozpětí cen projekcí uvedených v aktuálním programu.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kavárny">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Večer v centru</h2>
+          <p>Teplé světlo, sklo, dřevo a krátká vzdálenost od sálu. Fotografie drží náladu kavárny a filmového večera.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Sklenice · bar · večerní světlo</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting.">
+            <figcaption>Světla · sálový rytmus</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl · svíčky · rozhovor</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <h2>Časté otázky</h2>
+          <p>Krátké odpovědi k nákupu vstupenek, pokladně a technické podpoře.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Fungují rezervace na filmová představení?</summary>
+            <p>Z provozních důvodů jsou dočasně zrušené. Vstupenky můžete dál koupit online, na pobočkách Ostravského informačního servisu nebo na pokladně kina.</p>
+          </details>
+          <details>
+            <summary>Kdy je otevřená pokladna?</summary>
+            <p>Pokladna je otevřená vždy hodinu před začátkem představení. V uvedených časech také po, út, čt 16:00-19:30 a st 14:00-15:00 a 16:00-19:30.</p>
+          </details>
+          <details>
+            <summary>Kde Minikino najdu?</summary>
+            <p>Na adrese Kostelní 3, 702 00 Moravská Ostrava a Přívoz.</p>
+          </details>
+          <details>
+            <summary>Kam napsat při potížích s nákupem?</summary>
+            <p>Technickou podporu k online nákupu zajišťuje ATIS.NET na e-mailu podpora@koupitvstupenku.cz.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">06</div>
+          <h2>Kontakt</h2>
+          <p>Minikino Kavárna sídlí v centru Moravské Ostravy. Program a vstupenky řešíte online nebo přímo na pokladně.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Minikino Kavárna</h3>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Adresa</span><span>Kostelní 3, 702 00 Moravská Ostrava a Přívoz</span></div>
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420604777537">+420 604 777 537</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:podpora@koupitvstupenku.cz">podpora@koupitvstupenku.cz</a></div>
+              <div class="contact-line"><span>Pokladna</span><span>Vždy hodinu před začátkem představení.</span></div>
+            </div>
+            <a class="btn primary" href="https://minikino.koupitvstupenku.cz/default.ashx?uid=XrfD6vtSjdwhzhxj7lXsEImhJvV8gvGj">Koupit vstupenky</a>
+          </div>
+          <div id="map" aria-label="Mapa: Kostelní 3, Moravská Ostrava"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap final-grid">
+        <div>
+          <h2>Vyberte film a přijďte dřív.</h2>
+          <p>Káva před projekcí, pokladna hodinu před začátkem a centrum Ostravy pár kroků od vás.</p>
+        </div>
+        <a class="btn primary" href="#program">Dnešní program</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Minikino Kavárna</strong><br>
+        Kostelní 3, 702 00 Moravská Ostrava a Přívoz
+      </div>
+      <div>
+        Tento nezávazný náhled vytvořil Webflex. Pokud si nepřejete další kontakt, můžete ho odstranit zde:
+        <a href="https://webflex.cz/remove?token=82a2nyp">webflex.cz/remove?token=82a2nyp</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.293901599999998, 49.8358505],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([18.293901599999998, 49.8358505])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
