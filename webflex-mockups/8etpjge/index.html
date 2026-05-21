@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Double Decker Caffe | Little London ve Zlíně</title>
+  <meta name="description" content="Double Decker Caffe ve Zlíně: kavárna v renovovaném doubledeckeru, káva, britské sendviče, bagely, dezerty, koktejly a nevšední posezení.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist+Mono:wght@500;650&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --ink: #111113;
+      --muted: #64646b;
+      --paper: #ffffff;
+      --night: #181818;
+      --night-2: #222225;
+      --soft: #f1f1f2;
+      --hairline: rgba(17, 17, 19, .13);
+      --hairline-dark: rgba(255, 255, 255, .16);
+      --accent: #F0064F;
+      --accent-dark: #c90441;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1184px, calc(100vw - 40px));
+      --r: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background: var(--bg);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      z-index: 50;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(24, 24, 24, .72);
+      backdrop-filter: blur(18px);
+      color: #fff;
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: rgba(255, 255, 255, .74);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .btn, .text-link, .menu-row, .gallery-card {
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease), opacity 190ms var(--ease);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .btn:hover, .gallery-card:hover, .menu-row:hover { transform: translateY(-1px); }
+    .btn:active, .gallery-card:active, .menu-row:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline-dark {
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn-outline-dark:hover { background: rgba(255, 255, 255, .1); }
+    .btn-outline-light {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-outline-light:hover { background: rgba(17, 17, 19, .06); }
+
+    .hero {
+      min-height: 100vh;
+      color: #fff;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, .74), rgba(0, 0, 0, .42) 48%, rgba(0, 0, 0, .18)),
+        url("https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940") center / cover no-repeat,
+        var(--night);
+      display: flex;
+      align-items: center;
+      padding: 140px 0 88px;
+    }
+
+    .hero-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(260px, 1fr);
+      align-items: center;
+      gap: 64px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 500;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+      color: rgba(255, 255, 255, .82);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .hero-panel {
+      align-self: end;
+      border: 1px solid rgba(255, 255, 255, .18);
+      background: rgba(24, 24, 24, .58);
+      backdrop-filter: blur(18px);
+      border-radius: var(--r);
+      padding: 24px;
+    }
+
+    .stamp {
+      font-family: var(--font-mono);
+      color: rgba(255, 255, 255, .62);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .rating {
+      margin-top: 16px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .rating strong {
+      font-family: var(--font-mono);
+      font-size: 44px;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .rating span { color: rgba(255, 255, 255, .72); }
+
+    .section {
+      padding: 96px 0;
+    }
+
+    .section.dark {
+      background: var(--night);
+      color: #fff;
+    }
+
+    .section.dark p, .section.dark .muted { color: rgba(255, 255, 255, .66); }
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .65fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .menu-list {
+      border-top: 1px solid var(--hairline);
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 150px;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .menu-row:hover { background: rgba(240, 6, 79, .035); }
+    .menu-kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .menu-row h3 { font-size: clamp(22px, 2.5vw, 34px); font-weight: 600; }
+    .menu-note { text-align: right; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .95fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 64px;
+    }
+
+    .photo-frame {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: var(--r);
+      background: #222;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .feature-list {
+      margin-top: 32px;
+      border-top: 1px solid var(--hairline-dark);
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--hairline-dark);
+    }
+
+    .feature b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+
+    .feature h3 {
+      margin-bottom: 6px;
+      font-size: 21px;
+      font-weight: 650;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--hairline);
+      border: 1px solid var(--hairline);
+    }
+
+    .stat {
+      min-height: 180px;
+      background: var(--paper);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      font-weight: 650;
+      color: var(--accent);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .gallery-card {
+      position: relative;
+      min-height: 360px;
+      overflow: hidden;
+      border-radius: var(--r);
+      background: #151515;
+      border: 1px solid var(--hairline-dark);
+    }
+
+    .gallery-card.small { min-height: 360px; }
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .88;
+    }
+
+    .gallery-caption {
+      position: absolute;
+      inset: auto 16px 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 16px rgba(0, 0, 0, .6);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .contact-lines {
+      display: grid;
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .contact-lines a, .contact-lines span {
+      display: block;
+      font-size: 20px;
+      font-weight: 650;
+    }
+
+    .contact-lines small {
+      display: block;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+    }
+
+    .final {
+      padding: 96px 0;
+      background: var(--night);
+      color: #fff;
+    }
+
+    .final-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .final h2 { max-width: 760px; }
+    .final p { max-width: 580px; margin-top: 18px; color: rgba(255, 255, 255, .66); }
+
+    .credits {
+      padding: 24px 0 48px;
+      background: var(--night);
+      color: rgba(255, 255, 255, .42);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .credits a { text-decoration: underline; text-underline-offset: 3px; }
+
+    .wf-disclaimer {
+      padding: 22px 0;
+      background: #0f0f10;
+      color: rgba(255, 255, 255, .58);
+      font-size: 12px;
+      border-top: 1px solid rgba(255, 255, 255, .12);
+    }
+
+    .wf-disclaimer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .wf-disclaimer a {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { padding-top: 118px; }
+      .hero-inner, .section-head, .split, .contact-grid, .final-inner, .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { align-self: auto; max-width: 420px; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .menu-note { text-align: left; }
+      .stats { grid-template-columns: 1fr; }
+      .photo-frame { min-width: 0; }
+      #map { min-height: 360px; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 28px, 1184px); }
+      .section, .final { padding: 64px 0; }
+      .hero { min-height: auto; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .btn { width: 100%; }
+      .hero-panel, .contact-card { padding: 22px; }
+      .wf-disclaimer .wrap { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Double Decker Caffe">
+        <img src="https://www.cafe96.cz/wp-content/uploads/cafe96-logo-small.png" alt="Double Decker Caffe">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#little-london">Little London</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420775969696">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="hero-inner">
+        <div>
+          <div class="eyebrow">Devadesátá 7008 · Zlín</div>
+          <h1>Little London ve Zlíně</h1>
+          <p class="lead">Káva, britské sendviče, bagely, dezerty a koktejly v renovovaném dvoupatrovém autobusu s industriální atmosférou.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Najít kavárnu</a>
+            <a class="btn btn-outline-dark" href="mailto:bus@cafe96.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Hodnocení">
+          <div class="stamp">Hosté na Googlu</div>
+          <div class="rating">
+            <strong>4,9</strong>
+            <span>z 157 recenzí</span>
+          </div>
+          <p style="margin-top:16px;color:rgba(255,255,255,.68)">Nevšední posezení v patře doubledeckeru, v igloo zóně i venku mezi londýnskými detaily.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Menu</div>
+            <h2>Od ranní kávy po večerní drink.</h2>
+          </div>
+          <p>V nabídce najdete kávu, čaje, domácí limonády, britské nealko nápoje a piva, čepované pivo, víno, koktejly i moktejly. K tomu sendviče, bagely, bubble vafle, dortíky a moučníky.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <div class="menu-kicker">Káva & nápoje</div>
+            <h3>Káva, čaje, limonády, pivo a koktejly</h3>
+            <div class="menu-note">denní výběr</div>
+          </article>
+          <article class="menu-row">
+            <div class="menu-kicker">Britská kuchyně</div>
+            <h3>Sendviče, bagely a B.L.T.</h3>
+            <div class="menu-note">anglický styl</div>
+          </article>
+          <article class="menu-row">
+            <div class="menu-kicker">Sladké</div>
+            <h3>Bubble vafle, dortíky a moučníky</h3>
+            <div class="menu-note">ke kávě</div>
+          </article>
+          <article class="menu-row">
+            <div class="menu-kicker">Rituály</div>
+            <h3>English Breakfast a Afternoon Tea</h3>
+            <div class="menu-note">Little London</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="little-london">
+      <div class="wrap split">
+        <div class="photo-frame">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="eyebrow">Little London</div>
+          <h2>Autobus, který zve nahoru.</h2>
+          <p class="lead">Bus Cafe 96 stojí v průmyslové části Zlína a přináší atmosféru inspirovanou londýnským Hackney Wick. Posedět můžete přímo v patře renovovaného doubledeckeru.</p>
+          <div class="feature-list">
+            <div class="feature">
+              <b>01</b>
+              <div>
+                <h3>Venkovní kavárna v anglickém stylu</h3>
+                <p>Industriální prostředí, londýnské prvky a místo pro setkání s přáteli.</p>
+              </div>
+            </div>
+            <div class="feature">
+              <b>02</b>
+              <div>
+                <h3>Posezení i při nepřízni počasí</h3>
+                <p>Pro chladné a deštivé měsíce je připravené vyhřívané igloo s domácí atmosférou.</p>
+              </div>
+            </div>
+            <div class="feature">
+              <b>03</b>
+              <div>
+                <h3>Děti jsou vítané</h3>
+                <p>Pro nejmenší je k dispozici průlezkový autobus, malá hrací plocha a oblíbené dětské nápoje.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <strong>4,9</strong>
+            <p>hodnocení na Googlu</p>
+          </div>
+          <div class="stat">
+            <strong>157</strong>
+            <p>recenzí od hostů</p>
+          </div>
+          <div class="stat">
+            <strong>7008</strong>
+            <p>Devadesátá, Zlín-Zlín 1</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Večer u světel, přes den s kávou.</h2>
+          </div>
+          <p>Letní měsíce doplňuje autentické londýnské taxi a první generace dodávky Ford Transit MK1. U stolu tak nejde jen o menu, ale i o zážitek trochu jinak.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption class="gallery-caption">posezení · drinky · setkání</figcaption>
+          </figure>
+          <figure class="gallery-card small">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption class="gallery-caption">večerní nálada</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Přijeďte na Devadesátou.</h2>
+          </div>
+          <p>Kavárnu najdete v části města Zlína, která se postupně proměňuje. Pro aktuální informace k návštěvě zavolejte nebo napište.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div>
+              <h3>Double Decker Caffe</h3>
+              <div class="contact-lines">
+                <div>
+                  <small>Adresa</small>
+                  <span>Devadesátá 7008, 760 01 Zlín-Zlín 1</span>
+                </div>
+                <div>
+                  <small>Telefon</small>
+                  <a href="tel:+420775969696">+420 775 969 696</a>
+                </div>
+                <div>
+                  <small>E-mail</small>
+                  <a href="mailto:bus@cafe96.cz">bus@cafe96.cz</a>
+                </div>
+              </div>
+            </div>
+            <a class="btn btn-outline-light" href="https://www.cafe96.cz/">Otevřít cafe96.cz</a>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Double Decker Caffe"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <div class="eyebrow">Bus Cafe 96</div>
+          <h2>Káva a setkání v anglickém stylu.</h2>
+          <p>Ať míříte na snídani, sendvič, dezert nebo večerní drink, doubledecker ve Zlíně má svoje místo připravené.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420775969696">Rezervovat telefonicky</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="credits">
+      <div class="wrap">
+        Fotografie: <a href="https://www.pexels.com/@nathanjhilton">Nathan J Hilton</a>, <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>, <a href="https://www.pexels.com/@itfeelslikefilm">Janko Ferlic</a>, <a href="https://www.pexels.com/@zaktech90">Zain Ali</a> / Pexels.
+      </div>
+    </div>
+    <div class="wf-disclaimer">
+      <div class="wrap">
+        <span>Toto je nezávazná ukázka od Webflex pro Double Decker Caffe.</span>
+        <a href="https://webflex.cz/remove/8etpjge">Odstranit stránku</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.646887, 49.2240234],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#F0064F' })
+      .setLngLat([17.646887, 49.2240234])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
