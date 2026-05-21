@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Road Cafe bar | Pardubice</title>
+  <meta name="description" content="Road Cafe bar v Pardubicích. Rezervace, akce, menu a kontaktní informace pro provozovnu v Hronovické ulici.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;650;700&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101010;
+      --panel: #181818;
+      --panel-2: #202020;
+      --paper: #f7f4ee;
+      --paper-ink: #181818;
+      --fg: #f8f8f5;
+      --muted: rgba(248, 248, 245, .68);
+      --soft: rgba(248, 248, 245, .1);
+      --hairline: rgba(248, 248, 245, .15);
+      --accent: #C00000;
+      --accent-hover: #e02a23;
+      --font-display: "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--fg);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); hyphens: none; letter-spacing: 0; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .skip-link {
+      position: fixed;
+      left: 16px;
+      top: 12px;
+      z-index: 100;
+      transform: translateY(-140%);
+      background: var(--fg);
+      color: var(--bg);
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 50;
+      background: rgba(16,16,16,.72);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2.4vw, 32px);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(255,255,255,.78);
+    }
+
+    .nav-links a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .nav-links a:hover { color: #fff; transform: translateY(-1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      letter-spacing: .01em;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,.1);
+      border-color: rgba(255,255,255,.72);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
+      padding: 120px 0 64px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image: url("https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940");
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.03);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(16,16,16,.92), rgba(16,16,16,.58) 48%, rgba(16,16,16,.78)),
+        linear-gradient(180deg, rgba(16,16,16,.25), #101010 96%);
+    }
+
+    .hero-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 720px);
+      gap: var(--s4);
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 36px;
+      height: 2px;
+      margin-right: 12px;
+      vertical-align: middle;
+      background: var(--accent);
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 500;
+    }
+
+    .lead {
+      max-width: 650px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+      color: rgba(255,255,255,.78);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: var(--s2);
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s4);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+    }
+
+    .meta-chip {
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(16,16,16,.48);
+      padding: 9px 12px;
+      border-radius: 4px;
+    }
+
+    main { overflow: clip; }
+    section { padding: var(--s7) 0; }
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(260px, .52fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent-hover);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: var(--s3);
+    }
+
+    h2 {
+      max-width: 780px;
+      font-size: clamp(34px, 4vw, 62px);
+      line-height: 1;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p {
+      color: rgba(248,248,245,.68);
+      max-width: 420px;
+    }
+
+    .status-band {
+      border-top: 1px solid var(--hairline);
+      border-bottom: 1px solid var(--hairline);
+      background: var(--panel);
+      padding: var(--s5) 0;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, .42fr);
+      gap: var(--s5);
+      align-items: center;
+    }
+
+    .status-copy h2 { font-size: clamp(30px, 3.4vw, 52px); }
+    .status-copy p { max-width: 720px; margin-top: var(--s3); }
+
+    .status-card {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border-radius: 6px;
+      padding: var(--s4);
+    }
+
+    .status-card .label {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: var(--s3);
+    }
+
+    .status-card p { color: rgba(24,24,24,.72); }
+
+    .feature-list {
+      display: grid;
+      border-top: 1px solid var(--hairline);
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr) minmax(220px, .42fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .row-index {
+      font-family: var(--font-mono);
+      color: var(--accent-hover);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .feature-row h3 {
+      font-size: clamp(24px, 2.8vw, 40px);
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .feature-row p { max-width: 460px; }
+
+    .stats {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+
+    .stats p { color: rgba(24,24,24,.66); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: rgba(24,24,24,.15);
+      border: 1px solid rgba(24,24,24,.15);
+    }
+
+    .stat {
+      min-height: 190px;
+      background: var(--paper);
+      padding: var(--s4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: .9;
+      color: var(--accent);
+      letter-spacing: -.03em;
+    }
+
+    .stat span {
+      font-weight: 700;
+      max-width: 250px;
+    }
+
+    .gallery {
+      padding-bottom: var(--s8);
+    }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1.05fr .75fr .9fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+
+    .photo-card {
+      position: relative;
+      min-height: 360px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--hairline);
+    }
+
+    .photo-card:nth-child(2) { margin-top: var(--s5); }
+    .photo-card:nth-child(3) { margin-top: var(--s4); }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.04);
+      transition: transform 420ms var(--ease), filter 420ms var(--ease);
+    }
+
+    .photo-card:hover img {
+      transform: scale(1.035);
+      filter: saturate(1) contrast(1.08);
+    }
+
+    .events {
+      background: var(--panel);
+      border-top: 1px solid var(--hairline);
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: minmax(0, .46fr) minmax(0, 1fr);
+      gap: var(--s6);
+      align-items: start;
+    }
+
+    .event-card {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border-radius: 6px;
+      padding: var(--s5);
+    }
+
+    .event-card .date {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: var(--s3);
+    }
+
+    .event-card h3 {
+      font-size: clamp(28px, 3vw, 46px);
+      line-height: 1;
+      font-weight: 650;
+    }
+
+    .event-card p {
+      margin-top: var(--s3);
+      color: rgba(24,24,24,.68);
+    }
+
+    .past-events {
+      display: grid;
+      border-top: 1px solid var(--hairline);
+    }
+
+    .past-events div {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      padding: var(--s3) 0;
+      border-bottom: 1px solid var(--hairline);
+      font-weight: 700;
+    }
+
+    .past-events time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(360px, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+
+    .contact-panel {
+      background: var(--panel-2);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      padding: var(--s5);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--s5);
+    }
+
+    .contact-list {
+      display: grid;
+      gap: var(--s3);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .contact-list a, .contact-list span {
+      display: block;
+      padding-bottom: var(--s3);
+      border-bottom: 1px solid var(--hairline);
+      color: #fff;
+      transition: color 180ms var(--ease);
+    }
+
+    .contact-list a:hover { color: var(--accent-hover); }
+
+    .hours {
+      display: grid;
+      gap: 1px;
+      background: var(--hairline);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .hours-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: var(--s3);
+      background: var(--bg);
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hours-row strong { color: #fff; }
+    .hours-row span { color: var(--muted); }
+
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+    }
+
+    .final-cta {
+      padding: var(--s8) 0;
+      background:
+        linear-gradient(90deg, rgba(192,0,0,.24), transparent 45%),
+        #0b0b0b;
+      border-top: 1px solid var(--hairline);
+    }
+
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--s5);
+      align-items: center;
+    }
+
+    .cta-box h2 { font-size: clamp(38px, 5vw, 76px); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      border-top: 1px solid var(--hairline);
+      padding: var(--s5) 0;
+      background: #0a0a0a;
+      color: rgba(255,255,255,.66);
+    }
+
+    .footer-grid {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--s4);
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .wf-disclaimer {
+      grid-column: 1 / -1;
+      padding-top: var(--s4);
+      border-top: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.48);
+      font-size: 12px;
+    }
+
+    .wf-disclaimer a {
+      color: rgba(255,255,255,.78);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding-top: 104px; }
+      .section-head, .status-grid, .timeline, .contact-grid, .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .feature-row {
+        grid-template-columns: 1fr;
+        gap: var(--s3);
+      }
+      .stats-grid, .photo-strip {
+        grid-template-columns: 1fr;
+      }
+      .photo-card, .photo-card:nth-child(2), .photo-card:nth-child(3) {
+        min-height: 280px;
+        margin-top: 0;
+      }
+      .cta-actions { justify-content: flex-start; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 28px, 1180px); }
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .nav-links .btn { min-height: 40px; padding: 0 12px; font-size: 13px; }
+      .logo img { max-height: 34px; }
+      .hero-actions, .cta-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .event-card, .contact-panel { padding: var(--s4); }
+      .hours-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Přejít na obsah</a>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Road Cafe bar">
+        <img src="https://cc25f6d715.clvaw-cdnwnd.com/938c78cff097aafc87bfdca0a20fd203/200001266-c4029c402b/logo-mini.png?ph=cc25f6d715" alt="Road Cafe bar">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420466610070">Volat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-label="Road Cafe bar">
+      <div class="hero-inner">
+        <div class="eyebrow">Pardubice · Hronovická 2768</div>
+        <h1>Road Cafe bar</h1>
+        <p class="lead">Americká atmosféra, večerní program a místo pro setkání u baru v centru Pardubic.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420466610070">Rezervovat telefonicky</a>
+          <a class="btn btn-secondary" href="#kontakt">Zobrazit kontakt</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <span class="meta-chip">Hodnocení 4,4</span>
+          <span class="meta-chip">826 recenzí</span>
+          <span class="meta-chip">roadcafepardubice@gmail.com</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-band" aria-label="Aktuální provoz">
+      <div class="wrap status-grid">
+        <div class="status-copy">
+          <div class="kicker">Aktuálně</div>
+          <h2>Dočasně zavřeno do 28. 5. 2026</h2>
+          <p>Z technických důvodů je Road Cafe uzavřeno od 9. 5. do 28. 5. 2026. Těšíme se na vás v pátek 29. 5. při koncertu Jazz Session Live + MKT Band.</p>
+        </div>
+        <div class="status-card">
+          <div class="label">Příští večer</div>
+          <p><strong>29. 5. 2026</strong><br>Jazz Session Live + MKT Band</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">U nás</div>
+            <h2>Bar, menu a akce pod jednou střechou.</h2>
+          </div>
+          <p>Road Cafe staví na večerní atmosféře, rezervacích a programu, který pravidelně přivádí hosty zpět do Hronovické.</p>
+        </div>
+        <div class="feature-list">
+          <article class="feature-row">
+            <div class="row-index">01 / BAR</div>
+            <h3>Americká chuť večera</h3>
+            <p>Prostor pro drink, posezení s přáteli a náladu, ve které se potkává barový pult, hudba a městský večer.</p>
+          </article>
+          <article class="feature-row">
+            <div class="row-index">02 / MENU</div>
+            <h3>Jídlo a pití na místě</h3>
+            <p>Menu si vyberete přímo v podniku nebo před rezervací ověříte telefonicky.</p>
+          </article>
+          <article class="feature-row">
+            <div class="row-index">03 / AKCE</div>
+            <h3>Koncerty a tematické noci</h3>
+            <p>V programu se objevují koncerty, karaoke i speciální večery jako Cuba Libre Night nebo Valentýnský večer.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Důvěra hostů">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Hosté</div>
+            <h2>Pardubický podnik s živou odezvou.</h2>
+          </div>
+          <p>Veřejné hodnocení a počet recenzí pomáhají rychle zjistit, co od návštěvy čekat.</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat">
+            <strong>4,4</strong>
+            <span>aktuální veřejné hodnocení</span>
+          </div>
+          <div class="stat">
+            <strong>826</strong>
+            <span>recenzí od hostů</span>
+          </div>
+          <div class="stat">
+            <strong>2768</strong>
+            <span>Hronovická adresa provozovny</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery" aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Atmosféra</div>
+            <h2>Světla, bar a večerní tempo.</h2>
+          </div>
+          <p>Teplé světlo, sklenice na baru a hudební večery určují rytmus návštěvy.</p>
+        </div>
+        <div class="photo-strip">
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="events" id="akce">
+      <div class="wrap timeline">
+        <div>
+          <div class="kicker">Program</div>
+          <h2>Večery, kvůli kterým se plánuje dopředu.</h2>
+        </div>
+        <div>
+          <article class="event-card">
+            <div class="date">Pátek 29. 5. 2026</div>
+            <h3>Jazz Session Live + MKT Band</h3>
+            <p>První oznámený večer po technické pauze. Rezervaci si ověřte telefonicky.</p>
+          </article>
+          <div class="past-events" aria-label="Proběhlé akce">
+            <div><span>The Factory koncert</span><time>12. 2. 2026</time></div>
+            <div><span>Valentýnský večer v Road Cafe</span><time>14. 2. 2026</time></div>
+            <div><span>Cuba Libre Night</span><time>17. 1. 2026</time></div>
+            <div><span>Karaoke Night</span><time>13. 12. 2025</time></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Kontakt</div>
+            <h2>Najdete nás v Hronovické.</h2>
+          </div>
+          <p>Pro rezervace a aktuální informace volejte přímo do podniku.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-panel">
+            <div class="contact-list">
+              <a href="tel:+420466610070">+420 466 610 070</a>
+              <a href="mailto:roadcafepardubice@gmail.com">roadcafepardubice@gmail.com</a>
+              <span>Hronovická 2768, 530 02 Pardubice-Pardubice I</span>
+              <span>ROAD CAFE PARDUBICE s.r.o. · IČ 10801227 · DIČ CZ 10801227</span>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hours-row"><strong>Pondělí</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Úterý</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Středa</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Čtvrtek</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Pátek</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Sobota</strong><span>Zavřeno do 28. 5. 2026</span></div>
+              <div class="hours-row"><strong>Neděle</strong><span>Zavřeno do 28. 5. 2026</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa provozovny Road Cafe bar"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-label="Rezervace">
+      <div class="wrap cta-box">
+        <div>
+          <div class="kicker">Rezervace</div>
+          <h2>Domluvte si místo u baru.</h2>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="tel:+420466610070">Volat do Road Cafe</a>
+          <a class="btn btn-secondary" href="mailto:roadcafepardubice@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-grid">
+      <span>Road Cafe bar · Hronovická 2768, Pardubice</span>
+      <span>+420 466 610 070</span>
+      <div class="wf-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/9wm9l0h" rel="nofollow">webflex.cz/delete/9wm9l0h</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7767904, 50.0342098],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#C00000' })
+      .setLngLat([15.7767904, 50.0342098])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
