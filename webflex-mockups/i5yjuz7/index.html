@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FIORI E CAFFE | Květiny a kavárna v Táboře</title>
+  <meta name="description" content="FIORI E CAFFE v historickém centru Tábora: květiny, zakázková floristika, káva, dezerty, víno, prosecco a klidné posezení." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111113;
+      --bg-2: #171416;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f8f3ec;
+      --muted: rgba(248, 243, 236, 0.70);
+      --soft: rgba(248, 243, 236, 0.10);
+      --line: rgba(248, 243, 236, 0.11);
+      --accent: #D9A46F;
+      --accent-dark: #8b5b31;
+      --accent-ink: #241711;
+      --shadow: 0 34px 110px rgba(0, 0, 0, 0.34);
+      --shadow-soft: 0 28px 90px rgba(0, 0, 0, 0.24);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(248,243,236,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(248,243,236,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(217,164,111,0.16), transparent 32rem),
+        radial-gradient(circle at 8% 42%, rgba(96,64,64,0.28), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .032;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(17,17,19,0.78);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .nav-links a,
+    .footer-links a,
+    .credit-link {
+      transition: color 180ms var(--ease), opacity 180ms var(--ease);
+    }
+    .nav-links a:hover,
+    .footer-links a:hover,
+    .credit-link:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(0,0,0,0.24); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #e6b986; }
+    .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.45); color: #ffffff; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.72); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, 1.02fr);
+      align-items: center;
+      gap: 56px;
+      padding: 68px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(217,164,111,.14);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 690px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    h3 { font-size: clamp(22px, 2.2vw, 34px); }
+    p { hyphens: auto; }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.72;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+      color: rgba(248,243,236,.62);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-note span {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.055);
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 42px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+    .hero-card img,
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .floating-card {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(318px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(31, 26, 24, .78);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .floating-card strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .floating-card span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .56fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.72;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(220px, .45fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(360px, .72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .story-card,
+    .stats-card,
+    .contact-card,
+    .faq-item {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .story-card { padding: clamp(28px, 5vw, 58px); }
+    .story-card p {
+      max-width: 760px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.78;
+    }
+    .stats-card {
+      display: grid;
+      align-content: center;
+      gap: 18px;
+      padding: 32px;
+    }
+    .stat {
+      min-height: 128px;
+      padding: 24px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.055);
+    }
+    .stat b {
+      display: block;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+    }
+    .stat span { display: block; margin-top: 10px; color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .85fr .75fr;
+      grid-auto-rows: 310px;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      overflow: hidden;
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card:nth-child(2) { margin-top: 46px; }
+    .gallery-card:nth-child(3) { margin-top: 92px; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 236px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .step h3 { font-size: 25px; }
+    .step p { margin: 18px 0 0; color: var(--muted); }
+
+    .menu-callout {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(320px, .48fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-panel {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(217,164,111,.18), rgba(255,255,255,.07));
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-panel p { margin: 20px 0 0; max-width: 660px; color: var(--muted); font-size: 18px; line-height: 1.72; }
+    .menu-list {
+      display: grid;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .menu-list div:last-child { border-bottom: 0; }
+    .menu-list span:last-child {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .48fr) minmax(0, .82fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 30px; }
+    .contact-card h3 { margin-bottom: 22px; }
+    .contact-line {
+      display: grid;
+      gap: 4px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .contact-line a,
+    .contact-line strong { font-size: 17px; font-weight: 800; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 220px;
+      padding: 26px;
+    }
+    .faq-item h3 { font-size: 25px; }
+    .faq-item p { color: var(--muted); line-height: 1.68; }
+
+    .final-cta {
+      padding: 92px 0 74px;
+    }
+    .cta-band {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) auto;
+      align-items: center;
+      gap: 32px;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 38px;
+      background: var(--ink);
+      color: var(--bg);
+      box-shadow: var(--shadow);
+    }
+    .cta-band h2 { color: var(--bg); }
+    .cta-band p { max-width: 660px; margin: 18px 0 0; color: rgba(17,17,19,.68); font-size: 18px; line-height: 1.68; }
+    .cta-band .btn-primary { background: var(--accent-ink); color: #fff; }
+    .cta-band .btn-primary:hover { background: #3a241a; }
+
+    footer {
+      padding: 34px 0 44px;
+      border-top: 1px solid var(--line);
+      color: rgba(248,243,236,.58);
+      font-size: 13px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-weight: 800;
+    }
+    .credits {
+      margin-top: 20px;
+      color: rgba(248,243,236,.44);
+      font-size: 12px;
+    }
+    .disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: rgba(248,243,236,.48);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .disclaimer a { color: rgba(248,243,236,.78); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .menu-callout,
+      .contact-grid,
+      .cta-band {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-card { aspect-ratio: 16 / 10; }
+      .floating-card { right: 14px; bottom: 14px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .steps,
+      .faq-grid { grid-template-columns: repeat(2, 1fr); }
+      .gallery-strip { grid-template-columns: 1fr; grid-auto-rows: 280px; }
+      .gallery-card:nth-child(2),
+      .gallery-card:nth-child(3) { margin-top: 0; }
+      .cta-band { color: var(--bg); }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .brand img { max-height: 38px; }
+      h1 { font-size: clamp(40px, 14vw, 64px); }
+      section { padding: 62px 0; }
+      .steps,
+      .faq-grid { grid-template-columns: 1fr; }
+      .hero-actions { align-items: stretch; }
+      .btn { width: 100%; }
+      .floating-card { position: static; width: auto; margin-top: 14px; }
+      .footer-main { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="FIORI E CAFFE">
+        <img src="img/Nadir_Fiore.png" alt="FIORI E CAFFE">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420603729776">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Tábor · Pražská 221/5</div>
+        <h1 id="hero-title">Káva mezi květinami</h1>
+        <p class="lead">Květinářství a kavárna v historickém centru Tábora. Zastavte se pro originální vazbu, šálek kávy, domácí dezert, víno nebo prosecco v klidné atmosféře čerstvých květin.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420603729776">Objednat květiny</a>
+          <a class="btn btn-outline" href="#kontakt">Najít cestu</a>
+        </div>
+        <div class="hero-note" aria-label="Rychlé informace">
+          <span>4.9 · 102 recenzí</span>
+          <span>od roku 2020</span>
+          <span>káva · květiny · prosecco</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="floating-card" aria-label="Kontakt">
+          <strong>Ozvěte se nám</strong>
+          <span><span>telefon</span><a href="tel:+420603729776">+420 603 729 776</a></span>
+          <span><span>e-mail</span><a href="mailto:fioriecaffe4@gmail.com">fioriecaffe4@gmail.com</a></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="wrap" aria-labelledby="services-title">
+      <div class="section-head">
+        <h2 id="services-title">Co u nás najdete</h2>
+        <p>Floristika a kavárna tu fungují jako jeden prostor. Můžete přijít pro kytici, domluvit výzdobu na oslavu nebo si jen v klidu sednout ke kávě.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Zakázková floristika</h3>
+          <p>Originální a dekorativní vazby pro narozeniny, poděkování, návštěvu i každodenní radost.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Květinový servis akcí</h3>
+          <p>Kompletní výzdoba svateb, oslav a firemních večírků podle nálady místa a příležitosti.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Květinové předplatné</h3>
+          <p>Pravidelná dávka čerstvých květin pro domov, kancelář, recepci nebo oblíbený podnik.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <h3>Workshopy a kavárna</h3>
+          <p>Zážitkové vázání květin, výběrová káva, domácí dezerty, víno a sklenka vychlazeného prosecca.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="story-title">
+      <div class="split">
+        <article class="story-card">
+          <div class="eyebrow">Fiori e Caffè</div>
+          <h2 id="story-title">Vychutnávat pomalu</h2>
+          <p>Věříme, že nejhezčí věci v životě si zaslouží čas. Proto se u nás vůně kávy přirozeně prolíná s květinami, klidným posezením a vazbami, které dokážou vyjádřit emoce i bez dlouhých slov.</p>
+        </article>
+        <aside class="stats-card" aria-label="Důvěra hostů">
+          <div class="stat">
+            <b>4.9</b>
+            <span>hodnocení od hostů na základě veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <b>102</b>
+            <span>recenzí od lidí, kteří se u nás zastavili</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="atmosfera" class="wrap" aria-labelledby="gallery-title">
+      <div class="section-head">
+        <h2 id="gallery-title">Teplé světlo, klid, květiny</h2>
+        <p>Prostor pro malou pauzu během dne, schůzku u kávy i domluvu květinové výzdoby pro důležitý den.</p>
+      </div>
+      <div class="gallery-strip" aria-label="Atmosféra kavárny">
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </figure>
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="steps-title">
+      <div class="section-head">
+        <h2 id="steps-title">Jak se domluvíme</h2>
+        <p>Ať potřebujete jednu kytici, pravidelný květinový servis nebo výzdobu celé oslavy, stačí se ozvat a sladíme příležitost, barvy i termín.</p>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <span class="num">01</span>
+          <div>
+            <h3>Napište nebo zavolejte</h3>
+            <p>Popište příležitost, datum a představu o květinách.</p>
+          </div>
+        </article>
+        <article class="step">
+          <span class="num">02</span>
+          <div>
+            <h3>Doladíme náladu</h3>
+            <p>Vybereme styl vazby, barevnost a rozsah výzdoby.</p>
+          </div>
+        </article>
+        <article class="step">
+          <span class="num">03</span>
+          <div>
+            <h3>Připravíme květiny</h3>
+            <p>Vazba vzniká z čerstvých květin pro konkrétní chvíli.</p>
+          </div>
+        </article>
+        <article class="step">
+          <span class="num">04</span>
+          <div>
+            <h3>Vyzvednete u nás</h3>
+            <p>Nebo se domluvíme na květinovém servisu pro akci.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="cafe-title">
+      <div class="menu-callout">
+        <article class="menu-panel">
+          <div class="eyebrow">Kavárna</div>
+          <h2 id="cafe-title">Šálek, dezert, prosecco</h2>
+          <p>Když chcete nechat shon ulice za dveřmi, posaďte se mezi květiny. Připravíme kávu, něco sladkého, víno nebo vychlazené prosecco.</p>
+        </article>
+        <div class="menu-list" aria-label="Kavárenská nabídka">
+          <div><span>Výběrová káva</span><span>kavárna</span></div>
+          <div><span>Domácí dezerty</span><span>sladké</span></div>
+          <div><span>Víno</span><span>večer</span></div>
+          <div><span>Prosecco</span><span>chlazené</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap" aria-labelledby="contact-title">
+      <div class="section-head">
+        <h2 id="contact-title">Kde nás najdete</h2>
+        <p>Jsme v srdci Tábora na Pražské ulici. Pro objednávku květin, dotaz k výzdobě nebo rezervaci stolu se ozvěte telefonicky nebo e-mailem.</p>
+      </div>
+      <div class="contact-grid">
+        <article class="contact-card">
+          <h3>Kontakt</h3>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <strong>Pražská 221/5, 390 01 Tábor 1</strong>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a href="tel:+420603729776">+420 603 729 776</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:fioriecaffe4@gmail.com">fioriecaffe4@gmail.com</a>
+          </div>
+          <div class="contact-line">
+            <span>Web</span>
+            <a href="https://fioriecaffetabor.cz/">fioriecaffetabor.cz</a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa s polohou FIORI E CAFFE"></div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="faq-title">
+      <div class="section-head">
+        <h2 id="faq-title">Časté dotazy</h2>
+        <p>Nejsnazší domluva je po telefonu. Pokud řešíte květiny na akci, pošlete i datum, místo a představu o stylu.</p>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-item">
+          <h3>Děláte svatební výzdobu?</h3>
+          <p>Ano, domluvíme kompletní květinový servis pro svatby, oslavy i firemní večírky.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Lze objednat pravidelné květiny?</h3>
+          <p>Ano, nabízíme květinové předplatné pro pravidelnou dávku čerstvých květin.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Můžeme přijít jen na kávu?</h3>
+          <p>Ano, kavárna je tu pro kávu, dezert, víno i prosecco v obklopení květin.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap final-cta" aria-labelledby="cta-title">
+      <div class="cta-band">
+        <div>
+          <h2 id="cta-title">Zastavte se v Táboře</h2>
+          <p>Objednejte květiny, domluvte výzdobu nebo si přijďte odpočinout ke kávě v historickém centru.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420603729776">+420 603 729 776</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <div>
+          <strong>FIORI E CAFFE</strong><br>
+          Pražská 221/5, 390 01 Tábor 1
+        </div>
+        <div class="footer-links">
+          <a href="tel:+420603729776">Telefon</a>
+          <a href="mailto:fioriecaffe4@gmail.com">E-mail</a>
+          <a href="#kontakt">Mapa</a>
+        </div>
+      </div>
+      <div class="credits">
+        Fotografie: <a class="credit-link" href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>, <a class="credit-link" href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>, <a class="credit-link" href="https://www.pexels.com/@zaktech90">Zain Ali</a>, <a class="credit-link" href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Việt Anh Nguyễn</a>.
+      </div>
+      <div class="disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazná vizuální prezentace. Nejste-li adresátem, můžete ji odstranit na adrese <a href="https://app.webflex.cz/delete/i5yjuz7">app.webflex.cz/delete/i5yjuz7</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.659873399999999, 49.4137425],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#D9A46F' })
+      .setLngLat([14.659873399999999, 49.4137425])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
