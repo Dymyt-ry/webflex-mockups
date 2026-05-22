@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumi Café | Kavárna v Táboře</title>
+  <meta name="description" content="Lumi Café v Táboře na Komenského: kvalitní káva, čaje, dezerty, matcha, speciální latté a klidné posezení.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: rgba(255, 255, 255, .84);
+      --surface-strong: #ffffff;
+      --surface-soft: #eef1f8;
+      --ink: #13151b;
+      --muted: #626978;
+      --line: rgba(19, 21, 27, .09);
+      --accent: #2040A0;
+      --accent-deep: #172d70;
+      --accent-soft: rgba(32, 64, 160, .1);
+      --shadow: 0 34px 92px rgba(22, 35, 72, .1);
+      --shadow-small: 0 20px 58px rgba(22, 35, 72, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(19,21,27,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(19,21,27,.018) 1px, transparent 1px),
+        radial-gradient(circle at 88% 8%, rgba(32,64,160,.12), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 700px; font-size: clamp(40px, 6vw, 88px); }
+    h2 { font-size: clamp(34px, 4vw, 62px); }
+    h3 { font-size: 23px; line-height: 1.08; }
+
+    .wrap { width: min(1180px, calc(100% - 36px)); margin-inline: auto; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 210ms var(--ease), background 210ms var(--ease), border-color 210ms var(--ease), box-shadow 210ms var(--ease), color 210ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(19,21,27,.09); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: #193684; }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn.secondary:hover { background: rgba(19,21,27,.04); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251,251,253,.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, 1.06fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 82px);
+      padding: 64px 0 72px;
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.6vw, 22px);
+      line-height: 1.68;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      color: var(--accent-deep);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 10px 28px rgba(22,35,72,.06);
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 38px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery-card img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.02);
+    }
+    .float-card {
+      position: absolute;
+      right: -16px;
+      bottom: -26px;
+      width: min(320px, 82%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(18px);
+    }
+    .float-card strong { display: block; margin-bottom: 8px; }
+    .float-card span { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 12px; line-height: 1.55; }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .5fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; line-height: 1.72; }
+
+    .menu-list { display: grid; gap: 12px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) minmax(230px, .48fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .menu-row .num { color: var(--accent-deep); font-family: var(--font-mono); font-weight: 700; }
+    .menu-row p { line-height: 1.64; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .trust-card {
+      min-height: 178px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card .value {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 58px);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .trust-card p { margin-top: 18px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(400px, .92fr) minmax(0, 1fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .feature-lines {
+      margin-top: 28px;
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+    .feature-line {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-line b { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; text-transform: uppercase; }
+    .feature-line span { color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-small);
+    }
+    .gallery-card.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .68fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+    }
+    .contact-card h3 { margin-bottom: 20px; }
+    .contact-list { display: grid; gap: 16px; }
+    .contact-item {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-item b { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; text-transform: uppercase; }
+    .contact-item a, .contact-item span { color: var(--ink); font-weight: 700; }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-small);
+      background: var(--surface-soft);
+    }
+
+    .final {
+      padding: 92px 0;
+      background: #121726;
+      color: #fff;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { margin-top: 18px; color: rgba(255,255,255,.72); max-width: 620px; }
+    .final .btn.primary { background: #fff; color: #121726; }
+    .final .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.09); }
+
+    .site-footer {
+      padding: 34px 0;
+      color: #7b8190;
+      background: #0e111a;
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { color: #d9e1ff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .contact-grid, .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: 0; padding-top: 48px; }
+      .hero-photo { border-radius: 30px; }
+      .float-card { right: 14px; bottom: 14px; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-strip, .gallery { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card.tall { min-height: 280px; }
+      section { padding: 68px 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .logo img { max-height: 36px; }
+      .hero { gap: 32px; }
+      .hero-actions, .final-grid .hero-actions { width: 100%; }
+      .btn { width: 100%; }
+      .float-card { position: static; width: 100%; margin-top: 14px; }
+      .menu-row, .trust-card, .contact-card { padding: 22px; border-radius: 22px; }
+      .feature-line { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 360px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Lumi Café">
+        <img src="https://131d831744.cbaul-cdnwnd.com/714efb286fcabdb7d73bb8cca5a1f2e4/200000046-43bb343bb4/IMG_0939%20lumi%20cafe%20cpy.png?ph=131d831744" alt="Lumi Café (projekt na ekonomiku)">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="mailto:lumicafe@gmail.com">Napište nám</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-label="Úvod">
+      <div>
+        <span class="eyebrow">Tábor · Komenského 1177/25</span>
+        <h1>Káva a pohoda</h1>
+        <p class="lead">Klidná kavárna v Táboře pro šálek kvalitní kávy, čaj, dezert, matchu nebo speciální latté. Přijďte si odpočinout, posedět s přáteli nebo si dopřát chvíli pro sebe.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#kontakt">Najít cestu</a>
+          <a class="btn secondary" href="mailto:lumicafe@gmail.com">lumicafe@gmail.com</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <span class="meta-pill">Káva</span>
+          <span class="meta-pill">Čaje</span>
+          <span class="meta-pill">Dezerty</span>
+          <span class="meta-pill">Matcha</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="float-card">
+          <strong>Lumi Café v Táboře</strong>
+          <span>Komenského 1177/25, Tábor 2</span>
+          <span>Hodnocení 3,5 z 5 · 2 recenze</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Nabídka</span>
+            <h2>Na co se můžete zastavit</h2>
+          </div>
+          <p>V nabídce najdete nápoje a sladké doplnění pro pomalé posezení i krátkou zastávku během dne v centru Tábora.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <h3>Kvalitní káva</h3>
+            <p>Pečlivě připravený šálek pro chvíli klidu, práci i setkání s přáteli.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <h3>Čaje a matcha</h3>
+            <p>Teplé i jemně povzbudivé nápoje pro dny, kdy chcete zpomalit.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <h3>Dezerty a speciální latté</h3>
+            <p>Originální dezerty a nápojové speciality k posezení v příjemném prostředí.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust-strip">
+        <article class="trust-card">
+          <span class="value">3,5</span>
+          <p>Hodnocení na profilu podniku podle dostupných údajů.</p>
+        </article>
+        <article class="trust-card">
+          <span class="value">2</span>
+          <p>Veřejné recenze uvedené u kavárny.</p>
+        </article>
+        <article class="trust-card">
+          <span class="value">390 02</span>
+          <p>Tábor 2, Komenského 1177/25.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <span class="eyebrow">Posezení</span>
+          <h2>Klidné místo na Komenského</h2>
+          <p class="lead">Lumi Café staví na příjemném prostředí, vůni kávy a drobných radostech, které se vejdou do běžného dne. Hodí se pro odpočinek, práci i nenucené setkání.</p>
+          <div class="feature-lines">
+            <div class="feature-line">
+              <b>Pro koho</b>
+              <span>Pro hosty, kteří hledají kávu, čaj, dezert nebo matchu v klidnější části dne.</span>
+            </div>
+            <div class="feature-line">
+              <b>Adresa</b>
+              <span>Komenského 1177/25, Tábor 2, 390 02 Tábor.</span>
+            </div>
+            <div class="feature-line">
+              <b>Kontakt</b>
+              <span>Dotazy a rezervace směřujte na lumicafe@gmail.com.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Fotogalerie</span>
+            <h2>Teplé světlo, tichý stůl</h2>
+          </div>
+          <p>Atmosféra kavárny stojí na detailech: světlo, vůně, sklenice, dřevo a čas, který nikam nespěchá.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kontakt</span>
+            <h2>Zastavte se v Táboře</h2>
+          </div>
+          <p>Kavárnu najdete na adrese Komenského 1177/25. Pro dotazy použijte e-mail uvedený níže.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Lumi Café</h3>
+            <div class="contact-list">
+              <div class="contact-item">
+                <b>Adresa</b>
+                <span>Komenského 1177/25, Tábor 2, 390 02 Tábor</span>
+              </div>
+              <div class="contact-item">
+                <b>E-mail</b>
+                <a href="mailto:lumicafe@gmail.com">lumicafe@gmail.com</a>
+              </div>
+              <div class="contact-item">
+                <b>Instagram</b>
+                <span>@lumi.cafe.official</span>
+              </div>
+              <div class="contact-item">
+                <b>Telefon</b>
+                <span>Není uveden</span>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Lumi Café"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Závěr">
+      <div class="wrap final-grid">
+        <div>
+          <span class="eyebrow">Lumi Café</span>
+          <h2>Šálek klidu v Táboře</h2>
+          <p>Přijďte na kávu, čaj, dezert, matchu nebo speciální latté do kavárny na Komenského.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="#kontakt">Zobrazit adresu</a>
+          <a class="btn secondary" href="mailto:lumicafe@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="disclaimer">
+        Toto je nezávazná vizuální prezentace od Webflexu. Pokud si ji nepřejete zobrazovat, můžete ji smazat na adrese
+        <a href="https://app.webflex.cz/delete/olwgqfq">https://app.webflex.cz/delete/olwgqfq</a>.
+      </div>
+      <div>Foto: Pexels</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6774355, 49.4081409],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#2040A0' })
+      .setLngLat([14.6774355, 49.4081409])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
