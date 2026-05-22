@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VeCafe & Sweet s.r.o. | Kavárna s duší v Přerově</title>
+  <meta name="description" content="Výběrová káva, vlastní dezerty, domácí chléb a příjemné posezení v historickém domě na náměstí v Přerově.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101010;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f7f3ee;
+      --muted: rgba(247, 243, 238, 0.68);
+      --soft: rgba(247, 243, 238, 0.12);
+      --accent: #8A6A5A;
+      --accent-light: #c9a995;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --radius: 22px;
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 14% 0%, rgba(138,106,90,.28), transparent 34rem),
+        radial-gradient(circle at 84% 20%, rgba(255,255,255,.08), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, h2 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0; line-height: .92; overflow-wrap: anywhere; }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(36px, 4.6vw, 68px); }
+    h3 { font-size: 22px; line-height: 1.08; }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(22px);
+      background: rgba(16, 16, 16, .72);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .nav {
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      text-transform: uppercase;
+      max-width: 260px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .nav-links a, .btn, .text-link {
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease);
+    }
+    .nav-links a:hover, .text-link:hover { color: var(--ink); }
+    .nav-links a:focus-visible, .btn:focus-visible, .text-link:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-light);
+      outline-offset: 3px;
+      border-radius: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active, .text-link:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 16px 34px rgba(138,106,90,.28); }
+    .btn.primary:hover { background: #9a7867; }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #fff; background: rgba(255,255,255,.04); }
+    .btn.secondary:hover { border-color: rgba(255,255,255,.72); background: rgba(255,255,255,.08); }
+
+    section { padding: 92px 0; }
+    .hero { padding: 62px 0 94px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .82fr);
+      gap: 46px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: .08em;
+      margin-bottom: 18px;
+    }
+    .lead { max-width: 640px; margin-top: 24px; font-size: 20px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-media {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+      position: relative;
+    }
+    .hero-media img, .photo-card img, .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(16,16,16,.34));
+      pointer-events: none;
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 15px 16px;
+      border-radius: 18px;
+      background: rgba(16,16,16,.58);
+      backdrop-filter: blur(16px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 1fr minmax(280px, 430px);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .soft-panel, .card, .hours-card, .map-card {
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px 1fr minmax(180px, 320px);
+      gap: 28px;
+      align-items: center;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.055);
+      transition: transform 190ms var(--ease), background 190ms var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: rgba(255,255,255,.085); }
+    .service-row .num, .stat .num {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-weight: 700;
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .8fr 1.1fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat, .quote {
+      padding: 28px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(48px, 6vw, 82px);
+      line-height: .85;
+      overflow-wrap: anywhere;
+    }
+    .quote blockquote {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.14;
+      font-weight: 700;
+    }
+    .quote cite { color: var(--muted); font-style: normal; margin-top: 24px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .photo-card {
+      min-height: 430px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .story {
+      padding: 38px;
+      display: grid;
+      align-content: center;
+      gap: 24px;
+    }
+    .story ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 14px;
+    }
+    .story li {
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,.11);
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .menu-table {
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255,255,255,.055);
+      box-shadow: var(--shadow);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(170px, 260px);
+      gap: 24px;
+      padding: 24px 28px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row span { font-family: var(--font-mono); color: var(--accent-light); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 300px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .gallery figure:first-child { min-height: 430px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .72fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .hours-card { padding: 30px; }
+    .hours {
+      margin-top: 22px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+    .hours .today {
+      color: #fff;
+      background: rgba(138,106,90,.22);
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-radius: 12px;
+      border-bottom: 0;
+    }
+    .contact-lines {
+      display: grid;
+      gap: 10px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+    .contact-lines a:hover { color: var(--ink); }
+    .map-card { padding: 12px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; background: #171717; }
+
+    .faq { display: grid; gap: 12px; max-width: 880px; }
+    details {
+      background: rgba(255,255,255,.06);
+      border-radius: 18px;
+      padding: 20px 22px;
+      box-shadow: 0 18px 56px rgba(0,0,0,.18);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    details p { margin-top: 14px; }
+
+    .final {
+      padding: 44px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(138,106,90,.5), rgba(255,255,255,.08));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(34px, 5vw, 72px); }
+    .footer {
+      padding: 38px 0 42px;
+      color: rgba(247,243,238,.58);
+      font-size: 13px;
+    }
+    .footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding-top: 22px;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { height: auto; padding: 18px 0; align-items: flex-start; }
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero-grid { gap: 30px; }
+      .hero-media { aspect-ratio: 16 / 10; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-grid, .gallery { grid-template-columns: 1fr; }
+      .photo-card, .gallery figure, .gallery figure:first-child { min-height: 280px; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      section { padding: 68px 0; }
+      .final { padding: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">VeCafe & Sweet s.r.o.</a>
+      <div class="nav-links">
+        <a href="#kava">Káva</a>
+        <a href="#pribeh">O nás</a>
+        <a href="#oteviraci-doba">Otevírací doba</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420581211311">Rezervace</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Přerov, náměstí T. G. Masaryka</div>
+          <h1>Kavárna s duší</h1>
+          <p class="lead">Výběrová káva, vlastní dezerty a domácí chléb v historickém domě v centru Přerova. Zastavte se na šálek, snídani, sklenku prosecca nebo chvíli klidu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420581211311">Zavolat rezervaci</a>
+            <a class="btn secondary" href="#oteviraci-doba">Dnešní provoz</a>
+          </div>
+        </div>
+        <div class="hero-media">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <div class="hero-note">
+            <span>Výběrová káva</span>
+            <span>Vlastní pečení</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Děláme kávu jinak</h2>
+          <p>Kávu bereme jako moment k zastavení, propojení smyslů a odpočinek během dne. Na espressu i filtrech najdete výběrovou kávu z olomoucké pražírny KIKAFE.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Výběrová káva</h3>
+            <p>Espresso, filtr a poctivý přístup k surovinám z dobrých zdrojů.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Vlastní dezerty</h3>
+            <p>Pečeme z čerstvých surovin a regionálních zdrojů tak, jak bychom pekli pro sebe.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Domácí chléb a posezení</h3>
+            <p>Polévky, pomazánky, autorské dárky, prosecco i dobře čepované pivo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a reference">
+      <div class="wrap trust-grid">
+        <article class="card stat">
+          <div class="num">Google</div>
+          <strong>4,4</strong>
+          <p>hodnocení od hostů</p>
+        </article>
+        <article class="card stat">
+          <div class="num">Reference</div>
+          <strong>406</strong>
+          <p>zkušeností návštěvníků</p>
+        </article>
+        <article class="card quote">
+          <blockquote>„Nádherná kavárna s výbornou kávou a dezerty.“</blockquote>
+          <cite>Aneta Gerlová</cite>
+        </article>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="wrap split">
+        <figure class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="soft-panel story">
+          <div>
+            <div class="eyebrow">V centru Přerova</div>
+            <h2>Čas a prostor</h2>
+          </div>
+          <p>VeCafe vzniklo v historickém domě na náměstí jako místo pro kávu, rozhovor a klid. Důraz držíme na vlastní produkci, lokální dodavatele a prostředí, kam se dá vracet.</p>
+          <ul>
+            <li>Výhradně čerstvé a kvalitní suroviny.</li>
+            <li>Dezerty a chléb z vlastní kuchyně.</li>
+            <li>Příjemné posezení u kávy, prosecca i piva.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Nabídka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Na co se zastavit</h2>
+          <p>Jídelní lístek se přirozeně mění podle surovin a chuti kuchyně. Tyhle stálice u nás hosté hledají nejčastěji.</p>
+        </div>
+        <div class="menu-table">
+          <div class="menu-row">
+            <h3>Snídaně a něco malého</h3>
+            <span>ráno až odpoledne</span>
+          </div>
+          <div class="menu-row">
+            <h3>Polévky s domácím chlebem</h3>
+            <span>vlastní pečení</span>
+          </div>
+          <div class="menu-row">
+            <h3>Dezerty a sladké vitríny</h3>
+            <span>pečeme sami</span>
+          </div>
+          <div class="menu-row">
+            <h3>Káva KIKAFE, prosecco, pivo</h3>
+            <span>šálek i sklenka</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kavárny">
+      <div class="wrap gallery">
+        <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+        <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+      </div>
+    </section>
+
+    <section id="oteviraci-doba">
+      <div class="wrap contact-grid">
+        <aside class="hours-card">
+          <div class="eyebrow">Rezervace: 581 211 311</div>
+          <h2>Otevírací doba</h2>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Pondělí</span><span>08:00 - 19:00</span></div>
+            <div><span>Úterý</span><span>08:00 - 19:00</span></div>
+            <div><span>Středa</span><span>08:00 - 19:00</span></div>
+            <div><span>Čtvrtek</span><span>08:00 - 19:00</span></div>
+            <div class="today"><span>Pátek</span><span>08:00 - 21:00</span></div>
+            <div><span>Sobota</span><span>08:00 - 20:00</span></div>
+            <div><span>Neděle</span><span>09:00 - 19:00</span></div>
+          </div>
+          <div class="contact-lines" id="kontakt">
+            <a href="tel:+420581211311">+420 581 211 311</a>
+            <a href="mailto:info@vecafe.cz">info@vecafe.cz</a>
+            <span>nám. T. G. Masaryka 225/14, 750 02 Přerov-Přerov I-Město</span>
+          </div>
+        </aside>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa s polohou kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Než dorazíte</h2>
+          <p>Krátce k věcem, na které se hosté obvykle ptají před návštěvou.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Dá se udělat rezervace?</summary>
+            <p>Ano, zavolejte prosím na číslo 581 211 311.</p>
+          </details>
+          <details>
+            <summary>Pečete dezerty přímo u vás?</summary>
+            <p>Ano. Dezerty i domácí chléb připravujeme z poctivých surovin a podle možností z regionálních zdrojů.</p>
+          </details>
+          <details>
+            <summary>Jakou kávu používáte?</summary>
+            <p>Na espressu i filtrech pracujeme s výběrovou kávou z olomoucké pražírny KIKAFE.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final">
+        <div>
+          <div class="eyebrow">Moment k zastavení</div>
+          <h2>Uvidíme se na kávě.</h2>
+        </div>
+        <a class="btn primary" href="tel:+420581211311">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>VeCafe & Sweet s.r.o. © 2026</span>
+      <span>Prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/5e00wp6">Odstranit tuto stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.4498167, 49.4554061],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#8A6A5A' })
+      .setLngLat([17.4498167, 49.4554061])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
