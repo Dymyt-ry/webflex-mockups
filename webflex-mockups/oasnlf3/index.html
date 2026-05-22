@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AUX bar | Bar v srdci Tábora</title>
+  <meta name="description" content="AUX bar ve Střelnici v Táboře. Káva, rumy, destiláty, koktejly, terasa s výhledem na Jordán a salónek pro soukromí.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101112;
+      --panel: #181a1b;
+      --panel-2: #202223;
+      --paper: #f8f7f1;
+      --ink: #f7f7f2;
+      --muted: rgba(247, 247, 242, .68);
+      --muted-2: rgba(247, 247, 242, .48);
+      --dark-ink: #111312;
+      --line: rgba(255, 255, 255, .12);
+      --line-strong: rgba(255, 255, 255, .22);
+      --accent: #78C7AA;
+      --accent-ink: #07110d;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+      --wrap: min(1180px, calc(100% - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+    }
+    h2 {
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: .96;
+    }
+    h3 {
+      font-size: clamp(22px, 2vw, 30px);
+      line-height: 1.04;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(120,199,170,.12);
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(16, 17, 18, .78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease), box-shadow 200ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 38px rgba(0,0,0,.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #8ed8bd; }
+    .btn-outline {
+      border-color: rgba(255,255,255,.45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.68); }
+
+    .hero {
+      position: relative;
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background: #0b0b0b;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.08) brightness(.58);
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(10,10,10,.82), rgba(10,10,10,.56) 48%, rgba(10,10,10,.25)), linear-gradient(180deg, rgba(10,10,10,.26), rgba(10,10,10,.78));
+    }
+    .hero-inner {
+      width: var(--wrap);
+      margin-inline: auto;
+      padding: var(--s7) 0 var(--s6);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero .lead {
+      max-width: 610px;
+      margin-top: var(--s4);
+      color: rgba(255,255,255,.78);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: var(--s5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .meta-chip {
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(14px);
+    }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(280px, .5fr);
+      gap: var(--s5);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    .bar-rows {
+      border-top: 1px solid var(--line);
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(260px, .46fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .bar-row .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .bar-row p { max-width: 560px; }
+
+    .feature-split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(420px, 1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.05);
+    }
+    .feature-copy {
+      display: grid;
+      gap: var(--s4);
+    }
+    .detail-list {
+      display: grid;
+      gap: 12px;
+      margin-top: var(--s3);
+    }
+    .detail {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .detail strong {
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+    }
+    .stat strong {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+    }
+    .stat span {
+      max-width: 250px;
+      color: var(--muted);
+    }
+
+    .paper-band {
+      color: var(--dark-ink);
+      background: var(--paper);
+    }
+    .paper-band h2, .paper-band h3 { color: var(--dark-ink); }
+    .paper-band p { color: rgba(17,19,18,.68); }
+    .menu-table {
+      display: grid;
+      border-top: 1px solid rgba(17,19,18,.16);
+    }
+    .menu-line {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(0, 1fr) auto;
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid rgba(17,19,18,.16);
+    }
+    .menu-line b {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2.6vw, 38px);
+      font-weight: 700;
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .menu-line small {
+      color: rgba(17,19,18,.58);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    .menu-line em {
+      color: var(--dark-ink);
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 280px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .gallery-item.tall { aspect-ratio: 4 / 5; }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.04);
+      transition: transform 500ms var(--ease), filter 500ms var(--ease);
+    }
+    .gallery-item:hover img { transform: scale(1.035); filter: saturate(1) contrast(1.08); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, 1fr);
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      display: grid;
+      align-content: start;
+      gap: var(--s4);
+      padding: var(--s5);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .hours {
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .hours .today {
+      color: var(--ink);
+      border-color: rgba(120,199,170,.5);
+    }
+    .map-wrap {
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    #map { height: 420px; }
+
+    .final-cta {
+      padding: var(--s7) 0 var(--s8);
+      text-align: center;
+    }
+    .final-cta .wrap {
+      display: grid;
+      justify-items: center;
+      gap: var(--s4);
+    }
+    .final-cta p {
+      max-width: 620px;
+      font-size: 19px;
+      line-height: 1.55;
+    }
+
+    .site-footer {
+      padding: var(--s5) 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 760px;
+      color: rgba(247,247,242,.42);
+    }
+    .disclaimer a {
+      color: rgba(247,247,242,.72);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-inner { padding: var(--s6) 0; }
+      .section-head,
+      .feature-split,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .bar-row {
+        grid-template-columns: 1fr;
+        gap: var(--s3);
+      }
+      .stats,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+      .menu-line {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      section { padding: var(--s6) 0; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+      .btn { width: 100%; }
+      .hero-bg::after {
+        background: linear-gradient(180deg, rgba(10,10,10,.52), rgba(10,10,10,.86));
+      }
+      .contact-card { padding: var(--s4); }
+      .hours div { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="AUX bar">
+        <img src="https://www.auxbar.cz/img/logo_half1.png" alt="AUX bar">
+      </a>
+      <div class="nav-links">
+        <a href="#bar">Bar</a>
+        <a href="#nabidka">Nabídka</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="mailto:auxbartabor@gmail.com?subject=Rezervace%20v%20AUX%20baru">Rezervace</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="AUX bar Tábor">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      </div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">Tábor · Střelnice</div>
+          <h1>Ve dne oáza, v noci džungle</h1>
+          <p class="lead">Bar v samém srdci Tábora, kde se potkává novorenesanční Střelnice, art deco nábytek, terasa s výhledem na Jordán a tým, který má svoje řemeslo rád.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="mailto:auxbartabor@gmail.com?subject=Rezervace%20v%20AUX%20baru">Napsat rezervaci</a>
+            <a class="btn btn-outline" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <span class="meta-chip">42 míst k sezení</span>
+            <span class="meta-chip">Terasa na Jordán</span>
+            <span class="meta-chip">4,8 · 241 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bar">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Bar</div>
+            <h2>Pro večer, který má tempo</h2>
+          </div>
+          <p>AUX bar stojí na kombinaci prostoru, výběru a lidí za barem. Přijďte na kávu, koktejl, rum z daleka nebo klidnější posezení v salonku.</p>
+        </div>
+        <div class="bar-rows">
+          <article class="bar-row">
+            <span class="num">01</span>
+            <h3>Prostorný bar</h3>
+            <p>Místo pro posezení i rozhovor u baru, s atmosférou originální výzdoby a výrazného nábytku.</p>
+          </article>
+          <article class="bar-row">
+            <span class="num">02</span>
+            <h3>Malý salónek</h3>
+            <p>Klidnější kout pro soukromí, když chcete být s vlastní společností trochu stranou.</p>
+          </article>
+          <article class="bar-row">
+            <span class="num">03</span>
+            <h3>Terasa s výhledem</h3>
+            <p>Posezení venku s výhledem na Jordán, přímo v centru Tábora.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap feature-split">
+        <div class="feature-copy">
+          <div class="eyebrow">Lidé</div>
+          <h2>Parta, která drží bar</h2>
+          <p>Za barem stojí nadšenci, kteří milují svoje řemeslo. Postarají se o Vás s péčí, rádi si popovídají a pošlou Vás dál s lepší náladou.</p>
+          <div class="detail-list">
+            <div class="detail"><strong>Tým</strong><span>Pavel · Honza · Matouš · Josef · Jirka · Rob · Kilián · Amálka</span></div>
+            <div class="detail"><strong>Prostor</strong><span>42 míst · bar · salónek · terasa</span></div>
+            <div class="detail"><strong>Adresa</strong><span>Žižkova 249/3, Tábor</span></div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <strong>155</strong>
+            <span>rumů ve výběru pro objevování různých stylů a zemí.</span>
+          </div>
+          <div class="stat">
+            <strong>200</strong>
+            <span>destilátů pro pomalý večer i doporučení od baru.</span>
+          </div>
+          <div class="stat">
+            <strong>15</strong>
+            <span>koktejlů, od klasik po originální drinky AUX baru.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="paper-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2>Rum, destiláty, koktejly, káva</h2>
+          </div>
+          <p>Kromě kávy na všechny způsoby z české pražírny Kafe Křižka tu najdete rumy ze všech koutů světa, pečlivě vybrané destiláty a klasické i originální koktejly.</p>
+        </div>
+        <div class="menu-table">
+          <div class="menu-line">
+            <b>Rumy</b>
+            <small>Don Papa, Diplomatico a další lahve pro pomalé ochutnávání.</small>
+            <em>155 položek</em>
+          </div>
+          <div class="menu-line">
+            <b>Destiláty</b>
+            <small>Od jemných tónů po výrazné charaktery, vybrané napříč světem.</small>
+            <em>200 položek</em>
+          </div>
+          <div class="menu-line">
+            <b>Koktejly</b>
+            <small>Dark Stormy, Moscow Mule, Pom Pom Deluxe, Renaissance nebo Zelená bestie.</small>
+            <em>15 položek</em>
+          </div>
+          <div class="menu-line">
+            <b>Káva</b>
+            <small>Kafe Křižka na všechny způsoby pro začátek večera i odpolední zastávku.</small>
+            <em>česká pražírna</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Světlo, sklo a večerní klid</h2>
+          </div>
+          <p>Uvnitř se míchá městská energie s útulným barem. Na drink se dá přijít ve dvou, s partou i jen tak po cestě městem.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Střelnice, Žižkova 249/3</h2>
+          </div>
+          <p>Napište kvůli rezervaci, přijďte od středy do soboty a najdete nás ve spolkovém domě Střelnice v Táboře.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours">
+              <div><span>Pondělí</span><span>zavřeno</span></div>
+              <div><span>Úterý</span><span>zavřeno</span></div>
+              <div><span>Středa</span><span>17:00–24:00</span></div>
+              <div><span>Čtvrtek</span><span>17:00–24:00</span></div>
+              <div class="today"><span>Pátek</span><span>17:00–02:00</span></div>
+              <div><span>Sobota</span><span>17:00–02:00</span></div>
+              <div><span>Neděle</span><span>zavřeno</span></div>
+            </div>
+            <p><strong>E-mail:</strong> <a href="mailto:auxbartabor@gmail.com">auxbartabor@gmail.com</a></p>
+            <p><strong>Adresa:</strong> Střelnice - spolkový dům, Žižkova 249/3, 390 01 Tábor-Tábor 1</p>
+          </div>
+          <div class="map-wrap">
+            <div id="map" aria-label="Mapa s polohou AUX baru"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="eyebrow">Rezervace</div>
+        <h2>Večer začíná ve Střelnici</h2>
+        <p>Pošlete nám e-mail a domluvte si stůl, salónek nebo jen dejte vědět, kdy dorazíte.</p>
+        <a class="btn btn-primary" href="mailto:auxbartabor@gmail.com?subject=Rezervace%20v%20AUX%20baru">auxbartabor@gmail.com</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>AUX bar · Tábor</div>
+      <div class="disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální demonstraci. Pro odstranění této stránky použijte <a href="https://webflex.cz/delete/oasnlf3">webflex.cz/delete/oasnlf3</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6615378, 49.414114],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#78C7AA' })
+      .setLngLat([14.6615378, 49.414114])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
