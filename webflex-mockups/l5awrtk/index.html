@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bistro U Řezníka | Snídaně, obědy a káva v České Lípě</title>
+  <meta name="description" content="Bistro U Řezníka v České Lípě: snídaně, obědy, svačiny, káva a dorty z čerstvých lokálních surovin. Pondělí až pátek 8:00-15:00.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf8;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #201d1c;
+      --muted: #746b68;
+      --line: rgba(32,29,28,.08);
+      --accent: #806060;
+      --accent-dark: #604747;
+      --accent-soft: #efe7e4;
+      --shadow: 0 34px 90px rgba(59,43,39,.10);
+      --shadow-small: 0 18px 54px rgba(59,43,39,.08);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,29,28,.016) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,29,28,.016) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(128,96,96,.14), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,250,248,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 25px; color: var(--muted); font-size: 14px; font-weight: 800; }
+    .nav-links a, .btn, .maplibregl-ctrl button { transition: transform 180ms var(--ease), color 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(32,29,28,.10); }
+    .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { background: transparent; border-color: currentColor; color: var(--ink); }
+    .btn-outline:hover { background: rgba(32,29,28,.045); }
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0,.92fr) minmax(420px,1.08fr);
+      align-items: center;
+      gap: 58px;
+      padding: 62px 0 54px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 9px rgba(128,96,96,.13); }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 700px; font-size: clamp(40px, 6vw, 88px); }
+    .lead { max-width: 620px; margin: 24px 0 0; color: var(--muted); font-size: clamp(17px, 1.45vw, 21px); line-height: 1.68; hyphens: auto; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card { aspect-ratio: 4 / 3; border-radius: 42px; overflow: hidden; background: var(--accent-soft); box-shadow: var(--shadow); }
+    .hero-card img, .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-card {
+      position: absolute;
+      right: -16px;
+      bottom: -28px;
+      width: min(320px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(18px);
+    }
+    .floating-card strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .floating-card span { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+    section { padding: 84px 0; }
+    .section-head { display: grid; grid-template-columns: minmax(0,.85fr) minmax(280px,.55fr); gap: 48px; align-items: end; margin-bottom: 34px; }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0,1fr) minmax(210px,.42fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 128px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .num, .price, .hours td:last-child, .stat strong { font-family: var(--font-mono); }
+    .num { color: var(--accent-dark); font-weight: 700; }
+    .service-row h3 { font-size: clamp(23px, 2.3vw, 36px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+    .trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { color: var(--accent); font-size: clamp(32px, 4vw, 56px); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 700; }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0,.82fr) minmax(0,1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-panel, .story-panel, .contact-card, .map-card, .cta-strip {
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .story-panel { padding: 38px; display: flex; flex-direction: column; justify-content: space-between; gap: 42px; }
+    .story-panel p { margin: 0; color: var(--muted); font-size: 19px; line-height: 1.75; hyphens: auto; }
+    .names { display: grid; gap: 10px; }
+    .names div { display: flex; justify-content: space-between; gap: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .menu-panel { padding: 10px; }
+    .menu-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; padding: 20px 22px; border-radius: 24px; }
+    .menu-row + .menu-row { border-top: 1px solid var(--line); }
+    .menu-row h3 { font-family: var(--font-body); font-size: 18px; line-height: 1.25; font-weight: 800; }
+    .menu-row p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+    .price { color: var(--accent-dark); font-weight: 700; white-space: nowrap; }
+    .gallery { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; align-items: stretch; }
+    .gallery-card { min-height: 300px; border-radius: 34px; overflow: hidden; box-shadow: var(--shadow-small); background: var(--accent-soft); }
+    .gallery-stack { display: grid; gap: 18px; }
+    .gallery-stack .gallery-card { min-height: 190px; }
+    .contact-grid { display: grid; grid-template-columns: minmax(0,.75fr) minmax(0,1.25fr); gap: 18px; align-items: stretch; }
+    .contact-card { padding: 34px; }
+    .contact-card h2 { font-size: clamp(32px, 3.2vw, 52px); margin-bottom: 22px; }
+    .contact-links { display: grid; gap: 12px; margin: 26px 0; font-weight: 800; }
+    .contact-links a:hover { color: var(--accent-dark); }
+    .hours { width: 100%; border-collapse: collapse; color: var(--muted); }
+    .hours td { padding: 13px 0; border-top: 1px solid var(--line); }
+    .hours tr.today td { color: var(--ink); font-weight: 800; }
+    .map-card { padding: 10px; overflow: hidden; }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; }
+    .cta-strip {
+      padding: clamp(34px, 5vw, 58px);
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 24px;
+      align-items: center;
+      background: #2a2322;
+      color: #fff;
+    }
+    .cta-strip h2 { font-size: clamp(34px, 4vw, 62px); }
+    .cta-strip p { margin: 12px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .cta-strip .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    footer { padding: 34px 0 46px; color: var(--muted); font-size: 13px; }
+    .footer-main { display: flex; justify-content: space-between; gap: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .disclaimer { margin-top: 18px; font-size: 12px; color: #8d8582; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .gallery, .contact-grid, .cta-strip { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 42px; }
+      .service-row { grid-template-columns: 1fr; }
+      .trust { grid-template-columns: 1fr; }
+      .floating-card { position: static; width: auto; margin: -24px 18px 0; }
+      .cta-strip { text-align: left; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .hero-card, .gallery-card, .menu-panel, .story-panel, .contact-card, .map-card, .cta-strip { border-radius: 24px; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .btn { width: 100%; }
+      .footer-main { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Bistro U Řezníka">
+        <img src="images/logo.svg" alt="Bistro U Řezníka">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">O nás</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420603404690">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero">
+      <div>
+        <span class="eyebrow">Snídaně - obědy - svačiny</span>
+        <h1>Bistro U Řezníka</h1>
+        <p class="lead">Otevřené a útulné bistro v České Lípě, kde vidíte kuchařům pod ruce. Přijďte na bohatou snídani, poctivý oběd, dobrou kávu nebo dort.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#nabidka">Prohlédnout nabídku</a>
+          <a class="btn btn-outline" href="#kontakt">Kde nás najdete</a>
+        </div>
+        <div class="hero-note">
+          <span>U Kapličky 3408</span>
+          <span>Po-Pá 8:00-15:00</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-card">
+          <strong>Dnes v bistru</strong>
+          <span><b>Snídaně</b><em>8:00-10:00</em></span>
+          <span><b>Otevřeno</b><em>8:00-15:00</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="wrap">
+      <div class="section-head">
+        <h2>Od rána do oběda</h2>
+        <p>Stálá nabídka stojí na jednoduchých jídlech, čerstvých surovinách a řeznickém zázemí. Denní speciality platí do vyprodání.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Snídaně 8:00-10:00</h3>
+          <p>Hemenex, řeznické párky, lívance, míchaná vejce, bagel nebo opečený chléb s pastrami.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Obědy a stálá jídla</h3>
+          <p>Polévka dle denní nabídky, cheeseburger, smažený sýr Gouda, Caesar salát, kuřecí křídla nebo speciality z grilu.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Káva, dort a svačina</h3>
+          <p>Když nejdete na celé jídlo, zastavte se jen tak na šálek kávy, dort nebo svačinu během dne.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="trust">
+        <div class="stat"><strong>4.8</strong><span>hodnocení na Googlu</span></div>
+        <div class="stat"><strong>516</strong><span>recenzí hostů</span></div>
+        <div class="stat"><strong>8-15</strong><span>otevřeno od pondělí do pátku</span></div>
+      </div>
+    </section>
+
+    <section id="pribeh" class="wrap">
+      <div class="split">
+        <div class="story-panel">
+          <div>
+            <span class="eyebrow">Otevřená kuchyně</span>
+            <h2>Tradičně, s lehkostí.</h2>
+          </div>
+          <p>V bistru záleží na poctivé přípravě, lokálních surovinách a atmosféře, která je otevřená a přívětivá. Menu pro vás sestavil šéfkuchař Martin Dvořák.</p>
+          <div class="names">
+            <div><span>Jan Landa</span><span>řezník a majitel</span></div>
+            <div><span>Martin Dvořák</span><span>šéfkuchař</span></div>
+          </div>
+        </div>
+        <div class="menu-panel" aria-label="Vybrané položky z nabídky">
+          <div class="menu-row"><div><h3>Polévka dle denní nabídky</h3></div><span class="price">49 Kč</span></div>
+          <div class="menu-row"><div><h3>Řeznické párky</h3><p>chléb, hořčice</p></div><span class="price">89 Kč</span></div>
+          <div class="menu-row"><div><h3>Zapečený toust</h3><p>Burgundská šunka, Gouda, sázené vejce</p></div><span class="price">109 Kč</span></div>
+          <div class="menu-row"><div><h3>Cheeseburger</h3><p>slanina, cibulová marmeláda, hranolky</p></div><span class="price">195 Kč</span></div>
+          <div class="menu-row"><div><h3>Vepřové koleno, žebra</h3><p>hořčice, křen, pečivo</p></div><span class="price">209 Kč</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Atmosféra bistra</h2>
+        <p>Teplé světlo, stoly připravené na rychlý oběd i klidnější posezení a prostor, který zůstává blízko kuchyni.</p>
+      </div>
+      <div class="gallery">
+        <div class="gallery-card">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+        <div class="gallery-stack">
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Zastavte se u Kapličky.</h2>
+          <div class="contact-links">
+            <a href="tel:+420603404690">+420 603 404 690</a>
+            <a href="mailto:bistro@bistroureznika.cz">bistro@bistroureznika.cz</a>
+            <span>U Kapličky 3408, 470 01 Česká Lípa</span>
+          </div>
+          <table class="hours" aria-label="Otevírací doba">
+            <tr><td>Pondělí</td><td>8:00-15:00</td></tr>
+            <tr><td>Úterý</td><td>8:00-15:00</td></tr>
+            <tr><td>Středa</td><td>8:00-15:00</td></tr>
+            <tr><td>Čtvrtek</td><td>8:00-15:00</td></tr>
+            <tr class="today"><td>Pátek</td><td>8:00-15:00</td></tr>
+          </table>
+        </div>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa Bistro U Řezníka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="cta-strip">
+        <div>
+          <h2>Dnes na kávu nebo oběd?</h2>
+          <p>Jsme na adrese U Kapličky 3408 v České Lípě. Stačí zavolat nebo dorazit během otevírací doby.</p>
+        </div>
+        <a class="btn btn-outline" href="tel:+420603404690">+420 603 404 690</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div class="footer-main">
+      <strong>Bistro U Řezníka</strong>
+      <span>Řeznictví Landa | Catering Landa & Dvořák</span>
+    </div>
+    <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/l5awrtk">webflex.cz/delete/l5awrtk</a>.</p>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.542708900000001, 50.6808456],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#806060' })
+      .setLngLat([14.542708900000001, 50.6808456])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
