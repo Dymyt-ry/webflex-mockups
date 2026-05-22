@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Budík | Kavárna plná času v Táboře</title>
+  <meta name="description" content="Café Budík v Táboře: kvalitní káva, domácí dorty, pralinky, čokolády a útulné posezení naproti Muzeu čokolády a marcipánu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,750&family=Geist+Mono:wght@500;650;750&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f4ec;
+      --paper: #fffdf8;
+      --soft: #eee6d8;
+      --ink: #16120d;
+      --muted: #6c5f51;
+      --line: rgba(81, 52, 21, .18);
+      --line-strong: rgba(81, 52, 21, .30);
+      --accent: #A66A00;
+      --accent-dark: #764800;
+      --accent-soft: rgba(166, 106, 0, .12);
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(81,52,21,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(81,52,21,.026) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      color: var(--ink);
+    }
+    h1, h2 { overflow-wrap: anywhere; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(248, 244, 236, .88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(22,18,13,.72);
+    }
+
+    .nav-links a {
+      transition: color 180ms var(--ease);
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); }
+
+    .btn-secondary {
+      border-color: currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+
+    .btn-secondary:hover { background: rgba(81,52,21,.07); }
+
+    .hero {
+      width: var(--wrap);
+      min-height: calc(100vh - 76px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .88fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 82px);
+      padding: 58px 0 72px;
+    }
+
+    .eyebrow {
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    h1 {
+      max-width: 680px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+    }
+
+    .lead {
+      max-width: 630px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.44;
+      color: #40352a;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      border: 1px solid var(--line);
+      background: rgba(255,253,248,.56);
+      border-radius: 999px;
+      padding: 9px 12px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--soft);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(22,18,13,.56));
+      pointer-events: none;
+    }
+
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section {
+      width: var(--wrap);
+      margin: 0 auto;
+      padding: 84px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      font-size: clamp(32px, 4.4vw, 58px);
+      line-height: 1;
+    }
+
+    .menu-list {
+      border-top: 1px solid var(--line-strong);
+      background: rgba(255,253,248,.38);
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: minmax(170px, .34fr) minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 28px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .menu-row h3 {
+      font-size: clamp(23px, 2.3vw, 34px);
+      line-height: 1.05;
+    }
+
+    .menu-row .tag {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: rgba(255,253,248,.56);
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 184px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.62);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: 1;
+      color: var(--accent-dark);
+      overflow-wrap: anywhere;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .story {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .story-panel {
+      padding: clamp(28px, 4vw, 44px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,253,248,.64);
+    }
+
+    .story-panel h2 { font-size: clamp(34px, 4.8vw, 64px); }
+
+    .ticks {
+      list-style: none;
+      display: grid;
+      gap: 15px;
+      margin: 30px 0 0;
+      padding: 0;
+    }
+
+    .ticks li {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 13px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .ticks li::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+      min-height: 520px;
+    }
+
+    .gallery figure {
+      position: relative;
+      overflow: hidden;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--soft);
+    }
+
+    .gallery figure:first-child { grid-row: span 2; }
+
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .locations {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .location-card {
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.62);
+    }
+
+    .location-card h3 {
+      font-size: 28px;
+      line-height: 1.05;
+    }
+
+    .location-card p { margin-top: 14px; }
+
+    .location-card .mono {
+      margin-top: 24px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .55fr) minmax(0, .95fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,253,248,.66);
+    }
+
+    .contact-card h2 {
+      font-size: clamp(34px, 4vw, 54px);
+      margin-bottom: 24px;
+    }
+
+    .contact-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 20px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-row span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+
+    .contact-row strong {
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      min-height: 180px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.60);
+    }
+
+    .faq-item h3 {
+      font-size: 24px;
+      line-height: 1.12;
+      margin-bottom: 14px;
+    }
+
+    .final-cta {
+      width: var(--wrap);
+      margin: 0 auto 34px;
+      padding: clamp(34px, 6vw, 64px);
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: #17120d;
+      color: #fffaf1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .final-cta h2 {
+      color: #fffaf1;
+      font-size: clamp(34px, 5vw, 66px);
+    }
+
+    .final-cta p {
+      margin-top: 16px;
+      color: rgba(255,250,241,.76);
+      max-width: 680px;
+    }
+
+    .final-cta .btn-secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+
+    .final-cta .btn-secondary:hover { background: rgba(255,255,255,.10); }
+
+    footer {
+      width: var(--wrap);
+      margin: 0 auto;
+      padding: 34px 0 42px;
+      color: var(--muted);
+      font-size: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .webflex-disclaimer {
+      max-width: 880px;
+      color: rgba(108,95,81,.84);
+    }
+
+    .webflex-disclaimer a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .story,
+      .contact-grid,
+      .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        padding-top: 42px;
+      }
+      .hero-photo { min-width: 0; }
+      .trust-grid,
+      .locations,
+      .faq-list {
+        grid-template-columns: 1fr;
+      }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .menu-row .tag { justify-self: start; }
+      .gallery {
+        min-height: auto;
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+      }
+      .gallery figure { min-height: 260px; }
+      .gallery figure:first-child { grid-row: auto; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .hero { gap: 30px; }
+      .photo-note {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .contact-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .final-cta { padding: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Café Budík domů">
+        <img src="https://cafebudik.cz/wp-content/uploads/2019/11/logotyp_CafeBudik_alfa_285x285-171x171.png" alt="Café Budík">
+      </a>
+      <div class="nav-links">
+        <a href="#dobroty">Káva a zákusky</a>
+        <a href="#kavarny">Kavárny</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420725699132">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div>
+        <div class="eyebrow">Tábor · Kotnovská 174/18</div>
+        <h1>Kavárna plná času</h1>
+        <p class="lead">Příjemné posezení, kvalitní káva, poctivé zákusky a atmosféra starých budíků naproti Muzeu čokolády a marcipánu.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420725699132">Rezervovat telefonicky</a>
+          <a class="btn btn-secondary" href="#dobroty">Co si dát</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <span class="meta-chip">4,8 Google</span>
+          <span class="meta-chip">498 recenzí</span>
+          <span class="meta-chip">info@cafebudik.cz</span>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        <div class="photo-note">
+          <span>Café Budík Tábor</span>
+          <span>chvíle pohody u šálku kávy</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="dobroty" aria-labelledby="dobroty-title">
+      <div class="section-head">
+        <h2 id="dobroty-title">Káva, zákusky, čokoláda</h2>
+        <p>V Café Budík si dáte věci, kvůli kterým má smysl na chvíli zpomalit: kávu, domácí dorty, pralinky i poctivé nápoje.</p>
+      </div>
+      <div class="menu-list">
+        <article class="menu-row">
+          <h3>Kvalitní káva</h3>
+          <p>Espresso, cappuccino i klidný šálek pro dlouhé posezení v interiéru s unikátní sbírkou starých budíků.</p>
+          <span class="tag">šálek</span>
+        </article>
+        <article class="menu-row">
+          <h3>Domácí dorty a zákusky</h3>
+          <p>Sladké dobroty připravované pro chvíle, kdy chcete ke kávě něco opravdu dobrého.</p>
+          <span class="tag">sladké</span>
+        </article>
+        <article class="menu-row">
+          <h3>Pralinky a čokolády</h3>
+          <p>Pralinky vyráběné s pečlivostí v místní továrně na čokoládu, ideální na místě i jako drobný dárek.</p>
+          <span class="tag">BON-BON</span>
+        </article>
+        <article class="menu-row">
+          <h3>Domácí nápoje</h3>
+          <p>Nápoje pro odpočinek v centru Tábora, od lehkého osvěžení po klidné odpolední zastavení.</p>
+          <span class="tag">odpočinek</span>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="section-head">
+        <h2 id="duvera-title">Místo, kam se vrací čas</h2>
+        <p>Rodinná caffeterie stojí na příběhu, atmosféře a dobrých věcech na stole. V Táboře ji najdete v Kotnovské ulici.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="stat">
+          <b>2013</b>
+          <span>rok otevření první kavárny Café Budík</span>
+        </div>
+        <div class="stat">
+          <b>1500</b>
+          <span>starých budíků v unikátní sbírce</span>
+        </div>
+        <div class="stat">
+          <b>4,8</b>
+          <span>hodnocení na Googlu při 498 recenzích</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="atmosfera-title">
+      <div class="story">
+        <div class="story-panel">
+          <div class="eyebrow">příběh podniku</div>
+          <h2 id="atmosfera-title">Pohoda naproti muzeu</h2>
+          <p class="lead">Táborská kavárna navazuje na svět čokolády, marcipánu a poctivých dobrot. Je to útočiště pro vydatný odpočinek i malé sladké zastavení během dne.</p>
+          <ul class="ticks">
+            <li>Interiér dotváří galerie starých budíků.</li>
+            <li>Káva a zákusky stojí vedle pralinek a čokolád.</li>
+            <li>Prostor je určený pro klidné posezení i setkání.</li>
+          </ul>
+        </div>
+        <div class="gallery" aria-label="Atmosféra kavárny">
+          <figure>
+            <img src="https://images.pexels.com/photos/36127951/pexels-photo-36127951.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting vintage restaurant interior seen through a window at night with elegant table settings.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavarny" aria-labelledby="kavarny-title">
+      <div class="section-head">
+        <h2 id="kavarny-title">Tři kavárny, jeden rukopis</h2>
+        <p>Café Budík vznikl jako místo, kde lidé budou mít dost času. Tento příběh pokračuje v Táboře, Černovicích a Jihlavě.</p>
+      </div>
+      <div class="locations">
+        <article class="location-card">
+          <div>
+            <h3>Tábor</h3>
+            <p>První čokolatérie v Táboře naproti Muzeu čokolády a marcipánu.</p>
+          </div>
+          <div class="mono">Kotnovská 174/18</div>
+        </article>
+        <article class="location-card">
+          <div>
+            <h3>Černovice</h3>
+            <p>První kavárna založená v malé obci Černovice u Tábora.</p>
+          </div>
+          <div class="mono">od roku 2013</div>
+        </article>
+        <article class="location-card">
+          <div>
+            <h3>Jihlava</h3>
+            <p>První franchisingová kavárna Café Budík v dětském centru Robinson Jihlava.</p>
+          </div>
+          <div class="mono">rodinná caffeterie</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h2 id="kontakt-title">Zastavte se v Táboře</h2>
+          <div class="contact-row">
+            <span>adresa</span>
+            <strong>Kotnovská 174/18,<br>390 01 Tábor-Tábor 1</strong>
+          </div>
+          <div class="contact-row">
+            <span>telefon</span>
+            <strong><a href="tel:+420725699132">+420 725 699 132</a></strong>
+          </div>
+          <div class="contact-row">
+            <span>e-mail</span>
+            <strong><a href="mailto:info@cafebudik.cz">info@cafebudik.cz</a></strong>
+          </div>
+          <div class="contact-row">
+            <span>web</span>
+            <strong><a href="https://cafebudik.cz/kontakt/">cafebudik.cz/kontakt</a></strong>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Café Budík Tábor"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="section-head">
+        <h2 id="faq-title">Než vyrazíte</h2>
+        <p>Krátké odpovědi pro hosty, kteří hledají kávu, sladké posezení nebo dárek z čokolády v centru Tábora.</p>
+      </div>
+      <div class="faq-list">
+        <article class="faq-item">
+          <h3>Najdu vás u Muzea čokolády?</h3>
+          <p>Ano, táborská kavárna sídlí v Kotnovské ulici naproti Muzeu čokolády a marcipánu.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Dáte si u vás i něco sladkého?</h3>
+          <p>Ano, ke kávě nabízíme domácí dorty, zákusky, pralinky a čokolády.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Je Café Budík jen v Táboře?</h3>
+          <p>Kromě Tábora je Café Budík také v Černovicích a v Jihlavě.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Můžu se ozvat předem?</h3>
+          <p>Ano, zavolejte na +420 725 699 132 nebo napište na info@cafebudik.cz.</p>
+        </article>
+      </div>
+    </section>
+
+    <div class="final-cta">
+      <div>
+        <h2>Dopřejte si dost času</h2>
+        <p>Káva, zákusek, pralinka a klidné posezení v místě, kde budíky neurgují, ale dotváří atmosféru.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="tel:+420725699132">Zavolat</a>
+        <a class="btn btn-secondary" href="mailto:info@cafebudik.cz">Napsat e-mail</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-main">
+      <span>Café Budík · Kotnovská 174/18 · Tábor</span>
+      <span>+420 725 699 132</span>
+    </div>
+    <p class="webflex-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný vizuální podklad pro provozovatele podniku. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/delete/sfg2zqt">webflex.cz/delete/sfg2zqt</a>.</p>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.658317700000001, 49.4128428],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#A66A00' })
+      .setLngLat([14.658317700000001, 49.4128428])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
