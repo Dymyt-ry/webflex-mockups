@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Eurasian Table Restaurant & Coffee | Česká Lípa</title>
+  <meta name="description" content="The Eurasian Table Restaurant & Coffee v České Lípě: eurasijská kuchyně, phở, gril, wok, vietnamská káva, bubble tea, rezervace a rozvoz." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111111;
+      --panel: #181818;
+      --panel-2: #202020;
+      --ink: #f7f3ea;
+      --muted: rgba(247, 243, 234, 0.68);
+      --faint: rgba(247, 243, 234, 0.10);
+      --line: rgba(247, 243, 234, 0.14);
+      --accent: #E8C27A;
+      --accent-ink: #18120a;
+      --paper: #f7f2e7;
+      --paper-ink: #171717;
+      --paper-muted: #625b50;
+      --shadow: 0 32px 90px rgba(0, 0, 0, 0.34);
+      --font-display: "Space Grotesk", system-ui, sans-serif;
+      --font-body: "Manrope", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 50;
+      border-bottom: 1px solid rgba(247, 243, 234, 0.10);
+      background: rgba(17,17,17,0.72);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+      max-width: 360px;
+      line-height: 1.05;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: rgba(247, 243, 234, 0.72);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #f0d194; }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #ffffff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.70); }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      isolation: isolate;
+      overflow: hidden;
+      padding: 112px 0 64px;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(17,17,17,0.88), rgba(17,17,17,0.58) 46%, rgba(17,17,17,0.24)),
+        linear-gradient(0deg, rgba(17,17,17,0.98), rgba(17,17,17,0.12) 42%, rgba(17,17,17,0.70));
+      z-index: -1;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+      filter: saturate(0.9) contrast(1.08);
+    }
+    .hero-content { max-width: 720px; }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .kicker::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(232,194,122,0.14);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: 0.98;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(17px, 1.45vw, 21px);
+      line-height: 1.72;
+      color: rgba(247, 243, 234, 0.78);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 32px;
+      color: rgba(247, 243, 234, 0.72);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.52fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 48px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.75; hyphens: auto; }
+
+    .menu-rows {
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(160px, 0.32fr);
+      gap: 24px;
+      align-items: center;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row .num, .price, .mono { font-family: var(--font-mono); }
+    .menu-row .num { color: var(--accent); font-weight: 700; }
+    .menu-row h3 { font-size: clamp(24px, 2.5vw, 38px); }
+    .menu-row p { margin: 8px 0 0; color: var(--muted); max-width: 720px; hyphens: auto; }
+    .price { justify-self: end; color: var(--ink); font-size: 18px; font-weight: 700; }
+
+    .trust {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .trust .section-head p { color: var(--paper-muted); }
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border: 1px solid rgba(23,23,23,0.10);
+      background: #fffaf0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .stat span { color: var(--paper-muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .photo-card {
+      min-height: 520px;
+      background: var(--panel-2);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .story-panel {
+      padding: 48px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+    }
+    .story-panel p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.75; hyphens: auto; }
+    .pill-list { display: flex; flex-wrap: wrap; gap: 10px; }
+    .pill {
+      border: 1px solid var(--line);
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: rgba(247,243,234,0.80);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 340px;
+      overflow: hidden;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+    .gallery-item.tall { min-height: 460px; }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 280ms var(--ease);
+    }
+    .gallery-item:hover img { transform: scale(1.025); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 32px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .contact-card h3 { font-size: 32px; margin-bottom: 24px; }
+    .info-line {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .info-line span:first-child {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .hours {
+      margin-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .hour-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hour-row.today { color: var(--accent); }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .final {
+      padding: 96px 0 128px;
+      background: #0c0c0c;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: 48px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(232,194,122,0.16), rgba(255,255,255,0.035));
+    }
+    .final-box h2 { max-width: 760px; }
+    .final-box p { margin: 18px 0 0; color: var(--muted); font-size: 18px; }
+
+    footer {
+      padding: 28px 0;
+      color: rgba(247,243,234,0.56);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .wf-disclaimer a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .wrap { width: min(100% - 32px, 1180px); }
+      .nav-links { display: none; }
+      .wordmark { max-width: 240px; font-size: 17px; }
+      .hero { min-height: 760px; padding-top: 104px; }
+      .hero::before { background: linear-gradient(0deg, rgba(17,17,17,0.98), rgba(17,17,17,0.44)), linear-gradient(90deg, rgba(17,17,17,0.80), rgba(17,17,17,0.42)); }
+      section { padding: 72px 0; }
+      .section-head, .split, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 56px minmax(0, 1fr); }
+      .price { grid-column: 2; justify-self: start; }
+      .stat-strip, .gallery-strip { grid-template-columns: 1fr; }
+      .photo-card, .gallery-item, .gallery-item.tall { min-height: 320px; }
+      .story-panel, .final-box { padding: 32px; }
+      .info-line { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top">The Eurasian Table Restaurant & Coffee</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420774368899">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <img class="hero-bg" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      <div class="wrap hero-content">
+        <div class="kicker">Česká Lípa · Mikulášská 175/5</div>
+        <h1>Eurasijská kuchyně v centru</h1>
+        <p class="lead">Tradiční asijské chutě, evropská klasika a fusion speciality připravované z čerstvých surovin. Přijďte na oběd, večeři, vietnamskou kávu nebo bubble tea.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420774368899">Rezervovat telefonicky</a>
+          <a class="btn btn-outline" href="#menu">Prohlédnout menu</a>
+        </div>
+        <div class="hero-meta">
+          <span>Po-Ne 09:00-22:00</span>
+          <span>4,6 podle 68 recenzí</span>
+          <span>Rozvoz i vyzvednutí s sebou</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Od vývaru po gril</h2>
+          <p>Menu spojuje Vietnam, dálný východ a evropskou preciznost. Hodí se na rychlý pracovní oběd i delší večer s rodinou nebo přáteli.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <div class="num">15</div>
+            <div>
+              <h3>Nem Rán, 2 ks</h3>
+              <p>Křupavý začátek pro sdílení u stolu nebo rychlou chuť k obědu.</p>
+            </div>
+            <div class="price">99 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div class="num">09</div>
+            <div>
+              <h3>Avokádový salát</h3>
+              <p>Lehčí volba se svěží zeleninou, bylinkami a jemnou strukturou avokáda.</p>
+            </div>
+            <div class="price">89 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div class="num">25</div>
+            <div>
+              <h3>Phở Bò</h3>
+              <p>Silný vývar, rýžové nudle, hovězí maso, čerstvé bylinky a koření, které zahřeje.</p>
+            </div>
+            <div class="price">199 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div class="num">55</div>
+            <div>
+              <h3>Vepřová žebra</h3>
+              <p>Grilovaná specialita pro večer, kdy chcete výraznější chuť a poctivou porci.</p>
+            </div>
+            <div class="price">399 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Stálé místo pro každý den</h2>
+          <p>Podnik v centru České Lípy nabízí posezení, práci u kávy, večeři ve dvou, rozvoz i vyzvednutí s sebou.</p>
+        </div>
+        <div class="stat-strip">
+          <div class="stat">
+            <b>4,6</b>
+            <span>hodnocení hostů</span>
+          </div>
+          <div class="stat">
+            <b>68</b>
+            <span>recenzí na Googlu</span>
+          </div>
+          <div class="stat">
+            <b>09-22</b>
+            <span>otevřeno každý den</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="story-panel">
+          <span class="kicker">Kuchyně bez hranic</span>
+          <h2>Asie, Evropa, káva</h2>
+          <p>V kuchyni se potkávají silné vývary, nudle, čerstvé bylinky, koření, kvalitní maso, ryby i zelenina z grilu. Přes den rychlé obědy, večer klidnější místo pro zážitkovou večeři.</p>
+          <p>Nápojový lístek navazuje vietnamskou kávou, originálním bubble tea, pivem a signature koktejly.</p>
+          <div class="pill-list" aria-label="Nabídka">
+            <span class="pill">Asijské speciality</span>
+            <span class="pill">Moderní gril</span>
+            <span class="pill">Denní menu</span>
+            <span class="pill">Kavárna</span>
+            <span class="pill">Koktejly</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Teplé světlo, dlouhý stůl</h2>
+          <p>Útulné prostředí pro práci i odpočinek, dostupné pěšky v centru České Lípy.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          </div>
+          <div class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Rezervace a cesta</h2>
+          <p>Stavte se v Mikulášské ulici, zavolejte kvůli rezervaci nebo se domluvte na objednávce s sebou.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>The Eurasian Table</h3>
+            <div class="info-line"><span>Adresa</span><strong>Mikulášská 175/5, 470 01 Česká Lípa 1</strong></div>
+            <div class="info-line"><span>Telefon</span><a href="tel:+420774368899">+420 774 368 899</a></div>
+            <div class="info-line"><span>E-mail</span><a href="mailto:eurasianlipa@gmail.com">eurasianlipa@gmail.com</a></div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hour-row"><span>Pondělí</span><span>09:00-22:00</span></div>
+              <div class="hour-row"><span>Úterý</span><span>09:00-22:00</span></div>
+              <div class="hour-row"><span>Středa</span><span>09:00-22:00</span></div>
+              <div class="hour-row"><span>Čtvrtek</span><span>09:00-22:00</span></div>
+              <div class="hour-row today"><span>Pátek</span><span>09:00-22:00</span></div>
+              <div class="hour-row"><span>Sobota</span><span>09:00-22:00</span></div>
+              <div class="hour-row"><span>Neděle</span><span>09:00-22:00</span></div>
+            </div>
+          </div>
+          <div id="map" role="img" aria-label="Mapa s polohou restaurace The Eurasian Table Restaurant & Coffee"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Máte chuť na phở nebo kávu?</h2>
+          <p>Zavolejte a domluvte si stůl, oběd s sebou nebo večerní posezení.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420774368899">+420 774 368 899</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row wf-disclaimer">
+      <span>Webflex · informační patička.</span>
+      <a href="https://webflex.cz/delete/o1b9937" rel="nofollow">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.536244, 50.6872238],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#E8C27A' })
+      .setLngLat([14.536244, 50.6872238])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
