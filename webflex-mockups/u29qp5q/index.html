@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Café Klokotka | Kavárna v Táboře-Klokotech</title>
+  <meta name="description" content="Café Klokotka v Táboře-Klokotech: luxusní kavárna ve stylu neoretro, domácí zákusky, italská káva, zmrzlina, koktejly a oslavy na klíč." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111113;
+      --surface: rgba(31, 30, 29, 0.76);
+      --surface-strong: #191817;
+      --ink: #f8f5ee;
+      --muted: #b8afa5;
+      --line: rgba(248, 245, 238, 0.09);
+      --accent: #A06020;
+      --accent-strong: #c47b32;
+      --accent-ink: #fff7ed;
+      --shadow: 0 34px 90px rgba(0, 0, 0, 0.32);
+      --shadow-soft: 0 28px 70px rgba(160, 96, 32, 0.10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 30px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px),
+        radial-gradient(circle at 88% 12%, rgba(160,96,32,0.18), transparent 34rem),
+        radial-gradient(circle at 10% 78%, rgba(255,255,255,0.05), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(17, 17, 19, 0.78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand img {
+      width: auto;
+      max-width: 176px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0,0,0,0.26); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-strong);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: var(--accent-strong); }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #ffffff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.72); }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    p { hyphens: auto; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-strong);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(160,96,32,0.16);
+    }
+
+    .hero {
+      min-height: calc(100svh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, 1.04fr);
+      align-items: center;
+      gap: 54px;
+      padding: 64px 0 58px;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 42px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .hero-card img, .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-hours {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(330px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(25,24,23,0.84);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px);
+    }
+    .floating-hours strong { display: block; margin-bottom: 12px; font-size: 15px; }
+    .floating-hours span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; }
+
+    .offer-list { display: grid; gap: 12px; }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(220px, .45fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .num { color: var(--accent-strong); font-family: var(--font-mono); font-weight: 700; }
+    .offer-row h3 { font-size: clamp(22px, 2.2vw, 34px); }
+    .offer-row p { margin: 0; color: var(--muted); }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat-card, .event-panel, .contact-card, .faq-item {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat-card { padding: 28px; min-height: 176px; }
+    .stat-card b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 5vw, 70px);
+      line-height: 1;
+    }
+    .stat-card span { color: var(--muted); font-size: 15px; }
+
+    .event-split {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .event-panel { padding: 34px; }
+    .event-panel h2 { font-size: clamp(32px, 4vw, 60px); }
+    .event-panel p { color: var(--muted); font-size: 18px; line-height: 1.75; }
+    .event-list { display: grid; gap: 12px; margin-top: 26px; }
+    .event-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .photo-panel {
+      min-height: 480px;
+      border-radius: 42px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .photo-panel img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 310px;
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 30px; }
+    .hours-table { display: grid; gap: 10px; margin: 24px 0; }
+    .hours-table div, .contact-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-table .today { color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-strong);
+    }
+
+    .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { margin-bottom: 12px; font-size: 24px; line-height: 1.08; }
+    .faq-item p { margin: 0; color: var(--muted); line-height: 1.7; }
+
+    .final-cta {
+      padding: 54px;
+      border-radius: 42px;
+      background: linear-gradient(135deg, rgba(160,96,32,.34), rgba(255,255,255,.06));
+      box-shadow: var(--shadow);
+    }
+    .final-cta h2 { max-width: 820px; }
+    .final-cta .lead { max-width: 760px; }
+
+    .site-footer {
+      padding: 36px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .disclaimer {
+      max-width: 780px;
+      color: #9b9288;
+      line-height: 1.6;
+    }
+    .disclaimer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .event-split, .contact-grid { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-card { aspect-ratio: 16 / 10; }
+      .floating-hours { position: static; width: 100%; margin-top: 14px; }
+      .offer-row { grid-template-columns: 1fr; }
+      .trust, .gallery, .faq { grid-template-columns: 1fr; }
+      .photo-panel, .gallery-card, .gallery-card.tall { min-height: 300px; }
+      .final-cta { padding: 34px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Café Klokotka">
+        <img src="https://klokotkatabor.cz/wp-content/uploads/2024/12/Klokotka-Tabor-logo.svg" alt="Café Klokotka">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420704123007">Rezervovat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-label="Úvod">
+      <div>
+        <div class="eyebrow">Tábor-Klokoty · Kpt. Jaroše 24</div>
+        <h1>Neoretro kavárna v Klokotech</h1>
+        <p class="lead">Domácí zákusky, káva z rodinné italské pražírny, točená zmrzlina a večerní koktejly v domě, který v Táboře znáte.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420704123007">Zavolat +420 704 123 007</a>
+          <a class="btn btn-outline" href="#kontakt">Kde nás najdete</a>
+        </div>
+        <div class="hero-note">
+          <span>4.8 / 5</span>
+          <span>33 recenzí</span>
+          <span>info@klokotkatabor.cz</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-hours">
+          <strong>Otevírací doba kavárny</strong>
+          <span><em>Pondělí - pátek</em><b>07:00 - 19:00</b></span>
+          <span><em>Sobota a neděle</em><b>08:00 - 19:00</b></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="wrap">
+      <div class="section-head">
+        <h2>Co si dáte dnes?</h2>
+        <p>Nabídka stojí na kavárenských jistotách a vlastních specialitách. Přijďte na ranní šálek, odpolední dezert nebo večerní posezení.</p>
+      </div>
+      <div class="offer-list">
+        <article class="offer-row">
+          <div class="num">01</div>
+          <h3>Káva a domácí zákusky</h3>
+          <p>Káva z rodinné italské pražírny, sladké pečení a sezónní nabídka.</p>
+        </article>
+        <article class="offer-row">
+          <div class="num">02</div>
+          <h3>Zmrzlina a speciality</h3>
+          <p>Točená zmrzlina, vlastní speciality a drobnosti ke klidnému posezení.</p>
+        </article>
+        <article class="offer-row">
+          <div class="num">03</div>
+          <h3>Koktejly a večerní rytmus</h3>
+          <p>Barová část pro setkání po práci, menší oslavy i víkendový program.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="trust">
+        <div class="stat-card">
+          <b>4.8</b>
+          <span>Průměrné hodnocení hostů na Googlu.</span>
+        </div>
+        <div class="stat-card">
+          <b>33</b>
+          <span>Veřejných recenzí od návštěvníků kavárny.</span>
+        </div>
+        <div class="stat-card">
+          <b>24</b>
+          <span>Adresa na ulici Kpt. Jaroše v Táboře-Klokotech.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce" class="wrap">
+      <div class="event-split">
+        <div class="event-panel">
+          <div class="eyebrow">Oslavy a firemní akce</div>
+          <h2>Posezení připravené na míru</h2>
+          <p>Pro soukromé i firemní setkání připravíme oslavu včetně výzdoby a cateringu. Stačí zavolat nebo napsat a domluvit si termín.</p>
+          <div class="event-list">
+            <div><span>Firemní akce</span><strong>po domluvě</strong></div>
+            <div><span>Oslavy na klíč</span><strong>výzdoba + catering</strong></div>
+            <div><span>Rezervace</span><strong>telefon / e-mail</strong></div>
+          </div>
+        </div>
+        <div class="photo-panel">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Atmosféra">
+      <div class="section-head">
+        <h2>Teplé světlo, klidný stůl</h2>
+        <p>Interiér staví na neoretro atmosféře, pohodlném sezení a detailech, které fungují pro kávu, dezert i večerní drink.</p>
+      </div>
+      <div class="gallery">
+        <div class="gallery-card tall">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="gallery-card">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="gallery-card tall">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Časté dotazy">
+      <div class="faq">
+        <article class="faq-item">
+          <h3>Berete rezervace?</h3>
+          <p>Ano. Pro rezervaci volejte na +420 704 123 007 nebo pište na info@klokotkatabor.cz.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Pořádáte oslavy?</h3>
+          <p>Ano. Kavárna nabízí firemní akce a oslavy na klíč včetně výzdoby a cateringu.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Kdy máte otevřeno?</h3>
+          <p>Kavárna je otevřená pondělí až pátek 07:00 - 19:00, o víkendu 08:00 - 19:00.</p>
+        </article>
+        <article class="faq-item">
+          <h3>Kde přesně jste?</h3>
+          <p>Najdete nás na adrese Kpt. Jaroše 24, 390 03 Tábor - Klokoty.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="section-head">
+        <h2>Stavte se v Klokotech</h2>
+        <p>Rezervace, dotaz k oslavě nebo rychlé ověření místa u stolu vyřešíte telefonicky i e-mailem.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h3>Café Klokotka</h3>
+          <div class="hours-table">
+            <div class="today"><span>Pondělí - pátek</span><strong>07:00 - 19:00</strong></div>
+            <div><span>Sobota a neděle</span><strong>08:00 - 19:00</strong></div>
+            <div><span>Dům Klokotka po-pá</span><strong>06:00 - 22:00</strong></div>
+            <div><span>Dům Klokotka víkend</span><strong>08:00 - 21:00</strong></div>
+          </div>
+          <div class="contact-line"><span>Telefon</span><a href="tel:+420704123007">+420 704 123 007</a></div>
+          <div class="contact-line"><span>E-mail</span><a href="mailto:info@klokotkatabor.cz">info@klokotkatabor.cz</a></div>
+          <div class="contact-line"><span>Adresa</span><span>Kpt. Jaroše 24, Tábor-Klokoty</span></div>
+        </div>
+        <div id="map" aria-label="Mapa Café Klokotka"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final-cta">
+        <div class="eyebrow">Rezervace</div>
+        <h2>Domluvte si stůl nebo oslavu</h2>
+        <p class="lead">Napište, zavolejte nebo se zastavte přímo v Klokotech. Kavárna je otevřená každý den.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420704123007">Zavolat do kavárny</a>
+          <a class="btn btn-outline" href="mailto:info@klokotkatabor.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>© Café Klokotka</div>
+      <div class="disclaimer">
+        Tuto stránku připravil Webflex jako nezávaznou vizuální prezentaci. Nejste-li adresátem nebo si nepřejete další kontakt, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/u29qp5q">https://webflex.cz/delete/u29qp5q</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.644547099999999, 49.419190099999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A06020' })
+      .setLngLat([14.644547099999999, 49.419190099999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
