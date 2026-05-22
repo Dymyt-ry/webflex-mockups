@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cukrárna - kavárna Kráčmarovi | Brodek u Přerova</title>
+  <meta name="description" content="Cukrárna - kavárna Kráčmarovi na adrese Majetínská 188 v Brodku u Přerova. Káva, posezení, kontakt a otevírací doba.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: #ffffff;
+      --surface-warm: #f3f1ea;
+      --ink: #181816;
+      --muted: #64645d;
+      --soft: #8a8a80;
+      --line: rgba(24, 24, 22, .12);
+      --line-strong: rgba(24, 24, 22, .2);
+      --accent: #A0E0A0;
+      --accent-deep: #4b8f4d;
+      --accent-ink: #102410;
+      --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(24,24,22,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,24,22,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 10%, rgba(160,224,160,.24), transparent 30%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.56;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 800;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 23px;
+      line-height: 1.08;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: #8ed28f; border-color: #8ed28f; }
+    .btn.secondary {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: transparent;
+    }
+    .btn.secondary:hover { background: rgba(160,224,160,.18); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 251, 248, .86);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand-logo img {
+      width: auto;
+      max-width: 260px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 60px 0 88px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(430px, .78fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: 24px;
+      color: #4f504b;
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 38px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 38px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #3c653d;
+    }
+    .meta-pill {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface-warm);
+    }
+    .hero-photo img,
+    .gallery-card img,
+    .feature-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.04);
+    }
+    .photo-label {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.5);
+      border-radius: 999px;
+      background: rgba(251,251,248,.88);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .4fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 42px;
+    }
+    .section-head p { font-size: 19px; }
+
+    .offer-list {
+      border-top: 1px solid var(--line-strong);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, .9fr) minmax(260px, .55fr);
+      gap: 30px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .offer-row span {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-deep);
+    }
+    .offer-row p { max-width: 520px; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: stretch;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.56);
+    }
+    .trust-item {
+      min-height: 174px;
+      padding: 26px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-item b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+    .trust-item span {
+      max-width: 230px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .7fr) minmax(0, .85fr);
+      gap: clamp(34px, 5vw, 76px);
+      align-items: center;
+    }
+    .feature-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface-warm);
+    }
+    .feature-copy {
+      display: grid;
+      gap: 24px;
+    }
+    .quiet-table {
+      border-top: 1px solid var(--line-strong);
+      margin-top: 10px;
+    }
+    .quiet-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .quiet-table strong { font-family: var(--font-body); font-size: 15px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.05fr .85fr 1.05fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 280px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface-warm);
+    }
+    .gallery-card.tall { min-height: 390px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .48fr) minmax(0, .72fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-panel {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.68);
+      border-radius: 22px;
+      padding: 28px;
+    }
+    .contact-panel h3 { margin-bottom: 18px; }
+    .contact-links {
+      display: grid;
+      gap: 14px;
+      margin: 22px 0 26px;
+    }
+    .contact-links a {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .contact-links a:hover { color: var(--accent-deep); transform: translateX(2px); }
+    .hours {
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours .closed { color: var(--soft); }
+    .hours .today {
+      margin-inline: -10px;
+      padding-inline: 10px;
+      border-radius: 10px;
+      background: rgba(160,224,160,.22);
+      color: var(--accent-ink);
+    }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    .final-cta {
+      padding: 72px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(160,224,160,.16);
+    }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .cta-grid p { margin-top: 14px; font-size: 19px; }
+
+    .footer {
+      padding: 28px 0;
+      background: #10110f;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .footer a {
+      color: #ffffff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 920px) {
+      .nav { align-items: flex-start; padding: 16px 0; }
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding: 48px 0 70px; }
+      .hero-grid,
+      .section-head,
+      .feature-grid,
+      .contact-grid,
+      .cta-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .offer-row { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card,
+      .gallery-card.tall { min-height: 260px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: 68px 0; }
+      .brand-logo img { max-width: 210px; max-height: 40px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .contact-panel { padding: 22px; }
+      #map { height: 360px; min-height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand-logo" href="#top" aria-label="Cukrárna - kavárna Kráčmarovi">
+        <img src="https://kracmarovi.cz/wp-content/uploads/2024/12/cropped-Snimek-obrazovky-2024-12-23-212833-4.png" alt="Cukrárna - kavárna Kráčmarovi">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Co nabízíme</a>
+        <a href="#kava">O kávě</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420739033189">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Brodek u Přerova · Majetínská 188</div>
+          <h1>Cukrárna a kavárna Kráčmarovi</h1>
+          <p class="hero-lead">Zastavte se na kávu, sladké posezení a klidnou chvíli v Brodku u Přerova. Jsme na adrese Majetínská 188 a otevřeno máme od úterý do neděle.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420739033189">+420 739 033 189</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <span class="meta-pill">4,8 / 5</span>
+            <span class="meta-pill">305 recenzí</span>
+            <span class="meta-pill">Caffè Hausbrandt</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">Út–Ne · 13:00–19:00</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co nabízíme</div>
+            <h2>Káva, cukrárna, klidné posezení.</h2>
+          </div>
+          <p>Přijďte ve všední den odpoledne nebo o víkendu. Základní informace vyřídíte telefonicky, e-mailem nebo přímo na místě.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span>01 / Káva</span>
+            <h3>Caffè Hausbrandt</h3>
+            <p>Káva s vlastním místem v nabídce kavárny, doplněná informacemi o kávě pro hosty, kteří se chtějí dozvědět víc.</p>
+          </article>
+          <article class="offer-row">
+            <span>02 / Cukrárna</span>
+            <h3>Sladké posezení</h3>
+            <p>Cukrárna a kavárna pro návštěvu s rodinou, po cestě přes Brodek u Přerova nebo na klidné odpoledne.</p>
+          </article>
+          <article class="offer-row">
+            <span>03 / Informace</span>
+            <h3>Aktuality, historie a certifikáty</h3>
+            <p>Na jednom místě najdete aktuální zprávy, příběh podniku, certifikáty, fotky i kontakt.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a důvěra">
+      <div class="wrap trust-strip">
+        <div class="trust-item">
+          <b>4,8</b>
+          <span>Průměrné hodnocení podle dostupných firemních údajů.</span>
+        </div>
+        <div class="trust-item">
+          <b>305</b>
+          <span>Recenzí od hostů, kteří kavárnu navštívili.</span>
+        </div>
+        <div class="trust-item">
+          <b>6 dní</b>
+          <span>Otevřeno od úterý do neděle vždy od 13:00.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava">
+      <div class="wrap feature-grid">
+        <figure class="feature-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        </figure>
+        <div class="feature-copy">
+          <div class="eyebrow">O kávě</div>
+          <h2>Odpoledne bez spěchu.</h2>
+          <p>Kráčmarovi spojují cukrárnu, kavárnu a přehledné informace pro hosty: aktuality, historii, Caffè Hausbrandt, certifikáty, fotky dne i kontakt.</p>
+          <div class="quiet-table" aria-label="Základní přehled">
+            <div><strong>Adresa</strong><span>Majetínská 188</span></div>
+            <div><strong>Obec</strong><span>Brodek u Přerova</span></div>
+            <div><strong>E-mail</strong><span>kracmarovi@kracmarovi.cz</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotky atmosféry">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Foto dne</div>
+            <h2>Teplé světlo, stůl a šálek.</h2>
+          </div>
+          <p>Výběr vizuálů drží jemnou kavárenskou atmosféru: tlumené světlo, stoly a prostor pro klidné setkání.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+          <figure class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Majetínské.</h2>
+          </div>
+          <p>Pro dotazy volejte na uvedené číslo nebo napište e-mail. Pondělí je zavřeno, ostatní dny otevřeno od 13:00 do 19:00.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-panel">
+            <h3>Cukrárna - kavárna Kráčmarovi</h3>
+            <p>Majetínská 188, 751 03 Brodek u Přerova</p>
+            <div class="contact-links">
+              <a href="tel:+420739033189"><span>Telefon</span><strong>+420 739 033 189</strong></a>
+              <a href="mailto:kracmarovi@kracmarovi.cz"><span>E-mail</span><strong>kracmarovi@kracmarovi.cz</strong></a>
+              <a href="https://kracmarovi.cz/"><span>Web</span><strong>kracmarovi.cz</strong></a>
+            </div>
+            <div class="hours" aria-label="Provozní doba">
+              <div class="closed"><span>Pondělí</span><strong>zavřeno</strong></div>
+              <div><span>Úterý</span><strong>13:00-19:00</strong></div>
+              <div><span>Středa</span><strong>13:00-19:00</strong></div>
+              <div><span>Čtvrtek</span><strong>13:00-19:00</strong></div>
+              <div class="today"><span>Pátek</span><strong>13:00-19:00</strong></div>
+              <div><span>Sobota</span><strong>13:00-19:00</strong></div>
+              <div><span>Neděle</span><strong>13:00-19:00</strong></div>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa cukrárny a kavárny Kráčmarovi"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-label="Závěrečný kontakt">
+      <div class="wrap cta-grid">
+        <div>
+          <div class="eyebrow">Úterý až neděle</div>
+          <h2>Zastavte se dnes odpoledne.</h2>
+          <p>Otevřeno 13:00-19:00, Majetínská 188, Brodek u Přerova.</p>
+        </div>
+        <a class="btn primary" href="tel:+420739033189">Zavolat do kavárny</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <span>Webflex · informační patička</span>
+      <a href="https://www.webflex.cz/remove?token=c3f60bm" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.3374925, 49.4848937],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#A0E0A0' })
+      .setLngLat([17.3374925, 49.4848937])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
