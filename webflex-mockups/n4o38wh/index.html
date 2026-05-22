@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MIMI kafe | Dětská skupina v Táboře</title>
+  <meta name="description" content="MIMI Tábor: dětská skupina pro děti od 18 měsíců do 3 let v Soběslavské ulici v Táboře. Kapacita 12 dětí, provoz Po-Pá 7:00-15:30." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fbfcfa;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #002020;
+      --muted: #60716e;
+      --soft: #edf3ef;
+      --line: rgba(0, 32, 32, 0.08);
+      --accent: #002020;
+      --accent-soft: #dce8df;
+      --warm: #efe6d8;
+      --shadow: 0 34px 90px rgba(0, 32, 32, 0.10);
+      --shadow-small: 0 18px 54px rgba(0, 32, 32, 0.08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,32,32,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,32,32,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 16%, rgba(0,32,32,0.09), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,252,250,0.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(0,32,32,0.12); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #ffffff; }
+    .btn-primary:hover { background: #123b38; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(0,32,32,0.05); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 56px;
+      padding: 64px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(0,32,32,0.10);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 40px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-card img, .photo-tile img, .gallery-strip img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .floating-card {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(320px, 78%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.88);
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(20px);
+    }
+    .floating-card strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .floating-card span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(280px, 0.55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) minmax(230px, 0.48fr);
+      align-items: center;
+      gap: 26px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .service-row .num { color: var(--muted); font-family: var(--font-mono); font-weight: 700; }
+    .service-row h3 { font-size: clamp(23px, 2.3vw, 36px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat-card {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+    }
+    .stat-card b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat-card span { max-width: 270px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(360px, 0.72fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .panel {
+      padding: 34px;
+      border-radius: 34px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: var(--shadow-small);
+    }
+    .day-table { display: grid; gap: 10px; margin-top: 28px; }
+    .day-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .day-row.today {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .photo-tile {
+      min-height: 100%;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .rhythm {
+      display: grid;
+      grid-template-columns: 0.78fr 1fr;
+      gap: 46px;
+      align-items: start;
+    }
+    .timeline {
+      display: grid;
+      gap: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+    }
+    .time-item {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 22px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .time-item:last-child { border-bottom: 0; }
+    .time-item b { font-family: var(--font-mono); font-size: 13px; }
+    .time-item span { color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--soft);
+      box-shadow: var(--shadow-small);
+      min-height: 310px;
+    }
+    .gallery-strip figure:nth-child(2) { margin-top: 54px; }
+    .gallery-strip figure:nth-child(3) { margin-top: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.75fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 32px;
+      border-radius: 30px;
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { color: #ffffff; font-size: clamp(34px, 4vw, 58px); }
+    .contact-card p { color: rgba(255,255,255,0.78); line-height: 1.7; hyphens: auto; }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin-top: 26px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.18);
+    }
+    .contact-card .btn-outline {
+      margin-top: 26px;
+      border-color: rgba(255,255,255,0.45);
+      color: #ffffff;
+    }
+    .contact-card .btn-outline:hover { background: rgba(255,255,255,0.10); }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-small);
+    }
+
+    .final-cta {
+      padding: 48px;
+      border-radius: 36px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(34px, 4.6vw, 70px); }
+    .final-cta p { margin: 14px 0 0; color: var(--muted); font-size: 18px; }
+
+    .site-footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+    .disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .rhythm, .contact-grid, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-card, .photo-tile { aspect-ratio: 16 / 10; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .trust, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure, .gallery-strip figure:nth-child(2), .gallery-strip figure:nth-child(3) {
+        min-height: 260px;
+        margin-top: 0;
+      }
+      .floating-card { position: static; width: auto; margin-top: 14px; }
+      .footer-grid { flex-direction: column; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .panel, .contact-card, .final-cta { padding: 24px; border-radius: 26px; }
+      .time-item { grid-template-columns: 1fr; gap: 6px; }
+      .hero-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="MIMI kafe">
+        <img src="https://mimitabor.cz/wp-content/uploads/2023/10/logo_mimi_tabor-4-e1697910340773-430x109.png" alt="MIMI kafe">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#skupina">Skupina</a>
+        <a href="#den">Režim dne</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420732148838">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-label="Úvod">
+      <div>
+        <span class="eyebrow">Tábor · Na Kopečku</span>
+        <h1>Dětská skupina MIMI</h1>
+        <p class="lead">Klidné místo pro děti od 18 měsíců do 3 let, s malou kapacitou, pravidelným režimem a chůvami, které rodičům průběžně sdílí, jak se dětem daří.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420732148838">Domluvit přihlášku</a>
+          <a class="btn btn-outline" href="#kontakt">Kde nás najdete</a>
+        </div>
+        <div class="hero-note">
+          <span>Po-Pá 7:00-15:30</span>
+          <span>Soběslavská 2090/28</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-card">
+          <strong>Přihlášky s nástupem od 1. září 2026</strong>
+          <span><em>Kapacita</em><em>12 dětí</em></span>
+          <span><em>Věk</em><em>18 měsíců-3 roky</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="skupina">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Malá skupina, známý rytmus</h2>
+          <p>MIMI Tábor je určená pro rodiče na rodičovské dovolené nebo zaměstnané na zkrácený úvazek. Děti mají prostor pro hru, pohyb, tvoření, odpočinek i pobyt venku.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Pro děti od 18 měsíců</h3>
+            <p>Skupina přijímá děti do 3 let a do zahájení povinného předškolního vzdělávání.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Prostor pro denní pobyt</h3>
+            <p>Herní prostor, kuchyňka, šatna a toalety jsou uzpůsobené potřebám malých dětí.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Aktivní i klidný den</h3>
+            <p>Pohybové, výtvarné a hudební aktivity doplňuje odpočinek a návštěvy veřejných hřišť v okolí.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust">
+        <article class="stat-card">
+          <b>4.7</b>
+          <span>Google hodnocení podle dostupných veřejných recenzí.</span>
+        </article>
+        <article class="stat-card">
+          <b>45</b>
+          <span>Recenzí od rodičů a návštěvníků na veřejném profilu.</span>
+        </article>
+        <article class="stat-card">
+          <b>3</b>
+          <span>Chůvy pečují o děti v malé skupině s kapacitou 12 míst.</span>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="panel">
+          <span class="eyebrow">Stravování a zázemí</span>
+          <h2>Každý den s jasným režimem</h2>
+          <p class="lead">Děti si nosí vlastní svačinky. Obědy jsou zajištěné dovozem od domluveného dodavatele a rodiče je hradí zvlášť.</p>
+          <div class="day-table" aria-label="Otevírací doba">
+            <div class="day-row today"><span>Pondělí</span><span>7:00-15:30</span></div>
+            <div class="day-row today"><span>Úterý</span><span>7:00-15:30</span></div>
+            <div class="day-row today"><span>Středa</span><span>7:00-15:30</span></div>
+            <div class="day-row today"><span>Čtvrtek</span><span>7:00-15:30</span></div>
+            <div class="day-row today"><span>Pátek</span><span>7:00-15:30</span></div>
+          </div>
+        </div>
+        <div class="photo-tile">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+      </div>
+    </section>
+
+    <section id="den">
+      <div class="wrap rhythm">
+        <div>
+          <span class="eyebrow">Orientační režim</span>
+          <h2>Den, který děti podrží</h2>
+          <p class="lead">Příchod, pohyb, řízená činnost, pobyt venku, oběd i odpočinek mají svůj čas. Rodiče tak vědí, co jejich dítě během dne čeká.</p>
+        </div>
+        <div class="timeline">
+          <div class="time-item"><b>7:00-8:30</b><span>Příchod dětí</span></div>
+          <div class="time-item"><b>8:00-9:00</b><span>Pohybové aktivity</span></div>
+          <div class="time-item"><b>9:00</b><span>Dopolední svačina</span></div>
+          <div class="time-item"><b>9:20-9:45</b><span>Řízená činnost</span></div>
+          <div class="time-item"><b>10:00-11:00</b><span>Pobyt venku</span></div>
+          <div class="time-item"><b>11:30</b><span>Oběd</span></div>
+          <div class="time-item"><b>12:00-14:00</b><span>Spánek a odpočinek</span></div>
+          <div class="time-item"><b>14:00-15:00</b><span>Volná aktivita a odchod dětí</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prostor v Táboře na Kopečku</h2>
+          <p>Parkoviště je před budovou k dispozici. Venkovní hřiště nejsou přímo u skupiny, ale v dostupné vzdálenosti jsou tři veřejná.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <h2>Přijďte se podívat</h2>
+          <p>Dětskou skupinu najdete v Soběslavské ulici č.p. 2090 v Táboře. Pro předběžnou nezávaznou přihlášku se ozvěte telefonicky nebo e-mailem.</p>
+          <div class="contact-lines">
+            <a href="tel:+420732148838">+420 732 148 838</a>
+            <a href="mailto:info@mimitabor.cz">info@mimitabor.cz</a>
+            <span>Soběslavská 2090/28, 390 02 Tábor-Tábor 2</span>
+          </div>
+          <a class="btn btn-outline" href="tel:+420732148838">Zavolat do MIMI</a>
+        </div>
+        <div id="map" aria-label="Mapa MIMI Tábor"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Místo pro malé děti</h2>
+          <p>Provoz Po-Pá 7:00-15:30, kapacita 12 dětí, adresa Soběslavská 2090/28 v Táboře.</p>
+        </div>
+        <a class="btn btn-primary" href="mailto:info@mimitabor.cz">Napsat e-mail</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <span>MIMI kafe · Tábor</span>
+      <p class="disclaimer">Tuto prezentační stránku připravilo studio Webflex jako nezávaznou vizualizaci veřejné webové prezentace. Nejste-li správným příjemcem, stránku smažete zde: <a href="https://webflex.cz/delete/n4o38wh">webflex.cz/delete/n4o38wh</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6852874, 49.4049797],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002020' })
+      .setLngLat([14.6852874, 49.4049797])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
