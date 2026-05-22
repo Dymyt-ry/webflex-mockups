@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dobrá Čajovna | Tábor</title>
+  <meta name="description" content="Dobrá Čajovna v Táboře: čaje z Číny, Japonska, Indie, Taiwanu, Nepálu, Cejlonu, Vietnamu, Koreje, Thajska a Barmy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #10120f;
+      --bg-2: #151813;
+      --surface: rgba(246, 244, 234, 0.08);
+      --surface-strong: rgba(246, 244, 234, 0.13);
+      --ink: #f7f5ec;
+      --muted: rgba(247, 245, 236, 0.72);
+      --quiet: rgba(247, 245, 236, 0.52);
+      --line: rgba(247, 245, 236, 0.11);
+      --accent: #404020;
+      --accent-soft: #dae7df;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(218,231,223,.14), transparent 32rem),
+        radial-gradient(circle at 10% 32%, rgba(64,64,32,.42), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { line-height: 1.65; hyphens: auto; }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(20px);
+      background: rgba(16, 18, 15, .72);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .navlinks a, .btn, .soft-link, .category, summary {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+    }
+    .navlinks a:hover, .soft-link:hover { color: var(--ink); }
+    .navlinks a:focus-visible, .btn:focus-visible, .soft-link:focus-visible, .category:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-soft);
+      outline-offset: 3px;
+    }
+    .btn:active, .category:active { transform: translateY(1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 20px 55px rgba(64,64,32,.34); }
+    .btn.primary:hover { background: #565631; transform: translateY(-1px); }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); transform: translateY(-1px); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(40%, .82fr);
+      align-items: center;
+      gap: 56px;
+      padding: 76px 0 88px;
+    }
+    .kicker, .section-kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-soft);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 720px;
+      margin-top: 18px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 26px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: var(--muted);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 36px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(.98);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16,18,15,0), rgba(16,18,15,.34));
+    }
+    .hero-chip {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      z-index: 2;
+      width: calc(100% - 44px);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(16,18,15,.68);
+      backdrop-filter: blur(16px);
+      color: var(--ink);
+    }
+    .hero-chip strong { font-family: var(--font-mono); }
+    .hero-chip span { color: var(--muted); font-size: 14px; }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .38fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head h2 { margin-top: 12px; font-size: clamp(34px, 4.3vw, 64px); line-height: 1; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .category {
+      min-height: 126px;
+      padding: 22px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 24px 80px rgba(0,0,0,.12);
+    }
+    .category:hover { background: var(--surface-strong); transform: translateY(-2px); }
+    .category .num {
+      display: block;
+      margin-bottom: 24px;
+      font-family: var(--font-mono);
+      color: var(--quiet);
+      font-size: 13px;
+    }
+    .category strong {
+      display: block;
+      font-size: 21px;
+      line-height: 1.1;
+    }
+    .category span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 34px;
+      background: rgba(247,245,236,.075);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel.copy { padding: clamp(28px, 5vw, 54px); }
+    .panel.copy h2 { font-size: clamp(32px, 4vw, 58px); line-height: 1.02; }
+    .panel.copy p { color: var(--muted); font-size: 18px; }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+    .photo-grid img {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      object-fit: cover;
+      border-radius: 24px;
+      filter: saturate(.82);
+    }
+    .photo-grid img:first-child { grid-row: span 2; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .metric {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: rgba(218,231,223,.1);
+      min-height: 190px;
+    }
+    .metric b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      color: var(--accent-soft);
+    }
+    .metric span {
+      display: block;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .tea-list {
+      border-radius: 34px;
+      background: var(--surface);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .tea-row {
+      display: grid;
+      grid-template-columns: 1.1fr .5fr 1fr;
+      gap: 24px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .tea-row:last-child { border-bottom: 0; }
+    .tea-row strong { font-size: 22px; }
+    .tea-row .price {
+      font-family: var(--font-mono);
+      color: var(--accent-soft);
+      white-space: nowrap;
+    }
+    .tea-row p { margin: 0; color: var(--muted); }
+
+    .contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(28px, 4vw, 44px);
+      border-radius: 34px;
+      background: rgba(247,245,236,.09);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 56px); line-height: 1; }
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+      margin: 30px 0;
+    }
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line span {
+      font-family: var(--font-mono);
+      color: var(--quiet);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-line a, .contact-line b { font-size: 20px; }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    details {
+      border-radius: 24px;
+      background: var(--surface);
+      padding: 22px 24px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 19px;
+    }
+    summary:hover { color: var(--accent-soft); }
+    details p { margin: 16px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 56px;
+      border-radius: 40px;
+      background:
+        linear-gradient(135deg, rgba(218,231,223,.14), rgba(64,64,32,.22)),
+        rgba(247,245,236,.08);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      margin-bottom: 88px;
+    }
+    .final h2 { font-size: clamp(34px, 4.8vw, 72px); line-height: .96; }
+    .final p { color: var(--muted); margin-bottom: 0; max-width: 660px; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 32px 0;
+      color: var(--quiet);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .wf-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .contact, .final {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-top: 48px; min-height: auto; }
+      .hero-photo { order: -1; }
+      .categories, .trust, .faq { grid-template-columns: 1fr 1fr; }
+      .tea-row { grid-template-columns: 1fr; gap: 10px; }
+      .final { padding: 34px; }
+    }
+
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      .categories, .trust, .faq, .photo-grid { grid-template-columns: 1fr; }
+      .photo-grid img:first-child { grid-row: auto; }
+      .hero-chip { position: static; width: auto; margin: 14px; }
+      .hero-photo { overflow: visible; background: transparent; box-shadow: none; }
+      .hero-photo > img { border-radius: 28px; aspect-ratio: 4 / 3; }
+      section { padding: 66px 0; }
+      .hero-actions, .final > div:last-child { align-items: stretch; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="shell nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Dobrá Čajovna">
+        <img src="https://www.tea.cz/img/dobra-cajovna-1410965391.jpg" alt="Dobrá Čajovna">
+      </a>
+      <div class="navlinks">
+        <a href="#caje">Čaje</a>
+        <a href="#prostredi">Prostředí</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420723488081">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="shell hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Tábor · Tomkova 1240/2</div>
+        <h1 id="hero-title">Čajovna pro tichý šálek</h1>
+        <p class="lead">Místo pro solitérní pijáky, skupinky i rodiny. Vybíráme bílé, zelené, oolongy, černé i tmavé čaje pravidelně testované zkušenými pijáky.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420723488081">+420 723 488 081</a>
+          <a class="btn secondary" href="#caje">Prohlédnout výběr</a>
+        </div>
+      </div>
+      <figure class="hero-photo" aria-label="Atmosféra čajovny">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <figcaption class="hero-chip">
+          <span>Hodnocení návštěvníků</span>
+          <strong>4.7 / 191 recenzí</strong>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="caje" class="shell" aria-labelledby="caje-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Výběr podle původu</div>
+          <h2 id="caje-title">Čaje z celého světa</h2>
+        </div>
+        <p>V nabídce najdete čaje z Číny, Japonska, Indie, Taiwanu, Nepálu, Cejlonu, Vietnamu, Koreje, Thajska i Barmy.</p>
+      </div>
+      <div class="categories">
+        <a class="category" href="#kontakt"><span class="num">01</span><strong>Bílé a zelené</strong><span>Jemné lístky, svěží nálevy a klidné popíjení přes den.</span></a>
+        <a class="category" href="#kontakt"><span class="num">02</span><strong>Oolongy</strong><span>Formosa, vysokohorské sklizně a čaje s vrstevnatou vůní.</span></a>
+        <a class="category" href="#kontakt"><span class="num">03</span><strong>Červené a černé</strong><span>Darjeeling, černé čaje a silnější šálky pro dlouhé posezení.</span></a>
+        <a class="category" href="#kontakt"><span class="num">04</span><strong>Nečaje a doplňky</strong><span>Keramika, knihy, dárky a věci, které k čajovému stolu patří.</span></a>
+      </div>
+    </section>
+
+    <section id="prostredi" class="shell split" aria-labelledby="prostredi-title">
+      <div class="panel copy">
+        <div class="section-kicker">Prostředí</div>
+        <h2 id="prostredi-title">Velepříjemné posezení</h2>
+        <p>Dobrá Čajovna je stavěná na pomalý rytmus. Přijďte sami s knihou, ve dvou na dlouhý rozhovor nebo se skupinkou, která chce být chvíli mimo ruch města.</p>
+        <p>Čaje jsou vybírané s péčí a pravidelnou degustací. U stolu se tak můžete soustředit na chuť, vůni a společnost.</p>
+      </div>
+      <div class="panel photo-grid" aria-label="Fotografie atmosféry">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+      </div>
+    </section>
+
+    <section class="shell" aria-labelledby="duvera-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Důvěra</div>
+          <h2 id="duvera-title">Stálé místo pro pijáky čaje</h2>
+        </div>
+        <p>Čajovna v Táboře navazuje na mezinárodní značku Dobra Tea a bohémský styl čajových místností v Evropě i USA.</p>
+      </div>
+      <div class="trust">
+        <div class="metric"><b>4.7</b><span>Průměrné hodnocení podle dostupných údajů z profilu podniku.</span></div>
+        <div class="metric"><b>191</b><span>Recenzí od návštěvníků, kteří hodnotili čajovnu a její atmosféru.</span></div>
+        <div class="metric"><b>10+</b><span>Zemí původu v čajových kategoriích uvedených v nabídce.</span></div>
+      </div>
+    </section>
+
+    <section class="shell" aria-labelledby="list-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Z aktuální řeči nabídky</div>
+          <h2 id="list-title">Čajový lístek má šířku</h2>
+        </div>
+        <p>Vybrané položky a cenový jazyk vychází z dostupného výpisu nabídky.</p>
+      </div>
+      <div class="tea-list">
+        <div class="tea-row">
+          <strong>Darjeeling First Flush 2026</strong>
+          <span class="price">578 Kč za 100 g</span>
+          <p>Singbuli DJ-02 a další první sklizně pro svěží, květový šálek.</p>
+        </div>
+        <div class="tea-row">
+          <strong>Formosa Shan Lin Xi Oolong</strong>
+          <span class="price">480 Kč</span>
+          <p>Vysokohorský taiwanský oolong s čistým profilem.</p>
+        </div>
+        <div class="tea-row">
+          <strong>Long Jing “Tiger Spring”</strong>
+          <span class="price">598 Kč za 100 g</span>
+          <p>Zelený čaj pro chvíle, kdy chcete jemnost a jasný závěr.</p>
+        </div>
+        <div class="tea-row">
+          <strong>Bai Mu Dan NG</strong>
+          <span class="price">288 Kč za 100 g</span>
+          <p>Bílý čaj s klidným tempem a měkkou chutí.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="shell contact" aria-labelledby="kontakt-title">
+      <div class="contact-card">
+        <div class="section-kicker">Kontakt</div>
+        <h2 id="kontakt-title">Zastavte se v Táboře</h2>
+        <div class="contact-lines">
+          <div class="contact-line">
+            <span>Adresa</span>
+            <b>Tomkova 1240/2, 390 01 Tábor-Tábor 1</b>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a href="tel:+420723488081">+420 723 488 081</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:info@tea.cz">info@tea.cz</a>
+          </div>
+          <div class="contact-line">
+            <span>Otevírací doba</span>
+            <b>Ověřte prosím telefonicky</b>
+          </div>
+        </div>
+        <a class="btn primary" href="tel:+420723488081">Domluvit návštěvu</a>
+      </div>
+      <div id="map" aria-label="Mapa s polohou Dobré Čajovny"></div>
+    </section>
+
+    <section class="shell" aria-labelledby="faq-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Než dorazíte</div>
+          <h2 id="faq-title">Praktické otázky</h2>
+        </div>
+        <p>Krátké odpovědi pro návštěvníky, kteří si chtějí vybrat čaj nebo se jen na chvíli posadit.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Je čajovna vhodná pro jednotlivce?</summary>
+          <p>Ano. Prostředí je vhodné pro solitérní pijáky, klidné čtení i tiché posezení nad šálkem čaje.</p>
+        </details>
+        <details>
+          <summary>Můžeme přijít jako skupinka?</summary>
+          <p>Ano, čajovna počítá i se skupinkami. Při větší návštěvě je praktické zavolat předem.</p>
+        </details>
+        <details>
+          <summary>Najdeme u vás dárky?</summary>
+          <p>V nabídce jsou kromě čajů také doplňky, keramika a knihy spojené s čajovou kulturou.</p>
+        </details>
+        <details>
+          <summary>Jaké čajové kategorie nabízíte?</summary>
+          <p>Bílé, zelené, žluté, oolongy, červené, černé, tmavé, ovoněné čaje i nečaje.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="final">
+        <div>
+          <div class="section-kicker">Tomkova 1240/2</div>
+          <h2>Čaj má svůj čas</h2>
+          <p>Přijďte na šálek, vyberte si čaj podle nálady a zůstaňte tak dlouho, jak vám bude příjemné.</p>
+        </div>
+        <div>
+          <a class="btn primary" href="tel:+420723488081">Zavolat čajovně</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <div>© Dobrá Čajovna · Tomkova 1240/2, Tábor</div>
+      <div class="wf-disclaimer">Prezentační stránku připravilo Webflex. <a href="https://webflex.cz/delete/fomzsx9">Odstranit tuto stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.666665099999998, 49.4138641],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#404020' })
+      .setLngLat([14.666665099999998, 49.4138641])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
