@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cafe Union | Česká Lípa</title>
+  <meta name="description" content="Cafe Union v historickém centru České Lípy: káva, domácí zákusky, snídaně, polední menu, sál k pronájmu a penzion U Madony.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf7;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #211816;
+      --muted: #766a64;
+      --line: rgba(64, 32, 32, 0.12);
+      --accent: #402020;
+      --accent-soft: #efe7e2;
+      --shadow: 0 28px 90px rgba(64, 32, 32, 0.10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .7, .2, 1);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(64,32,32,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,32,32,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 20% 10%, rgba(64,32,32,.08), transparent 32%),
+                  radial-gradient(circle at 82% 22%, rgba(142,108,81,.09), transparent 30%);
+      opacity: .75;
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 250, 247, .82);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks { display: flex; align-items: center; gap: 24px; color: var(--muted); font-size: 15px; font-weight: 600; }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 18px 48px rgba(64,32,32,.22); }
+    .btn.primary:hover { background: #2f1717; }
+    .btn.outline { color: var(--ink); border-color: currentColor; background: rgba(255,255,255,.42); }
+    .btn.outline:hover { background: var(--accent-soft); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 82px);
+      padding: 72px 0 64px;
+    }
+    .kicker {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 22px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    .lead {
+      margin: 26px 0 0;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+      background: var(--surface-strong);
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(33,24,22,.58));
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .rating { font-size: 32px; line-height: 1; font-weight: 700; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(260px, .8fr) minmax(280px, .7fr);
+      align-items: end;
+      gap: 44px;
+      margin-bottom: 36px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); margin: 0; font-size: 19px; }
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 240px;
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .service-row h3 { font-size: 28px; line-height: 1.1; }
+    .service-row p { margin: 7px 0 0; color: var(--muted); }
+    .tag { justify-self: end; font-family: var(--font-mono); font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 9px 12px; border-radius: 999px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1fr);
+      gap: 30px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--surface);
+      border-radius: 28px;
+      padding: clamp(28px, 4vw, 48px);
+      box-shadow: var(--shadow);
+    }
+    .panel h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 64px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .panel p { color: var(--muted); margin: 20px 0 0; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .stat {
+      background: rgba(255,255,255,.62);
+      border-radius: 18px;
+      padding: 20px;
+      min-height: 120px;
+    }
+    .stat strong { display: block; font-family: var(--font-mono); font-size: 28px; color: var(--accent); }
+    .stat span { color: var(--muted); font-size: 14px; }
+    .photo-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .photo-stack figure { margin: 0; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); background: #fff; }
+    .photo-stack figure:first-child { grid-row: span 2; }
+    .photo-stack img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 5; }
+    .photo-stack figure:not(:first-child) img { aspect-ratio: 16 / 10; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 26px;
+      min-height: 230px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step h3 { font-size: 24px; }
+    .step p { color: var(--muted); margin: 14px 0 0; }
+    .step .num { font-size: 13px; }
+
+    .menu-band {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 34px;
+      padding: clamp(30px, 5vw, 58px);
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 40px;
+      align-items: start;
+      box-shadow: 0 30px 100px rgba(64,32,32,.22);
+    }
+    .menu-band h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.5vw, 62px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .menu-table { display: grid; gap: 0; }
+    .menu-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(255,255,255,.18);
+    }
+    .menu-item span { color: rgba(255,255,255,.72); }
+    .menu-item b { font-family: var(--font-mono); font-size: 14px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .65fr) minmax(420px, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .hours { display: grid; gap: 12px; margin-top: 24px; }
+    .hours div, .contact-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours .today {
+      margin: 0 -12px;
+      padding: 13px 12px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+    }
+    .hours b, .contact-line b { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .qa {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+    }
+    .qa h3 { font-size: 22px; }
+    .qa p { color: var(--muted); margin: 12px 0 0; }
+
+    .final {
+      padding: 92px 0;
+    }
+    .cta {
+      background: #fff;
+      border-radius: 34px;
+      padding: clamp(34px, 6vw, 70px);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 32px;
+    }
+    .cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .cta p { color: var(--muted); margin: 14px 0 0; max-width: 680px; }
+
+    footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-grid { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .menu-band, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-card { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .tag { justify-self: start; }
+      .timeline, .faq { grid-template-columns: 1fr 1fr; }
+      .cta { text-align: left; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .topbar { position: static; }
+      .nav { height: 68px; }
+      .btn { width: 100%; }
+      .hero-actions, .cta-actions { width: 100%; }
+      section { padding: 58px 0; }
+      .stats, .timeline, .faq, .photo-stack { grid-template-columns: 1fr; }
+      .service-row, .panel, .step, .qa { border-radius: 20px; }
+      .menu-item { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Cafe Union">
+        <img src="images/logo.png" alt="Cafe Union">
+      </a>
+      <div class="navlinks">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#sal">Sál Union</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420735123893">Rezervace</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker"><span class="dot"></span> Česká Lípa · denně 8:00-19:00</div>
+        <h1 id="hero-title">Cafe Union</h1>
+        <p class="lead">Stylová kavárna v historickém centru města pro kávu, snídaně, polední jídlo, domácí pečivo i klidné odpoledne nad zákuskem.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420735123893">Zavolat a rezervovat</a>
+          <a class="btn outline" href="#nabidka">Prohlédnout nabídku</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <div class="hero-note">
+          <span>Jindřicha z Lipé 113</span>
+          <span><span class="rating">4.5</span><br>337 recenzí</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="wrap" aria-labelledby="nabidka-title">
+      <div class="section-head">
+        <h2 id="nabidka-title">Od rána do večera</h2>
+        <p>V kuchyni se vaří od 8 do 18 hodin. Dopoledne snídaně, od 11:00 polední jídla a po celý den něco sladkého i slaného.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <div>
+            <h3>Snídaně a káva</h3>
+            <p>Vaječné snídaně, lehčí varianty s čerstvým pečivem a výběrová káva.</p>
+          </div>
+          <span class="tag">od 8:00</span>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <div>
+            <h3>Polední menu</h3>
+            <p>Klasická česká jídla, lehčí saláty, těstoviny a jídla z kuchyně připravovaná přes den.</p>
+          </div>
+          <span class="tag">od 11:00</span>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <div>
+            <h3>Zákusky a pečivo</h3>
+            <p>Dorty, koláče, domácí chléb a další pečivo z vlastní výroby u Madony.</p>
+          </div>
+          <span class="tag">vlastní cukrárna</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="split">
+        <div class="panel">
+          <div class="kicker"><span class="dot"></span> Kavárna v centru</div>
+          <h2>Setkání, oběd, sklenka vína</h2>
+          <p>Union drží pohromadě kavárenský provoz, kuchyň, zákusky, česká vína i čepovaný Bernard. Přijdete na rychlé espresso, oběd s kolegy nebo večerní posezení v interiéru historické budovy.</p>
+          <div class="stats">
+            <div class="stat"><strong>4.5</strong><span>hodnocení hostů</span></div>
+            <div class="stat"><strong>337</strong><span>veřejných recenzí</span></div>
+            <div class="stat"><strong>8-19</strong><span>otevřeno každý den</span></div>
+          </div>
+        </div>
+        <div class="photo-stack" aria-label="Atmosféra kavárny">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="sal" class="wrap" aria-labelledby="sal-title">
+      <div class="section-head">
+        <h2 id="sal-title">Sál Union</h2>
+        <p>V prvním patře budovy Union je stylový secesní sál pro soukromé i firemní akce. Uspořádání se přizpůsobí menší skupině i větší společnosti.</p>
+      </div>
+      <div class="timeline">
+        <article class="step"><span class="num">školní</span><div><h3>Do 40 osob</h3><p>Sezení pro školení, prezentace nebo pracovní setkání.</p></div></article>
+        <article class="step"><span class="num">divadelní</span><div><h3>Do 50 osob</h3><p>Uspořádání pro přednášky, programy a společenské akce.</p></div></article>
+        <article class="step"><span class="num">slavnostní</span><div><h3>Do 40 osob</h3><p>Posezení u stolů pro rodinnou oslavu nebo firemní večer.</p></div></article>
+        <article class="step"><span class="num">raut</span><div><h3>Do 60 osob</h3><p>Volnější provoz pro recepce, oslavy a neformální setkání.</p></div></article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="jidlo-title">
+      <div class="menu-band">
+        <div>
+          <div class="kicker" style="color:#fff"><span class="dot" style="background:#fff"></span> Kuchyně a cukrárna</div>
+          <h2 id="jidlo-title">Co si dáte dnes</h2>
+        </div>
+        <div class="menu-table">
+          <div class="menu-item"><span>Bohaté snídaně z vajec i lehčí snídaně s pečivem</span><b>8:00+</b></div>
+          <div class="menu-item"><span>Polední jídla, česká kuchyně, saláty a těstoviny</span><b>11:00+</b></div>
+          <div class="menu-item"><span>Jídla na grilu, tousty, saláty a sladká jídla</span><b>celý den</b></div>
+          <div class="menu-item"><span>Dorty, koláče, domácí chléb a řemeslná zmrzlina u Madony v sezoně</span><b>vlastní výroba</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap" aria-labelledby="kontakt-title">
+      <div class="section-head">
+        <h2 id="kontakt-title">Kontakt</h2>
+        <p>Rezervace stolu, dotaz na polední menu nebo pronájem sálu vyřídíte telefonicky. Kavárna je přímo v centru České Lípy.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="panel">
+          <div class="contact-line"><span>Telefon</span><b><a href="tel:+420735123893">+420 735 123 893</a></b></div>
+          <div class="contact-line"><span>E-mail</span><b><a href="mailto:info@cafeunion.cz">info@cafeunion.cz</a></b></div>
+          <div class="contact-line"><span>Adresa</span><b>Jindřicha z Lipé 113</b></div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Pondělí</span><b>8:00-19:00</b></div>
+            <div><span>Úterý</span><b>8:00-19:00</b></div>
+            <div><span>Středa</span><b>8:00-19:00</b></div>
+            <div><span>Čtvrtek</span><b>8:00-19:00</b></div>
+            <div class="today"><span>Pátek</span><b>8:00-19:00</b></div>
+            <div><span>Sobota</span><b>8:00-19:00</b></div>
+            <div><span>Neděle</span><b>8:00-19:00</b></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Cafe Union"></div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="faq-title">
+      <div class="section-head">
+        <h2 id="faq-title">Než vyrazíte</h2>
+        <p>Praktické věci pro hosty, kteří jdou na kávu, oběd, zákusek nebo plánují akci v patře.</p>
+      </div>
+      <div class="faq">
+        <article class="qa"><h3>Kdy se vaří?</h3><p>Jídla z kuchyně se podávají od 8 do 18 hodin. Polední jídla začínají v 11:00.</p></article>
+        <article class="qa"><h3>Máte vlastní zákusky?</h3><p>Ano. Dorty, koláče a pečivo se připravují každý den u Madony.</p></article>
+        <article class="qa"><h3>Lze objednat sál?</h3><p>Ano. Sál Union má varianty sezení do 40 nebo 50 osob a raut až do 60 osob.</p></article>
+      </div>
+    </section>
+
+    <section class="wrap final">
+      <div class="cta">
+        <div>
+          <h2>Stůl v Unionu</h2>
+          <p>Zastavte se v centru České Lípy na kávu, snídani, polední jídlo nebo zákusek z vlastní výroby.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420735123893">+420 735 123 893</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>Cafe Union · Jindřicha z Lipé 113, 470 01 Česká Lípa</div>
+      <div class="disclaimer">Tato prezentační stránka byla připravena společností Webflex pro Cafe Union. Pokud si nepřejete, aby byla dostupná, smažete ji na adrese /delete/vuu37ef.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.536714600000002, 50.6844494],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([14.536714600000002, 50.6844494])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
