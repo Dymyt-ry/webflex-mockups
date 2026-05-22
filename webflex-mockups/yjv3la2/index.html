@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bistro Právě pro Tebe | Česká Lípa</title>
+  <meta name="description" content="Bistro Právě pro Tebe v České Lípě: pečivo, zákusky, saláty, polévky, hlavní jídla a polední menu na náměstí T. G. Masaryka." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101112;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.115);
+      --ink: #f7f3ec;
+      --muted: rgba(247, 243, 236, 0.68);
+      --faint: rgba(247, 243, 236, 0.42);
+      --line: rgba(247, 243, 236, 0.11);
+      --accent: #C49A6C;
+      --accent-ink: #17110c;
+      --shadow: 0 32px 110px rgba(0, 0, 0, 0.42);
+      --shadow-soft: 0 28px 90px rgba(196, 154, 108, 0.08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 30px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(247,243,236,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(247,243,236,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 4%, rgba(196,154,108,0.18), transparent 32rem),
+        radial-gradient(circle at 5% 42%, rgba(255,255,255,0.055), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 17, 18, 0.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 40px rgba(0,0,0,0.26); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #d4ab7d; }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #ffffff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.68); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+      align-items: center;
+      gap: 58px;
+      padding: 68px 0 62px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(196,154,108,0.14);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    h2 { font-size: clamp(34px, 4vw, 62px); }
+    h3 { font-size: 22px; line-height: 1.05; }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      color: var(--faint);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 40px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card img, .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-status {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(310px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(26, 27, 28, 0.82);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .floating-status strong {
+      display: block;
+      margin-bottom: 8px;
+      font-family: var(--font-display);
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .floating-status span {
+      display: block;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+      gap: 54px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .service-list {
+      display: grid;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 0.2fr 0.75fr 1.05fr;
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: rgba(255,255,255,0.045); transform: translateY(-1px); }
+    .service-row code { color: var(--accent); font-family: var(--font-mono); font-size: 13px; }
+    .service-row p { margin: 0; color: var(--muted); line-height: 1.65; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.88fr) minmax(0, 1.12fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .soft-panel {
+      padding: 34px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .stat {
+      min-height: 150px;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong { font-family: var(--font-mono); font-size: clamp(28px, 4vw, 48px); color: var(--accent); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 700; font-size: 13px; }
+
+    .photo-tile {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 36px;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .step {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .step .num { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+    .step p { margin: 18px 0 0; color: var(--muted); line-height: 1.65; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .gallery figure {
+      margin: 0;
+      min-height: 330px;
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .contact-card dl { margin: 28px 0 0; display: grid; gap: 18px; }
+    .contact-card div { display: grid; gap: 6px; }
+    .contact-card dt { color: var(--faint); font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; }
+    .contact-card dd { margin: 0; color: var(--ink); font-weight: 800; line-height: 1.45; }
+
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #1c1c1c;
+    }
+
+    .final {
+      padding-bottom: 62px;
+    }
+
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 38px;
+      border-radius: 36px;
+      background: linear-gradient(135deg, rgba(196,154,108,0.18), rgba(255,255,255,0.07));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final-panel p { margin: 14px 0 0; color: var(--muted); font-size: 18px; }
+
+    .site-footer {
+      padding: 30px 0 42px;
+      color: rgba(247,243,236,0.48);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .site-footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero, .split, .contact-grid, .section-head, .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .nav-links { display: none; }
+      .timeline, .stats { grid-template-columns: 1fr 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2) { transform: none; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 68px 0; }
+      .hero { gap: 34px; }
+      .hero-card { border-radius: 28px; }
+      .floating-status { position: static; width: 100%; margin-top: 14px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; padding: 24px; }
+      .timeline, .stats { grid-template-columns: 1fr; }
+      .soft-panel, .contact-card, .final-panel { padding: 24px; border-radius: 26px; }
+      .gallery figure { min-height: 240px; }
+      .final-panel .hero-actions { margin-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Bistro Právě pro Tebe">
+        <img src="https://www.praveprotebe.cz/wp-content/uploads/2022/07/logotyp-prave-pro-tebe_03.svg" alt="Bistro “Právě pro Tebe”">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#reference">Reference</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420793943418">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero">
+      <div>
+        <span class="eyebrow">Česká Lípa · nám. T. G. Masaryka</span>
+        <h1>Denně pečeme i vaříme</h1>
+        <p class="lead">Zastavte se pro čerstvé pečivo, zákusek ke kávě, salát nebo polední menu. Bistro Právě pro Tebe najdete přímo na T. G. Masaryka 3060.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420793943418">+420 793 943 418</a>
+          <a class="btn btn-outline" href="#kontakt">Najít bistro</a>
+        </div>
+        <div class="hero-note">
+          <span>PEČIVO</span>
+          <span>ZÁKUSKY</span>
+          <span>POLÉVKY</span>
+          <span>HLAVNÍ JÍDLA</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-status">
+          <strong>Otevřeno</strong>
+          <span>Bistro Česká Lípa · T. G. Masaryka 3060</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="nabidka">
+      <div class="section-head">
+        <h2>Co si dáte dnes</h2>
+        <p>Jednoduchá zastávka během dne: snídaně do ruky, šálek kávy, sladká pauza i oběd s polévkou a hlavním jídlem.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <code>01</code>
+          <h3>Pečivo a chléb</h3>
+          <p>Každý den připravované pečivo včetně žitného chleba, který zákazníci zmiňují ve svých hodnoceních.</p>
+        </article>
+        <article class="service-row">
+          <code>02</code>
+          <h3>Zákusky a káva</h3>
+          <p>Sladké ke kávě, posezení v příjemném prostředí a rychlá zastávka pro cokoliv dobrého s sebou.</p>
+        </article>
+        <article class="service-row">
+          <code>03</code>
+          <h3>Saláty a oběd</h3>
+          <p>Lehčí saláty, polední menu, polévky a hlavní jídla pro všední den v centru České Lípy.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap split" id="reference">
+      <div class="photo-tile">
+        <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+      </div>
+      <div class="soft-panel">
+        <span class="eyebrow">Reference zákazníků</span>
+        <h2>Dobré místo na posezení</h2>
+        <p class="lead">Zákazníci oceňují příjemnou obsluhu, výrobky i prostředí. V hodnoceních se opakuje chuť pečiva, milá atmosféra a důvod se vracet.</p>
+        <div class="stats">
+          <div class="stat"><strong>4,0</strong><span>hodnocení z firemního profilu</span></div>
+          <div class="stat"><strong>8</strong><span>zákaznických recenzí</span></div>
+          <div class="stat"><strong>4</strong><span>prodejní místa v regionu</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Rytmus dne v bistru</h2>
+        <p>Od ranního pečiva po obědové menu. Bez složitosti, s jasnou nabídkou a místem, kde si můžete v klidu sednout.</p>
+      </div>
+      <div class="timeline">
+        <article class="step">
+          <span class="num">RÁNO</span>
+          <div><h3>Pečivo</h3><p>Čerstvé pečivo a chléb pro cestu do práce nebo domů.</p></div>
+        </article>
+        <article class="step">
+          <span class="num">DOPOLEDNE</span>
+          <div><h3>Káva</h3><p>Šálek kávy, zákusek a krátké posezení uprostřed dne.</p></div>
+        </article>
+        <article class="step">
+          <span class="num">OBĚD</span>
+          <div><h3>Menu</h3><p>Polévky a hlavní jídla v nabídce poledního menu.</p></div>
+        </article>
+        <article class="step">
+          <span class="num">S SEBOU</span>
+          <div><h3>Domů</h3><p>Pečivo, salát nebo sladké, když potřebujete rychle pokračovat.</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Atmosféra pro pauzu</h2>
+        <p>Teplé světlo, stůl pro klidný oběd a místo, kam se dá zajít i jen na něco malého.</p>
+      </div>
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="wrap" id="kontakt">
+      <div class="section-head">
+        <h2>Kde nás najdete</h2>
+        <p>Bistro je na náměstí T. G. Masaryka v České Lípě. Pro aktuální polední menu nebo dotaz zavolejte.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h3>Bistro Česká Lípa</h3>
+          <dl>
+            <div>
+              <dt>Adresa</dt>
+              <dd>nám. T. G. Masaryka 3060<br>470 01 Česká Lípa 1</dd>
+            </div>
+            <div>
+              <dt>Telefon</dt>
+              <dd><a href="tel:+420793943418">+420 793 943 418</a></dd>
+            </div>
+            <div>
+              <dt>E-mail</dt>
+              <dd><a href="mailto:pekarna@praveprotebe.cz">pekarna@praveprotebe.cz</a></dd>
+            </div>
+            <div>
+              <dt>Platba</dt>
+              <dd>Přijímáme platební karty.</dd>
+            </div>
+          </dl>
+        </div>
+        <div id="map" aria-label="Mapa umístění bistra"></div>
+      </div>
+    </section>
+
+    <section class="wrap final">
+      <div class="final-panel">
+        <div>
+          <h2>Zastavte se na něco dobrého</h2>
+          <p>Pečivo, zákusky, saláty, polévky i hlavní jídla na jednom místě v České Lípě.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420793943418">Zavolat do bistra</a>
+          <a class="btn btn-outline" href="mailto:pekarna@praveprotebe.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Tato prezentační stránka byla připravena studiem Webflex jako nezávazný vizuální materiál pro Bistro “Právě pro Tebe”. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/delete/yjv3la2">webflex.cz/delete/yjv3la2</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.5362546, 50.6862201],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C49A6C' })
+      .setLngLat([14.5362546, 50.6862201])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
