@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acero Caffé | Kavárna a cukrárna v Táboře</title>
+  <meta name="description" content="Acero Caffé ve Vídeňské ulici v Táboře. Zákusky, deserty, dorty pro každou příležitost, chlebíčky, bagety a kanapky vlastní výroby.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #17191b;
+      --muted: #6e7377;
+      --soft: #eef1f1;
+      --line: rgba(23, 25, 27, 0.08);
+      --accent: #9DECF0;
+      --accent-strong: #52cdd3;
+      --silver: #c0c0c0;
+      --shadow: 0 28px 90px rgba(31, 44, 48, 0.10);
+      --shadow-soft: 0 18px 70px rgba(31, 44, 48, 0.075);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(23,25,27,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,25,27,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .24;
+      background:
+        radial-gradient(circle at 16% 12%, rgba(157,236,240,.38), transparent 30%),
+        radial-gradient(circle at 84% 6%, rgba(192,192,192,.22), transparent 28%);
+      z-index: -1;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.74);
+      border-bottom: 1px solid rgba(255,255,255,.58);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      line-height: 1;
+      hyphens: none;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .navlinks a {
+      padding: 10px 12px;
+      border-radius: 999px;
+      transition: transform .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+    }
+    .navlinks a:hover { background: var(--soft); color: var(--ink); transform: translateY(-1px); }
+    .navlinks a:active { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 3px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 40px rgba(82,205,211,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #102124; }
+    .btn.primary:hover { background: #86e5eb; }
+    .btn.secondary { background: transparent; border-color: currentColor; color: var(--ink); }
+    .btn.secondary:hover { background: rgba(23,25,27,.04); }
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(420px, .86fr);
+      gap: 56px;
+      align-items: center;
+      padding: 74px 0 72px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #2b6568;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(157,236,240,.32);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      margin-top: 24px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 26px 0 0;
+      color: #4d5358;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.58;
+      hyphens: auto;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 44px;
+      max-width: 680px;
+    }
+    .mini {
+      min-height: 104px;
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .mini strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .mini span { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(.98);
+    }
+    .floating-note {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(330px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0,0,0,.10);
+    }
+    .floating-note b { display: block; font-size: 14px; margin-bottom: 5px; }
+    .floating-note span { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .7fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4.8vw, 66px); }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+      hyphens: auto;
+    }
+    .menu-panel {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .feature-card {
+      min-height: 100%;
+      padding: 34px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .feature-card img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border-radius: 22px;
+      margin-bottom: 26px;
+    }
+    .feature-card h3 { font-size: clamp(28px, 3vw, 44px); margin-bottom: 18px; }
+    .feature-card p { color: var(--muted); line-height: 1.65; margin: 0; }
+    .menu-list {
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.70);
+      box-shadow: var(--shadow-soft);
+      padding: 10px 28px;
+      align-self: stretch;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 25px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row b { font-size: 20px; }
+    .menu-row span { color: var(--muted); line-height: 1.5; }
+    .menu-row em {
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #2b6568;
+      white-space: nowrap;
+    }
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 30px;
+      min-height: 190px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat .num {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 62px);
+      font-weight: 700;
+      color: #1d4346;
+    }
+    .stat p { margin: 18px 0 0; color: var(--muted); line-height: 1.55; }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .82fr) 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .split-photo {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 520px;
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .timeline {
+      padding: 38px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 20px;
+      padding: 0 0 30px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+    .step mark {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: rgba(157,236,240,.50);
+      color: #143336;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .step h3 { font-family: var(--font-body); font-size: 22px; line-height: 1.2; margin-bottom: 10px; }
+    .step p { margin: 0; color: var(--muted); line-height: 1.6; }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; }
+    .gallery .stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 18px;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 34px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card h2 { font-size: clamp(34px, 4.6vw, 62px); margin-bottom: 28px; }
+    .contact-list { display: grid; gap: 16px; }
+    .contact-item {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-item span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .contact-item a, .contact-item b { font-size: 17px; line-height: 1.45; }
+    .hours {
+      margin-top: 26px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(157,236,240,.20);
+      color: #22494c;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .final {
+      padding: 74px 0 90px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 44px;
+      border-radius: 34px;
+      background: #121517;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .final-box h2 { font-size: clamp(34px, 5vw, 70px); }
+    .final-box p { margin: 18px 0 0; color: rgba(255,255,255,.68); line-height: 1.65; max-width: 660px; }
+    .final-box .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+    footer {
+      padding: 30px 0 42px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .credit-links a { text-decoration: underline; text-underline-offset: 3px; }
+    .disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero,
+      .menu-panel,
+      .section-head,
+      .split,
+      .gallery,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-top: 48px; min-height: auto; }
+      .hero-photo { max-width: 720px; }
+      .hero-meta, .trust { grid-template-columns: 1fr; }
+      .split-photo { min-height: 360px; }
+      .final-actions { justify-content: flex-start; }
+      #map { min-height: 420px; }
+    }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .nav { min-height: 66px; }
+      .navlinks a:not(.nav-cta) { display: none; }
+      section { padding: 66px 0; }
+      .hero { gap: 34px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .feature-card, .timeline, .contact-card, .final-box { padding: 24px; }
+      .step { grid-template-columns: 46px 1fr; gap: 15px; }
+      .step mark { width: 46px; height: 46px; border-radius: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Acero Caffé</a>
+      <div class="navlinks">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#prostor">Prostor</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary nav-cta" href="tel:+420733137696">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow">Tábor · Sídliště nad Lužnicí</span>
+        <h1 id="hero-title">Acero Caffé na Vídeňské</h1>
+        <p class="lead">Kavárna, cukrárna a restaurace v budově Ataku na Sojčáku. Přijďte na kávu, dezert vlastní výroby nebo občerstvení pro Vaši příležitost.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420733137696">Rezervovat telefonicky</a>
+          <a class="btn secondary" href="#nabidka">Prohlédnout nabídku</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <div class="mini"><strong>4,5</strong><span>Hodnocení podle dostupných recenzí.</span></div>
+          <div class="mini"><strong>10</strong><span>Recenzí u profilu podniku.</span></div>
+          <div class="mini"><strong>280</strong><span>Sledujících na sociálním profilu.</span></div>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <div class="floating-note">
+          <b>Vše vlastní výroby</b>
+          <span>Zákusky, deserty, dorty, chlebíčky, bagety a kanapky připravované pro každý den i zvláštní příležitosti.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Sladké i slané z vlastní výroby</h2>
+          <p>Nabídka vychází z kavárny a cukrárny: poctivé zákusky, deserty, dorty, chlebíčky, bagety a kanapky pro posezení i objednávku.</p>
+        </div>
+        <div class="menu-panel">
+          <article class="feature-card">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <h3>Retro zákusky</h3>
+            <p>Během května Acero Caffé připravuje retro zákusky: chuť, na kterou chodili rodiče i prarodiče, podaná v klidném prostoru na Sojčáku.</p>
+          </article>
+          <div class="menu-list" aria-label="Přehled nabídky">
+            <div class="menu-row">
+              <div><b>Zákusky a deserty</b><br><span>Sladké porce ke kávě, na návštěvu i jen tak po cestě.</span></div>
+              <em>Cukrárna</em>
+            </div>
+            <div class="menu-row">
+              <div><b>Dorty pro příležitosti</b><br><span>Dorty pro oslavy, rodinná setkání a chvíle, které si říkají o něco slavnostního.</span></div>
+              <em>Objednávky</em>
+            </div>
+            <div class="menu-row">
+              <div><b>Chlebíčky a bagety</b><br><span>Slaná nabídka vlastní výroby pro rychlé občerstvení i pohoštění.</span></div>
+              <em>Slané</em>
+            </div>
+            <div class="menu-row">
+              <div><b>Kanapky</b><br><span>Malé sousto pro firemní setkání, návštěvu nebo domácí oslavu.</span></div>
+              <em>Catering</em>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="duvera-title">Místo pro kávu i pohoštění</h2>
+          <p>Acero Caffé spojuje kavárnu, cukrárnu a restauraci v jednom prostoru ve Vídeňské ulici v Táboře.</p>
+        </div>
+        <div class="trust">
+          <article class="stat">
+            <div class="num">4,5</div>
+            <p>Veřejné hodnocení podniku podle dostupných dat.</p>
+          </article>
+          <article class="stat">
+            <div class="num">10</div>
+            <p>Recenzí, které pomáhají hostům rozhodnout se před návštěvou.</p>
+          </article>
+          <article class="stat">
+            <div class="num">280</div>
+            <p>Sledujících, kteří drží kontakt s novinkami z kavárny.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="prostor">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+        <div class="timeline">
+          <span class="eyebrow">Jak si objednat</span>
+          <div style="height: 30px"></div>
+          <div class="step">
+            <mark>01</mark>
+            <div>
+              <h3>Vyberete sladké nebo slané</h3>
+              <p>Zákusky, deserty, dorty, chlebíčky, bagety i kanapky jsou součástí nabídky Acero Caffé.</p>
+            </div>
+          </div>
+          <div class="step">
+            <mark>02</mark>
+            <div>
+              <h3>Zavoláte do kavárny</h3>
+              <p>Domluvíte termín, množství a příležitost na čísle <a href="tel:+420733137696">+420 733 137 696</a>.</p>
+            </div>
+          </div>
+          <div class="step">
+            <mark>03</mark>
+            <div>
+              <h3>Vyzvednete ve Vídeňské</h3>
+              <p>Kavárnu najdete v Táboře na adrese Vídeňská 2931, v části Sídliště nad Lužnicí.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="galerie-title">Atmosféra pro zastavení</h2>
+          <p>Vzdušný prostor pro klidné posezení, kávu, dezert a krátké setkání během dne v Táboře.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+          <div class="stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <aside class="contact-card">
+          <h2>Najdete nás v Táboře</h2>
+          <div class="contact-list">
+            <div class="contact-item">
+              <span>Adresa</span>
+              <b>Vídeňská 2931 390 05, 5 Tábor 5</b>
+            </div>
+            <div class="contact-item">
+              <span>Telefon</span>
+              <a href="tel:+420733137696">+420 733 137 696</a>
+            </div>
+            <div class="contact-item">
+              <span>E-mail</span>
+              <a href="mailto:caffeacero@email.cz">caffeacero@email.cz</a>
+            </div>
+          </div>
+          <div class="hours">Aktuální otevírací dobu a denní nabídku najdete na sociálním profilu Acero Caffé.</div>
+        </aside>
+        <div id="map" aria-label="Mapa s polohou Acero Caffé"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Zastavte se na šálek</h2>
+          <p>Acero Caffé je kavárna a cukrárna pro každodenní kávu, sladkou tečku i pohoštění z vlastní výroby.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420733137696">Zavolat</a>
+          <a class="btn secondary" href="mailto:caffeacero@email.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="credit-links">
+        Fotografie: <a href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Việt Anh Nguyễn</a>,
+        <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>,
+        <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>,
+        <a href="https://www.pexels.com/@alaritammsalu">Alari Tammsalu</a>,
+        <a href="https://www.pexels.com/@nguy-n-thanh-nh-n-203569019">NGUYỄN THÀNH NHƠN</a>.
+      </div>
+      <div class="disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný vizuální podklad pro Acero Caffé. Nejste-li adresátem nebo si nepřejete další kontakt, stránku lze odstranit zde:
+        <a href="https://webflex.cz/delete/tw7o9qr">webflex.cz/delete/tw7o9qr</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.684103299999999, 49.3884392],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#9DECF0' })
+      .setLngLat([14.684103299999999, 49.3884392])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
