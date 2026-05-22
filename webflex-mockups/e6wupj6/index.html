@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dětský svět a kavárna Ela - Tábor</title>
+  <meta name="description" content="Dětský svět s kavárnou v obchodním domě Dvořák v Táboře. Prostor pro dětskou zábavu, kávu a klidné posezení rodičů.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfb;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #171717;
+      --muted: #67625f;
+      --line: rgba(23,23,23,.08);
+      --accent: #E0C0C0;
+      --accent-deep: #946f6f;
+      --accent-soft: #f6e9e9;
+      --shadow: 0 30px 90px rgba(40, 32, 32, .10);
+      --shadow-soft: 0 18px 56px rgba(40, 32, 32, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100% - 40px));
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,23,23,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,23,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 14%, rgba(224,192,192,.38), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.56;
+      letter-spacing: 0;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 700px; font-size: clamp(40px, 6vw, 88px); }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: clamp(22px, 2vw, 32px); }
+    .wrap { width: var(--wrap); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,251,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      max-width: 360px;
+      line-height: 1.05;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: #5f5956;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(23,23,23,.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #2e2020; }
+    .btn-primary:hover { background: #e8cccc; }
+    .btn-outline { background: transparent; border-color: currentColor; color: var(--ink); }
+    .btn-outline:hover { background: rgba(23,23,23,.04); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0,.96fr) minmax(430px,.92fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 82px);
+      padding: 62px 0 72px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(224,192,192,.32);
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.48;
+      color: #4e4845;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.64);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 38px;
+      background: var(--accent-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery img, .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.02);
+    }
+    .floating-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      padding: 18px 20px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+    .floating-card strong { display: block; }
+    .floating-card span { color: var(--muted); font-size: 14px; }
+    .rating { font-family: var(--font-mono); font-weight: 650; color: var(--accent-deep); white-space: nowrap; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0,.82fr) minmax(280px,.48fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0,1fr) minmax(230px,.46fr);
+      gap: 24px;
+      align-items: center;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .num { font-family: var(--font-mono); font-weight: 650; color: var(--accent-deep); }
+    .service-row p { line-height: 1.62; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 5vw, 76px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0,.82fr) minmax(420px,.78fr);
+      gap: clamp(34px, 5vw, 76px);
+      align-items: center;
+    }
+    .soft-panel {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .checklist { margin: 30px 0 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+    .checklist li {
+      display: grid;
+      grid-template-columns: 28px minmax(0,1fr);
+      gap: 12px;
+      align-items: start;
+      color: #403a37;
+      font-weight: 700;
+    }
+    .check {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--accent);
+      display: grid;
+      place-items: center;
+      color: #2e2020;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: minmax(0,.74fr) minmax(360px,.52fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .info-card {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .rows { display: grid; margin-top: 20px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .row strong { color: var(--ink); font-family: var(--font-body); font-size: 16px; }
+    #map {
+      height: 420px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--accent-soft);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.05fr .78fr .78fr;
+      grid-template-rows: 240px 240px;
+      gap: 16px;
+    }
+    .gallery figure {
+      position: relative;
+      margin: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--accent-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery figcaption {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      max-width: calc(100% - 28px);
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.82);
+      color: #443b38;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    details {
+      padding: 24px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff; }
+    summary { cursor: pointer; font-weight: 800; }
+    details p { margin-top: 14px; }
+
+    .final {
+      padding: 46px;
+      border-radius: 38px;
+      background: #171717;
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { color: rgba(255,255,255,.72); margin-top: 16px; max-width: 620px; }
+    .final .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn-outline:hover { background: rgba(255,255,255,.08); }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero, .split, .info-grid, .section-head, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-photo, .split-photo { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; }
+      .stats, .faq { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .gallery figure, .gallery figure:first-child { grid-row: auto; aspect-ratio: 4 / 3; }
+      .final { padding: 30px; }
+    }
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      .wordmark { font-size: 16px; max-width: 230px; }
+      section { padding: 64px 0; }
+      .floating-card { position: static; margin-top: 12px; }
+      .hero-photo { overflow: visible; box-shadow: none; background: transparent; }
+      .hero-photo img { border-radius: 28px; box-shadow: var(--shadow-soft); }
+      .info-card, .soft-panel { padding: 24px; }
+      .footer-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Dětský svět a kavárna Ela - Tábor</a>
+      <div class="nav-links">
+        <a href="#zazemi">Zázemí</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420776168421">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <div>
+        <div class="eyebrow">Obchodní dům Dvořák · Tábor</div>
+        <h1>Hraní, káva, klid.</h1>
+        <p class="lead">Dětský svět s kavárnou na adrese 9. května 2886. Děti si užijí spoustu zábavy a Vy máte po ruce šálek kávy i místo k posezení.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420776168421">+420 776 168 421</a>
+          <a class="btn btn-outline" href="#kontakt">Najít na mapě</a>
+        </div>
+        <div class="hero-meta">
+          <span class="chip">4,8 hodnocení</span>
+          <span class="chip">66 recenzí</span>
+          <span class="chip">100 % doporučuje</span>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        <div class="floating-card">
+          <div>
+            <strong>Kavárna u herny</strong>
+            <span>Posezení pro rodiče přímo u dětského světa.</span>
+          </div>
+          <div class="rating">4,8 / 5</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="zazemi" class="wrap">
+      <div class="section-head">
+        <h2>Co u nás najdete</h2>
+        <p>Jednoduché zázemí pro rodiny: dětský svět, kavárnu a prostor, kde se dá na chvíli zpomalit i během běžného dne ve městě.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <div class="num">01</div>
+          <h3>Dětský svět</h3>
+          <p>Prostor pro děti, které potřebují pohyb, hru a zábavu pod jednou střechou.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">02</div>
+          <h3>Kavárna</h3>
+          <p>Káva a posezení pro rodiče, doprovod i každého, kdo chce chvíli zůstat poblíž.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">03</div>
+          <h3>Rodinná zastávka</h3>
+          <p>Adresa v obchodním domě Dvořák se hodí pro plánovanou návštěvu i spontánní pauzu v Táboře.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="stats">
+        <div class="stat"><strong>4,8</strong><span>Průměrné hodnocení podle údajů v profilu.</span></div>
+        <div class="stat"><strong>66</strong><span>Recenzí od návštěvníků.</span></div>
+        <div class="stat"><strong>2,1 tis.</strong><span>Sledujících na facebookovém profilu.</span></div>
+      </div>
+    </section>
+
+    <section id="navsteva" class="wrap">
+      <div class="split">
+        <div class="soft-panel">
+          <div class="eyebrow">Návštěva bez složitostí</div>
+          <h2>Hřiště a kavárna v jednom rytmu</h2>
+          <p class="lead">Ela je místo pro chvíle, kdy děti chtějí objevovat a dospělí potřebují zůstat nablízku. Před cestou doporučujeme ověřit aktuální provoz telefonicky.</p>
+          <ul class="checklist">
+            <li><span class="check">✓</span><span>Dětský svět s kavárnou v Táboře.</span></li>
+            <li><span class="check">✓</span><span>Adresa 9. května 2886, Tábor-Tábor 2.</span></li>
+            <li><span class="check">✓</span><span>Kontakt přes telefon nebo e-mail ela.hriste@email.cz.</span></li>
+          </ul>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Atmosféra kavárny</h2>
+        <p>Jemné světlo, teplé materiály a klidnější posezení doplňují energii dětského světa.</p>
+      </div>
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <figcaption>Posezení</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          <figcaption>Stůl u kávy</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          <figcaption>Měkké světlo</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          <figcaption>Teplé zázemí</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <figcaption>Detail kavárny</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Časté otázky</h2>
+        <p>Nejdůležitější informace pro rychlé rozhodnutí před návštěvou.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Kde přesně Elu najdu?</summary>
+          <p>Na adrese 9. května 2886, 390 02 Tábor-Tábor 2, v obchodním domě Dvořák.</p>
+        </details>
+        <details>
+          <summary>Jak se nejrychleji zeptat na provoz?</summary>
+          <p>Zavolejte na +420 776 168 421 nebo napište na ela.hriste@email.cz.</p>
+        </details>
+        <details>
+          <summary>Je to jen kavárna?</summary>
+          <p>Ne. Podle profilu jde o dětský svět s kavárnou, kde si děti užijí zábavu a dospělí mohou posedět.</p>
+        </details>
+        <details>
+          <summary>Kde najdu aktuální příspěvky?</summary>
+          <p>Aktuální obsah je dostupný na facebookovém profilu Dětský svět a kavárna Ela - Tábor.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="section-head">
+        <h2>Kontakt a cesta</h2>
+        <p>Naplánujte návštěvu podle adresy a před cestou si ověřte aktuální provoz.</p>
+      </div>
+      <div class="info-grid">
+        <div id="map" aria-label="Mapa s polohou Dětský svět a kavárna Ela - Tábor"></div>
+        <aside class="info-card">
+          <h3>Dětský svět a kavárna Ela - Tábor</h3>
+          <div class="rows">
+            <div class="row"><strong>Adresa</strong><span>9. května 2886, 390 02 Tábor-Tábor 2</span></div>
+            <div class="row"><strong>Telefon</strong><a href="tel:+420776168421">+420 776 168 421</a></div>
+            <div class="row"><strong>E-mail</strong><a href="mailto:ela.hriste@email.cz">ela.hriste@email.cz</a></div>
+            <div class="row"><strong>Provoz</strong><span>Aktuální čas ověřte před návštěvou</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final">
+        <div>
+          <h2>Domluvte si návštěvu ještě dnes</h2>
+          <p>Zeptejte se na aktuální provoz, kapacitu nebo nejvhodnější čas pro Vaši rodinu.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420776168421">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:ela.hriste@email.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div class="footer-row">
+      <span>Fotografie: Pexels · Valeria Boltneva, Daniil Kondrashin, Alari Tammsalu, NGUYỄN THÀNH NHƠN, Việt Anh Nguyễn, Zain Ali</span>
+      <span>Webflex · <a href="/delete/e6wupj6">odstranit e6wupj6</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6717297, 49.4127656],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C0C0' })
+      .setLngLat([14.6717297, 49.4127656])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
