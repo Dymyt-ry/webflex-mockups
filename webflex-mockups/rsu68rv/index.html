@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pala-Waff | Palačinky a waffle v České Lípě</title>
+  <meta name="description" content="Pala-Waff na Škroupově náměstí v České Lípě: sladké i slané palačinky, waffle, lívance a příjemné posezení každý den.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #242225;
+      --muted: #716b70;
+      --line: rgba(36, 34, 37, 0.08);
+      --soft: #f5f1f3;
+      --accent: #C080A0;
+      --accent-dark: #8f5773;
+      --accent-soft: rgba(192, 128, 160, 0.15);
+      --shadow: 0 32px 90px rgba(36, 34, 37, 0.09);
+      --shadow-soft: 0 22px 64px rgba(36, 34, 37, 0.075);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(36,34,37,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36,34,37,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 12% 8%, rgba(192,128,160,0.16), transparent 28rem),
+        radial-gradient(circle at 86% 20%, rgba(83,55,33,0.08), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: 0.96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    main { overflow: hidden; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,250,0.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(36,34,37,0.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #23131b; }
+    .btn-primary:hover { background: #cf93b1; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: var(--accent-soft); }
+
+    .hero {
+      min-height: calc(100svh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(430px, 1.05fr);
+      align-items: center;
+      gap: 56px;
+      padding: 64px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 610px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 40px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img, .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .today-card {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(340px, 82%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.90);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px);
+    }
+    .today-card strong { display: block; margin-bottom: 8px; font-size: 15px; }
+    .today-card p { color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(280px, 0.55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { color: var(--muted); font-size: 18px; line-height: 1.7; }
+
+    .menu-rows {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 0.45fr 1fr auto;
+      gap: 24px;
+      align-items: center;
+      min-height: 116px;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row:hover { background: rgba(255,255,255,0.86); transform: translateY(-1px); }
+    .menu-row h3 { font-size: clamp(24px, 3vw, 42px); }
+    .menu-row p { max-width: 650px; color: var(--muted); }
+    .menu-row .code { font-family: var(--font-mono); color: var(--accent-dark); font-size: 13px; white-space: nowrap; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+      color: var(--accent-dark);
+    }
+    .trust-card span { color: var(--muted); font-weight: 700; }
+
+    .story {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(360px, 0.72fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .story-panel {
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 36px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .story-panel p {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.75;
+    }
+    .story-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    .story-list span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .story-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .story-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 320px;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card:nth-child(2) { transform: translateY(34px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.62fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card h3 { margin-bottom: 20px; font-size: clamp(28px, 3vw, 44px); }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+    .contact-line span, .contact-line a { color: var(--muted); font-weight: 700; }
+    .hours {
+      margin-top: 18px;
+      border-radius: 22px;
+      background: var(--soft);
+      padding: 16px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+    .hours div:last-child { border-bottom: 0; }
+    .hours .today { color: var(--ink); font-weight: 700; }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final {
+      padding-bottom: 96px;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 38px;
+      background: #242225;
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+    .final-panel h2 { max-width: 820px; }
+    .final-panel p {
+      margin-top: 18px;
+      max-width: 650px;
+      color: rgba(255,255,255,0.72);
+      font-size: 18px;
+    }
+    .final-panel .btn-outline { border-color: rgba(255,255,255,0.45); color: #ffffff; }
+    .final-panel .btn-outline:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.72); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .disclaimer {
+      padding: 24px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255,255,255,0.52);
+    }
+    .disclaimer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .story, .contact-grid, .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-media { order: -1; }
+      .today-card { right: 14px; bottom: 14px; }
+      .section-head, .gallery-strip, .trust-grid { grid-template-columns: 1fr; }
+      .gallery-card:nth-child(2) { transform: none; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .contact-line { grid-template-columns: 1fr; gap: 4px; }
+      .final-actions { justify-content: flex-start; }
+      #map { min-height: 360px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .hero-photo, .story-photo { border-radius: 28px; }
+      .today-card { position: static; width: auto; margin-top: 14px; }
+      .trust-card, .contact-card, .story-panel { padding: 22px; border-radius: 24px; }
+      .final-panel { border-radius: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top">Pala-Waff</a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420777146919">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow">Česká Lípa · Škroupovo náměstí</span>
+        <h1 id="hero-title">Palačinky, waffle, radost.</h1>
+        <p class="lead">Zastavte se na sladké i slané dobroty připravované z čerstvých surovin. Pala-Waff je palačinkárna a wafflárna v centru České Lípy, kde se na talíři potkává chuť, klid a poctivá příprava.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Najít podnik</a>
+          <a class="btn btn-outline" href="tel:+420777146919">+420 777 146 919</a>
+        </div>
+        <div class="hero-meta">
+          <span>PO-PÁ 8:30-19</span>
+          <span>SO-NE 9-19</span>
+          <span>Hodnocení 4,7 z 279 recenzí</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </figure>
+        <div class="today-card">
+          <strong>Dnes máte otevřeno</strong>
+          <p>Přijďte na snídani, kávu nebo odpolední talíř podle chuti.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Menu</span>
+            <h2>Sladké, slané, křupavé.</h2>
+          </div>
+          <p>Vyberte si z palačinek, waffle a lívanců. V nabídce najdete sladké kombinace s přelivem i slané varianty, třeba s hermelínem.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="code">01 · Sladké</span>
+            <div>
+              <h3>Palačinky a lívance</h3>
+              <p>Jemné těsto, čerstvé suroviny a přelivy pro chvíli, kdy chcete něco voňavého ke kávě.</p>
+            </div>
+            <a class="btn btn-outline" href="#kontakt">Zeptat se</a>
+          </article>
+          <article class="menu-row">
+            <span class="code">02 · Waffle</span>
+            <div>
+              <h3>Křupavé waffle</h3>
+              <p>Waffle připravené na sladko i na slano, podle denní chuti a nabídky v podniku.</p>
+            </div>
+            <a class="btn btn-outline" href="#kontakt">Kontakt</a>
+          </article>
+          <article class="menu-row">
+            <span class="code">03 · Slané</span>
+            <div>
+              <h3>Slané kombinace</h3>
+              <p>Když nechcete dezert, dejte si sytější talíř. V nabídce je i varianta s hermelínem.</p>
+            </div>
+            <a class="btn btn-outline" href="#kontakt">Rezervace</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Důvěra</span>
+            <h2 id="duvera-title">Místo, kam se chodí pro chuť.</h2>
+          </div>
+          <p>Pala-Waff začala v roce 2019 u malého stánku na Máchově jezeře. Dnes má pobočku v České Lípě a další v Liberci.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <strong>2019</strong>
+            <span>začátek příběhu u Máchova jezera</span>
+          </article>
+          <article class="trust-card">
+            <strong>4,7</strong>
+            <span>hodnocení hostů</span>
+          </article>
+          <article class="trust-card">
+            <strong>279</strong>
+            <span>recenzí od návštěvníků</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="wrap story">
+        <div class="story-panel">
+          <span class="eyebrow">Příběh</span>
+          <h2>Cit pro talíř.</h2>
+          <p>Magdalena Smejkalová vystudovala uměleckoprůmyslovou školu sklářskou v Kamenickém Šenově. Pečení ji postupně přivedlo k vlastní palačinkárně, kde se cit pro tvar a detail přenesl na jídlo.</p>
+          <div class="story-list" aria-label="Pobočky">
+            <span><b>Česká Lípa</b><em>Škroupovo nám. 151/17</em></span>
+            <span><b>Liberec</b><em>5. května 71/35</em></span>
+            <span><b>Tým</b><em>přihlášky na palawaff@gmail.com</em></span>
+          </div>
+        </div>
+        <figure class="story-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="atmosfera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Atmosféra</span>
+            <h2 id="atmosfera-title">Na chvíli zpomalit.</h2>
+          </div>
+          <p>Přijďte sami, s rodinou nebo s někým, komu chcete dopřát šálek kávy a sladký talíř v centru města.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kontakt</span>
+            <h2>Najdete nás v České Lípě.</h2>
+          </div>
+          <p>Na Škroupově náměstí máte otevřeno každý den. Pro dotazy, rezervaci nebo přihlášku do týmu zavolejte nebo napište.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <h3>Pala-Waff</h3>
+            <div class="contact-line">
+              <b>Adresa</b>
+              <span>Škroupovo nám. 151/17, 470 01 Česká Lípa</span>
+            </div>
+            <div class="contact-line">
+              <b>Telefon</b>
+              <a href="tel:+420777146919">+420 777 146 919</a>
+            </div>
+            <div class="contact-line">
+              <b>E-mail</b>
+              <a href="mailto:palawaff@gmail.com">palawaff@gmail.com</a>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><span>Po-pá</span><strong>8:30-19</strong></div>
+              <div class="today"><span>Sobota</span><strong>9-19</strong></div>
+              <div><span>Neděle</span><strong>9-19</strong></div>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Pala-Waff"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <span class="eyebrow">Pala-Waff · Česká Lípa</span>
+          <h2>Zastavte se na talíř podle chuti.</h2>
+          <p>Sladké palačinky, slané waffle, lívance, káva a místo, kde se dá v klidu posedět.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420777146919">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:palawaff@gmail.com">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="disclaimer">
+    <div class="wrap">
+      <span>Tato dočasná stránka byla připravena službou Webflex pro Pala-Waff.</span>
+      <a href="https://webflex.cz/remove-preview?token=rsu68rv">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.536203399999998, 50.6856357],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C080A0' })
+      .setLngLat([14.536203399999998, 50.6856357])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
