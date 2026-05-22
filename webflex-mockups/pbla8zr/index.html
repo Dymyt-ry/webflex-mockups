@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bistro Pražská | Rodinné bistro v Táboře</title>
+  <meta name="description" content="Rodinné bistro v historickém centru Tábora. Snídaně, obědy, dezerty, slané svačiny a výběrová káva Wide Awake.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --ink: #191919;
+      --muted: #66615b;
+      --soft: #efede9;
+      --accent: #C0A080;
+      --accent-dark: #8d6b4c;
+      --line: rgba(25, 25, 25, .08);
+      --shadow: 0 28px 90px rgba(28, 25, 20, .08);
+      --shadow-soft: 0 18px 70px rgba(28, 25, 20, .055);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(25,25,25,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,25,25,.018) 1px, transparent 1px),
+        radial-gradient(circle at 85% 8%, rgba(192,160,128,.24), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 24px; color: var(--muted); font-weight: 600; }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--ink); color: #fff; box-shadow: 0 14px 36px rgba(25,25,25,.16); }
+    .btn-primary:hover { background: #2a2927; }
+    .btn-accent { background: var(--accent); color: #191919; }
+    .btn-accent:hover { background: #cfb094; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(25,25,25,.045); }
+
+    .hero {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: calc(100vh - 74px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: 54px;
+      padding: 72px 0 84px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 26px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.55;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 640px;
+    }
+    .meta-pill {
+      min-height: 96px;
+      padding: 18px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(12px);
+    }
+    .meta-pill strong { display: block; font-family: var(--font-mono); font-size: 18px; }
+    .meta-pill span { display: block; margin-top: 7px; color: var(--muted); font-size: 14px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(25,25,25,.28));
+      pointer-events: none;
+    }
+    .photo-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-inner { width: var(--wrap); margin: 0 auto; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .76fr) minmax(280px, .44fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4.7vw, 68px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .offer-list {
+      display: grid;
+      gap: 12px;
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(220px, .55fr);
+      gap: 26px;
+      align-items: center;
+      min-height: 118px;
+      padding: 22px 26px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .offer-row:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .number {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    .offer-row h3 { font-size: clamp(22px, 2.2vw, 34px); }
+    .offer-row p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .85fr) minmax(0, 1fr);
+      gap: 50px;
+      align-items: center;
+    }
+    .soft-card {
+      background: var(--surface);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: 34px;
+      backdrop-filter: blur(16px);
+    }
+    .rating {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 28px;
+      align-items: end;
+    }
+    .rating .score {
+      font-family: var(--font-display);
+      font-size: clamp(68px, 10vw, 132px);
+      line-height: .82;
+      overflow-wrap: anywhere;
+    }
+    .rating p { margin: 0 0 10px; color: var(--muted); font-size: 18px; }
+    .quote {
+      margin-top: 30px;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 1.08;
+      font-weight: 700;
+    }
+    .image-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: end;
+    }
+    .image-stack figure { margin: 0; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow-soft); background: var(--soft); }
+    .image-stack figure:first-child { aspect-ratio: 4 / 3; }
+    .image-stack figure:last-child { aspect-ratio: 16 / 10; transform: translateY(32px); }
+    .image-stack img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hours-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(360px, .7fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .hours-card, .contact-card {
+      border-radius: 32px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      padding: 30px;
+    }
+    .hours-card h2, .contact-card h2 { font-size: clamp(30px, 4vw, 56px); margin-bottom: 26px; }
+    .hour-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .hour-row strong { font-family: var(--font-mono); }
+    .hour-row span { color: var(--muted); }
+    .today { background: rgba(192,160,128,.14); margin: 0 -14px; padding-left: 14px; padding-right: 14px; border-radius: 16px; border-top-color: transparent; }
+    .contact-card p { margin: 0 0 18px; color: var(--muted); font-size: 18px; }
+    .contact-lines { display: grid; gap: 12px; margin-top: 26px; }
+    .contact-line { font-family: var(--font-mono); padding: 14px 0; border-top: 1px solid var(--line); }
+
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+      margin-top: 20px;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .75fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure { margin: 0; border-radius: 30px; overflow: hidden; background: var(--soft); box-shadow: var(--shadow-soft); }
+    .gallery-strip figure:nth-child(1) { aspect-ratio: 16 / 10; }
+    .gallery-strip figure:nth-child(2) { aspect-ratio: 4 / 3; }
+    .gallery-strip figure:nth-child(3) { aspect-ratio: 16 / 10; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s var(--ease); }
+    .gallery-strip figure:hover img { transform: scale(1.035); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: minmax(300px, .55fr) minmax(0, 1fr);
+      gap: 48px;
+    }
+    .faq h2 { font-size: clamp(34px, 5vw, 70px); }
+    details {
+      background: var(--surface-strong);
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      padding: 22px 24px;
+      margin-bottom: 12px;
+      transition: transform .2s var(--ease);
+    }
+    details:hover { transform: translateY(-1px); }
+    summary { cursor: pointer; font-weight: 700; font-size: 19px; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); font-size: 17px; }
+
+    .final-cta {
+      width: var(--wrap);
+      margin: 0 auto 46px;
+      border-radius: 36px;
+      padding: clamp(34px, 6vw, 70px);
+      background: #191919;
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 34px;
+      align-items: center;
+      box-shadow: 0 34px 110px rgba(25,25,25,.18);
+    }
+    .final-cta h2 { font-size: clamp(34px, 5vw, 72px); max-width: 760px; }
+    .final-cta p { margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+
+    footer {
+      width: var(--wrap);
+      margin: 0 auto;
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+      display: grid;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .disclaimer { color: #77716b; }
+    .credits a, .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .hours-grid, .faq, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 44px; gap: 34px; }
+      .hero-photo { min-width: 0; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .offer-row { grid-template-columns: 1fr; gap: 10px; }
+      .image-stack figure:last-child { transform: none; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .final-cta { align-items: start; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 24px, 1180px); }
+      section { padding: 62px 0; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .image-stack { grid-template-columns: 1fr; }
+      .hours-card, .contact-card, .soft-card { padding: 24px; border-radius: 26px; }
+      .photo-note { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Bistro Pražská">
+        <img src="https://bistroprazska.cz/wp-content/uploads/2022/12/BP_logo_kruh_bile.png" alt="Bistro Pražská">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#hodiny">Otevírací doba</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-outline" href="tel:+420730135657">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">Tábor, Pražská 207 · rodinné bistro</p>
+        <h1 id="hero-title">Bistro v srdci Tábora</h1>
+        <p class="lead">Zastavte se na snídani, oběd, sladký dezert, slanou svačinu nebo šálek výběrové kávy z bruselské pražírny Wide Awake.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#hodiny">Dnešní hodiny</a>
+          <a class="btn btn-outline" href="https://www.google.com/maps/search/?api=1&query=Pra%C5%BEsk%C3%A1%20207%2C%20390%2001%20T%C3%A1bor" target="_blank" rel="noreferrer">Navigovat</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé údaje">
+          <div class="meta-pill"><strong>4,8</strong><span>hodnocení Google</span></div>
+          <div class="meta-pill"><strong>347</strong><span>recenzí hostů</span></div>
+          <div class="meta-pill"><strong>7:30</strong><span>všední dny od rána</span></div>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <figcaption class="photo-note"><span>Snídaně · obědy · dezerty</span><span>Pražská 207</span></figcaption>
+      </figure>
+    </section>
+
+    <section id="nabidka" aria-labelledby="offer-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Stálá nabídka</p>
+            <h2 id="offer-title">Od rána po odpolední kávu</h2>
+          </div>
+          <p>Rodinné bistro pro klidnou zastávku v historickém centru. Nabídka se během dne přirozeně mění od snídaní k obědům, vitríně a domácím výrobkům.</p>
+        </div>
+        <div class="offer-list">
+          <article class="offer-row">
+            <span class="number">01</span>
+            <h3>Snídaně</h3>
+            <p>Ve všední dny od 7:30 do 10:30, o víkendu od 8:30. V neděli zůstává snídaňová nabídka hlavním programem až do 13:00.</p>
+          </article>
+          <article class="offer-row">
+            <span class="number">02</span>
+            <h3>Obědy a stálá nabídka</h3>
+            <p>Od 10:30 do 15:00 ve všední dny, v sobotu od 11:00 do 17:30. Ideální zastávka během pracovního dne i procházky městem.</p>
+          </article>
+          <article class="offer-row">
+            <span class="number">03</span>
+            <h3>Vitrína, káva a výrobky</h3>
+            <p>Každý den sladké dezerty, slané svačiny, výběrová káva Wide Awake, zboží Sonnentor a domácí výrobky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="trust-title">
+      <div class="section-inner split">
+        <div class="soft-card">
+          <p class="eyebrow">Hosté z Tábora i okolí</p>
+          <div class="rating" aria-label="Hodnocení">
+            <div class="score">4,8</div>
+            <p><strong>347 recenzí</strong><br>Google hodnocení pro Bistro Pražská.</p>
+          </div>
+          <div id="trust-title" class="quote">„Můžete se u nás zastavit jak na oběd, tak na snídani.“</div>
+        </div>
+        <div class="image-stack" aria-label="Atmosféra bistra">
+          <figure><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></figure>
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="hodiny" aria-labelledby="hours-title">
+      <div class="section-inner hours-grid">
+        <div class="hours-card">
+          <p class="eyebrow">Otevírací doba</p>
+          <h2 id="hours-title">Dnes je pátek</h2>
+          <div class="hour-row today"><strong>PO-PÁ</strong><span>7:30-18:00 · snídaně 7:30-10:30 · obědy a stálá nabídka 10:30-15:00</span></div>
+          <div class="hour-row"><strong>SO</strong><span>8:30-18:00 · snídaně 8:30-11:00 · obědy a stálá nabídka 11:00-17:30</span></div>
+          <div class="hour-row"><strong>NE</strong><span>8:30-18:00 · pouze snídaně 8:30-13:00</span></div>
+        </div>
+        <div id="kontakt" class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Pražská 207</h2>
+          <p>Najdete nás v historickém centru města Tábor. Pro dotazy k nabídce zavolejte nebo napište e-mail.</p>
+          <div class="contact-lines">
+            <a class="contact-line" href="tel:+420730135657">+420 730 135 657</a>
+            <a class="contact-line" href="mailto:bistroprazskatabor@seznam.cz">bistroprazskatabor@seznam.cz</a>
+            <div class="contact-line">Pražská 207, 390 01 Tábor-Tábor 1</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-inner">
+        <div id="map" aria-label="Mapa: Bistro Pražská"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="gallery-title">
+      <div class="section-inner">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Uvnitř bistra</p>
+            <h2 id="gallery-title">Teplo světel, vůně kávy</h2>
+          </div>
+          <p>Prostor na snídani ve dvou, polední oběd i odpolední zastávku u vitríny.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="section-inner faq">
+        <div>
+          <p class="eyebrow">Prakticky</p>
+          <h2 id="faq-title">Než se zastavíte</h2>
+        </div>
+        <div>
+          <details>
+            <summary>Kdy se podávají snídaně?</summary>
+            <p>Ve všední dny 7:30-10:30, v sobotu 8:30-11:00 a v neděli 8:30-13:00.</p>
+          </details>
+          <details>
+            <summary>Máte obědy i o víkendu?</summary>
+            <p>V sobotu ano, obědy a stálá nabídka běží od 11:00 do 17:30. V neděli je uvedena pouze snídaně.</p>
+          </details>
+          <details>
+            <summary>Jakou kávu připravujete?</summary>
+            <p>V nabídce je výběrová káva z bruselské pražírny Wide Awake.</p>
+          </details>
+          <details>
+            <summary>Co najdu ve vitríně?</summary>
+            <p>Každý den sladké dezerty a slané svačiny. K tomu zboží Sonnentor a domácí výrobky.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <aside class="final-cta" aria-labelledby="cta-title">
+      <div>
+        <h2 id="cta-title">Zastavte se dnes v Pražské</h2>
+        <p>Pátek: otevřeno 7:30-18:00, snídaně do 10:30 a obědy do 15:00.</p>
+      </div>
+      <a class="btn btn-accent" href="tel:+420730135657">+420 730 135 657</a>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="credits">Fotografie: <a href="https://www.pexels.com/@konrads-photo" rel="noreferrer" target="_blank">Daniil Kondrashin</a>, <a href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023" rel="noreferrer" target="_blank">Việt Anh Nguyễn</a>, <a href="https://www.pexels.com/@valeriya" rel="noreferrer" target="_blank">Valeria Boltneva</a>, <a href="https://www.pexels.com/@nguy-n-thanh-nh-n-203569019" rel="noreferrer" target="_blank">NGUYỄN THÀNH NHƠN</a>, <a href="https://www.pexels.com/@zaktech90" rel="noreferrer" target="_blank">Zain Ali</a>, <a href="https://www.pexels.com/@alaritammsalu" rel="noreferrer" target="_blank">Alari Tammsalu</a>.</div>
+    <div class="disclaimer">Neoficiální prezentační stránka vytvořená službou Webflex. Pokud si nepřejete, aby byla dostupná, smažete ji zde: <a href="https://webflex.cz/delete/pbla8zr" rel="noreferrer">https://webflex.cz/delete/pbla8zr</a>.</div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.660902199999997, 49.413612],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([14.660902199999997, 49.413612])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
