@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Atlantis | Kavárna a crêperie v Táboře</title>
+  <meta name="description" content="Café Atlantis v Táboře: kavárna a crêperie s čerstvými dezerty, výběrovou kávou Reserva, palačinkami, vínem, koktejly a zahrádkou na Třídě 9. května.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf8;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #1b1513;
+      --muted: #746967;
+      --soft: #eee9e3;
+      --accent: #402020;
+      --accent-2: #8e6c51;
+      --shadow: 0 28px 90px rgba(64, 32, 32, 0.11);
+      --shadow-soft: 0 18px 64px rgba(64, 32, 32, 0.08);
+      --radius: 28px;
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(64, 32, 32, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64, 32, 32, 0.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(142, 108, 81, 0.16), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      z-index: 5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .shell {
+      width: min(1160px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 250, 248, .82);
+      border-bottom: 1px solid rgba(64, 32, 32, .08);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 170px;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .navlinks a,
+    .btn,
+    .chip,
+    .menu-row,
+    .gallery-card,
+    .footer-delete {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+
+    .navlinks a {
+      padding: 10px 12px;
+      border-radius: 999px;
+    }
+
+    .navlinks a:hover {
+      background: rgba(64, 32, 32, .06);
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .navlinks a:active,
+    .btn:active,
+    .chip:active,
+    .menu-row:active,
+    .gallery-card:active,
+    .footer-delete:active {
+      transform: translateY(1px);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 14px 38px rgba(64, 32, 32, .18);
+    }
+
+    .btn-primary:hover {
+      background: #2d1515;
+      transform: translateY(-1px);
+      box-shadow: 0 18px 48px rgba(64, 32, 32, .24);
+    }
+
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: rgba(255,255,255,.34);
+    }
+
+    .btn-outline:hover {
+      background: rgba(64, 32, 32, .06);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .72fr);
+      align-items: center;
+      gap: 56px;
+      padding: 72px 0 86px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin: 0 0 22px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(64, 32, 32, .08);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      color: var(--ink);
+      hyphens: none;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 630px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 22px);
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 34px 0 0;
+    }
+
+    .hero-panel {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      min-height: 440px;
+      border-radius: 42px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .hero-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .78);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 18px 54px rgba(27, 21, 19, .12);
+    }
+
+    .hero-card strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .hero-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .rating {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--accent);
+      line-height: 1;
+      text-align: right;
+    }
+
+    section {
+      padding: 92px 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(260px, .56fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: .98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .service-card {
+      min-height: 276px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .service-card h3 {
+      font-size: 26px;
+      line-height: 1.08;
+      font-weight: 800;
+      max-width: 9ch;
+    }
+
+    .service-card p {
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .service-code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 26px;
+    }
+
+    .menu-list {
+      background: var(--surface-strong);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(170px, auto);
+      gap: 24px;
+      align-items: center;
+      padding: 24px 28px;
+      border-radius: 24px;
+    }
+
+    .menu-row + .menu-row {
+      border-top: 1px solid rgba(64, 32, 32, .08);
+    }
+
+    .menu-row:hover {
+      background: #f7f2ee;
+      transform: translateY(-1px);
+    }
+
+    .menu-row h3 {
+      font-size: 22px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .menu-row p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 680px;
+    }
+
+    .tag {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(64, 32, 32, .06);
+      white-space: nowrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .76fr) 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .photo-tile {
+      min-height: 520px;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .photo-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .story-card {
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 36px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 44px;
+    }
+
+    .story-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.2vw, 62px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+
+    .story-card p {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 20px;
+      border-radius: 22px;
+      background: #f7f2ee;
+    }
+
+    .stat b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .gallery-card {
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 320px;
+    }
+
+    .gallery-card:nth-child(2) {
+      min-height: 420px;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+    }
+
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 34px;
+      border-radius: 34px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 420px;
+    }
+
+    .contact-card h2 {
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .contact-list a,
+    .contact-list div {
+      display: block;
+      color: rgba(255,255,255,.86);
+      font-weight: 700;
+    }
+
+    .contact-list small {
+      display: block;
+      margin-bottom: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.58);
+    }
+
+    .hours-note {
+      margin-top: 26px;
+      color: rgba(255,255,255,.72);
+      font-size: 14px;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+
+    .final {
+      padding: 96px 0 112px;
+    }
+
+    .final-box {
+      border-radius: 42px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      padding: clamp(32px, 7vw, 78px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .final-box h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 76px);
+      line-height: .95;
+      overflow-wrap: anywhere;
+    }
+
+    .final-box p {
+      margin: 18px 0 0;
+      color: var(--muted);
+      max-width: 620px;
+      font-size: 18px;
+    }
+
+    footer {
+      border-top: 1px solid rgba(64, 32, 32, .09);
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .footer-delete {
+      color: var(--accent);
+      font-weight: 800;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .footer-delete:hover {
+      color: #1b1513;
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 980px) {
+      .navlinks { display: none; }
+
+      .hero,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        gap: 36px;
+        padding-top: 54px;
+      }
+
+      .hero-panel {
+        min-height: 360px;
+      }
+
+      .services,
+      .gallery-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .gallery-card,
+      .gallery-card:nth-child(2) {
+        min-height: 300px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1160px);
+      }
+
+      .topbar {
+        position: static;
+      }
+
+      .nav {
+        min-height: 72px;
+      }
+
+      .brand img {
+        max-height: 38px;
+      }
+
+      .hero,
+      section {
+        padding: 56px 0;
+      }
+
+      .hero-card,
+      .menu-row,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-card {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        padding: 18px;
+      }
+
+      .rating,
+      .tag {
+        justify-self: start;
+        text-align: left;
+      }
+
+      .service-card,
+      .story-card,
+      .contact-card,
+      .final-box {
+        border-radius: 28px;
+      }
+
+      .photo-tile {
+        min-height: 360px;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="#home" aria-label="Café Atlantis">
+        <img src="https://webmium.blob.core.windows.net/users/92039/logos/mobile/396a0cfe-e9d1-4d51-91d1-7f5d6be1525a/1.png" alt="Café Atlantis">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420777162301">Rezervovat</a>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="shell hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow"><span class="dot"></span> Tábor · Třída 9. května</p>
+        <h1 id="hero-title">Café Atlantis v Táboře</h1>
+        <p class="lead">Kavárna a crêperie pro posezení s přáteli, partnerem i na obchodní jednání. Čerstvé dezerty, výběrová káva Reserva, palačinky, vína a koktejly.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420777162301">Zavolat do kavárny</a>
+          <a class="btn btn-outline" href="#nabidka">Prohlédnout nabídku</a>
+        </div>
+      </div>
+      <div class="hero-panel" aria-label="Interiér kavárny">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <div class="hero-card">
+          <div>
+            <strong>Příjemné prostředí na den i večer</strong>
+            <span>V létě můžete posedět také na venkovní zahrádce přímo na hlavní třídě.</span>
+          </div>
+          <div class="rating">4.4</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Káva, dezerty, crêpes</h2>
+          <p>Atlantis stojí na čerstvě připravovaných dezertech, netradičních ochutnávkách kávy a francouzských palačinkách na sladký i slaný způsob.</p>
+        </div>
+        <div class="services">
+          <article class="service-card">
+            <div>
+              <div class="service-code">01 / KÁVA</div>
+              <h3>Výběrová káva Reserva</h3>
+            </div>
+            <p>Od ochutnávek netradičních káv po speciální kávy s příchutěmi.</p>
+          </article>
+          <article class="service-card">
+            <div>
+              <div class="service-code">02 / DEZERTY</div>
+              <h3>Čerstvé denní dezerty</h3>
+            </div>
+            <p>Kvalitní dezerty připravované každý den pro odpolední kávu i delší posezení.</p>
+          </article>
+          <article class="service-card">
+            <div>
+              <div class="service-code">03 / VEČER</div>
+              <h3>Vína a koktejly</h3>
+            </div>
+            <p>Pro večerní návštěvu jsou připravená vína a různé typy koktejlů.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="menu-list" aria-label="Výběr z nabídky">
+          <article class="menu-row">
+            <div>
+              <h3>Francouzské crêpes</h3>
+              <p>Sladké palačinky pro kávové odpoledne i lehčí dezert po jídle.</p>
+            </div>
+            <span class="tag">sladký způsob</span>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Galettes</h3>
+              <p>Slané palačinky inspirované francouzskou crêperií.</p>
+            </div>
+            <span class="tag">slaný způsob</span>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Francouzské speciality</h3>
+              <p>Jídla typická pro Francii, která doplňují kavárenskou nabídku.</p>
+            </div>
+            <span class="tag">crêperie</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="shell split">
+        <div class="photo-tile">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <article class="story-card">
+          <div>
+            <p class="eyebrow"><span class="dot"></span> Posezení v centru Tábora</p>
+            <h2>Klidný stůl pro každou příležitost</h2>
+            <p>Pro setkání s přáteli, partnerem i pracovní rozhovor. Atlantis kombinuje kavárnu, crêperii a večerní bar v jednom místě.</p>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <b>4.4</b>
+              <span>hodnocení hostů</span>
+            </div>
+            <div class="stat">
+              <b>207</b>
+              <span>recenzí na Googlu</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Teplé světlo, měkké večery</h2>
+          <p>Vybrané fotografie drží atmosféru kavárny: stůl, světlo, sklo, dřevo a klidné místo pro rozhovor.</p>
+        </div>
+        <div class="gallery-strip">
+          <a class="gallery-card" href="#kontakt" aria-label="Kontakt">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </a>
+          <a class="gallery-card" href="#kontakt" aria-label="Kontakt">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </a>
+          <a class="gallery-card" href="#kontakt" aria-label="Kontakt">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell contact-grid">
+        <article class="contact-card">
+          <div>
+            <p class="eyebrow" style="color: rgba(255,255,255,.82)"><span class="dot" style="background:#fff; box-shadow:0 0 0 8px rgba(255,255,255,.12)"></span> Rezervace a kontakt</p>
+            <h2>Zastavte se na 9. května</h2>
+            <div class="contact-list">
+              <a href="tel:+420777162301"><small>Telefon</small>+420 777 162 301</a>
+              <a href="mailto:info@cafeatlantis.cz"><small>E-mail</small>info@cafeatlantis.cz</a>
+              <div><small>Adresa</small>22, 9. května 640, 390 02 Tábor-Tábor 2</div>
+            </div>
+          </div>
+          <p class="hours-note">Aktuální provozní dobu a rezervaci stolu ověříte telefonicky.</p>
+        </article>
+        <div id="map" aria-label="Mapa s polohou Café Atlantis"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="shell final-box">
+        <div>
+          <h2>Stůl čeká v centru Tábora</h2>
+          <p>Domluvte si místo pro kávu, crêpes, dezert nebo večerní skleničku.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420777162301">Volat +420 777 162 301</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <span>Toto je nezávazná prezentační stránka od Webflex. Pro odstranění použijte odkaz níže.</span>
+      <a class="footer-delete" href="https://webflex.cz/delete/km54kpl">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6709873, 49.412568],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([14.6709873, 49.412568])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
