@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avej Vending | Prodejní automaty a káva v České Lípě</title>
+  <meta name="description" content="Avej Vending v České Lípě: nápojové a potravinové automaty, Horeca, pronájem kávovarů, zásobování, revize a servisní linka 24/7.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #f7f8fb;
+      --surface: #ffffff;
+      --ink: #101114;
+      --muted: #626975;
+      --line: #d9dde5;
+      --line-strong: #aeb6c4;
+      --accent: #2F4B7D;
+      --accent-dark: #20375f;
+      --accent-soft: #e9eef7;
+      --ok: #176d3b;
+      --warn: #9c2c1c;
+      --font-display: "Archivo Black", "Inter Tight", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1200px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(47,75,125,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(47,75,125,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin-inline: auto; }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: -60px;
+      z-index: 30;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 160px;
+    }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .links a {
+      padding: 8px 0;
+      transition: color .18s var(--ease);
+    }
+    .links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(47,75,125,.12); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: var(--accent-soft); color: var(--accent); }
+    a:focus-visible,
+    button:focus-visible,
+    .btn:focus-visible,
+    .table-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 62px 0 70px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(390px, .72fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .kicker::before {
+      content: "";
+      width: 46px;
+      height: 2px;
+      background: var(--accent);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 660px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.8vw, 22px);
+      line-height: 1.58;
+      hyphens: auto;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .serial {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .serial span {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      padding: 8px 10px;
+    }
+
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      box-shadow: 0 22px 60px rgba(16,17,20,.08);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 18px 16px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today {
+      background: var(--accent);
+      color: #fff;
+    }
+    .hours-note {
+      padding: 18px;
+      border-top: 1px solid var(--line-strong);
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    section { padding: 86px 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, .8fr) minmax(300px, .55fr);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(58px, 8vw, 122px);
+      line-height: .75;
+      color: var(--accent-soft);
+      -webkit-text-stroke: 1px rgba(47,75,125,.26);
+    }
+    h2 {
+      font-size: clamp(34px, 4vw, 64px);
+      text-transform: uppercase;
+    }
+    .section-head p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.62;
+      hyphens: auto;
+    }
+
+    .service-table,
+    .trust-grid,
+    .process-table,
+    .contact-grid {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .table-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(260px, .55fr);
+      border-bottom: 1px solid var(--line);
+      min-height: 118px;
+    }
+    .table-row:last-child { border-bottom: 0; }
+    .cell {
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+    .cell:last-child { border-right: 0; }
+    .code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .table-row h3 {
+      font-size: clamp(24px, 2.7vw, 38px);
+      text-transform: uppercase;
+    }
+    .table-row p,
+    .small-copy {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.58;
+      hyphens: auto;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+    }
+    .trust-item {
+      min-height: 210px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .trust-item:last-child { border-right: 0; }
+    .metric {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 700;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .trust-item p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(360px, .64fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .matrix {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .matrix .matrix-head,
+    .matrix .matrix-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(120px, .5fr));
+    }
+    .matrix-head {
+      position: sticky;
+      top: 76px;
+      z-index: 2;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .matrix span {
+      padding: 16px;
+      border-right: 1px solid rgba(255,255,255,.28);
+      border-bottom: 1px solid var(--line);
+    }
+    .matrix-row span {
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+    .matrix-row span:first-child {
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .matrix span:last-child { border-right: 0; }
+    .callout {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .callout strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3.2vw, 48px);
+      line-height: 1;
+      text-transform: uppercase;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    .badge-list {
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .badge-list span {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .process-table .step {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(220px, .44fr);
+      border-bottom: 1px solid var(--line);
+    }
+    .process-table .step:last-child { border-bottom: 0; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo {
+      min-height: 360px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.03);
+    }
+    .photo-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .photo-stack .photo { min-height: 171px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(420px, .88fr);
+      align-items: stretch;
+    }
+    .contact-panel {
+      padding: 28px;
+      border-right: 1px solid var(--line-strong);
+      display: grid;
+      gap: 22px;
+      align-content: start;
+    }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .contact-line span,
+    .contact-line a {
+      font-size: 20px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    #map {
+      height: 420px;
+      min-height: 100%;
+    }
+
+    .final {
+      padding: 64px 0;
+      background: var(--accent);
+      color: #fff;
+      border-top: 0;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; }
+    .final p {
+      margin-top: 14px;
+      max-width: 640px;
+      color: rgba(255,255,255,.78);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    .final .btn.primary {
+      background: #fff;
+      color: var(--accent);
+    }
+    .final .btn.secondary {
+      border-color: rgba(255,255,255,.55);
+      color: #fff;
+    }
+    .final .btn.secondary:hover {
+      background: rgba(255,255,255,.12);
+      color: #fff;
+    }
+
+    footer {
+      padding: 28px 0 36px;
+      background: #101114;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .gallery,
+      .contact-grid,
+      .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hours-card { max-width: 560px; }
+      .section-head { gap: 18px; }
+      .section-no { font-size: 56px; }
+      .table-row,
+      .process-table .step {
+        grid-template-columns: 1fr;
+      }
+      .cell {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .cell:last-child { border-bottom: 0; }
+      .trust-grid { grid-template-columns: repeat(2, 1fr); }
+      .trust-item:nth-child(2) { border-right: 0; }
+      .trust-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .contact-panel { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      #map { height: 360px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .hero { padding: 42px 0 52px; }
+      section { padding: 62px 0; }
+      .nav { min-height: 68px; }
+      .brand img { max-height: 36px; }
+      .hero-actions, .final-actions { width: 100%; }
+      .btn { width: 100%; }
+      .trust-grid { grid-template-columns: 1fr; }
+      .trust-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        min-height: 170px;
+      }
+      .trust-item:last-child { border-bottom: 0; }
+      .matrix { overflow-x: auto; }
+      .matrix .matrix-head,
+      .matrix .matrix-row {
+        min-width: 680px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#" aria-label="Avej Vending">
+        <img src="https://826a4e4669.clvaw-cdnwnd.com/98ff352c98c4cc253e30a3f1ef7ea7ff/200000046-4fa0d4fa0f/logo-4.png?ph=826a4e4669" alt="Avej Vending">
+      </a>
+      <div class="links">
+        <a href="#sluzby">Služby</a>
+        <a href="#duvera">Zázemí</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420800111127">800 111 127</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Česká Lípa · Poříční 3010</div>
+          <h1>Káva a automaty bez prostojů</h1>
+          <p class="lead">Avej Vending zajišťuje nápojové a potravinové automaty, Horeca řešení, pronájem kávovarů, zásobování, revize a servisní tým pro provozy, které potřebují spolehlivý režim každý pracovní den.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420487521985">Zavolat provozovnu</a>
+            <a class="btn secondary" href="mailto:info@avejvending.cz">Napsat e-mail</a>
+          </div>
+          <div class="serial" aria-label="Rychlé údaje">
+            <span>IČ režim: C 9111</span>
+            <span>Servisní linka 24/7</span>
+            <span>Rok ověření: 2025</span>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <div class="card-head"><span>Otevírací doba</span><span>Dnes pátek</span></div>
+          <div class="hours-row"><span>Pondělí</span><span>8:00–16:00</span></div>
+          <div class="hours-row"><span>Úterý</span><span>8:00–16:00</span></div>
+          <div class="hours-row"><span>Středa</span><span>8:00–16:00</span></div>
+          <div class="hours-row"><span>Čtvrtek</span><span>8:00–16:00</span></div>
+          <div class="hours-row today"><span>Pátek</span><span>8:00–16:00</span></div>
+          <div class="hours-row"><span>Sobota</span><span>24h tel. 800 111 127</span></div>
+          <div class="hours-row"><span>Neděle</span><span>24h tel. 800 111 127</span></div>
+          <p class="hours-note">Pro provozní dotazy volejte +420 487 521 985. Pro sobotu, neděli a nepřetržitou službu používejte bezplatnou linku 800 111 127.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Sortiment a provoz</h2>
+          <p>Služby vycházejí z každodenních potřeb firem, restaurací, hotelů a veřejných míst: dostupná káva, pravidelné doplnění, platební systémy a servis bez zbytečného čekání.</p>
+        </div>
+        <div class="service-table">
+          <div class="table-row">
+            <div class="cell code">S-01</div>
+            <div class="cell"><h3>Nápojové automaty</h3></div>
+            <div class="cell"><p>Řešení pro kávu a teplé nápoje s průběžným zásobováním podle pracovní doby zákazníka.</p></div>
+          </div>
+          <div class="table-row">
+            <div class="cell code">S-02</div>
+            <div class="cell"><h3>Potravinové automaty</h3></div>
+            <div class="cell"><p>Automaty pro rychlé občerstvení v provozech, kde je důležitá dostupnost během směn.</p></div>
+          </div>
+          <div class="table-row">
+            <div class="cell code">S-03</div>
+            <div class="cell"><h3>Horeca</h3></div>
+            <div class="cell"><p>Kávové zázemí pro gastro provozy, ubytování a místa se stálou obsluhou hostů.</p></div>
+          </div>
+          <div class="table-row">
+            <div class="cell code">S-04</div>
+            <div class="cell"><h3>Pronájem kávovarů</h3></div>
+            <div class="cell"><p>Instalace, péče o zařízení a pravidelný servisní dohled pro stabilní provoz kávovaru.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="duvera">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Provozní jistoty</h2>
+          <p>Avej Vending uvádí konkrétní zázemí: dlouhou praxi, bezplatnou instalaci, včasné zásobování, pojištění strojů a pravidelné revize.</p>
+        </div>
+        <div class="trust-grid">
+          <div class="trust-item">
+            <div class="code">Praxe</div>
+            <div class="metric">40 let</div>
+            <p>Dlouhodobé zkušenosti s prodejními automaty a kávou pro provozy.</p>
+          </div>
+          <div class="trust-item">
+            <div class="code">Google</div>
+            <div class="metric">3,6 / 38</div>
+            <p>Hodnocení 3,6 a 38 recenzí podle zadaných veřejných údajů.</p>
+          </div>
+          <div class="trust-item">
+            <div class="code">Linka</div>
+            <div class="metric">24/7</div>
+            <p>Bezplatná servisní linka 800 111 127 pro naléhavé požadavky.</p>
+          </div>
+          <div class="trust-item">
+            <div class="code">Spis</div>
+            <div class="metric">C 9111</div>
+            <p>Společnost je vedená u Krajského soudu v Ústí nad Labem.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>Instalace a péče</h2>
+          <p>Rozsah spolupráce je přizpůsobený pracovní době zákazníka, platebním požadavkům a typu provozu.</p>
+        </div>
+        <div class="split">
+          <div class="matrix" aria-label="Provozní matice">
+            <div class="matrix-head">
+              <span>Oblast</span><span>Instalace</span><span>Provoz</span><span>Servis</span>
+            </div>
+            <div class="matrix-row">
+              <span>Nápojové automaty</span><span>Bezplatná</span><span>Zásobování</span><span>Revize</span>
+            </div>
+            <div class="matrix-row">
+              <span>Potravinové automaty</span><span>Dle místa</span><span>Dle pracovní doby</span><span>Tým</span>
+            </div>
+            <div class="matrix-row">
+              <span>Kávovary</span><span>Pronájem</span><span>Horeca</span><span>Pravidelná péče</span>
+            </div>
+            <div class="matrix-row">
+              <span>Platby</span><span>Specifikace</span><span>SODEXO / EDENRED</span><span>Podpora</span>
+            </div>
+          </div>
+          <aside class="callout">
+            <div>
+              <span class="code">Platební systémy</span>
+              <strong>Podle specifikace provozu</strong>
+            </div>
+            <p class="small-copy">Avej Vending uvádí možnost různých platebních systémů včetně SODEXO a EDENRED. Stroje jsou pojištěné a servisní tým zajišťuje kvalitní pravidelné revize.</p>
+            <div class="badge-list" aria-label="Výhody">
+              <span>Silné zázemí</span>
+              <span>Včasné zásobování</span>
+              <span>Profesionální servisní tým</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Postup spolupráce</h2>
+          <p>Od prvního kontaktu po běžný provoz zůstávají důležité tři věci: vhodné umístění, jasně nastavené zásobování a servisní reakce.</p>
+        </div>
+        <div class="process-table">
+          <div class="step">
+            <div class="cell code">01 / Kontakt</div>
+            <div class="cell"><h3>Provoz a potřeby</h3></div>
+            <div class="cell"><p>Domluvíte typ automatu, místo, pracovní dobu a způsob platby.</p></div>
+          </div>
+          <div class="step">
+            <div class="cell code">02 / Umístění</div>
+            <div class="cell"><h3>Bezplatná instalace</h3></div>
+            <div class="cell"><p>Avej Vending uvádí bezplatnou instalaci a přizpůsobení požadavkům zákazníka.</p></div>
+          </div>
+          <div class="step">
+            <div class="cell code">03 / Provoz</div>
+            <div class="cell"><h3>Zásobování a revize</h3></div>
+            <div class="cell"><p>Automaty zůstávají pod pravidelným dohledem, se zásobováním a servisní linkou 24/7.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra kávy a gastro provozu">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Káva v provozu</h2>
+          <p>Fotografie drží gastro atmosféru, ve které má automat nebo kávovar plnit jednoduchou roli: šálek dostupný tehdy, kdy ho host nebo zaměstnanec potřebuje.</p>
+        </div>
+        <div class="gallery">
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <div class="photo-stack">
+            <figure class="photo">
+              <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            </figure>
+            <figure class="photo">
+              <img src="https://images.pexels.com/photos/35096909/pexels-photo-35096909.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy view of a kitchen through a window with soft lighting, perfect for lifestyle themes.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <h2>Kontakt</h2>
+          <p>Navštivte provozovnu v České Lípě, zavolejte na provozní telefon nebo napište e-mail s požadavkem na automaty, kávovar či servis.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-panel">
+            <div class="contact-line">
+              <b>Adresa</b>
+              <span>Poříční 3010, 470 01 Česká Lípa-Česká Lípa 1</span>
+            </div>
+            <div class="contact-line">
+              <b>Telefon</b>
+              <a href="tel:+420487521985">+420 487 521 985</a>
+            </div>
+            <div class="contact-line">
+              <b>Servisní linka</b>
+              <a href="tel:+420800111127">800 111 127</a>
+            </div>
+            <div class="contact-line">
+              <b>E-mail</b>
+              <a href="mailto:info@avejvending.cz">info@avejvending.cz</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Avej Vending"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <h2>Domluvte automaty pro váš provoz</h2>
+          <p>Napište, jaký typ provozu řešíte, kolik lidí automaty používá a jakou pracovní dobu má zásobování respektovat.</p>
+        </div>
+        <div class="hero-actions final-actions">
+          <a class="btn primary" href="tel:+420487521985">Volat +420 487 521 985</a>
+          <a class="btn secondary" href="mailto:info@avejvending.cz">info@avejvending.cz</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>Prezentační stránku připravil Webflex. Nejde o oficiální web společnosti Avej Vending.</div>
+      <div><a href="https://www.webflex.cz/delete/39ngwgx">Smazat tuto stránku</a></div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.543092699999999, 50.6816482],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#2F4B7D' })
+      .setLngLat([14.543092699999999, 50.6816482])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
