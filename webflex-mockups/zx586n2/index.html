@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cukrárna Géčko | Tábor</title>
+  <meta name="description" content="Cukrárna s vlastní výrobou v Táboře. Zákusky ze základních surovin, výběrová káva, fresh bagety a domácí limonády.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650;9..144,760&family=Geist+Mono:wght@500;650&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --paper: #ffffff;
+      --paper-warm: #f5f1ea;
+      --ink: #1d1814;
+      --muted: #6f655d;
+      --hairline: rgba(29, 24, 20, .13);
+      --hairline-strong: rgba(29, 24, 20, .22);
+      --accent: #8B5E3C;
+      --accent-dark: #684328;
+      --accent-soft: #eadfd5;
+      --cream: #f7f4ee;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Hanken Grotesk", Arial, sans-serif;
+      --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1160px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(29,24,20,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29,24,20,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: geometricPrecision;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-display);
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1, .display { overflow-wrap: anywhere; }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 690px; }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); max-width: 760px; }
+    h3 { font-size: 25px; line-height: 1.08; }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--hairline);
+      background: rgba(251,251,248,.88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 760;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .btn:focus-visible,
+    .gallery a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+    .hero {
+      padding: 72px 0 86px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(36px, 5vw, 74px);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { margin-bottom: 18px; }
+    .hero-copy p {
+      max-width: 590px;
+      margin-top: 26px;
+      color: #4f463e;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.34;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--hairline);
+      background: var(--paper-warm);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.88) contrast(1.02);
+    }
+    .hero-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 8px;
+      background: rgba(29,24,20,.72);
+      color: #fff;
+      backdrop-filter: blur(12px);
+    }
+    .hero-note span { color: rgba(255,255,255,.76); }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(260px, .52fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head p { font-size: 19px; line-height: 1.45; }
+
+    .offer-list {
+      border-top: 1px solid var(--hairline-strong);
+      background: rgba(255,255,255,.44);
+    }
+    .offer-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(220px, .45fr);
+      gap: 30px;
+      align-items: center;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .offer-row strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 25px;
+      line-height: 1.1;
+    }
+    .offer-row .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .trust-band {
+      border-block: 1px solid var(--hairline);
+      background: var(--paper);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .stat {
+      min-height: 176px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--hairline);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: .9;
+      letter-spacing: -.03em;
+      color: var(--accent);
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .8fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--hairline);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .detail {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 22px;
+      padding: 16px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .detail:last-child { border-bottom: 1px solid var(--hairline); }
+    .detail .mono { color: var(--accent); }
+    .detail strong { font-size: 18px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+    .gallery a {
+      display: block;
+      min-height: 230px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--hairline);
+      background: var(--paper-warm);
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .gallery a:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .gallery a:active { transform: translateY(1px); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact {
+      border-top: 1px solid var(--hairline);
+      background: var(--paper-warm);
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .65fr) minmax(0, 1fr);
+      gap: 38px;
+      align-items: stretch;
+    }
+    .contact-card {
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+      padding: 28px;
+      border: 1px solid var(--hairline-strong);
+      border-radius: 8px;
+      background: rgba(255,255,255,.62);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 13px;
+    }
+    .contact-lines a, .contact-lines span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid var(--hairline);
+      font-weight: 800;
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: var(--accent); }
+    .hours {
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 16px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today {
+      background: var(--accent);
+      color: #fff;
+    }
+    .hours-row.today span { color: rgba(255,255,255,.82); }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--hairline-strong);
+    }
+
+    .final-cta {
+      padding: 78px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 32px;
+    }
+    .final-cta h2 { color: #fff; max-width: 740px; }
+    .final-cta p { margin-top: 14px; color: rgba(255,255,255,.72); max-width: 560px; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.1); border-color: #fff; }
+
+    footer {
+      padding: 28px 0 34px;
+      background: #111;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 66px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding-top: 42px; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .offer-row { grid-template-columns: 56px 1fr; }
+      .offer-row > p { grid-column: 2; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--hairline); min-height: 148px; }
+      .stat:last-child { border-bottom: 0; }
+      .detail { grid-template-columns: 1fr; gap: 6px; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100vw - 28px, 1160px); }
+      h1 { font-size: clamp(40px, 14vw, 62px); }
+      h2 { font-size: clamp(32px, 10vw, 48px); }
+      section { padding: 62px 0; }
+      .wordmark { font-size: 19px; }
+      .nav .btn { display: none; }
+      .hero-actions, .final-grid .hero-actions { width: 100%; }
+      .btn { width: 100%; }
+      .hero-note { position: static; border-radius: 0; }
+      .contact-card { padding: 20px; }
+      .contact-lines a, .contact-lines span { flex-direction: column; gap: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Cukrárna Géčko</a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#duvera">Hodnocení</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420604409460">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Tábor · Kpt. Jaroše 2958</div>
+          <h1 id="hero-title">Poctivá cukrárna v Táboře</h1>
+          <p>Zákusky z vlastní výroby, výběrová káva, fresh bagety a domácí limonády pro chvíle, kdy se chcete zastavit.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420604409460">Rezervovat po telefonu</a>
+            <a class="btn btn-outline" href="#kontakt">Adresa a mapa</a>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="hero-note mono"><span>Cukrárna s vlastní výrobou</span><strong>Tábor</strong></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="offer-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2 id="offer-title">Sladké, káva i něco čerstvého</h2>
+          </div>
+          <p>V nabídce držíme to, co o sobě cukrárna říká napřímo: vlastní výrobu, základní suroviny, výběrovou kávu, bagety a limonády.</p>
+        </div>
+
+        <div class="offer-list">
+          <article class="offer-row">
+            <div class="num">01</div>
+            <div>
+              <strong>Zákusky z vlastní výroby</strong>
+              <p>Dezerty připravované ze základních surovin, bez zbytečného přikrášlování slov.</p>
+            </div>
+            <p>Na místě nebo s sebou podle aktuální vitríny.</p>
+          </article>
+          <article class="offer-row">
+            <div class="num">02</div>
+            <div>
+              <strong>Výběrová káva</strong>
+              <p>Šálek ke sladkému posezení i krátké zastávce během dne.</p>
+            </div>
+            <p>Káva pro návštěvu cukrárny i rychlé vyzvednutí.</p>
+          </article>
+          <article class="offer-row">
+            <div class="num">03</div>
+            <div>
+              <strong>Fresh bagety</strong>
+              <p>Slaná volba, když se zastavíte mezi pochůzkami, školou nebo cestou domů.</p>
+            </div>
+            <p>Čerstvé občerstvení bez dlouhého čekání.</p>
+          </article>
+          <article class="offer-row">
+            <div class="num">04</div>
+            <div>
+              <strong>Domácí limonády</strong>
+              <p>Osvěžení ke kávě, zákusku nebo lehké svačině.</p>
+            </div>
+            <p>Podle aktuální nabídky provozovny.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="duvera" class="trust-band" aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Odezva hostů</div>
+            <h2 id="trust-title">Místo, kam se lidé vracejí</h2>
+          </div>
+          <p>Veřejné hodnocení ukazuje stabilní zájem hostů v Táboře. Čísla níže vycházejí z dodaných údajů.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span>Hodnocení Google</span>
+            <b>4,5</b>
+          </div>
+          <div class="stat">
+            <span>Počet recenzí</span>
+            <b>143</b>
+          </div>
+          <div class="stat">
+            <span>Doporučuje na Facebooku</span>
+            <b>88 %</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="craft-title">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="eyebrow">Vitrína a posezení</div>
+          <h2 id="craft-title">Pro sladkou pauzu i rychlou svačinu</h2>
+          <p>Géčko stojí na jednoduché kombinaci: cukrárna, káva a čerstvé občerstvení v jedné zastávce na Kapitána Jaroše.</p>
+          <div class="detail-stack">
+            <div class="detail">
+              <div class="mono">Sladké</div>
+              <strong>Zákusky připravované ze základních surovin.</strong>
+            </div>
+            <div class="detail">
+              <div class="mono">Káva</div>
+              <strong>Výběrová káva ke klidnému posezení.</strong>
+            </div>
+            <div class="detail">
+              <div class="mono">S sebou</div>
+              <strong>Bagety a limonády pro návštěvu během dne.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2 id="gallery-title">Teplé světlo, klidný stůl, káva</h2>
+          </div>
+          <p>Klidné posezení, teplé světlo a drobné chvíle u stolu patří ke kávě stejně jako zákusek z vitríny.</p>
+        </div>
+        <div class="gallery">
+          <a href="#kontakt" aria-label="Přejít na kontakt">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </a>
+          <a href="#kontakt" aria-label="Přejít na kontakt">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </a>
+          <a href="#kontakt" aria-label="Přejít na kontakt">
+            <img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night.">
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2 id="contact-title">Najdete nás v Táboře</h2>
+          </div>
+          <p>Zavolejte před cestou, napište e-mail nebo se podívejte na mapu. Provozovna je na adrese Kpt. Jaroše 2958.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div class="contact-lines">
+              <a href="tel:+420604409460"><span>Telefon</span><strong>+420 604 409 460</strong></a>
+              <a href="mailto:cukrarnagecko@email.cz"><span>E-mail</span><strong>cukrarnagecko@email.cz</strong></a>
+              <span><span>Adresa</span><strong>Kpt. Jaroše 2958, 390 03 Tábor</strong></span>
+            </div>
+            <div>
+              <div class="eyebrow" style="margin-bottom: 12px;">Otevírací doba</div>
+              <div class="hours" aria-label="Otevírací doba">
+                <div class="hours-row"><strong>Po</strong><span>Ověřte telefonicky</span></div>
+                <div class="hours-row"><strong>Út</strong><span>Ověřte telefonicky</span></div>
+                <div class="hours-row"><strong>St</strong><span>Ověřte telefonicky</span></div>
+                <div class="hours-row"><strong>Čt</strong><span>Ověřte telefonicky</span></div>
+                <div class="hours-row today"><strong>Pá</strong><span>Dnes ověřte telefonicky</span></div>
+                <div class="hours-row"><strong>So</strong><span>Ověřte telefonicky</span></div>
+                <div class="hours-row"><strong>Ne</strong><span>Ověřte telefonicky</span></div>
+              </div>
+            </div>
+          </aside>
+          <div id="map" role="img" aria-label="Mapa s polohou Cukrárny Géčko v Táboře"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="final-title">
+      <div class="wrap final-grid">
+        <div>
+          <div class="eyebrow" style="color:#d8b99e;">Cukrárna Géčko</div>
+          <h2 id="final-title">Zastavte se na sladkou pauzu.</h2>
+          <p>Kpt. Jaroše 2958, Tábor. Zákusky, káva, bagety a domácí limonády podle aktuální nabídky.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420604409460">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:cukrarnagecko@email.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální ukázku. Není propojena s provozovatelem Cukrárny Géčko.</span>
+      <a href="https://webflex.cz/delete/zx586n2">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.65085, 49.418538],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#8B5E3C' })
+      .setLngLat([14.65085, 49.418538])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
