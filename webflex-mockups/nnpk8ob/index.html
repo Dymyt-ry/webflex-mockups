@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixi Coffee | Výběrová káva z Tábora</title>
+  <meta name="description" content="Výběrová káva z Tábora: zrnková, mletá, kapsle, dárkové edice a kávové předplatné.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --bg-2: #101010;
+      --fg: #f8f6f2;
+      --muted: rgba(248, 246, 242, .68);
+      --line: rgba(248, 246, 242, .14);
+      --panel: #22201d;
+      --paper: #f6f1e8;
+      --paper-ink: #1c1612;
+      --accent: #F7941D;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--fg);
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .nav {
+      position: fixed;
+      z-index: 20;
+      inset: 0 0 auto;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      background: rgba(16,16,16,.64);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+    .logo img { max-height: 38px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: var(--s4); color: var(--muted); font-size: 14px; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--fg); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font: 700 13px/1 var(--font-body);
+      letter-spacing: 0;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #180d03; }
+    .btn-primary:hover { background: #ffad42; }
+    .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn-outline:hover { border-color: rgba(255,255,255,.76); background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      padding: 104px 0 var(--s6);
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-2);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.46) 48%, rgba(0,0,0,.14));
+      pointer-events: none;
+    }
+    .hero-photo { position: absolute; inset: 0; }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(1.04) brightness(.78); }
+    .hero-content { position: relative; z-index: 2; max-width: 720px; }
+    .eyebrow {
+      font: 700 12px/1 var(--font-mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: var(--s4);
+    }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px;
+      margin: var(--s4) 0 0;
+      color: rgba(248,246,242,.82);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s3);
+      margin-top: var(--s5);
+      color: rgba(248,246,242,.72);
+      font: 500 12px/1.4 var(--font-mono);
+    }
+    .hero-meta span { border-left: 1px solid rgba(255,255,255,.25); padding-left: var(--s3); }
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(260px, .45fr);
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    h2 { font-size: clamp(34px, 4vw, 56px); line-height: 1; font-weight: 700; overflow-wrap: anywhere; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 17px; hyphens: auto; }
+    .category-list { border-top: 1px solid var(--line); }
+    .category-row {
+      display: grid;
+      grid-template-columns: 84px 1fr minmax(180px, .35fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .category-row h3 { font-size: clamp(22px, 3vw, 34px); line-height: 1.06; }
+    .category-row p { margin: 0; color: var(--muted); hyphens: auto; }
+    .paper-band { background: var(--paper); color: var(--paper-ink); }
+    .paper-band .eyebrow { color: #8a4605; }
+    .paper-band .section-head p { color: rgba(28,22,18,.68); }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .product {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: #fffaf2;
+      border: 1px solid rgba(28,22,18,.13);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+    .product:hover { transform: translateY(-2px); border-color: rgba(247,148,29,.55); box-shadow: 0 18px 44px rgba(35,20,5,.12); }
+    .product figure { margin: 0; aspect-ratio: 4/3; background: #e8d7c1; overflow: hidden; }
+    .product img { width: 100%; height: 100%; object-fit: cover; }
+    .product-body { padding: var(--s4); display: flex; flex-direction: column; gap: var(--s3); flex: 1; }
+    .tag { width: max-content; font: 700 11px/1 var(--font-mono); color: #8a4605; text-transform: uppercase; }
+    .product h3 { font-size: 20px; line-height: 1.15; }
+    .price { margin-top: auto; font: 700 14px/1 var(--font-mono); color: rgba(28,22,18,.72); }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .cinema-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.035);
+      border-radius: 8px;
+      padding: var(--s5);
+    }
+    .cinema-card h2 { margin-bottom: var(--s4); }
+    .cinema-card p { margin: 0 0 var(--s4); color: var(--muted); font-size: 18px; hyphens: auto; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .stat { padding: var(--s4); min-height: 138px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--line); }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font: 700 clamp(32px, 4vw, 54px)/1 var(--font-mono); color: var(--fg); }
+    .stat span { color: var(--muted); font-size: 14px; }
+    .process { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); }
+    .steps { border-top: 1px solid var(--line); }
+    .step { display: grid; grid-template-columns: 54px 1fr; gap: var(--s3); padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+    .step h3 { font-size: 22px; margin-bottom: var(--s2); }
+    .step p { margin: 0; color: var(--muted); hyphens: auto; }
+    .gallery { display: grid; grid-template-columns: 1.15fr .85fr; gap: var(--s3); }
+    .gallery figure { margin: 0; border-radius: 8px; overflow: hidden; background: #2b2824; }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16/10; filter: saturate(.9); }
+    .gallery figure:first-child img { aspect-ratio: 4/3; }
+    .contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: var(--s5); align-items: stretch; }
+    .contact-card {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border-radius: 8px;
+      padding: var(--s5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s4);
+    }
+    .contact-card h2 { color: var(--paper-ink); }
+    .contact-line { display: grid; gap: var(--s1); }
+    .contact-line span { color: rgba(28,22,18,.62); font-size: 13px; }
+    .contact-line strong, .contact-line a { font: 700 16px/1.4 var(--font-mono); color: var(--paper-ink); overflow-wrap: anywhere; }
+    .hours { margin-top: var(--s3); border-top: 1px solid rgba(28,22,18,.14); }
+    .hours div { display: flex; justify-content: space-between; gap: var(--s4); padding: 12px 0; border-bottom: 1px solid rgba(28,22,18,.14); font-family: var(--font-mono); font-size: 13px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); min-height: 420px; }
+    .faq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); align-items: stretch; }
+    .qa { border: 1px solid var(--line); border-radius: 8px; padding: var(--s4); background: rgba(255,255,255,.03); }
+    .qa h3 { font-size: 20px; margin-bottom: var(--s3); }
+    .qa p { margin: 0; color: var(--muted); hyphens: auto; }
+    .final {
+      padding: var(--s7) 0;
+      background: #0f0f0f;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .final-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--s5); }
+    .final h2 { max-width: 760px; }
+    footer { padding: var(--s5) 0; color: rgba(248,246,242,.54); font-size: 13px; }
+    .footer-row { display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: var(--s4); }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.btn) { display: none; }
+      .section-head, .split, .process, .gallery, .contact-grid, .final-inner { grid-template-columns: 1fr; }
+      .final-inner { display: grid; }
+      .product-grid, .faq { grid-template-columns: 1fr 1fr; }
+      .category-row { grid-template-columns: 56px 1fr; }
+      .category-row p { grid-column: 2; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { min-height: 760px; }
+      h1 { font-size: clamp(40px, 13vw, 64px); }
+      section { padding: var(--s6) 0; }
+      .product-grid, .faq { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="logo" href="#top" aria-label="Fixi Coffee">
+        <img src="https://fixicoffee.cz/cdn/shop/files/logo_Fixi_Coffee_horizontalni_bile.png?v=1715765032" alt="Fixi Coffee">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kavy">Kávy</a>
+        <a href="#darky">Dárky</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420770169196">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+      </div>
+      <div class="wrap hero-content">
+        <div class="eyebrow">Výběrová káva z Tábora</div>
+        <h1 id="hero-title">Káva, která dorazí včas.</h1>
+        <p class="lead">Zrnková, mletá i v kapslích kompatibilních s Nespresso®. K tomu dárkové edice pro motorkáře, učitele, partnery i každého, kdo má rád poctivý šálek.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kavy">Vybrat kávu</a>
+          <a class="btn btn-outline" href="#kontakt">Kontakt</a>
+        </div>
+        <div class="hero-meta">
+          <span>Palackého 354, Tábor</span>
+          <span>Po-pá 7:30-15:30</span>
+          <span>4,7 z 35 recenzí</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="kavy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Sortiment</div>
+            <h2>Vyberte podle chuti, formy i příležitosti.</h2>
+          </div>
+          <p>Fixi Coffee praží každé zrnko zvlášť a nabízí kávu pro domácí mlýnek, automat, kapslový kávovar i jako hotový dárek.</p>
+        </div>
+        <div class="category-list">
+          <article class="category-row">
+            <div class="num">01</div>
+            <h3>100% Arabica</h3>
+            <p>Výběrová zrna pro čistý šálek bez zbytečné hořkosti.</p>
+          </article>
+          <article class="category-row">
+            <div class="num">02</div>
+            <h3>Kávové směsi</h3>
+            <p>Vyvážené profily pro espresso, filtr i každodenní kávu.</p>
+          </article>
+          <article class="category-row">
+            <div class="num">03</div>
+            <h3>Kapsle</h3>
+            <p>Káva v kapslích kompatibilních s Nespresso®.</p>
+          </article>
+          <article class="category-row">
+            <div class="num">04</div>
+            <h3>Kávové předplatné</h3>
+            <p>Pravidelná zásoba pro domácnost, kancelář nebo provoz.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="darky" class="paper-band">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Oblíbené edice</div>
+            <h2>Dárková káva, která má vlastní charakter.</h2>
+          </div>
+          <p>Horoscoffee, Krafíčko, Maryša i Motokafe: balení, které potěší oko a pořád chutná jako výběrová káva.</p>
+        </div>
+        <div class="product-grid">
+          <article class="product">
+            <figure><img src="https://images.pexels.com/photos/6969884/pexels-photo-6969884.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person presenting a food delivery package and paper bag at home."></figure>
+            <div class="product-body">
+              <div class="tag">Horoscoffee</div>
+              <h3>Býk - dárková káva</h3>
+              <div class="price">Od 334 Kč</div>
+            </div>
+          </article>
+          <article class="product">
+            <figure><img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes."></figure>
+            <div class="product-body">
+              <div class="tag">Krafíčko</div>
+              <h3>Učitelské balení</h3>
+              <div class="price">Od 260 Kč</div>
+            </div>
+          </article>
+          <article class="product">
+            <figure><img src="https://images.pexels.com/photos/6969967/pexels-photo-6969967.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two people exchanging a shopping bag in an indoor setting highlighting online shopping and delivery."></figure>
+            <div class="product-body">
+              <div class="tag">Maryša</div>
+              <h3>Do smrti dobrý</h3>
+              <div class="price">Od 230 Kč</div>
+            </div>
+          </article>
+          <article class="product">
+            <figure><img src="https://images.pexels.com/photos/6969971/pexels-photo-6969971.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding a cardboard box, ideal for delivery service concepts."></figure>
+            <div class="product-body">
+              <div class="tag">Motokafe</div>
+              <h3>Enduro, Classic, Adventure</h3>
+              <div class="price">Od 363 Kč</div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="cinema-card">
+          <div class="eyebrow">Proč Fixi</div>
+          <h2>Jedno místo pro kávu i dárek.</h2>
+          <p>Nakoupíte online, vyberete formu kávy a zvolíte balení podle člověka, kterému má udělat radost.</p>
+          <p>Sortiment počítá s mlýnkem, kávovarem i rychlým ranním šálkem z kapsle.</p>
+          <a class="btn btn-primary" href="https://fixicoffee.cz/">Přejít do e-shopu</a>
+        </div>
+        <div class="stats" aria-label="Důvěryhodnost">
+          <div class="stat"><strong>4,7</strong><span>hodnocení zákazníků</span></div>
+          <div class="stat"><strong>35</strong><span>recenzí v profilu</span></div>
+          <div class="stat"><strong>7:30</strong><span>začátek provozní doby v pracovní dny</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap process">
+        <div>
+          <div class="eyebrow">Nákup</div>
+          <h2>Od výběru po první šálek.</h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <div class="num">01</div>
+            <div><h3>Vyberete edici</h3><p>Arabica, směs, kapsle, tématická káva nebo předplatné.</p></div>
+          </article>
+          <article class="step">
+            <div class="num">02</div>
+            <div><h3>Zvolíte formu</h3><p>Zrnková, mletá nebo kapsle podle toho, jak kávu připravujete.</p></div>
+          </article>
+          <article class="step">
+            <div class="num">03</div>
+            <div><h3>Objednáte online</h3><p>Kávu pošlou k vám, případně ji vyberete pro někoho jako dárek.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Balení</div>
+            <h2>Krabice otevřete. Vůně zůstane.</h2>
+          </div>
+          <p>Fotky drží klidnou balicí atmosféru e-shopu: balíček, detail rukou, předání a hotový dárek.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes."></figure>
+          <figure><img src="https://images.pexels.com/photos/6348046/pexels-photo-6348046.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Crop faceless woman in casual clothes sitting on carpet while wrapping parcel bag for shipping in light room"></figure>
+          <figure><img src="https://images.pexels.com/photos/12725423/pexels-photo-12725423.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A delivery person handing over a package to a customer at their doorstep."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Kde nás najdete</h2>
+          </div>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <strong>Palackého 354, 390 01 Tábor 1</strong>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a href="tel:+420770169196">+420 770 169 196</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:kancelar@fixicoffee.cz">kancelar@fixicoffee.cz</a>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Po-pá</span><strong>7:30-15:30</strong></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Fixi Coffee"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Otázky</div>
+            <h2>Než objednáte.</h2>
+          </div>
+          <p>Krátké odpovědi k výběru, dárkům a formám kávy.</p>
+        </div>
+        <div class="faq">
+          <article class="qa"><h3>Máte kávu do kapslí?</h3><p>Ano, v nabídce jsou kapsle kompatibilní s Nespresso®.</p></article>
+          <article class="qa"><h3>Hodí se káva jako dárek?</h3><p>Ano, Fixi Coffee má tematické edice pro různé příležitosti i typy lidí.</p></article>
+          <article class="qa"><h3>Lze řešit pravidelný odběr?</h3><p>Ano, v sortimentu je kávové předplatné.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <h2>Vyberte kávu pro sebe nebo jako dárek.</h2>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://fixicoffee.cz/">Nakoupit online</a>
+          <a class="btn btn-outline" href="tel:+420770169196">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <div>© Fixi Coffee</div>
+      <div class="disclaimer">Tuto prezentační stránku připravilo studio Webflex jako nezávaznou vizuální demonstraci. Pokud si nepřejete její další zobrazování, můžete ji odstranit zde: <a href="https://webflex.cz/delete/nnpk8ob">odstranit stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.6621139, 49.4134944],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#F7941D' })
+      .setLngLat([14.6621139, 49.4134944])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
