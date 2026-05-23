@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kafe Mělník | Výběrová káva, snídaně a dorty v Mělníku</title>
+  <meta name="description" content="Kafe Mělník na Krombholcově: výběrová káva z vlastní pražírny, čerstvé dorty, zapečené bagely, věrnostní klub a stánek Šestihran.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: rgba(255, 255, 255, .86);
+      --paper-solid: #ffffff;
+      --soft: #f1f1ed;
+      --ink: #171715;
+      --muted: #68685f;
+      --line: rgba(23, 23, 21, .075);
+      --accent: #E84242;
+      --accent-deep: #b92129;
+      --olive: #737754;
+      --shadow: 0 34px 90px rgba(34, 34, 24, .095);
+      --shadow-soft: 0 22px 60px rgba(34, 34, 24, .075);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(23,23,21,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,21,.018) 1px, transparent 1px),
+        radial-gradient(circle at 84% 14%, rgba(232,66,66,.10), transparent 32rem),
+        radial-gradient(circle at 10% 42%, rgba(115,119,84,.09), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      text-rendering: optimizeLegibility;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 251, 250, .82);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: rgba(23,23,21,.68);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a,
+    .footer a,
+    .credit-link {
+      transition: color 180ms var(--ease), opacity 180ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .footer a:hover,
+    .credit-link:hover { color: var(--accent-deep); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(23,23,21,.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-deep); }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(23,23,21,.045); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, 1.06fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 78px);
+      padding: 64px 0 70px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(232,66,66,.12);
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 620px;
+      margin-top: 26px;
+      color: #4b4b44;
+      font-size: clamp(18px, 1.7vw, 22px);
+      line-height: 1.55;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 32px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.64);
+      box-shadow: 0 12px 34px rgba(34,34,24,.055);
+    }
+
+    .hero-media { position: relative; min-width: 0; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 36px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img,
+    .gallery-card img,
+    .split-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hours-float {
+      position: absolute;
+      right: -18px;
+      bottom: -26px;
+      width: min(330px, 82%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px);
+    }
+
+    .hours-float strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .hours-float span {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .52fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+
+    h2 { font-size: clamp(34px, 4.2vw, 64px); }
+    .section-head p { font-size: 18px; line-height: 1.72; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(220px, .48fr);
+      align-items: center;
+      gap: 26px;
+      min-height: 128px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .service-row .num {
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .service-row h3 { font-size: clamp(24px, 2.6vw, 38px); }
+    .service-row p { color: var(--muted); }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat-card {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper-solid);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat-card .value {
+      display: block;
+      margin-bottom: 16px;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      font-weight: 700;
+      line-height: .9;
+      letter-spacing: 0;
+    }
+
+    .stat-card p { font-size: 15px; line-height: 1.6; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .92fr) minmax(0, 1fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-panel {
+      padding: clamp(28px, 4vw, 48px);
+      border-radius: 34px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .feature-panel h2 { margin-bottom: 24px; }
+    .feature-list { display: grid; gap: 16px; margin-top: 28px; }
+    .feature-item {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .feature-item b {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(232,66,66,.10);
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .feature-item strong { display: block; margin-bottom: 4px; }
+
+    .menu-band {
+      border-radius: 36px;
+      padding: clamp(28px, 5vw, 56px);
+      background: #171715;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .menu-band h2 { color: #fff; max-width: 820px; }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 34px;
+      align-items: stretch;
+    }
+
+    .menu-item {
+      min-height: 158px;
+      padding: 22px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.08);
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+
+    .menu-item:hover { transform: translateY(-1px); background: rgba(255,255,255,.12); }
+    .menu-item:active { transform: translateY(1px); }
+    .menu-item span {
+      display: block;
+      margin-bottom: 42px;
+      color: rgba(255,255,255,.64);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .menu-item strong { display: block; color: #fff; font-size: 20px; line-height: 1.25; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.05fr .75fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .gallery-card {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 290px;
+    }
+
+    .gallery-card.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .7fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .contact-card,
+    .map-card {
+      border-radius: 30px;
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .contact-card { padding: 30px; }
+    .contact-card h2 { margin-bottom: 24px; font-size: clamp(32px, 3.6vw, 54px); }
+    .contact-lines { display: grid; gap: 16px; margin-bottom: 26px; }
+    .contact-line span {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .contact-line a,
+    .contact-line strong {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hours-table td {
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .hours-table td:last-child { text-align: right; color: var(--muted); }
+    .hours-table tr.today td { color: var(--accent-deep); font-weight: 700; }
+
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+    }
+
+    .final-cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 56px);
+      border-radius: 36px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .final-cta h2 { color: #fff; max-width: 820px; }
+    .final-cta p { margin-top: 16px; max-width: 620px; color: rgba(255,255,255,.86); }
+    .final-cta .btn { background: #fff; color: var(--accent-deep); }
+    .final-cta .btn:hover { background: rgba(255,255,255,.92); }
+
+    .footer {
+      padding: 48px 0 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .credits {
+      margin-top: 18px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .webflex-disclaimer {
+      margin-top: 18px;
+      color: rgba(104,104,95,.78);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-photo { border-radius: 28px; }
+      .hours-float { position: static; width: auto; margin-top: 14px; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .trust,
+      .menu-grid,
+      .gallery { grid-template-columns: 1fr; }
+      .gallery-card,
+      .gallery-card.tall { min-height: 260px; }
+      #map { min-height: 380px; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .hero { gap: 28px; }
+      .logo img { max-height: 38px; }
+      .btn { width: 100%; }
+      .hero-actions { width: 100%; }
+      .service-row,
+      .stat-card,
+      .contact-card { padding: 22px; }
+      .final-cta { padding: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Kafe Mělník">
+        <img src="https://www.kafemelnik.cz/wp-content/uploads/2018/07/asset.jpg" alt="Kafe Mělník">
+      </a>
+      <div class="nav-links">
+        <a href="#kava">Káva</a>
+        <a href="#menu">Menu</a>
+        <a href="#pobocky">Pobočky</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420721777227">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Krombholcova 3474 · Mělník</div>
+        <h1 id="hero-title">Káva v srdci Mělníka</h1>
+        <p class="lead">Výběrová káva z vlastní pražírny, čerstvé dorty bez konzervantů a snídaně se zapečenými bagely pro klidné ráno i odpolední zastávku.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Zavolat do kavárny</a>
+          <a class="btn btn-outline" href="#menu">Prohlédnout menu</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <span class="meta-chip">Kavárna · 8:00-19:00</span>
+          <span class="meta-chip">Šestihran · Náměstí Karla IV</span>
+          <span class="meta-chip">+420 721 777 227</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="hours-float" aria-label="Dnešní otevírací doba">
+          <strong>Dnes v kavárně</strong>
+          <span><em>Pondělí - pátek</em><em>8:00 - 19:00</em></span>
+          <span><em>Sobota - neděle</em><em>10:00 - 18:00</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="kava" class="wrap" aria-labelledby="coffee-title">
+      <div class="section-head">
+        <h2 id="coffee-title">Děláme věci jinak</h2>
+        <p>Na malém městě má mít šálek kávy stejnou péči jako ve velkých kavárenských centrech: poctivá surovina, vlastní receptury a příprava s láskou.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Výběrová káva</h3>
+          <p>Káva z vlastní pražírny MLK Coffee Roastery, espresso i alternativní metody přípravy.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <h3>Čerstvé dorty</h3>
+          <p>Dorty z kvalitních surovin, vždy čerstvé, bez konzervantů a z velké části bez lepku.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Snídaně a bagely</h3>
+          <p>Zapečené bagely, sladké dobroty a káva na místě i s sebou podle rytmu vašeho dne.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra hostů">
+      <div class="trust">
+        <article class="stat-card">
+          <span class="value">4.8</span>
+          <p>Průměrné hodnocení hostů na profilu podniku.</p>
+        </article>
+        <article class="stat-card">
+          <span class="value">943</span>
+          <p>Veřejných recenzí od lidí, kteří se v Kafe Mělník zastavili.</p>
+        </article>
+        <article class="stat-card">
+          <span class="value">2</span>
+          <p>Mělnické adresy: kavárna na Krombholcově a stánek Šestihran na náměstí.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="menu" class="wrap">
+      <div class="menu-band">
+        <div class="eyebrow">Naše menu</div>
+        <h2>Od ranní kávy po dort do krabičky.</h2>
+        <div class="menu-grid">
+          <article class="menu-item">
+            <span>ESPRESSO · FILTR</span>
+            <strong>Výběrová káva a alternativní příprava</strong>
+          </article>
+          <article class="menu-item">
+            <span>DORTY · KATALOG</span>
+            <strong>Čerstvé dorty podle vlastních receptur</strong>
+          </article>
+          <article class="menu-item">
+            <span>SNÍDANĚ</span>
+            <strong>Zapečené bagely ke kávě</strong>
+          </article>
+          <article class="menu-item">
+            <span>VĚRNOST</span>
+            <strong>Klub pro pravidelné hosty</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="feature-panel">
+          <div class="eyebrow">Vlastní receptury</div>
+          <h2>Suroviny, které dávají smysl.</h2>
+          <p>Zakládáme si na kvalitě surovin, ideálně od místních dodavatelů. Každý dort, bagel i šálek má být důvodem vrátit se znovu.</p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <b>01</b>
+              <div><strong>Bez konzervantů</strong><p>Sladké věci připravujeme čerstvé a jednoduše.</p></div>
+            </div>
+            <div class="feature-item">
+              <b>02</b>
+              <div><strong>Velká část bez lepku</strong><p>V nabídce myslíme i na hosty, kteří vybírají opatrněji.</p></div>
+            </div>
+            <div class="feature-item">
+              <b>03</b>
+              <div><strong>Pražírna MLK Coffee Roastery</strong><p>Výběrová káva má svůj původ pod kontrolou.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="gallery-title">
+      <div class="section-head">
+        <h2 id="gallery-title">Místo pro chvíli klidu</h2>
+        <p>Zastavte se na kávu, dort, snídani nebo rychlé okénko ve městě. Atmosféra zůstává civilní, teplá a přirozená.</p>
+      </div>
+      <div class="gallery">
+        <figure class="gallery-card tall">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </figure>
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </figure>
+        <figure class="gallery-card tall">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="pobocky" class="wrap">
+      <div class="section-head">
+        <h2>Dvě zastávky ve městě</h2>
+        <p>Kavárna na Krombholcově pro posezení, stánek Šestihran na Náměstí Karla IV pro kávu během dne.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">KAV</span>
+          <h3>Kavárna Krombholcova</h3>
+          <p>Pondělí - pátek 8:00 - 19:00 · Sobota - neděle 10:00 - 18:00</p>
+        </article>
+        <article class="service-row">
+          <span class="num">ŠES</span>
+          <h3>Stánek Šestihran</h3>
+          <p>Náměstí Karla IV · Pondělí - pátek 8:00 - 16:00 · Víkendy a svátky zavřeno</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Stavte se na Krombholcově.</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Krombholcova 3474, 276 01 Mělník-Mělník 1</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420721777227">+420 721 777 227</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@kafemelnik.cz">info@kafemelnik.cz</a>
+            </div>
+          </div>
+          <strong>Otevírací doba kavárny</strong>
+          <table class="hours-table" aria-label="Otevírací doba kavárny">
+            <tbody>
+              <tr><td>Pondělí</td><td>8:00 - 19:00</td></tr>
+              <tr><td>Úterý</td><td>8:00 - 19:00</td></tr>
+              <tr><td>Středa</td><td>8:00 - 19:00</td></tr>
+              <tr><td>Čtvrtek</td><td>8:00 - 19:00</td></tr>
+              <tr><td>Pátek</td><td>8:00 - 19:00</td></tr>
+              <tr class="today"><td>Sobota</td><td>10:00 - 18:00</td></tr>
+              <tr><td>Neděle</td><td>10:00 - 18:00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa s polohou Kafe Mělník"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final-cta">
+        <div>
+          <h2>Káva, dorty a snídaně čekají.</h2>
+          <p>Napište, zavolejte nebo se rovnou zastavte v kavárně na Krombholcově.</p>
+        </div>
+        <a class="btn" href="tel:+420721777227">+420 721 777 227</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footer-main">
+        <div>
+          <strong>Kafe Mělník</strong><br>
+          Krombholcova 3474, 276 01 Mělník-Mělník 1
+        </div>
+        <div>
+          <a href="mailto:info@kafemelnik.cz">info@kafemelnik.cz</a><br>
+          <a href="tel:+420721777227">+420 721 777 227</a>
+        </div>
+      </div>
+      <div class="credits">
+        Fotografie: <a class="credit-link" href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Việt Anh Nguyễn</a>,
+        <a class="credit-link" href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>,
+        <a class="credit-link" href="https://www.pexels.com/@zaktech90">Zain Ali</a>,
+        <a class="credit-link" href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>,
+        <a class="credit-link" href="https://www.pexels.com/@nguy-n-thanh-nh-n-203569019">NGUYỄN THÀNH NHƠN</a>.
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/rkaj6pk">webflex.cz/delete/rkaj6pk</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.483251099999999, 50.3497655],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+
+    new maplibregl.Marker({ color: '#E84242' })
+      .setLngLat([14.483251099999999, 50.3497655])
+      .addTo(map);
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
