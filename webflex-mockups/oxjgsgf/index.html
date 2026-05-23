@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sladká Rozinka | Pekárna a kavárna v Berouně</title>
+  <meta name="description" content="Sladká Rozinka, pekárna a kavárna v centru Berouna. Čerstvé pečivo každý všední den, káva, snídaně a poctivá chuť z kvalitních surovin.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf8;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #191713;
+      --muted: #6d675e;
+      --soft: #ede8e1;
+      --accent: #E08040;
+      --accent-dark: #9b4b1d;
+      --shadow: 0 28px 90px rgba(52, 38, 24, .10);
+      --shadow-soft: 0 18px 55px rgba(52, 38, 24, .075);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(25,23,19,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,23,19,.022) 1px, transparent 1px),
+        radial-gradient(circle at 82% 10%, rgba(224,128,64,.16), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(20px);
+      background: rgba(251,250,248,.78);
+      border-bottom: 1px solid rgba(25,23,19,.06);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 12px; }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .nav-links a, .btn, .contact-link, .faq summary {
+      transition: transform .22s var(--ease), color .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:focus-visible, .btn:focus-visible, .contact-link:focus-visible, .faq summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 8px;
+    }
+    .nav-links a:active, .btn:active, .contact-link:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #17110c;
+      box-shadow: 0 16px 38px rgba(224,128,64,.26);
+    }
+    .btn-primary:hover { background: #e89058; transform: translateY(-1px); }
+    .btn-outline {
+      border-color: currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(25,23,19,.055); transform: translateY(-1px); }
+
+    .hero {
+      padding: 82px 0 86px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 56px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.32;
+      color: #4f493f;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-media {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .floating-note {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      max-width: 280px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 16px 45px rgba(35,23,14,.16);
+      font-weight: 800;
+    }
+    .floating-note span {
+      display: block;
+      margin-top: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+    }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(280px, .3fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-size: clamp(34px, 4.2vw, 64px);
+      overflow-wrap: anywhere;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(220px, .36fr);
+      align-items: center;
+      gap: 24px;
+      padding: 24px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row b {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+    }
+    .service-row h3 { font-size: clamp(22px, 2.4vw, 34px); }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 28px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      color: var(--accent-dark);
+    }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(340px, .52fr) minmax(0, .48fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .photo-card, .copy-panel {
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .photo-card { min-height: 460px; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .copy-panel { padding: clamp(28px, 4vw, 54px); }
+    .copy-panel h2 { font-size: clamp(34px, 4vw, 62px); overflow-wrap: anywhere; }
+    .copy-panel p { color: var(--muted); font-size: 19px; }
+    .principles {
+      margin-top: 28px;
+      display: grid;
+      gap: 12px;
+    }
+    .principle {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 16px 0;
+      border-top: 1px solid rgba(25,23,19,.09);
+      font-weight: 800;
+    }
+    .principle span:last-child {
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .42fr) minmax(0, .58fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .panel {
+      padding: 30px;
+      border-radius: 30px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-soft);
+    }
+    .panel h2 { font-size: clamp(30px, 3.6vw, 54px); margin-bottom: 22px; }
+    .hours {
+      display: grid;
+      gap: 8px;
+      margin: 24px 0;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(25,23,19,.035);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours .today {
+      background: rgba(224,128,64,.18);
+      color: #5e2d12;
+      font-weight: 700;
+    }
+    .contact-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-top: 1px solid rgba(25,23,19,.09);
+      font-weight: 800;
+    }
+    .contact-link span { color: var(--muted); font-weight: 700; }
+    .contact-link:hover { color: var(--accent-dark); }
+    #map {
+      height: 520px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      object-fit: cover;
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .faq details {
+      padding: 22px 24px;
+      border-radius: 24px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq summary {
+      cursor: pointer;
+      font-weight: 900;
+      list-style: none;
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary:hover { color: var(--accent-dark); }
+    .faq p { color: var(--muted); margin: 14px 0 0; }
+
+    .final-cta {
+      padding: 44px;
+      border-radius: 36px;
+      background: #1b1713;
+      color: #fffaf4;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      box-shadow: 0 30px 80px rgba(25,17,10,.22);
+    }
+    .final-cta h2 {
+      font-size: clamp(34px, 4.6vw, 70px);
+      overflow-wrap: anywhere;
+    }
+    .final-cta p { margin: 12px 0 0; color: rgba(255,250,244,.72); }
+    .final-cta .btn-outline {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.1); }
+
+    .site-footer {
+      padding: 42px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid rgba(25,23,19,.10);
+      padding-top: 24px;
+    }
+    .disclaimer {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(25,23,19,.045);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .hours-contact, .gallery, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-media { aspect-ratio: 16 / 10; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip, .faq { grid-template-columns: 1fr; }
+      #map { height: 420px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 54px; }
+      section { padding: 52px 0; }
+      .panel, .copy-panel, .final-cta { padding: 24px; border-radius: 24px; }
+      .floating-note { position: static; border-radius: 0; max-width: none; }
+      .hero-media { border-radius: 24px; }
+      .footer-line { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Sladká Rozinka">
+        <img src="img/profile.png" alt="Sladká Rozinka">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#peceme">Pečeme</a>
+        <a href="#o-nas">O nás</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420776668814">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Česká 57 · Beroun</p>
+          <h1>Pekárna a kavárna</h1>
+          <p class="lead">Každý všední den čerstvé pečivo z kvalitních surovin, šálek kávy a klidné místo v centru Berouna.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn btn-outline" href="mailto:rozinka@sladkarozinka.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-media">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <div class="floating-note">Přijďte na čerstvé pečivo.
+            <span>Po–Čt 7:00–16:30</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="peceme">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co u nás najdete</h2>
+          <p>Sladká Rozinka je pekárna a kavárna v centru Berouna. Staví na čerstvosti, kvalitních surovinách a každodenním pečení bez zamrazování výrobků.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <b>01</b>
+            <h3>Čerstvé pečivo</h3>
+            <p>Pečeme každý den z kvalitních surovin a výrobky nezamrazujeme.</p>
+          </article>
+          <article class="service-row">
+            <b>02</b>
+            <h3>Káva a posezení</h3>
+            <p>Zastavte se na šálek kávy, snídani nebo něco sladkého během dne.</p>
+          </article>
+          <article class="service-row">
+            <b>03</b>
+            <h3>Centrum Berouna</h3>
+            <p>Najdete nás na adrese Česká 57, kousek od běžných cest městem.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust-strip">
+        <div class="stat">
+          <strong>4.9</strong>
+          <span>hodnocení hostů</span>
+        </div>
+        <div class="stat">
+          <strong>57</strong>
+          <span>recenzí</span>
+        </div>
+        <div class="stat">
+          <strong>5</strong>
+          <span>všedních dnů otevřeno</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="o-nas">
+      <div class="wrap split">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="copy-panel">
+          <p class="eyebrow">O nás</p>
+          <h2>Chuť, která má být čerstvá</h2>
+          <p>Jsme pekárna a kavárna v centru Berouna. Přijďte ochutnat pečivo, které u nás vzniká každý den, a posedět u kávy v klidném rytmu všedního dne.</p>
+          <div class="principles">
+            <div class="principle"><span>Kvalitní suroviny</span><span>denně</span></div>
+            <div class="principle"><span>Výrobky bez zamrazování</span><span>čerstvě</span></div>
+            <div class="principle"><span>Adresa v centru Berouna</span><span>Česká 57</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Chvíle u kávy</h2>
+          <p>Místo pro zastavení po cestě městem, ranní snídani i něco dobrého s sebou.</p>
+        </div>
+        <div class="gallery">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <div class="gallery-side">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap hours-contact">
+        <div class="panel">
+          <p class="eyebrow">Otevírací doba</p>
+          <h2>Stavte se ve všední den</h2>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Pondělí</span><span>7:00–16:30</span></div>
+            <div><span>Úterý</span><span>7:00–16:30</span></div>
+            <div><span>Středa</span><span>7:00–16:30</span></div>
+            <div><span>Čtvrtek</span><span>7:00–16:30</span></div>
+            <div><span>Pátek</span><span>7:00–15:00</span></div>
+            <div class="today"><span>Sobota</span><span>Zavřeno</span></div>
+            <div><span>Neděle</span><span>Zavřeno</span></div>
+          </div>
+          <div class="contact-stack">
+            <a class="contact-link" href="tel:+420776668814"><span>Telefon</span>+420 776 668 814</a>
+            <a class="contact-link" href="mailto:rozinka@sladkarozinka.cz"><span>E-mail</span>rozinka@sladkarozinka.cz</a>
+            <a class="contact-link" href="https://maps.google.com/?q=%C4%8Cesk%C3%A1%2057%2C%20266%2001%20Beroun" target="_blank" rel="noopener"><span>Adresa</span>Česká 57, Beroun</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Sladká Rozinka"></div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Než vyrazíte</h2>
+          <p>Krátké odpovědi k návštěvě pekárny a kavárny na České 57.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Kdy máte otevřeno?</summary>
+            <p>Od pondělí do čtvrtka 7:00–16:30, v pátek 7:00–15:00. O víkendu je zavřeno.</p>
+          </details>
+          <details>
+            <summary>Kde vás najdu?</summary>
+            <p>Na adrese Česká 57, 266 01 Beroun-Beroun 1.</p>
+          </details>
+          <details>
+            <summary>Pečete opravdu denně?</summary>
+            <p>Ano, pečeme každý den čerstvé pečivo z kvalitních surovin.</p>
+          </details>
+          <details>
+            <summary>Mohu se ozvat předem?</summary>
+            <p>Ano, volejte na +420 776 668 814 nebo pište na rozinka@sladkarozinka.cz.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Doražte ochutnat</h2>
+          <p>Čerstvé pečivo, káva a sladké zastavení v centru Berouna.</p>
+        </div>
+        <a class="btn btn-outline" href="tel:+420776668814">+420 776 668 814</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-line">
+        <span>Sladká Rozinka · Česká 57, 266 01 Beroun</span>
+        <span>rozinka@sladkarozinka.cz</span>
+      </div>
+      <div class="disclaimer">
+        Tuto nezávaznou prezentační stránku připravil Webflex jako součást osobního oslovení. Nejste-li správným příjemcem nebo si přejete stránku odstranit, použijte prosím <a href="https://webflex.cz/delete/oxjgsgf">odkaz pro odstranění</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.073604999999999, 49.965469399999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E08040' })
+      .setLngLat([14.073604999999999, 49.965469399999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
