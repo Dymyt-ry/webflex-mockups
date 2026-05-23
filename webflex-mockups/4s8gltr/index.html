@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>JOJOkava - kavárna na kopci nad Berounem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfaf7;
+      --surface: #ffffff;
+      --surface-warm: #f4eee6;
+      --ink: #1d1712;
+      --muted: #6f6257;
+      --line: rgba(29, 23, 18, 0.13);
+      --line-strong: rgba(29, 23, 18, 0.24);
+      --accent: #806040;
+      --accent-dark: #5f452d;
+      --accent-soft: #e8d9c9;
+      --green: #1f5a43;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 128px);
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(29,23,18,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29,23,18,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { color: var(--muted); font-size: clamp(16px, 1.25vw, 19px); text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 64px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-family: var(--font-body);
+      font-size: clamp(21px, 2vw, 28px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .container { width: min(100% - (var(--gutter) * 2), 1240px); margin-inline: auto; }
+    .muted { color: var(--muted); }
+    .mono { font-family: var(--font-mono); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: -80px;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      z-index: 99;
+    }
+    .skip-link:focus { top: 16px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 156px;
+    }
+    .brand img {
+      width: auto;
+      max-width: 152px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2.5vw, 36px);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .navlinks a,
+    .text-link {
+      transition: color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease), border-color .2s var(--ease);
+    }
+    .navlinks a:hover, .text-link:hover { color: var(--ink); }
+    .navlinks a:focus-visible, .btn:focus-visible, .text-link:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform .18s var(--ease), background .22s var(--ease), color .22s var(--ease), border-color .22s var(--ease);
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(128,96,64,.08); }
+
+    .hero {
+      padding: clamp(48px, 7vw, 92px) 0 clamp(64px, 9vw, 116px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.03fr) minmax(40%, .97fr);
+      gap: clamp(34px, 5vw, 76px);
+      align-items: center;
+    }
+    .hero-copy {
+      max-width: 720px;
+      display: grid;
+      gap: 26px;
+    }
+    .hero-lead {
+      max-width: 620px;
+      font-size: clamp(18px, 1.7vw, 24px);
+      color: #45382f;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .hero-card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff 0%, var(--surface-warm) 100%);
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(.98);
+    }
+    .hero-note {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      width: calc(100% - 36px);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      color: #fff;
+      padding: 16px;
+      background: rgba(29, 23, 18, .74);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 6px;
+    }
+    .hero-note strong { display: block; font-size: 20px; line-height: 1.1; }
+    .hero-note span { font-size: 12px; color: rgba(255,255,255,.78); }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .62fr);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-head p { max-width: 560px; }
+
+    .menu-table {
+      border-top: 1px solid var(--line-strong);
+      display: grid;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: baseline;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row strong { font-size: clamp(18px, 1.5vw, 22px); }
+    .menu-row small { display: block; color: var(--muted); margin-top: 2px; font-size: 14px; }
+    .price { font-family: var(--font-mono); font-weight: 700; color: var(--accent-dark); }
+    .menu-split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(28px, 4vw, 56px);
+    }
+
+    .story {
+      background: var(--ink);
+      color: #fff;
+      padding: var(--section) 0;
+    }
+    .story p { color: rgba(255,255,255,.72); }
+    .story-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+      gap: clamp(34px, 6vw, 92px);
+      align-items: center;
+    }
+    .story h2 { color: #fff; }
+    .story-photo {
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      border: 1px solid rgba(255,255,255,.16);
+    }
+    .story-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .story-list {
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid rgba(255,255,255,.16);
+    }
+    .story-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.82);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .stat {
+      min-height: 168px;
+      padding: clamp(22px, 3vw, 34px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--line);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 62px); line-height: 1; color: var(--accent); }
+    .stat span { color: var(--muted); font-weight: 600; }
+
+    .services {
+      display: grid;
+      border-top: 1px solid var(--line-strong);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) minmax(240px, .42fr);
+      gap: 28px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row .num { color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-img {
+      min-height: 300px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-warm);
+    }
+    .gallery-img:nth-child(2) { margin-top: 44px; }
+    .gallery-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+    }
+    .contact-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: clamp(24px, 4vw, 42px);
+    }
+    .hours {
+      margin-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .hours div {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours span:last-child { font-family: var(--font-mono); color: var(--accent-dark); }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 20px 22px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+      transition: color .2s var(--ease);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { color: var(--accent); }
+    details p { margin-top: 14px; font-size: 16px; }
+
+    .final {
+      padding: clamp(54px, 7vw, 90px) 0;
+      background: var(--surface-warm);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .final-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .final h2 { max-width: 780px; }
+
+    .footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .navlinks { display: none; }
+      .hero-grid,
+      .section-head,
+      .menu-split,
+      .story-grid,
+      .contact-grid,
+      .final-inner {
+        grid-template-columns: 1fr;
+      }
+      .final-inner { display: grid; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats, .gallery-strip, .faq { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .gallery-img:nth-child(2) { margin-top: 0; }
+      .hero-card { aspect-ratio: 4 / 3; }
+    }
+    @media (max-width: 560px) {
+      .hero-note { position: static; width: auto; border-radius: 0; }
+      .hero-card { display: grid; grid-template-rows: 1fr auto; }
+      .hero-actions { align-items: stretch; }
+      .btn { width: 100%; }
+      .footer-inner { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#obsah">Přejít na obsah</a>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#" aria-label="JOJOkava">
+        <img src="https://i0.wp.com/www.jojokava.cz/wp-content/uploads/2024/07/joo_clear.png?fit=750%2C593&ssl=1" alt="JOJOkava">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#sluzby">Služby</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420608702890">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="obsah">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Zdejcina nad Berounem</span>
+          <h1>Snídaně s výhledem</h1>
+          <p class="hero-lead">Netradiční kavárna na 4 kolech u koní, s kávou z pražírny Majkafé, domácími zákusky, JOJOdrinky a výhledem do údolí Berounky.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Najít cestu</a>
+            <a class="btn btn-outline" href="#menu">Prohlédnout menu</a>
+          </div>
+        </div>
+        <figure class="hero-card" aria-label="Atmosféra kavárny">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="hero-note">
+            <strong>4,8</strong>
+            <span>hodnocení od 142 hostů</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Menu</span>
+            <h2>Káva, dezerty a JOJOdrinky</h2>
+          </div>
+          <p>V nabídce najdete espresso klasiku, originální receptury, domácí limonádu, víno, prosecco a sezónní dezerty podle aktuální vitríny.</p>
+        </div>
+        <div class="menu-split">
+          <div class="menu-table" aria-label="Kávové menu">
+            <div class="menu-row"><div><strong>Espresso</strong><small>Káva z pražírny Majkafé</small></div><span class="price">55 Kč</span></div>
+            <div class="menu-row"><div><strong>Cappuccino</strong><small>mléčná kávová klasika</small></div><span class="price">70 Kč</span></div>
+            <div class="menu-row"><div><strong>Flat white</strong><small>silnější šálek s mlékem</small></div><span class="price">85 Kč</span></div>
+            <div class="menu-row"><div><strong>JOJOleche</strong><small>káva, salko, mléčná pěna, skořice</small></div><span class="price">85 Kč</span></div>
+            <div class="menu-row"><div><strong>Presso-tonik balsám</strong><small>tonik a balsamicová linka</small></div><span class="price">100 Kč</span></div>
+          </div>
+          <div class="menu-table" aria-label="Ostatní nabídka">
+            <div class="menu-row"><div><strong>Domácí limo</strong><small>podle sezónní nabídky</small></div><span class="price">50 Kč</span></div>
+            <div class="menu-row"><div><strong>JOJO SPRITZ</strong><small>osvěžení na terase</small></div><span class="price">130 Kč</span></div>
+            <div class="menu-row"><div><strong>JOJO FIZZ</strong><small>originální drink</small></div><span class="price">150 Kč</span></div>
+            <div class="menu-row"><div><strong>Prosecco 0,15 l</strong><small>sklenka k výhledu</small></div><span class="price">75 Kč</span></div>
+            <div class="menu-row"><div><strong>Dezerty</strong><small>cupcake, cheesecake, makronky, pavlova, bábovka</small></div><span class="price">dle nabídky</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="story" id="pribeh">
+      <div class="container story-grid">
+        <div class="story-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        </div>
+        <div>
+          <span class="eyebrow">Náš příběh</span>
+          <h2>Kavárna, která začala konibusem</h2>
+          <p>JOJOkava vznikla jako nápad přidat ke koním kávu. Od 2. července 2020 stojí na kopci nad Berounem a vítá hosty, kteří míří za šálkem, sladkým talířem nebo jen chvílí klidu u brány do CHKO Křivoklátsko.</p>
+          <ul class="story-list">
+            <li><span>Výhled</span><strong>údolí řeky Berounky</strong></li>
+            <li><span>Káva</span><strong>pražírna Majkafé</strong></li>
+            <li><span>K jídlu</span><strong>sýry, paštiky, jojoprkénko</strong></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="stats">
+          <div class="stat"><b>4,8</b><span>hodnocení hostů</span></div>
+          <div class="stat"><b>142</b><span>recenzí</span></div>
+          <div class="stat"><b>2020</b><span>otevření konibusu</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Služby</span>
+            <h2>Akce u kávy a výhledu</h2>
+          </div>
+          <p>Kromě běžného posezení se u JOJOkavy potkávají oslavy, koncerty, teambuildingy i hosté, kteří chtějí zůstat déle.</p>
+        </div>
+        <div class="services">
+          <div class="service-row"><span class="num">01</span><h3>Oslavy narozenin</h3><p>Domluva pro menší setkání s občerstvením, kávou a místem mimo ruch města.</p></div>
+          <div class="service-row"><span class="num">02</span><h3>Koncerty</h3><p>Známí i méně známí interpreti, včetně možnosti soukromého koncertu po domluvě.</p></div>
+          <div class="service-row"><span class="num">03</span><h3>Teambuildingy</h3><p>Neformální program u Berouna s kavárenským zázemím a výhledem do krajiny.</p></div>
+          <div class="service-row"><span class="num">04</span><h3>Ubytování</h3><p>Možnost navázat návštěvu na delší pobyt podle aktuální domluvy.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Atmosféra</span>
+            <h2>Teplé světlo, dřevo, klid</h2>
+          </div>
+          <p>Nejlépe se tu sedí pomalu: s šálkem kávy, domácím dezertem a výhledem, který mění náladu podle počasí.</p>
+        </div>
+        <div class="gallery-strip">
+          <div class="gallery-img"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></div>
+          <div class="gallery-img"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></div>
+          <div class="gallery-img"><img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night."></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <div class="contact-panel">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Stradonická 4, Zdejcina</h2>
+          <p style="margin-top:18px">Kavárna stojí nad Berounem v osadě Zdejcina. Pro aktuální dotazy, rezervace snídaně nebo domluvu akce volejte nebo napište.</p>
+          <p style="margin-top:20px"><a class="text-link mono" href="tel:+420608702890">+420 608 702 890</a><br><a class="text-link mono" href="mailto:jojo@jojokava.cz">jojo@jojokava.cz</a></p>
+          <div class="hours" aria-label="Letní otevírací doba">
+            <div><span>Středa - čtvrtek</span><span>11:00 - 18:00</span></div>
+            <div><span>Pátek - sobota</span><span>13:00 - 20:00</span></div>
+            <div><span>Neděle snídaně</span><span>9:00 - 12:00</span></div>
+            <div><span>Neděle</span><span>13:00 - 18:00</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa JOJOkava"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Časté dotazy</span>
+            <h2>Než vyrazíte na kopec</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Dá se přijít na snídani?</summary>
+            <p>Ano, v letní otevírací době je nedělní snídaně uvedená od 9:00 do 12:00. Pro rezervaci je nejlepší zavolat.</p>
+          </details>
+          <details>
+            <summary>Co je v nabídce kromě kávy?</summary>
+            <p>Domácí zákusky, vína ze spřátelených vinařství mikulovska, JOJOdrinky, sýry, paštiky a jojoprkénko.</p>
+          </details>
+          <details>
+            <summary>Pořádáte soukromé akce?</summary>
+            <p>Ano, v nabídce jsou oslavy narozenin, koncerty, teambuildingy i ubytování podle aktuální domluvy.</p>
+          </details>
+          <details>
+            <summary>Kde JOJOkavu najdu?</summary>
+            <p>Na adrese Stradonická 4, Zdejcina, 266 01 Beroun-Beroun 1, na kopci nad Berounem směrem k CHKO Křivoklátsko.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container final-inner">
+        <h2>Vydejte se za kávou nad Beroun.</h2>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420608702890">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:jojo@jojokava.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>© JOJOkava</span>
+      <span>Tento nezávazný vizuální koncept připravil Webflex. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/remove?TOKEN=4s8gltr">odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0377017, 49.9797583],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#806040' })
+      .setLngLat([14.0377017, 49.9797583])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
