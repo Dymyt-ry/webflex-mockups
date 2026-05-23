@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ICEKRAM | Italská řemeslná zmrzlina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1014;
+      --bg-2: #15171d;
+      --fg: #f7f8fb;
+      --muted: #b9c0ca;
+      --dim: #7f8792;
+      --line: rgba(247, 248, 251, .16);
+      --line-strong: rgba(247, 248, 251, .28);
+      --accent: #A0C0E0;
+      --accent-ink: #09111b;
+      --paper: #f4f1ea;
+      --ink-paper: #121318;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 9vw, 132px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+      z-index: 20;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { color: var(--muted); text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: .92; letter-spacing: 0; text-transform: uppercase; text-wrap: balance; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .container { width: min(100% - 2 * var(--gutter), 1320px); margin-inline: auto; }
+    .rule { border-top: 1px solid var(--line); }
+    .mono { font-family: var(--font-mono); }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 13px 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+      transition: transform 180ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #bed7ef; }
+    .btn-outline { border: 1px solid rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn-outline:hover { border-color: var(--accent); background: rgba(160,192,224,.08); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15,16,20,.86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 22px;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .navlinks { display: flex; gap: 28px; justify-content: center; }
+    .navlinks a, .nav-contact {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      transition: color 180ms var(--ease);
+    }
+    .navlinks a:hover, .nav-contact:hover { color: var(--fg); }
+    .nav-contact { justify-self: end; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .75fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 88px);
+      padding-block: clamp(54px, 8vw, 112px);
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .kicker::before { content: ""; width: 40px; height: 1px; background: currentColor; }
+
+    .hero h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .hero-copy {
+      max-width: 650px;
+      margin-top: 28px;
+      font-size: clamp(18px, 2vw, 24px);
+      color: #dce6ef;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+    .hero-board {
+      position: relative;
+      border: 1px solid var(--line-strong);
+      aspect-ratio: 4 / 3;
+      min-width: 40%;
+      background: var(--paper);
+      color: var(--ink-paper);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      box-shadow: 18px 18px 0 rgba(160,192,224,.12);
+    }
+
+    .board-top, .board-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid rgba(18,19,24,.22);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .board-bottom { border-top: 1px solid rgba(18,19,24,.22); border-bottom: 0; }
+    .board-main {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+    }
+    .board-main::before {
+      content: "100+";
+      position: absolute;
+      inset: auto auto 8px -10px;
+      font-family: var(--font-display);
+      font-size: clamp(90px, 15vw, 190px);
+      line-height: .8;
+      color: rgba(18,19,24,.07);
+    }
+    .cone {
+      width: min(72%, 360px);
+      filter: drop-shadow(0 22px 0 rgba(18,19,24,.08));
+    }
+
+    section { padding-block: var(--section); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-head h2 { font-size: clamp(34px, 4.8vw, 72px); overflow-wrap: anywhere; }
+    .section-head p { font-size: 19px; }
+
+    .service-list { border-top: 1px solid var(--line-strong); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 88px 1fr minmax(260px, .55fr);
+      gap: clamp(18px, 4vw, 60px);
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .service-row strong {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 2.5vw, 38px);
+      line-height: .96;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      padding-top: 8px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      padding: clamp(22px, 4vw, 38px);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 26px;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 6vw, 92px);
+      line-height: .8;
+      color: var(--fg);
+      font-weight: 400;
+    }
+    .stat span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(390px, .68fr);
+      gap: clamp(30px, 6vw, 82px);
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      padding: clamp(28px, 5vw, 54px);
+      background: rgba(255,255,255,.025);
+    }
+    .panel h2 { font-size: clamp(34px, 5vw, 76px); margin-bottom: 28px; }
+    .icebox {
+      background: var(--accent);
+      color: var(--accent-ink);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 470px;
+      position: relative;
+      overflow: hidden;
+    }
+    .icebox::after {
+      content: "ICEBOX";
+      position: absolute;
+      right: -18px;
+      bottom: -8px;
+      font-family: var(--font-display);
+      font-size: clamp(68px, 9vw, 132px);
+      line-height: .8;
+      color: rgba(9,17,27,.13);
+    }
+    .icebox h3 { font-size: clamp(42px, 5.5vw, 82px); position: relative; z-index: 1; }
+    .icebox p { color: rgba(9,17,27,.78); max-width: 410px; position: relative; z-index: 1; }
+    .tagline-list {
+      display: grid;
+      gap: 0;
+      margin-top: 34px;
+      border-top: 1px solid var(--line);
+    }
+    .tagline-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .tagline-list b { color: var(--fg); font-family: var(--font-body); font-size: 16px; text-transform: none; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .photo-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 360px;
+      overflow: hidden;
+    }
+    .photo-card:nth-child(2) { margin-top: 44px; }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      object-fit: cover;
+      filter: grayscale(.2) contrast(1.08);
+    }
+    .photo-card figcaption {
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-top: 1px solid var(--line);
+    }
+
+    .voucher {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(320px, .55fr);
+      border: 1px solid var(--line-strong);
+      min-height: 420px;
+    }
+    .voucher-copy {
+      padding: clamp(28px, 5vw, 58px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 42px;
+    }
+    .voucher-copy h2 { font-size: clamp(38px, 5.2vw, 78px); }
+    .voucher-card {
+      margin: clamp(20px, 3vw, 34px);
+      padding: clamp(24px, 4vw, 42px);
+      background: var(--paper);
+      color: var(--ink-paper);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .voucher-card::before {
+      content: "10";
+      position: absolute;
+      right: -8px;
+      top: -8px;
+      font-family: var(--font-display);
+      font-size: 210px;
+      line-height: .8;
+      color: rgba(18,19,24,.08);
+    }
+    .voucher-card h3 { font-size: clamp(34px, 4.4vw, 64px); position: relative; z-index: 1; }
+    .voucher-card p { color: rgba(18,19,24,.68); position: relative; z-index: 1; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .48fr) minmax(0, .72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      padding: clamp(26px, 4vw, 42px);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      justify-content: space-between;
+      min-height: 420px;
+    }
+    .contact-card h2 { font-size: clamp(34px, 4.6vw, 68px); }
+    .contact-lines { display: grid; gap: 16px; }
+    .contact-lines a, .contact-lines div {
+      display: grid;
+      gap: 4px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-lines span { font-family: var(--font-mono); font-size: 11px; color: var(--dim); text-transform: uppercase; }
+    .contact-lines b { font-size: 20px; font-weight: 700; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .55fr 1fr;
+      gap: clamp(28px, 6vw, 84px);
+    }
+    .faq h2 { font-size: clamp(34px, 5vw, 76px); }
+    .qa { border-top: 1px solid var(--line-strong); }
+    .qa details { border-bottom: 1px solid var(--line); padding: 22px 0; }
+    .qa summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 20px;
+      list-style: none;
+      transition: color 180ms var(--ease);
+    }
+    .qa summary:hover { color: var(--accent); }
+    .qa summary::-webkit-details-marker { display: none; }
+    .qa p { margin-top: 12px; max-width: 720px; }
+
+    .final {
+      background: var(--paper);
+      color: var(--ink-paper);
+      padding-block: clamp(54px, 8vw, 100px);
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(38px, 5.6vw, 82px); }
+    .final p { color: rgba(18,19,24,.68); font-size: 19px; margin-top: 12px; }
+    .final .btn-outline { border-color: rgba(18,19,24,.55); color: var(--ink-paper); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 30px var(--gutter);
+      color: var(--dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      text-transform: uppercase;
+    }
+    footer a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 960px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .voucher, .contact-grid, .faq, .final-inner { grid-template-columns: 1fr; }
+      .hero-board { min-width: 0; }
+      .service-row { grid-template-columns: 52px 1fr; }
+      .service-row p { grid-column: 2; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .photo-card:nth-child(2) { margin-top: 0; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 16px; }
+      .hero { min-height: auto; }
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .board-top, .board-bottom { flex-direction: column; gap: 4px; }
+      .contact-lines b { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="container nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#top" aria-label="ICEKRAM domů">ICEKRAM</a>
+      <div class="navlinks" aria-label="Sekce">
+        <a href="#prichute">Příchutě</a>
+        <a href="#akce">Icebox</a>
+        <a href="#poukazy">Poukazy</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="nav-contact" href="mailto:info@icekram.cz">info@icekram.cz</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="container hero" aria-labelledby="hero-title">
+      <div>
+        <span class="kicker">Náchod · Trutnov · gelato</span>
+        <h1 id="hero-title">Italská řemeslná zmrzlina</h1>
+        <p class="hero-copy">Receptury postavené na tradičních italských postupech, smetanové i vodní příchutě a zmrzlina připravená tak, aby udělala radost v kornoutku, termoboxu i na vaší akci.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Najít ICEKRAM</a>
+          <a class="btn btn-outline" href="#akce">Objednat na akci</a>
+        </div>
+      </div>
+      <div class="hero-board" aria-label="Ilustrace zmrzliny ICEKRAM">
+        <div class="board-top">
+          <span>Od roku 2018</span>
+          <span>Tradiční postupy</span>
+        </div>
+        <div class="board-main">
+          <svg class="cone" viewBox="0 0 420 420" role="img" aria-label="Tři kopečky zmrzliny v kornoutu">
+            <circle cx="158" cy="138" r="76" fill="#A0C0E0"/>
+            <circle cx="245" cy="124" r="86" fill="#f4f1ea"/>
+            <circle cx="210" cy="198" r="82" fill="#101116"/>
+            <path d="M132 232h166L214 396z" fill="#d8a766"/>
+            <path d="M153 270h121M168 302h90M184 334h58" stroke="#9b6b34" stroke-width="8" stroke-linecap="square"/>
+            <path d="M132 232h166" stroke="#101116" stroke-width="12"/>
+            <circle cx="132" cy="150" r="9" fill="#101116"/>
+            <circle cx="268" cy="92" r="8" fill="#A0C0E0"/>
+            <circle cx="255" cy="215" r="7" fill="#f4f1ea"/>
+          </svg>
+        </div>
+        <div class="board-bottom">
+          <span>Přes sto druhů</span>
+          <span>Lokální suroviny</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="prichute" class="container rule" aria-labelledby="prichute-title">
+      <div class="section-head">
+        <h2 id="prichute-title">Co najdete v nabídce</h2>
+        <p>ICEKRAM drží nabídku vyváženou: klasika pro děti, smetanové gelato, vodní sorbety i neotřelé příchutě pro ty, kdo chtějí zkusit něco jiného.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <strong>Tradiční postupy</strong>
+          <p>Receptury vycházejí z italského řemesla a hlídají strukturu, chuť i poctivé zpracování každé várky.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <strong>Smetanové i vodní</strong>
+          <p>V nabídce se potkávají krémové příchutě se svěžími vodními variantami, aby si mohl vybrat opravdu každý.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <strong>Neotřelé příchutě</strong>
+          <p>Repertoár čítá přes sto druhů, takže se vedle jistot objevují i sezónní nápady a kombinace mimo běžný pult.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <strong>Lokální suroviny</strong>
+          <p>Kvalita surovin patří mezi hlavní pilíře ICEKRAMu a je cítit v čisté chuti i v každém kornoutku.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container" aria-label="Důvěra">
+      <div class="stats">
+        <div class="stat">
+          <b>4,9</b>
+          <span>Hodnocení zákazníků</span>
+        </div>
+        <div class="stat">
+          <b>314</b>
+          <span>Recenzí na Googlu</span>
+        </div>
+        <div class="stat">
+          <b>2018</b>
+          <span>Rok založení</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce" class="container rule" aria-labelledby="akce-title">
+      <div class="split">
+        <div class="panel">
+          <span class="kicker">Svatby · firmy · festivaly</span>
+          <h2 id="akce-title">Zmrzlina na velké akce</h2>
+          <p>Na svatbu, narozeniny, firemní setkání, food festival nebo sportovní událost můžete objednat ICEBOX. Hodí se tam, kde chcete poctivou zmrzlinu bez složité obsluhy a s jasným efektem u hostů.</p>
+          <div class="tagline-list" aria-label="Typy akcí">
+            <div><b>Svatby</b><span>sladký bar</span></div>
+            <div><b>Firemní akce</b><span>hosté a týmy</span></div>
+            <div><b>Narozeniny</b><span>rodina a přátelé</span></div>
+            <div><b>Food festivaly</b><span>větší provoz</span></div>
+          </div>
+        </div>
+        <div class="panel icebox">
+          <div>
+            <span class="kicker" style="color:#09111b">Termobox</span>
+            <h3>ICEBOX ICEKRAM</h3>
+          </div>
+          <p>Vyberete příchutě, domluvíte termín a zmrzlina dorazí připravená pro podávání.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="container rule" aria-labelledby="galerie-title">
+      <div class="section-head">
+        <h2 id="galerie-title">Baleno pro radost</h2>
+        <p>Termoboxy, poukazy a objednávky na akce mají jednoduchý cíl: dostat zmrzlinu k lidem ve chvíli, kdy se má něco slavit.</p>
+      </div>
+      <div class="gallery">
+        <figure class="photo-card">
+          <img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes.">
+          <figcaption>Objednávky a dárky</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <figcaption>Poukazy a termoboxy</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="https://images.pexels.com/photos/6969971/pexels-photo-6969971.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding a cardboard box, ideal for delivery service concepts.">
+          <figcaption>Výdej na akce</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="poukazy" class="container rule" aria-labelledby="poukazy-title">
+      <div class="voucher">
+        <div class="voucher-copy">
+          <div>
+            <span class="kicker">Dárkový poukaz</span>
+            <h2 id="poukazy-title">Deset porcí pro vaše blízké</h2>
+          </div>
+          <p>Vedle poukazů na termoboxy jsou v nabídce také poukazy na 10 porcí zmrzliny. Stačí vybrat, pro koho to bude.</p>
+        </div>
+        <div class="voucher-card">
+          <h3>10 porcí</h3>
+          <p class="mono">Dárkový poukaz · ICEKRAM</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="container rule faq" aria-labelledby="faq-title">
+      <div>
+        <span class="kicker">Rychlé odpovědi</span>
+        <h2 id="faq-title">Než se zastavíte</h2>
+      </div>
+      <div class="qa">
+        <details open>
+          <summary>Máte jen smetanové příchutě?</summary>
+          <p>Ne. Nabídka počítá se smetanovým i vodním základem, takže si vyberou i hosté, kteří chtějí svěžejší variantu.</p>
+        </details>
+        <details>
+          <summary>Dá se zmrzlina objednat na akci?</summary>
+          <p>Ano. ICEBOX se hodí na svatby, firemní akce, narozeniny, food festivaly i sportovní události.</p>
+        </details>
+        <details>
+          <summary>Kde ICEKRAM najdu?</summary>
+          <p>V Náchodě na adrese Plhovská 695 a podle kontaktních údajů také v Trutnově na Palackého 82.</p>
+        </details>
+        <details>
+          <summary>Jak se ozvat?</summary>
+          <p>Pro domluvu použijte e-mail info@icekram.cz nebo telefon +420 777 606 205 uvedený v kontaktech.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="kontakt" class="container rule" aria-labelledby="kontakt-title">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div>
+            <span class="kicker">Kontakt</span>
+            <h2 id="kontakt-title">Brzy se zastavte</h2>
+          </div>
+          <div class="contact-lines">
+            <a href="mailto:info@icekram.cz"><span>E-mail</span><b>info@icekram.cz</b></a>
+            <a href="tel:+420777606205"><span>Telefon</span><b>+420 777 606 205</b></a>
+            <div><span>Náchod</span><b>Plhovská 695, 547 01 Náchod-Náchod 1</b></div>
+            <div><span>Trutnov</span><b>Palackého 82, Trutnov</b></div>
+            <div><span>Instagram</span><b>@icekram_zmrzlina</b></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa provozovny ICEKRAM v Náchodě"></div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="container final-inner">
+        <div>
+          <h2 id="final-title">Máte chuť?</h2>
+          <p>Zastavte se pro kornoutek, vyberte poukaz nebo domluvte ICEBOX na vaši akci.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="mailto:info@icekram.cz">Napsat e-mail</a>
+          <a class="btn btn-outline" href="tel:+420777606205">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Tato stránka je nezávazná ukázka od Webflexu pro ICEKRAM. Pokud si nepřejete stránku zobrazovat, můžete ji odstranit zde:
+      <a href="https://app.webflex.cz/delete/7ohff9o">https://app.webflex.cz/delete/7ohff9o</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.1685256, 50.417199],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#A0C0E0' })
+      .setLngLat([16.1685256, 50.417199])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
