@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>da Italia | Dárkové balíčky z malé Itálie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1210;
+      --bg-soft: #151916;
+      --surface: rgba(247, 245, 238, 0.055);
+      --surface-strong: rgba(247, 245, 238, 0.09);
+      --ink: #f6f4ee;
+      --muted: rgba(246, 244, 238, 0.68);
+      --dim: rgba(246, 244, 238, 0.42);
+      --line: rgba(246, 244, 238, 0.11);
+      --accent: #204020;
+      --accent-bright: #76a878;
+      --paper: #f5f1e7;
+      --dark-ink: #121611;
+      --shadow: 0 36px 100px rgba(0, 0, 0, 0.26);
+      --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+      --font-body: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 144px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(118, 168, 120, 0.16), transparent 28%),
+        radial-gradient(circle at 82% 8%, rgba(245, 241, 231, 0.08), transparent 24%),
+        linear-gradient(180deg, #0f1210 0%, #111611 48%, #0c0f0d 100%);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, black, transparent 72%);
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+      z-index: 1;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea { font: inherit; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; }
+    main, header, footer { position: relative; z-index: 2; }
+
+    .container { width: min(100% - 2 * var(--gutter), 1240px); margin-inline: auto; }
+    .wide { width: min(100% - 2 * var(--gutter), 1400px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-bright);
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); max-width: 58ch; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      background: rgba(15, 18, 16, 0.74);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: inline-flex; align-items: center; min-width: 132px; }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .links { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 14px; }
+    .links a { transition: color 180ms var(--ease); }
+    .links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 220ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .btn-primary {
+      color: #ffffff;
+      background: var(--accent);
+      box-shadow: 0 18px 52px rgba(32, 64, 32, 0.36);
+    }
+    .btn-primary:hover { background: #2a532a; box-shadow: 0 24px 64px rgba(32, 64, 32, 0.5); }
+    .btn-outline {
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.45);
+      background: rgba(255,255,255,0.03);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.7); }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      align-items: center;
+      padding: clamp(52px, 8vw, 96px) 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.78fr);
+      gap: clamp(38px, 5vw, 74px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .serial {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(245,241,231,0.065);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-bottom: 22px;
+    }
+    .serial::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-bright);
+      box-shadow: 0 0 0 6px rgba(118,168,120,0.13);
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      max-width: 10.6ch;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 22px);
+      max-width: 58ch;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 30%, rgba(15,18,16,0.56));
+      pointer-events: none;
+    }
+    .float-note {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      right: 22px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      color: #fff;
+    }
+    .float-note strong {
+      font-family: var(--font-display);
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 0.95;
+    }
+    .float-note span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.76);
+    }
+
+    section { padding-block: var(--section); }
+    .shop-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1fr);
+      gap: clamp(24px, 4vw, 56px);
+      align-items: stretch;
+    }
+    .soft-card {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 42px);
+    }
+    .soft-card.light {
+      background: var(--paper);
+      color: var(--dark-ink);
+    }
+    .soft-card h2, .soft-card h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+    }
+    .soft-card h2 {
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 0.98;
+      overflow-wrap: anywhere;
+    }
+    .soft-card p { color: color-mix(in srgb, currentColor 70%, transparent); margin-top: 16px; }
+    .category-list { display: grid; gap: 10px; }
+    .category-row {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      min-height: 76px;
+      padding: 16px 0;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 13%, transparent);
+    }
+    .category-row:last-child { border-bottom: 0; }
+    .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(32,64,32,0.13);
+      color: var(--accent-bright);
+    }
+    .category-row h3 { font-size: 20px; }
+    .category-row p { margin: 3px 0 0; font-size: 14px; color: rgba(18,22,17,0.62); }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(18,22,17,0.54);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 150px;
+      padding: 26px;
+      border-radius: 24px;
+      background: rgba(245,241,231,0.07);
+      box-shadow: 0 28px 80px rgba(0,0,0,0.16);
+    }
+    .stat b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+      gap: clamp(28px, 4vw, 60px);
+      align-items: center;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 0.85fr 1fr;
+      gap: 16px;
+      align-items: end;
+    }
+    .photo-stack img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .photo-stack img:first-child { transform: translateY(24px); }
+    .feature-list { display: grid; gap: 18px; margin-top: 28px; }
+    .feature {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature code {
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 13px;
+    }
+    .feature h3 { font-size: 20px; font-family: var(--font-body); }
+    .feature p { color: var(--muted); margin-top: 5px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr 0.7fr 0.9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 310px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface);
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .gallery figure:nth-child(2) { transform: translateY(32px); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      right: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: rgba(0,0,0,0.24);
+      backdrop-filter: blur(12px);
+      border-radius: 999px;
+      padding: 9px 12px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.52fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 28px;
+      background: var(--paper);
+      color: var(--dark-ink);
+      padding: clamp(24px, 4vw, 38px);
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 0.98;
+    }
+    .contact-list { display: grid; gap: 14px; margin-top: 28px; }
+    .contact-list a, .contact-list div {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(18,22,17,0.12);
+    }
+    .contact-list span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(18,22,17,0.5);
+    }
+    .contact-list strong { font-size: 18px; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq-wrap {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.55fr) minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+    }
+    details {
+      border-bottom: 1px solid var(--line);
+      padding: 22px 0;
+    }
+    summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      font-weight: 700;
+      font-size: 19px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+    }
+    details[open] summary::after { content: "−"; }
+    details p { margin-top: 12px; color: var(--muted); max-width: 68ch; }
+
+    .final {
+      padding-bottom: clamp(56px, 8vw, 96px);
+    }
+    .cta {
+      border-radius: 34px;
+      background: var(--paper);
+      color: var(--dark-ink);
+      padding: clamp(30px, 6vw, 72px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5.2vw, 72px);
+      line-height: 0.96;
+      overflow-wrap: anywhere;
+    }
+    .cta p { margin-top: 14px; color: rgba(18,22,17,0.66); max-width: 62ch; }
+    .cta .btn-outline { color: var(--dark-ink); border-color: currentColor; background: transparent; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px var(--gutter);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: min(100%, 1240px);
+      margin-inline: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .disclaimer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .shop-panel, .split, .contact-grid, .faq-wrap, .cta, .section-head { grid-template-columns: 1fr; }
+      .hero-photo { min-width: 0; }
+      .stats { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2), .photo-stack img:first-child { transform: none; }
+      .cta { align-items: start; }
+    }
+    @media (max-width: 640px) {
+      .nav { min-height: 64px; }
+      .brand img { max-height: 36px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .category-row { grid-template-columns: 38px 1fr; }
+      .category-row .tag { grid-column: 2; }
+      .feature { grid-template-columns: 1fr; gap: 6px; }
+      .photo-stack { grid-template-columns: 1fr; }
+      .float-note { position: static; background: rgba(0,0,0,0.4); padding: 16px; }
+      .hero-photo::after { background: linear-gradient(180deg, transparent 40%, rgba(15,18,16,0.84)); }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="da Italia domů">
+        <img src="https://daitalia.cz/wp-content/uploads/2020/09/logo_daitalia-1.gif" alt="da Italia">
+      </a>
+      <div class="links" aria-label="Sekce stránky">
+        <a href="#obchod">Obchod</a>
+        <a href="#balicky">Balíčky</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420774937738">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wide">
+        <div class="hero-copy">
+          <div class="serial">Beroun · Česká 59 · da Italia</div>
+          <h1>Vítejte v malé Itálii</h1>
+          <p class="lead">Dárkové balíčky a oblíbené italské dobroty pro chvíle, kdy chcete darovat něco poctivého, jedlého a osobního.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#obchod">Jít nakupovat</a>
+            <a class="btn btn-outline" href="#kontakt">Kontaktovat prodejnu</a>
+          </div>
+        </div>
+        <div class="hero-photo" aria-label="Zabalený balíček k odeslání">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <div class="float-note">
+            <strong>Dárky<br>k vyzvednutí</strong>
+            <span>objednávky · balíčky · košík</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="obchod">
+      <div class="shop-panel container">
+        <article class="soft-card light">
+          <span class="eyebrow">Obchod</span>
+          <h2>Dobroty, které mají kam přijít.</h2>
+          <p>Vyberte balíček, přidejte ho do košíku a domluvte se s námi, když potřebujete poradit s výběrem pro rodinu, kolegy nebo návštěvu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://daitalia.cz/kontakty/">Otevřít obchod</a>
+          </div>
+        </article>
+        <div class="soft-card light category-list" aria-label="Kategorie obchodu">
+          <div class="category-row">
+            <span class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 8h14l-1 12H6L5 8Z" stroke="currentColor" stroke-width="1.8"/><path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.8"/></svg>
+            </span>
+            <div><h3>Dárkové balíčky</h3><p>Pro narozeniny, návštěvy i firemní poděkování.</p></div>
+            <span class="tag">košík</span>
+          </div>
+          <div class="category-row">
+            <span class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 10h16v9H4v-9Z" stroke="currentColor" stroke-width="1.8"/><path d="M4 10l8-5 8 5" stroke="currentColor" stroke-width="1.8"/></svg>
+            </span>
+            <div><h3>Oblíbené dobroty</h3><p>Malá Itálie v krabici pro každou domácnost.</p></div>
+            <span class="tag">výběr</span>
+          </div>
+          <div class="category-row">
+            <span class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M5 8h14M6 8l2 5h8l2-5" stroke="currentColor" stroke-width="1.8"/></svg>
+            </span>
+            <div><h3>Osobní dárek</h3><p>Když chcete sladit velikost, chuť i příležitost.</p></div>
+            <span class="tag">telefon</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra zákazníků">
+      <div class="stats container">
+        <div class="stat"><b>4,7</b><span>Hodnocení zákazníků na Googlu.</span></div>
+        <div class="stat"><b>132</b><span>Veřejných recenzí od lidí, kteří da Italia hodnotili.</span></div>
+        <div class="stat"><b>266 01</b><span>Beroun 1, Česká 59 v centru města.</span></div>
+      </div>
+    </section>
+
+    <section id="balicky">
+      <div class="split container">
+        <div class="photo-stack">
+          <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+          <img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes.">
+        </div>
+        <div>
+          <span class="eyebrow">Jak vybírat</span>
+          <div class="soft-card">
+            <h2>Balíček podle příležitosti.</h2>
+            <p>Stačí vědět, komu je dárek určený. My pomůžeme doladit velikost i charakter balíčku tak, aby nepůsobil anonymně.</p>
+            <div class="feature-list">
+              <div class="feature"><code>01</code><div><h3>Vyberete z obchodu</h3><p>Objednávka projde přes košík stejně jako běžný nákup.</p></div></div>
+              <div class="feature"><code>02</code><div><h3>Ozvete se pro radu</h3><p>Telefon a e-mail jsou připravené pro dotazy k balíčkům.</p></div></div>
+              <div class="feature"><code>03</code><div><h3>Předáte malou Itálii</h3><p>Dárek má jasný původ, chuť a osobní stopu.</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra balení">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Detail</span>
+            <h2>Krabice, která vypadá jako dárek.</h2>
+          </div>
+          <p>Výběr fotografií drží teplý, klidný charakter balení a předání. Žádné anonymní regály, ale věci určené do ruky.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/6348046/pexels-photo-6348046.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Crop faceless woman in casual clothes sitting on carpet while wrapping parcel bag for shipping in light room">
+            <figcaption>zabalení objednávky</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+            <figcaption>rozbalení doma</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/6969967/pexels-photo-6969967.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two people exchanging a shopping bag in an indoor setting highlighting online shopping and delivery.">
+            <figcaption>předání dárku</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="contact-grid container">
+        <article class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Najdete nás v Berouně.</h2>
+          <div class="contact-list">
+            <a href="tel:+420774937738"><span>Telefon</span><strong>+420 774 937 738</strong></a>
+            <a href="mailto:daitalia@seznam.cz"><span>E-mail</span><strong>daitalia@seznam.cz</strong></a>
+            <div><span>Adresa</span><strong>12, Česká 59, Centrum, 266 01 Beroun-Beroun 1</strong></div>
+            <a href="https://daitalia.cz/kontakty/"><span>Web</span><strong>daitalia.cz/kontakty</strong></a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa da Italia v Berouně"></div>
+      </div>
+    </section>
+
+    <section aria-label="Časté dotazy">
+      <div class="faq-wrap container">
+        <div>
+          <span class="eyebrow">Dotazy</span>
+          <div class="soft-card">
+            <h2>Než zavoláte.</h2>
+            <p>Nejdůležitější informace pro objednávku balíčku, košík a kontakt s prodejnou.</p>
+          </div>
+        </div>
+        <div>
+          <details>
+            <summary>Jak objednám dárkový balíček?</summary>
+            <p>Vyberte si v obchodě, vložte položky do košíku a dokončete objednávku. Když si nejste jistí výběrem, napište nebo zavolejte.</p>
+          </details>
+          <details>
+            <summary>Mohu se poradit před nákupem?</summary>
+            <p>Ano. Pro dotazy k balíčkům použijte telefon +420 774 937 738 nebo e-mail daitalia@seznam.cz.</p>
+          </details>
+          <details>
+            <summary>Kde da Italia sídlí?</summary>
+            <p>Adresa je 12, Česká 59, Centrum, 266 01 Beroun-Beroun 1.</p>
+          </details>
+          <details>
+            <summary>Co když mám prázdný košík?</summary>
+            <p>Vraťte se do obchodu, vyberte oblíbený balíček nebo dobrotu a pokračujte přes košík.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="cta container">
+        <div>
+          <h2>Vyberte dárek s chutí Itálie.</h2>
+          <p>Objednejte oblíbené dárkové balíčky nebo se ozvěte pro doporučení podle příležitosti.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://daitalia.cz/kontakty/">Jít nakupovat</a>
+          <a class="btn btn-outline" href="mailto:daitalia@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner disclaimer">
+      <span>Tato prezentační stránka byla připravena studiem Webflex jako nezávazná vizuální ukázka pro da Italia.</span>
+      <a href="https://webflex.cz/remove/jar3k4n">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0740511, 49.9651029],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204020' })
+      .setLngLat([14.0740511, 49.9651029])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
