@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Kavárna Regionálního Muzea | Káva a víno v Mělníku</title>
+  <meta name="description" content="Kavárna Regionálního Muzea v Mělníku: káva Segafredo, česká vína od lokálních výrobců, zákusky, chlebíčky, posezení na hradbách a v atriu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --ink: #1d1d1b;
+      --muted: #69665f;
+      --line: rgba(29, 29, 27, .09);
+      --accent: #A96F12;
+      --accent-dark: #704707;
+      --accent-soft: rgba(169, 111, 18, .13);
+      --warm: #f1eee8;
+      --shadow: 0 34px 90px rgba(35, 31, 25, .10);
+      --shadow-small: 0 18px 55px rgba(35, 31, 25, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(29,29,27,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29,29,27,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 7%, rgba(169,111,18,.16), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin-inline: auto; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: clamp(24px, 2.4vw, 34px); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,250,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 1;
+      max-width: 320px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease), box-shadow 190ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(29,29,27,.10); }
+    .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .btn:focus-visible, .gallery a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: #925d0b; }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn.secondary:hover { background: rgba(29,29,27,.045); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(420px, 1.06fr);
+      align-items: center;
+      gap: 56px;
+      padding: 64px 0 60px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 22px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .kicker::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 9px var(--accent-soft);
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(18px, 1.8vw, 22px);
+      line-height: 1.65;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .hero-photo {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-photo-frame {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 36px;
+      background: var(--warm);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo-frame img,
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .hours-float {
+      position: absolute;
+      right: -18px;
+      bottom: -26px;
+      width: min(330px, 82%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(18px);
+    }
+    .hours-float strong { display: block; margin-bottom: 10px; }
+    .hours-float span {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .52fr);
+      align-items: end;
+      gap: 46px;
+      margin-bottom: 34px;
+    }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      min-height: 126px;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(220px, .44fr);
+      align-items: center;
+      gap: 24px;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+    .service-row p { line-height: 1.65; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 170px;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 48px);
+      color: var(--accent-dark);
+      line-height: 1;
+    }
+    .stat span { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .92fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .split-photo {
+      min-height: 520px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--warm);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .wine-panel {
+      padding: 40px;
+      border-radius: 34px;
+      background: #24211d;
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      align-content: center;
+      gap: 26px;
+    }
+    .wine-panel p { color: rgba(255,255,255,.72); font-size: 18px; line-height: 1.72; }
+    .producer-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .producer-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-top: 1px solid rgba(255,255,255,.13);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.78);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 240px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 26px;
+    }
+    .step h3 { font-size: 25px; }
+    .step p { line-height: 1.62; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .9fr;
+      grid-auto-rows: 210px;
+      gap: 14px;
+    }
+    .gallery a {
+      display: block;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--warm);
+      box-shadow: var(--shadow-small);
+      transition: transform 190ms var(--ease), box-shadow 190ms var(--ease);
+    }
+    .gallery a:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .gallery a:active { transform: translateY(1px); }
+    .gallery a:first-child { grid-row: span 2; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(420px, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      border-radius: 34px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .contact-card { padding: 34px; }
+    .contact-card h2 { margin-bottom: 28px; }
+    .contact-lines {
+      display: grid;
+      gap: 0;
+      margin-top: 22px;
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+    .hours-table {
+      margin-top: 28px;
+      display: grid;
+      gap: 8px;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 18px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      background: rgba(29,29,27,.035);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hours-row.today {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    #map {
+      height: 100%;
+      min-height: 420px;
+    }
+
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      padding: 24px 26px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+      transition: transform 190ms var(--ease), background 190ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff; }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 14px; max-width: 760px; }
+
+    .final {
+      padding: 72px 0 88px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 42px;
+      border-radius: 34px;
+      background: #24211d;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .final-box p { color: rgba(255,255,255,.72); margin-top: 14px; font-size: 18px; }
+    .final-box .btn.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-row small { color: inherit; }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero { gap: 44px; padding-top: 44px; }
+      .hero-photo-frame { border-radius: 28px; }
+      .hours-float { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 14px; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .trust-strip, .timeline { grid-template-columns: 1fr 1fr; }
+      .gallery { grid-template-columns: 1fr 1fr; }
+      .contact-grid { gap: 14px; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .wordmark { font-size: 17px; }
+      .hero { min-height: auto; }
+      section { padding: 64px 0; }
+      .trust-strip, .timeline, .gallery { grid-template-columns: 1fr; }
+      .gallery { grid-auto-rows: 230px; }
+      .gallery a:first-child { grid-row: span 1; }
+      .split-photo { min-height: 340px; }
+      .wine-panel, .contact-card, .final-box { padding: 26px; border-radius: 26px; }
+      .contact-line, .hours-row { grid-template-columns: 1fr; gap: 6px; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Kavárna Regionálního Muzea">Kavárna Regionálního Muzea</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#vino">Víno</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420315630935">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Mělník · nádvoří muzea</div>
+        <h1 id="hero-title">Káva na hradbách</h1>
+        <p class="lead">Útulná kavárnička přímo na nádvoří Regionálního muzea nabízí posezení ve stylovém interiéru, v muzejním atriu i venku na historických hradbách s výhledem do kraje.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420315630935">Rezervace po telefonu</a>
+          <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+        </div>
+        <div class="hero-meta">
+          <span>nám. Míru 54/20</span>
+          <span>Platby kartou</span>
+          <span>Bezbariérový přístup</span>
+        </div>
+      </div>
+      <div class="hero-photo" aria-label="Atmosféra kavárny">
+        <div class="hero-photo-frame">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+        <div class="hours-float">
+          <strong>Dnes podle běžné otevírací doby</strong>
+          <span><span>Út–Pá</span><span>9:00–17:00</span></span>
+          <span><span>So–Ne</span><span>9:00–12:30 · 13:00–17:00</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si dáte</h2>
+          <p>Káva Segafredo, teplé a studené nápoje, pečené čaje, horká čokoláda, limonády z koncentrátů lisovaných za studena a něco dobrého podle aktuální nabídky.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Káva a nápoje</h3>
+            <p>Espresso, horká čokoláda, pečené čaje i zdravé limonády bez přídavků cukru a umělých barviv.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Zákusky a chlebíčky</h3>
+            <p>Sladké i slané dobroty jsou k dostání podle aktuální nabídky kavárny.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Posezení v muzeu</h3>
+            <p>Interiér, atrium i historické hradby vytvářejí klidné místo pro pauzu po expozici i setkání ve městě.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důležité informace">
+      <div class="wrap trust-strip">
+        <div class="stat">
+          <b>3,8</b>
+          <span>Hodnocení na Googlu podle 21 recenzí.</span>
+        </div>
+        <div class="stat">
+          <b>1 dcl</b>
+          <span>Víno lze ochutnat po skleničce nebo zakoupit celou láhev.</span>
+        </div>
+        <div class="stat">
+          <b>9:00</b>
+          <span>Otevřeno od úterý do neděle, včetně víkendových odpolední.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="vino">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div class="wine-panel">
+          <div>
+            <div class="kicker">Česká vína</div>
+            <h2>Mělnická sklenička</h2>
+          </div>
+          <p>V kavárně ochutnáte česká vína od lokálních výrobců. V nabídce nechybí Ludmila z Vinařství Chateau Mělník, vína ze Školního statku Mělník ani další vinařství z regionu.</p>
+          <ul class="producer-list" aria-label="Vybraní výrobci vín">
+            <li><span>Školní statek Mělník</span><span>Mělník</span></li>
+            <li><span>Žernosecké vinařství</span><span>České středohoří</span></li>
+            <li><span>Vinařství Liběchov</span><span>Liběchov</span></li>
+            <li><span>Mělnické vinařství Kraus</span><span>Mělník</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Pauza po svém</h2>
+          <p>Kavárna funguje jako klidné zázemí pro návštěvníky muzea, rodiny i hosty, kteří si chtějí odpočinout na parkánu.</p>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <span class="num">Nádvoří</span>
+            <div>
+              <h3>Uvnitř i venku</h3>
+              <p>Vyberete si místo ve stylovém interiéru, v atriu nebo na historických hradbách.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">Parkán</span>
+            <div>
+              <h3>Herní koutek</h3>
+              <p>Na parkánu je relaxačně-herní koutek s houpačkou, šachy a Člověče, nezlob se.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">Přístup</span>
+            <div>
+              <h3>Nájezdová rampa</h3>
+              <p>Pro vozíčkáře je k dispozici nájezdová rampa, kterou poskytne obsluha kavárny.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">Platba</span>
+            <div>
+              <h3>Karta v kavárně</h3>
+              <p>Kavárna přijímá platby kartou, takže se můžete zastavit i bez hotovosti.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie atmosféry">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Teplé světlo, klidný stůl</h2>
+          <p>Prostor staví na jednoduchém pohodlí: šálek kávy, sklenka vína, zákusek a chvíle času mezi náměstím, muzeem a výhledem do kraje.</p>
+        </div>
+        <div class="gallery">
+          <a href="#kontakt"><img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere."></a>
+          <a href="#kontakt"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></a>
+          <a href="#kontakt"><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></a>
+          <a href="#kontakt"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div class="kicker">Kontakt</div>
+          <h2>Kde nás najdete</h2>
+          <p>Kavárna sídlí v areálu Regionálního muzea Mělník na náměstí Míru. Pro aktuální nabídku a rezervaci místa volejte přímo do kavárny.</p>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>nám. Míru 54/20, 276 01 Mělník-Mělník 1</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <strong><a href="tel:+420315630935">+420 315 630 935</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <strong><a href="mailto:muzeum@muzeum-melnik.cz">muzeum@muzeum-melnik.cz</a></strong>
+            </div>
+          </div>
+          <div class="hours-table" aria-label="Otevírací doba">
+            <div class="hours-row"><span>Pondělí</span><span>Zavřeno</span></div>
+            <div class="hours-row"><span>Úterý–pátek</span><span>9:00–17:00</span></div>
+            <div class="hours-row today"><span>Sobota–neděle</span><span>9:00–12:30 · 13:00–17:00</span></div>
+          </div>
+        </div>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa s polohou kavárny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté dotazy</h2>
+          <p>Krátce k návštěvě kavárny, vínu a praktickým věcem před cestou do muzea.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Lze v kavárně platit kartou?</summary>
+            <p>Ano, kavárna přijímá platby kartou.</p>
+          </details>
+          <details>
+            <summary>Je k dispozici bezbariérový přístup?</summary>
+            <p>Ano. Do kavárny je k dispozici nájezdová rampa pro vozíčkáře, kterou poskytne obsluha.</p>
+          </details>
+          <details>
+            <summary>Prodáváte víno jen po lahvích?</summary>
+            <p>Ne. Víno lze objednat od 1 dcl, případně zakoupit celou láhev.</p>
+          </details>
+          <details>
+            <summary>Je místo vhodné pro děti?</summary>
+            <p>Na parkánu můžete využít relaxačně-herní koutek s houpačkou, šachy a stolky na Člověče, nezlob se. Figurky a kostku si vyzvednete u obsluhy.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Zastavte se v muzeu</h2>
+          <p>Na kávu, zákusek, české víno nebo klidné posezení na nádvoří.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420315630935">Zavolat do kavárny</a>
+          <a class="btn secondary" href="mailto:muzeum@muzeum-melnik.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <small>Fotografie: Pexels · Valeria Boltneva, Zain Ali, Daniil Kondrashin, Alari Tammsalu, NGUYỄN THÀNH NHƠN, Việt Anh Nguyễn.</small>
+      <small class="webflex-disclaimer">Webflex · <a href="https://app.webflex.cz/delete/7yp8x53">odstranit stránku</a></small>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4748823, 50.352985000000004],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A96F12' })
+      .setLngLat([14.4748823, 50.352985000000004])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
