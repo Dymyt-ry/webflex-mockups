@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kebab House | Tyršova, Náchod</title>
+  <meta name="description" content="Kebab House v Náchodě: döner, dürüm, talíře, saláty, falafel, stripsy a nápoje. Tyršova 234, telefon +420 777 809 481.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #f7f7f4;
+      --ink: #121212;
+      --muted: #61615c;
+      --line: #d9d9d2;
+      --line-strong: #202020;
+      --accent: #C02000;
+      --accent-dark: #8f1800;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(18,18,18,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18,18,18,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .nav-links a, .small-link {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+    }
+    .nav-links a:hover, .small-link:hover { border-color: var(--line-strong); background: var(--paper); transform: translateY(-1px); }
+    .nav-links a:active, .small-link:active { transform: translateY(1px); }
+    .nav-action { justify-self: end; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 12px 16px;
+      border: 1px solid currentColor;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn-outline { color: var(--ink); background: transparent; border-color: currentColor; }
+    .btn-outline:hover { background: var(--ink); color: #fff; }
+
+    main { overflow: hidden; }
+    section { padding: 86px 0; }
+    .wrap { width: min(var(--max), calc(100% - 32px)); margin: 0 auto; }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.6vw, 68px); }
+    h3 { font-size: clamp(20px, 2.2vw, 30px); }
+    p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      align-items: center;
+      padding: 62px 0 48px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .72fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .hero-copy {
+      display: grid;
+      gap: 26px;
+    }
+    .lead {
+      max-width: 640px;
+      font-size: clamp(19px, 2vw, 25px);
+      color: #30302c;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hours-card {
+      background: #fff;
+      border: 2px solid var(--line-strong);
+      box-shadow: 10px 10px 0 var(--ink);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 18px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .serial {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #fff;
+      background: var(--ink);
+      padding: 8px 10px;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 62px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row > span {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row > span:first-child { border-right: 1px solid var(--line); font-weight: 700; }
+    .hours-row.today { background: rgba(192,32,0,.07); }
+    .hours-note { padding: 16px; border-top: 1px solid var(--line-strong); font-size: 14px; color: var(--muted); }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) minmax(280px, 420px);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(72px, 10vw, 142px);
+      line-height: .78;
+      color: rgba(18,18,18,.08);
+      overflow-wrap: anywhere;
+    }
+
+    .menu-shell {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .menu-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      border-bottom: 1px solid var(--line-strong);
+      position: sticky;
+      top: 73px;
+      z-index: 10;
+      background: #fff;
+    }
+    .menu-tabs a {
+      padding: 14px 10px;
+      border-right: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      transition: background .18s var(--ease), color .18s var(--ease);
+    }
+    .menu-tabs a:last-child { border-right: 0; }
+    .menu-tabs a:hover { background: var(--accent); color: #fff; }
+    .menu-category { display: grid; grid-template-columns: 220px 1fr; border-bottom: 1px solid var(--line-strong); }
+    .menu-category:last-child { border-bottom: 0; }
+    .cat-title {
+      padding: 22px;
+      border-right: 1px solid var(--line-strong);
+      background: var(--paper);
+      font-family: var(--font-display);
+      font-size: 26px;
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .menu-table { width: 100%; border-collapse: collapse; }
+    .menu-table tr { border-bottom: 1px solid var(--line); }
+    .menu-table tr:last-child { border-bottom: 0; }
+    .menu-table td { padding: 15px 16px; vertical-align: top; }
+    .menu-table td:nth-child(1) { width: 54px; font-family: var(--font-mono); color: var(--muted); }
+    .menu-table td:nth-child(3) { width: 110px; text-align: right; font-family: var(--font-mono); font-weight: 700; color: var(--accent); white-space: nowrap; }
+    .item-name { display: block; font-weight: 800; color: var(--ink); }
+    .item-desc { display: block; margin-top: 3px; color: var(--muted); font-size: 14px; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.25fr;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      align-items: stretch;
+    }
+    .metric {
+      min-height: 210px;
+      padding: 24px;
+      border-right: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric:last-child { border-right: 0; }
+    .metric strong {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 7vw, 86px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+    .metric span { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-transform: uppercase; }
+    .quote-box {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: space-between;
+      background: var(--ink);
+      color: #fff;
+    }
+    .quote-box p { color: rgba(255,255,255,.82); }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .photo-tile {
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.86) contrast(1.05); }
+
+    .order-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .step-list {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 104px;
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b {
+      border-right: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+    .step div { padding: 18px; }
+    .step strong { display: block; font-size: 20px; margin-bottom: 4px; }
+    .step p { font-size: 16px; }
+    .compact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: 26px;
+      display: grid;
+      gap: 22px;
+    }
+    .price-callout {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      border-top: 1px solid var(--line-strong);
+      padding-top: 20px;
+    }
+    .price-callout strong { font-family: var(--font-display); font-size: clamp(42px, 5vw, 72px); line-height: .9; color: var(--accent); }
+    .price-callout span { font-family: var(--font-mono); color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      display: grid;
+    }
+    .contact-row {
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child { border-bottom: 0; }
+    .contact-row span { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+    .contact-row strong, .contact-row a { font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .final {
+      padding: 72px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { color: rgba(255,255,255,.74); margin-top: 14px; }
+    .final .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn-outline:hover { background: #fff; color: var(--ink); }
+    .final-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .footer-grid {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .order-grid, .contact-grid, .final .wrap { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .menu-tabs { grid-template-columns: repeat(2, 1fr); position: static; }
+      .menu-category { grid-template-columns: 1fr; }
+      .cat-title { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .trust-grid, .photo-strip { grid-template-columns: 1fr; }
+      .metric { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 560px) {
+      section { padding: 58px 0; }
+      .nav { min-height: 64px; }
+      .nav-action .btn { padding: 10px 12px; font-size: 12px; }
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .hours-row { grid-template-columns: 78px 1fr; }
+      .menu-table td { padding: 13px 10px; }
+      .menu-table td:nth-child(1) { width: 38px; }
+      .menu-table td:nth-child(3) { width: 84px; }
+      .contact-row strong, .contact-row a { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Kebab House">
+        <img src="https://www.foodygo.cz/clientapp/logo/logo_full_dark.png" alt="Kebab House">
+      </a>
+      <div class="nav-links" aria-label="Sekce stránky">
+        <a href="#menu">Menu</a>
+        <a href="#hodnoceni">Hodnocení</a>
+        <a href="#objednavka">Objednání</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <div class="nav-action">
+        <a class="btn btn-primary" href="tel:+420777809481">Volat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="kicker">Tyršova 234, Náchod</div>
+          <h1 id="hero-title">Arena Kebab House</h1>
+          <p class="lead">Döner, dürüm, talíře, saláty, falafel a stripsy v centru Náchoda. Vyberte si jídlo podle pevné nabídky a zavolejte přímo do restaurace.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#menu">Zobrazit menu</a>
+            <a class="btn btn-outline" href="tel:+420777809481">+420 777 809 481</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací informace">
+          <div class="card-head">
+            <span class="serial">Náchod · dnes</span>
+            <span class="status">Zavřeno</span>
+          </div>
+          <div class="hours-row today">
+            <span>So</span>
+            <span>Zavřeno podle aktuální informace</span>
+          </div>
+          <div class="hours-row">
+            <span>Ne</span>
+            <span>Otevřeno od 11:30</span>
+          </div>
+          <div class="hours-row">
+            <span>Tel</span>
+            <span>+420 777 809 481</span>
+          </div>
+          <p class="hours-note">Čas vychází z aktuálního zápisu restaurace: „Zavřeno do ne 11:30“.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="menu" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <div class="kicker">Jídelní lístek</div>
+            <h2 id="menu-title">Pevná nabídka v tabulkách</h2>
+          </div>
+          <p>Vybrané položky z veřejného menu Kebab House. Ceny jsou uvedené v Kč přesně podle dostupného zápisu.</p>
+        </div>
+
+        <div class="menu-shell">
+          <div class="menu-tabs">
+            <a href="#salaty">Saláty</a>
+            <a href="#box">Döner box</a>
+            <a href="#doner">Döner</a>
+            <a href="#durum">Dürüm</a>
+            <a href="#talire">Talíře</a>
+            <a href="#stripsy">Stripsy</a>
+          </div>
+
+          <div class="menu-category" id="salaty">
+            <div class="cat-title">Saláty</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>01</td><td><span class="item-name">Selský salát</span><span class="item-desc">Ledový salát, rajčata, cibule, turecký chléb, sýr a omáčka</span></td><td>89 Kč</td></tr>
+                <tr><td>02</td><td><span class="item-name">Míchaný salát</span><span class="item-desc">Ledový salát, zelí, rajčata, cibule, olivy, sýr a omáčka</span></td><td>102 Kč</td></tr>
+                <tr><td>03</td><td><span class="item-name">Salát falafel</span><span class="item-desc">Ledový salát, červené a bílé zelí, 3x falafel, omáčka</span></td><td>108 Kč</td></tr>
+                <tr><td>04</td><td><span class="item-name">Salát s masem</span><span class="item-desc">Ledový salát, zelí, maso, turecký chléb, sýr a omáčka</span></td><td>121 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="menu-category" id="box">
+            <div class="cat-title">Döner box</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>05</td><td><span class="item-name">Döner box</span><span class="item-desc">Maso, omáčka, hranolky</span></td><td>108 Kč</td></tr>
+                <tr><td>06</td><td><span class="item-name">Hranolky</span><span class="item-desc">Samostatná příloha</span></td><td>44 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="menu-category" id="doner">
+            <div class="cat-title">Döner kebab</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>07</td><td><span class="item-name">Döner Kebab</span><span class="item-desc">Maso se salátem a omáčkou</span></td><td>140 Kč</td></tr>
+                <tr><td>08</td><td><span class="item-name">Döner Kebab se sýrem</span><span class="item-desc">Maso se salátem a omáčkou, sýr</span></td><td>153 Kč</td></tr>
+                <tr><td>09</td><td><span class="item-name">Döner vegetariánský se sýrem</span><span class="item-desc">Ledový salát, zelí, rajčata, sýr a omáčka</span></td><td>95 Kč</td></tr>
+                <tr><td>10</td><td><span class="item-name">Döner Kebab s masem</span><span class="item-desc">Jen maso, omáčka</span></td><td>175 Kč</td></tr>
+                <tr><td>11</td><td><span class="item-name">Mega Döner Kebab</span><span class="item-desc">Extra maso, salát, sýr a omáčka</span></td><td>172 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="menu-category" id="durum">
+            <div class="cat-title">Dürüm</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>12</td><td><span class="item-name">Dürüm Kebab</span><span class="item-desc">Maso se salátem a omáčkou v tortille</span></td><td>153 Kč</td></tr>
+                <tr><td>13</td><td><span class="item-name">Dürüm Kebab se sýrem</span><span class="item-desc">Maso se salátem a omáčkou, sýr</span></td><td>166 Kč</td></tr>
+                <tr><td>14</td><td><span class="item-name">Dürüm vegetariánský se sýrem</span><span class="item-desc">Ledový salát, zelí, rajčata, sýr a omáčka</span></td><td>108 Kč</td></tr>
+                <tr><td>15</td><td><span class="item-name">Dürüm Kebab s masem</span><span class="item-desc">Maso a omáčka</span></td><td>179 Kč</td></tr>
+                <tr><td>16</td><td><span class="item-name">Mega Dürüm Kebab</span><span class="item-desc">Extra maso, salát, sýr a omáčka</span></td><td>185 Kč</td></tr>
+                <tr><td>17</td><td><span class="item-name">Falafel</span><span class="item-desc">4x falafel, salát, zelí a omáčka</span></td><td>121 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="menu-category" id="talire">
+            <div class="cat-title">Talíře</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>18</td><td><span class="item-name">Malý talíř Kebab s chlebem</span><span class="item-desc">Maso se salátem a omáčkou, turecký chléb</span></td><td>172 Kč</td></tr>
+                <tr><td>19</td><td><span class="item-name">Malý talíř Kebab se sýrem</span><span class="item-desc">Maso se salátem a omáčkou, sýr, turecký chléb</span></td><td>185 Kč</td></tr>
+                <tr><td>20</td><td><span class="item-name">Malý talíř Kebab s hranolkami</span><span class="item-desc">Maso se salátem a omáčkou, hranolky</span></td><td>185 Kč</td></tr>
+                <tr><td>21</td><td><span class="item-name">Velký talíř Kebab s chlebem</span><span class="item-desc">Maso se salátem a omáčkou, turecký chléb</span></td><td>213 Kč</td></tr>
+                <tr><td>22</td><td><span class="item-name">Velký talíř Kebab se sýrem</span><span class="item-desc">Maso se salátem a omáčkou, sýr</span></td><td>218 Kč</td></tr>
+                <tr><td>23</td><td><span class="item-name">Velký talíř Kebab s hranolkami</span><span class="item-desc">Maso se salátem a omáčkou, hranolky</span></td><td>218 Kč</td></tr>
+                <tr><td>24</td><td><span class="item-name">Falafel talíř</span><span class="item-desc">5 ks fritované kuličky z cizrny se salátem, omáčkou a chlebem</span></td><td>147 Kč</td></tr>
+                <tr><td>25</td><td><span class="item-name">Zigarren Börek</span><span class="item-desc">Fritované těsto plněné ovčím sýrem se salátem a omáčkou</span></td><td>134 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="menu-category" id="stripsy">
+            <div class="cat-title">Stripsy</div>
+            <table class="menu-table">
+              <tbody>
+                <tr><td>26</td><td><span class="item-name">Stripsy v tortille</span><span class="item-desc">Stripsy v tortille, salát s omáčkou</span></td><td>160 Kč</td></tr>
+                <tr><td>27</td><td><span class="item-name">Malý talíř se Stripsy</span><span class="item-desc">Stripsy se salátem, omáčka, hranolky</span></td><td>172 Kč</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="hodnoceni" aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <div class="kicker">Důvěra</div>
+            <h2 id="trust-title">Hodnocení a atmosféra</h2>
+          </div>
+          <p>Veřejný profil restaurace uvádí hodnocení 4,1 z 5 a 128 recenzí. Níže je zachovaná střídmá vizuální vrstva s fotografiemi pouze z povoleného seznamu.</p>
+        </div>
+
+        <div class="trust-grid">
+          <div class="metric">
+            <span>Google rating</span>
+            <strong>4,1</strong>
+            <span>z 5</span>
+          </div>
+          <div class="metric">
+            <span>Recenze</span>
+            <strong>128</strong>
+            <span>veřejných hodnocení</span>
+          </div>
+          <div class="quote-box">
+            <div class="kicker">Z profilu restaurace</div>
+            <p>„Objevte chuť našeho kebabu. Dobrou chuť.“</p>
+            <a class="btn btn-outline" href="https://www.foodygo.cz/app/restaurant/nachod/arena-kebab-house">Otevřít online profil</a>
+          </div>
+        </div>
+
+        <div class="photo-strip" aria-label="Atmosféra restaurace">
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="objednavka" aria-labelledby="order-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div>
+            <div class="kicker">Objednání</div>
+            <h2 id="order-title">Vyberte podle čísla položky</h2>
+          </div>
+          <p>Menu je stavěné jako provozní přehled: číslo, název, složení a cena. To urychlí telefonickou domluvu i osobní výběr.</p>
+        </div>
+
+        <div class="order-grid">
+          <div class="step-list">
+            <div class="step"><b>01</b><div><strong>Najděte kategorii</strong><p>Saláty, döner box, döner kebab, dürüm, talíře nebo stripsy.</p></div></div>
+            <div class="step"><b>02</b><div><strong>Řekněte číslo položky</strong><p>Každá položka má viditelné pořadové číslo a cenu v Kč.</p></div></div>
+            <div class="step"><b>03</b><div><strong>Zavolejte restauraci</strong><p>Telefonní kontakt je +420 777 809 481.</p></div></div>
+          </div>
+          <aside class="compact-card">
+            <div>
+              <div class="kicker">Cenový orientační bod</div>
+              <h3>Od hranolek po velký talíř</h3>
+            </div>
+            <p>Nabídka začíná položkou Hranolky za 44 Kč. Velké talíře s kebabem jsou v uvedeném menu za 213 až 218 Kč.</p>
+            <div class="price-callout">
+              <span>rozpětí z vybraného menu</span>
+              <strong>44-218</strong>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <div class="kicker">Kontakt</div>
+            <h2 id="contact-title">Tyršova 234, Náchod</h2>
+          </div>
+          <p>Restauraci najdete na adrese Tyršova 234 547 01, 1 Náchod 1. Mapa je centrovaná na souřadnice z veřejného zápisu.</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-row">
+              <span>Telefon</span>
+              <a href="tel:+420777809481">+420 777 809 481</a>
+            </div>
+            <div class="contact-row">
+              <span>E-mail</span>
+              <a href="mailto:info@foodygo.cz">info@foodygo.cz</a>
+            </div>
+            <div class="contact-row">
+              <span>Adresa</span>
+              <strong>Tyršova 234 547 01, 1 Náchod 1</strong>
+            </div>
+            <div class="contact-row">
+              <span>Nejbližší uvedené otevření</span>
+              <strong>Neděle 11:30</strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Kebab House"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap">
+        <div>
+          <h2 id="final-title">Máte chuť na kebab?</h2>
+          <p>Zavolejte do Kebab House nebo otevřete online profil restaurace.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420777809481">Volat restauraci</a>
+          <a class="btn btn-outline" href="https://www.foodygo.cz/app/restaurant/nachod/arena-kebab-house">Online profil</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-grid">
+      <span>Webflex · administrativní patička</span>
+      <a href="https://app.webflex.cz/delete/8urfikn">Odebrat stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.1605263, 50.4156239],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C02000' })
+      .setLngLat([16.1605263, 50.4156239])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
