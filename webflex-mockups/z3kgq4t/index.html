@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel U Beránka Náchod</title>
+  <meta name="description" content="Secesní Hotel U Beránka v historickém centru Náchoda. Ubytování, restaurace, kavárna, pobytové balíčky a prostor pro firemní akce.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --bg-soft: #16181c;
+      --surface: rgba(247, 242, 233, .08);
+      --surface-strong: rgba(247, 242, 233, .13);
+      --paper: #f2ece1;
+      --ink: #f7f2e9;
+      --muted: rgba(247, 242, 233, .68);
+      --faint: rgba(247, 242, 233, .10);
+      --accent: #A08060;
+      --accent-ink: #14110e;
+      --accent-soft: rgba(160, 128, 96, .22);
+      --shadow: 0 34px 110px rgba(0, 0, 0, .34);
+      --ambient: 0 28px 90px rgba(160, 128, 96, .12);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(247,242,233,.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(247,242,233,.015) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(160,128,96,.18), transparent 34rem),
+        radial-gradient(circle at 8% 42%, rgba(247,242,233,.07), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+      z-index: 50;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin-inline: auto; }
+    .mono { font-family: var(--font-mono); }
+
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 17, 20, .78);
+      backdrop-filter: blur(22px);
+      border-bottom: 1px solid var(--faint);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a {
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0,0,0,.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #b29170; }
+    .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.45); color: #fff; }
+    .btn-outline:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, 1.06fr);
+      align-items: center;
+      gap: 58px;
+      padding: 64px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: #ccb69e;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 9px var(--accent-soft);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 630px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.6vw, 22px);
+      line-height: 1.58;
+      hyphens: auto;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .fact-pill {
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      box-shadow: var(--ambient);
+    }
+    .hero-media {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 34px;
+      background: var(--bg-soft);
+      box-shadow: var(--shadow), var(--ambient);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.02) brightness(.88);
+    }
+    .reservation-card {
+      position: absolute;
+      left: -22px;
+      bottom: -28px;
+      width: min(340px, 82%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(242, 236, 225, .92);
+      color: #171410;
+      box-shadow: 0 30px 80px rgba(0,0,0,.28);
+      backdrop-filter: blur(22px);
+    }
+    .reservation-card strong { display: block; font-size: 18px; margin-bottom: 8px; }
+    .reservation-card span { color: rgba(23,20,16,.66); font-size: 14px; }
+    .reservation-card a {
+      display: inline-flex;
+      margin-top: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #6e4f31;
+      transition: transform .2s var(--ease), color .2s var(--ease);
+    }
+    .reservation-card a:hover { transform: translateY(-1px); color: #14110e; }
+    .reservation-card a:active { transform: translateY(1px); }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(280px, .54fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); text-transform: uppercase; }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      hyphens: auto;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(230px, .48fr);
+      align-items: center;
+      gap: 26px;
+      min-height: 132px;
+      padding: 28px;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--ambient);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row:active { transform: translateY(1px); }
+    .service-row .num {
+      color: #ccb69e;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .service-row h3 { font-size: clamp(24px, 2.4vw, 38px); }
+    .service-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .stat-card, .quote-card, .package-card, .contact-panel {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--ambient);
+    }
+    .stat-card {
+      min-height: 190px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-card b {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 5vw, 74px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .stat-card span { color: var(--muted); }
+
+    .atmosphere {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .quote-card {
+      padding: 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 430px;
+    }
+    .quote-card blockquote {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 1.08;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .quote-card cite {
+      margin-top: 24px;
+      color: var(--muted);
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .gallery-item {
+      min-height: 206px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--bg-soft);
+      box-shadow: var(--ambient);
+    }
+    .gallery-item.large { grid-row: span 2; }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) brightness(.88);
+      transition: transform .35s var(--ease), filter .35s var(--ease);
+    }
+    .gallery-item:hover img { transform: scale(1.025); filter: saturate(.95) brightness(.96); }
+
+    .package-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .package-card {
+      min-height: 300px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .package-card:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .package-card:active { transform: translateY(1px); }
+    .package-card h3 {
+      font-size: clamp(24px, 2.5vw, 36px);
+      line-height: 1;
+    }
+    .package-card p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+    .price {
+      margin-top: 28px;
+      font-family: var(--font-mono);
+      color: #ccb69e;
+      font-weight: 700;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .72fr) minmax(0, 1.28fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-panel {
+      padding: 30px;
+      min-height: 420px;
+    }
+    .contact-panel h2 { font-size: clamp(32px, 3.5vw, 54px); margin-bottom: 26px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--faint);
+    }
+    .contact-line:first-of-type { border-top: 0; }
+    .contact-line span {
+      color: #ccb69e;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .contact-line a, .contact-line p {
+      margin: 0;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--bg-soft);
+    }
+
+    .final-cta {
+      padding: 34px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(160,128,96,.34), rgba(247,242,233,.10));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(34px, 4.8vw, 70px); }
+    .final-cta p { margin: 14px 0 0; color: var(--muted); max-width: 680px; }
+
+    .site-footer {
+      padding: 54px 0 34px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--faint);
+    }
+    .credits {
+      margin-top: 18px;
+      color: rgba(247,242,233,.42);
+      font-size: 12px;
+    }
+    .webflex-disclaimer {
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.06);
+      color: rgba(247,242,233,.56);
+      font-size: 12px;
+    }
+    .webflex-disclaimer a {
+      color: #ccb69e;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .atmosphere, .contact-grid, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { gap: 36px; min-height: auto; }
+      .hero-media { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-grid, .package-row { grid-template-columns: 1fr; }
+      .final-cta { justify-items: start; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      section { padding: 64px 0; }
+      .hero { padding-top: 44px; }
+      .hero-photo { border-radius: 24px; }
+      .reservation-card {
+        position: static;
+        width: 100%;
+        margin-top: 12px;
+      }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item.large { grid-row: auto; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      .footer-main { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Hotel U Beránka Náchod">
+        <img src="https://hotel-beranek.com/wp-content/uploads/2018/05/logo_main2.jpg" alt="Hotel U Beránka Náchod">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#hotel">Hotel</a>
+        <a href="#restaurace">Restaurace</a>
+        <a href="#balicky">Balíčky</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420735165949">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Masarykovo náměstí 74</div>
+        <h1>Secesní hotel v Náchodě</h1>
+        <p class="lead">Ubytujte se přímo v historickém centru Náchoda, s restaurací, kavárnou a zázemím pro pobyt i firemní akci.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://hotel-beranek.com/" target="_blank" rel="noopener">Rezervace online</a>
+          <a class="btn btn-outline" href="#kontakt">Kontaktujte nás</a>
+        </div>
+        <div class="hero-facts" aria-label="Základní informace">
+          <span class="fact-pill">Hodnocení 4,3</span>
+          <span class="fact-pill">1 705 recenzí</span>
+          <span class="fact-pill">Wi-Fi v celém objektu</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="reservation-card">
+          <strong>Pobyt, večeře nebo setkání v centru města.</strong>
+          <span>Recepce Vám pomůže s pokojem, balíčkem i firemní akcí.</span>
+          <a href="mailto:info@hotel-beranek.com">info@hotel-beranek.com</a>
+        </div>
+      </div>
+    </div>
+
+    <section id="hotel">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Hotel a pohostinnost</h2>
+          <p>Komfortně zařízené pokoje a apartmány v prostředí, které navazuje na atmosféru první republiky. Vše pod jednou střechou, přímo na náměstí.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01 / HOTEL</div>
+            <h3>Pokoje a apartmány</h3>
+            <p>Ubytování v centru Náchoda pro víkend, služební cestu i delší pobyt v Kladském pomezí.</p>
+          </article>
+          <article class="service-row" id="restaurace">
+            <div class="num">02 / STŮL</div>
+            <h3>Restaurace a kavárna</h3>
+            <p>Skvělá restaurace a kavárna pro snídani, šálek kávy, oběd, večeři i klidné posezení.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03 / FIRMY</div>
+            <h3>Firemní akce</h3>
+            <p>Vhodné místo pro ubytování hostů, pracovní setkání a firemní program v Náchodě.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust-grid">
+          <div class="stat-card">
+            <span>Hodnocení hostů</span>
+            <b>4,3</b>
+          </div>
+          <div class="stat-card">
+            <span>Veřejné recenze</span>
+            <b>1 705</b>
+          </div>
+          <div class="stat-card">
+            <span>Adresa</span>
+            <b>74</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap atmosphere">
+        <article class="quote-card">
+          <blockquote>„Prostředí skutečně dýchá krásnou dobou první republiky.“</blockquote>
+          <cite>Hlas hosta z veřejného ohlasu</cite>
+        </article>
+        <div class="gallery-strip" aria-label="Atmosféra hotelu a restaurace">
+          <figure class="gallery-item large">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="balicky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Pobytové balíčky</h2>
+          <p>Vyberte si kratší odpočinek, letní dny v Kladském pomezí nebo pobyt pro hosty starší 55 let.</p>
+        </div>
+        <div class="package-row">
+          <article class="package-card">
+            <div>
+              <h3>Léto s Beránkem</h3>
+              <p>3 noci a 4 dny se snídaní pro pár dní v Náchodě a okolí.</p>
+            </div>
+            <div class="price">od 3 190 Kč</div>
+          </article>
+          <article class="package-card">
+            <div>
+              <h3>Pobyt pro seniory</h3>
+              <p>6 dní a 5 nocí se snídaní a slevou na konzumaci pro hosty 55+.</p>
+            </div>
+            <div class="price">od 5 490 Kč</div>
+          </article>
+          <article class="package-card">
+            <div>
+              <h3>Odpočinek s Beránkem</h3>
+              <p>3 dny a 2 noci se snídaní pro víkend v příjemném prostředí.</p>
+            </div>
+            <div class="price">od 1 890 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <aside class="contact-panel">
+          <h2>Kontakt</h2>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a href="tel:+420735165949">+420 735 165 949</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:info@hotel-beranek.com">info@hotel-beranek.com</a>
+          </div>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <p>74, Masarykovo nám. 74, 547 01 Náchod-Náchod 1</p>
+          </div>
+          <div class="contact-line">
+            <span>Parkování</span>
+            <p>Přímo na náměstí před hotelem za poplatek dle parkovacího automatu.</p>
+          </div>
+        </aside>
+        <div id="map" aria-label="Mapa s polohou Hotelu U Beránka Náchod"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="final-cta">
+          <div>
+            <h2>Rezervujte si pobyt</h2>
+            <p>Recepce Vám pomůže s pokojem, pobytovým balíčkem, restaurací i programem pro firmu.</p>
+          </div>
+          <a class="btn btn-primary" href="tel:+420735165949">+420 735 165 949</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-main">
+        <div>
+          <strong>Hotel U Beránka Náchod</strong><br>
+          <span>Masarykovo nám. 74, Náchod</span>
+        </div>
+        <div class="mono">info@hotel-beranek.com</div>
+      </div>
+      <div class="credits">
+        Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, Alari Tammsalu / Pexels.
+      </div>
+      <div class="webflex-disclaimer">
+        Neoficiální prezentační stránka připravená společností Webflex. Nejste-li správným příjemcem nebo si nepřejete další kontakt, můžete stránku odstranit zde:
+        <a href="https://webflex.cz/delete/z3kgq4t">https://webflex.cz/delete/z3kgq4t</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.1621946, 50.4169683],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A08060' })
+      .setLngLat([16.1621946, 50.4169683])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
