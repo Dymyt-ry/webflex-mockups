@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Bistro Baroko | Mělník</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --paper: #fffaf2;
+      --surface: #eee5d8;
+      --ink: #211816;
+      --muted: #6f625b;
+      --soft: #9c8d83;
+      --line: rgba(96, 64, 64, 0.18);
+      --line-strong: rgba(96, 64, 64, 0.34);
+      --accent: #604040;
+      --accent-2: #8a5b45;
+      --cream-dark: #e4d8c8;
+      --white: #fffdfa;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 136px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(96,64,64,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96,64,64,0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { text-wrap: balance; hyphens: none; }
+
+    .container { width: min(100%, 1320px); margin-inline: auto; padding-inline: var(--gutter); }
+    .narrow { width: min(100%, 1080px); margin-inline: auto; padding-inline: var(--gutter); }
+
+    .skip-link {
+      position: absolute; left: 16px; top: 12px; z-index: 100;
+      transform: translateY(-140%);
+      background: var(--ink); color: var(--white);
+      padding: 10px 14px; border-radius: 999px;
+      transition: transform 180ms var(--ease);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 28px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+      color: var(--accent);
+    }
+    .wordmark span:last-child {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 28px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .nav-links a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 44px;
+      border-radius: 999px;
+      padding: 11px 18px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 650;
+      transition: background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), transform 180ms var(--ease);
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fffaf4; }
+    .btn-primary:hover { background: #4e3333; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(96, 64, 64, 0.08); }
+    .icon { width: 18px; height: 18px; flex: 0 0 auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .hero {
+      padding-block: clamp(54px, 8vw, 106px) clamp(72px, 9vw, 124px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.8fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 86px);
+    }
+    .hero-copy { max-width: 720px; }
+    h1 {
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 24px;
+      max-width: 58ch;
+      font-size: clamp(18px, 1.4vw, 22px);
+      color: var(--muted);
+      line-height: 1.48;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 46px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .meta-item {
+      padding: 20px 18px 20px 0;
+      display: grid; gap: 5px;
+    }
+    .meta-item + .meta-item { border-left: 1px solid var(--line); padding-left: 18px; }
+    .meta-k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); }
+    .meta-v { font-weight: 650; color: var(--ink); }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .hero-photo img {
+      width: 100%; height: 100%; object-fit: cover;
+      filter: saturate(0.88) contrast(1.05);
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px; right: 18px; bottom: 18px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 13px 14px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(33, 24, 22, 0.72);
+      color: var(--white);
+      backdrop-filter: blur(12px);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .photo-note strong { font-family: var(--font-display); font-size: 17px; }
+    .photo-note span:last-child { font-family: var(--font-mono); color: rgba(255,255,255,0.78); }
+
+    .section { padding-block: var(--section); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.45fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 66px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.7vw, 68px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); max-width: 42ch; }
+
+    .menu-board {
+      border-top: 1px solid var(--line-strong);
+      display: grid;
+      grid-template-columns: 0.42fr 1fr;
+      gap: clamp(24px, 4vw, 58px);
+    }
+    .menu-tabs {
+      padding-top: 24px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      position: sticky;
+      top: 96px;
+    }
+    .menu-tab {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 12px 15px;
+      display: flex; justify-content: space-between; gap: 16px;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease), transform 180ms var(--ease);
+    }
+    .menu-tab:hover { background: rgba(96,64,64,0.08); border-color: var(--line-strong); transform: translateY(-1px); }
+    .menu-tab:active { transform: translateY(1px); }
+    .menu-tab strong { font-weight: 650; }
+    .menu-tab span { font-family: var(--font-mono); font-size: 12px; color: var(--soft); }
+    .menu-list { border-left: 1px solid var(--line); }
+    .dish {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      padding: 24px 0 24px clamp(22px, 4vw, 48px);
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .dish h3 { font-size: 22px; font-family: var(--font-display); line-height: 1.15; }
+    .dish p { margin-top: 7px; color: var(--muted); max-width: 60ch; }
+    .price { font-family: var(--font-mono); font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+    .story {
+      border-block: 1px solid var(--line);
+      background: color-mix(in srgb, var(--paper) 58%, transparent);
+    }
+    .story-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(36px, 7vw, 92px);
+      align-items: center;
+    }
+    .story-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--cream-dark);
+    }
+    .story-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.82); }
+    .quote {
+      margin-top: 34px;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 40px);
+      line-height: 1.15;
+      color: var(--accent);
+    }
+    .story p { margin-top: 22px; color: var(--muted); font-size: 18px; max-width: 58ch; }
+
+    .trust-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,250,242,0.58);
+    }
+    .trust-item {
+      min-height: 164px;
+      padding: 28px;
+      display: grid;
+      align-content: space-between;
+      gap: 20px;
+    }
+    .trust-item + .trust-item { border-left: 1px solid var(--line); }
+    .trust-num { font-family: var(--font-mono); font-size: clamp(36px, 6vw, 72px); line-height: 0.9; color: var(--accent); letter-spacing: -0.03em; }
+    .trust-label { color: var(--muted); max-width: 24ch; }
+
+    .visit-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1fr);
+      gap: clamp(28px, 5vw, 70px);
+      align-items: start;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: rgba(255,250,242,0.62);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 24px 26px;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .panel-head h3 { font-family: var(--font-display); font-size: 28px; }
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+    .hours { padding: 12px 26px 24px; }
+    .hour-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .hour-row.today { color: var(--ink); font-weight: 700; }
+    .hour-row:last-child { border-bottom: 0; }
+    .hour-row span:last-child { font-family: var(--font-mono); color: var(--accent); }
+    .contact-list { padding: 24px 26px 28px; display: grid; gap: 18px; }
+    .contact-line { display: grid; gap: 4px; }
+    .contact-line span { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--soft); }
+    .contact-line a, .contact-line strong { font-size: 18px; font-weight: 650; }
+    .contact-line a:hover { color: var(--accent); }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 0.8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-img {
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .gallery-img:first-child { aspect-ratio: 16 / 10; }
+    .gallery-img img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.84); transition: transform 500ms var(--ease), filter 300ms var(--ease); }
+    .gallery-img:hover img { transform: scale(1.035); filter: saturate(0.98); }
+
+    .reserve {
+      background: var(--accent);
+      color: #fffaf4;
+      padding-block: clamp(62px, 8vw, 104px);
+    }
+    .reserve-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(360px, 0.7fr);
+      gap: clamp(34px, 7vw, 90px);
+      align-items: start;
+    }
+    .reserve h2 { color: #fffaf4; }
+    .reserve p { margin-top: 20px; max-width: 50ch; color: rgba(255,250,244,0.78); font-size: 18px; }
+    .reserve .eyebrow { color: rgba(255,250,244,0.75); }
+    .reserve-card {
+      border: 1px solid rgba(255,255,255,0.24);
+      border-radius: 8px;
+      padding: 22px;
+      background: rgba(255,255,255,0.06);
+      display: grid;
+      gap: 14px;
+    }
+    .field {
+      display: grid; gap: 7px;
+    }
+    .field label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,250,244,0.72);
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.08);
+      color: #fffaf4;
+      padding: 12px 13px;
+      outline: none;
+      transition: border-color 200ms var(--ease), background 200ms var(--ease);
+    }
+    .field textarea { min-height: 86px; resize: vertical; }
+    .field input::placeholder, .field textarea::placeholder { color: rgba(255,250,244,0.56); }
+    .field input:hover, .field select:hover, .field textarea:hover,
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: rgba(255,255,255,0.58);
+      background: rgba(255,255,255,0.12);
+    }
+    .reserve-card .btn {
+      width: 100%;
+      background: #fffaf4;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+    .reserve-card .btn:hover { background: #f0e4d7; }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      padding-block: 42px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap;
+      padding-bottom: 28px;
+    }
+    .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+    .footer a:hover { color: var(--accent); }
+    .disclaimer {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: rgba(255,250,242,0.45);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .story-grid, .visit-grid, .reserve-grid { grid-template-columns: 1fr; }
+      .hero-photo, #map { max-width: 720px; }
+      .section-head, .menu-board { grid-template-columns: 1fr; }
+      .menu-tabs { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .menu-list { border-left: 0; }
+      .dish { padding-left: 0; }
+      .trust-row { grid-template-columns: 1fr; }
+      .trust-item + .trust-item { border-left: 0; border-top: 1px solid var(--line); }
+      .gallery-strip { grid-template-columns: 1fr 1fr; }
+      .gallery-img:first-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 720px) {
+      .nav-links { display: none; }
+      .nav .btn { display: none; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .meta-item + .meta-item { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+      .menu-tabs { grid-template-columns: 1fr; }
+      .dish { grid-template-columns: 1fr; gap: 10px; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .photo-note { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        animation: reveal 760ms var(--ease) forwards;
+      }
+      .d1 { animation-delay: 80ms; }
+      .d2 { animation-delay: 180ms; }
+      .d3 { animation-delay: 280ms; }
+      @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#obsah">Přejít na obsah</a>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="wordmark" href="#" aria-label="Bistro Baroko">
+        <span>Baroko</span>
+        <span>Mělník</span>
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#rezervace">Rezervace</a>
+      </nav>
+      <a class="btn btn-primary" href="mailto:rezervace@bistrobaroko.cz">
+        Rezervovat
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="obsah">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy reveal d1">
+          <div class="eyebrow">Svatováclavská 22 · otevřeno denně</div>
+          <h1>Bistro Baroko v srdci Mělníka</h1>
+          <p class="lead">Výběrová káva, snídaně a klidné posezení v historickém domě, kde se hrubé cihlové zdi potkávají s vůní čerstvě namleté kávy.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#rezervace">Rezervace stolu</a>
+            <a class="btn btn-outline" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-item"><span class="meta-k">Hodnocení</span><span class="meta-v">4,6 z 35 recenzí</span></div>
+            <div class="meta-item"><span class="meta-k">Adresa</span><span class="meta-v">Svatováclavská 22</span></div>
+            <div class="meta-item"><span class="meta-k">Dnes</span><span class="meta-v">8:00 - 17:00</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo reveal d2">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-note">
+            <strong>káva · snídaně · víno</strong>
+            <span>8:00 - 17:00</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="menu">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Ochutnejte</span>
+            <h2>Vybrané z lístku</h2>
+          </div>
+          <p>Snídaně, výběrová káva a nápoje pro pomalé dopoledne i kratší zastavení během dne.</p>
+        </div>
+        <div class="menu-board">
+          <div class="menu-tabs" aria-label="Kategorie menu">
+            <a class="menu-tab" href="#snidane"><strong>Snídaně</strong><span>5 položek</span></a>
+            <a class="menu-tab" href="#kava"><strong>Výběrová káva</strong><span>5 položek</span></a>
+          </div>
+          <div class="menu-list">
+            <article class="dish" id="snidane">
+              <div><h3>Benediktská vejce</h3><p>Pošírovaná vejce na pečivu s jemnou holandskou omáčkou a salátkem.</p></div>
+              <strong class="price">185 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Klasická anglická snídaně</h3><p>Vejce, slanina, fazole, rajče a křupavý toast.</p></div>
+              <strong class="price">219 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Turecká pošírovaná vejce</h3><p>V bylinkovém jogurtu s máslovou chilli polevou, chléb.</p></div>
+              <strong class="price">189 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Club sendvič</h3><p>S grilovaným kuřecím masem, rajčaty a jemnou majonézou.</p></div>
+              <strong class="price">185 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Domácí granola</h3><p>S krémovým jogurtem, lesním ovocem a medem.</p></div>
+              <strong class="price">155 Kč</strong>
+            </article>
+            <article class="dish" id="kava">
+              <div><h3>Espresso / Lungo</h3><p>Vyvážená chuť pro rychlý šálek u baru i ke stolu.</p></div>
+              <strong class="price">55 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Cappuccino</h3><p>Espresso s našlehaným mlékem.</p></div>
+              <strong class="price">70 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Flat White</h3><p>Dvojité espresso a jemná mikropěna.</p></div>
+              <strong class="price">85 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Espresso Tonic</h3><p>Osvěžující kombinace kávy a toniku.</p></div>
+              <strong class="price">95 Kč</strong>
+            </article>
+            <article class="dish">
+              <div><h3>Matcha latté</h3><p>Teplý nápoj s jemnou mléčnou pěnou.</p></div>
+              <strong class="price">109 Kč</strong>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section story" id="pribeh">
+      <div class="container story-grid">
+        <div class="story-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <span class="eyebrow">Náš příběh</span>
+          <h2>Více než jen káva</h2>
+          <p>Bistro Baroko vzniklo z touhy vytvořit místo, kde se čas zpomalí. Přijďte na vejce Benedict, domácí granolu, flat white nebo sklenku vína v atmosféře historického Mělníka.</p>
+          <div class="quote">„Život je příliš krátký na špatnou kávu.“</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="duvera-title">
+      <div class="narrow">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Na první návštěvu</span>
+            <h2 id="duvera-title">Místo pro snídani i kávu</h2>
+          </div>
+          <p>Praktické informace pro hosty, kteří chtějí přijít bez zbytečného hledání.</p>
+        </div>
+        <div class="trust-row">
+          <div class="trust-item"><div class="trust-num">4,6</div><p class="trust-label">Hodnocení hostů podle dostupných údajů.</p></div>
+          <div class="trust-item"><div class="trust-num">35</div><p class="trust-label">Recenzí spojených s podnikem Baroko.</p></div>
+          <div class="trust-item"><div class="trust-num">8-17</div><p class="trust-label">Otevřeno denně podle uvedených hodin.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="navsteva">
+      <div class="container visit-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Kontakt</h3>
+            <span class="badge">Mělník</span>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hour-row"><span>Pondělí</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row"><span>Úterý</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row"><span>Středa</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row"><span>Čtvrtek</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row"><span>Pátek</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row today"><span>Sobota</span><span>8:00 - 17:00</span></div>
+            <div class="hour-row"><span>Neděle</span><span>8:00 - 17:00</span></div>
+          </div>
+          <div class="contact-list">
+            <div class="contact-line"><span>Adresa</span><strong>Svatováclavská 22, 276 01 Mělník-Mělník 1</strong></div>
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420777240905">+420 777 240 905</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:rezervace@bistrobaroko.cz">rezervace@bistrobaroko.cz</a></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Bistro Baroko"></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="atmosfera-title">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Atmosféra</span>
+            <h2 id="atmosfera-title">Teplo světel, vůně kávy</h2>
+          </div>
+          <p>Interiér pro ranní snídani, pracovní setkání i odpolední šálek.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-img"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></figure>
+          <figure class="gallery-img"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure class="gallery-img"><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="reserve" id="rezervace">
+      <div class="container reserve-grid">
+        <div>
+          <span class="eyebrow">Rezervace</span>
+          <h2>Stůl v Baroku</h2>
+          <p>Napište nám termín, čas návštěvy a počet hostů. Ozveme se vám zpět na uvedený kontakt.</p>
+          <div class="hero-actions">
+            <a class="btn" href="mailto:rezervace@bistrobaroko.cz">rezervace@bistrobaroko.cz</a>
+            <a class="btn btn-outline" style="color:#fffaf4;border-color:rgba(255,255,255,0.45)" href="tel:+420777240905">+420 777 240 905</a>
+            <a class="btn btn-outline" style="color:#fffaf4;border-color:rgba(255,255,255,0.45)" href="https://bistrobaroko.cz/">bistrobaroko.cz</a>
+          </div>
+        </div>
+        <form class="reserve-card" action="mailto:rezervace@bistrobaroko.cz" method="post" enctype="text/plain">
+          <div class="field"><label for="date">Datum rezervace</label><input id="date" name="Datum" type="date"></div>
+          <div class="field"><label for="time">Čas návštěvy</label><select id="time" name="Čas"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option></select></div>
+          <div class="field"><label for="guests">Počet hostů</label><select id="guests" name="Počet hostů"><option>1 osoba</option><option>2 osoby</option><option>3 osoby</option><option>4 osoby</option><option>5 osob</option><option>6 osob</option><option>7 osob</option><option>8 osob</option></select></div>
+          <div class="field"><label for="name">Vaše jméno</label><input id="name" name="Jméno" type="text" placeholder="Jméno a příjmení"></div>
+          <div class="field"><label for="email">E-mail</label><input id="email" name="E-mail" type="email" placeholder="vas@email.cz"></div>
+          <div class="field"><label for="note">Poznámka pro obsluhu</label><textarea id="note" name="Poznámka" placeholder="Alergie, kočárek, delší návštěva..."></textarea></div>
+          <button class="btn" type="submit">Odeslat rezervaci</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-main">
+        <a class="wordmark" href="#"><span>Baroko</span><span>Svatováclavská 22</span></a>
+        <div class="footer-links">
+          <a href="#menu">Menu</a>
+          <a href="#navsteva">Kontakt</a>
+          <a href="mailto:rezervace@bistrobaroko.cz">Rezervace</a>
+        </div>
+      </div>
+      <div class="disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávaznou vizualizaci veřejné online prezentace. Pro odstranění použijte
+        <a href="https://webflex.cz/delete/seoaifg">https://webflex.cz/delete/seoaifg</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4738823, 50.3510966],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#604040' })
+      .setLngLat([14.4738823, 50.3510966])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
