@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bistro RH nemocnice | Bistro a cukrárna v Náchodě</title>
+  <meta name="description" content="Bistro a cukrárna RH v budově L oblastní nemocnice Náchod. Vlastní cukrářské a pekařské produkty z výrobny RH Červený Kostelec.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --paper: #ffffff;
+      --paper-2: #f4f1ec;
+      --ink: #1d1914;
+      --muted: #6d6257;
+      --line: rgba(29, 25, 20, .14);
+      --line-strong: rgba(29, 25, 20, .28);
+      --accent: #C79A5B;
+      --accent-dark: #8a6535;
+      --accent-soft: rgba(199, 154, 91, .16);
+      --radius: 8px;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(29,25,20,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29,25,20,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); max-width: 68ch; hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(250,250,250,.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+    .navlinks a:focus-visible,
+    .btn:focus-visible,
+    .link-card:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--accent);
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #1b1308; }
+    .btn.secondary { background: transparent; border: 1px solid currentColor; color: var(--ink); }
+    .btn.secondary:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      gap: clamp(36px, 6vw, 78px);
+      align-items: center;
+      padding: 64px 0 88px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+      color: #463c31;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 44px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .meta-cell {
+      background: rgba(255,255,255,.72);
+      padding: 18px;
+      min-height: 106px;
+    }
+    .meta-cell strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .meta-cell span { color: var(--muted); font-size: 14px; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      position: relative;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      background: rgba(29,25,20,.78);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 88px 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.5vw, 62px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .menu-rows {
+      border-top: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.56);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 190px 1fr minmax(160px, .28fr);
+      gap: 28px;
+      align-items: start;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row .num {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+    .menu-row h3 {
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1.08;
+      font-weight: 800;
+    }
+    .tag {
+      justify-self: end;
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--paper);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(360px, .7fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.72);
+      padding: clamp(24px, 4vw, 44px);
+    }
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.08;
+      color: var(--ink);
+      margin-bottom: 22px;
+    }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      margin-top: 26px;
+      background: var(--line);
+      gap: 1px;
+    }
+    .fact { background: var(--paper); padding: 22px; min-height: 126px; }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(24px, 4vw, 48px);
+      line-height: 1;
+      color: var(--accent-dark);
+    }
+    .fact span { display: block; margin-top: 10px; color: var(--muted); font-size: 14px; }
+    .image-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .image-grid figure {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .image-grid img { width: 100%; height: 230px; object-fit: cover; }
+    .image-grid figcaption {
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .hours-wrap {
+      display: grid;
+      grid-template-columns: minmax(340px, .56fr) minmax(0, .9fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 30px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      background: var(--paper);
+    }
+    .contact-list { display: grid; gap: 18px; }
+    .contact-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+    .contact-item strong, .contact-item a {
+      font-size: 21px;
+      font-weight: 800;
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours td {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours td:last-child { text-align: right; color: var(--muted); }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .qa { background: var(--paper); padding: 28px; min-height: 168px; }
+    .qa h3 { font-size: 21px; margin-bottom: 10px; }
+    .cta {
+      padding: 72px 0;
+      background: var(--ink);
+      color: #fff;
+      border-top: 0;
+    }
+    .cta .shell {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .cta h2 { color: #fff; max-width: 780px; }
+    .cta p { color: rgba(255,255,255,.72); margin-top: 14px; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta .btn.secondary:hover { background: #fff; color: var(--ink); border-color: #fff; }
+    .footer {
+      background: #12100d;
+      color: rgba(255,255,255,.72);
+      padding: 28px 0;
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,.12);
+    }
+    .footer .shell {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .hours-wrap, .cta .shell {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-photo { width: 100%; }
+      .hero-meta, .facts, .faq { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .tag { justify-self: start; }
+      .image-grid { grid-template-columns: 1fr; }
+      .image-grid img { height: 260px; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .photo-note { position: static; border-radius: 0; }
+      .contact-card { padding: 22px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="wordmark" href="#top">Bistro RH nemocnice</a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#cukrarna">Cukrárna</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420604331354">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="shell hero">
+      <div>
+        <div class="eyebrow">Budova L · Oblastní nemocnice Náchod</div>
+        <h1>Bistro u nemocnice</h1>
+        <p class="lead">Zastavte se na kávu, zákusek nebo něco dobrého během návštěvy nemocnice. Cukrářské a pekařské produkty jsou vlastní výroby RH z Červeného Kostelce.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420604331354">+420 604 331 354</a>
+          <a class="btn secondary" href="#kontakt">Kde nás najdete</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <div class="meta-cell"><strong>Purkyňova 402</strong><span>Náchod 1</span></div>
+          <div class="meta-cell"><strong>4,0 / 5</strong><span>hodnocení podle 4 recenzí</span></div>
+          <div class="meta-cell"><strong>292</strong><span>sledujících na Facebooku</span></div>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <div class="photo-note"><span>Káva · sladké · pečivo</span><span>Náchod</span></div>
+      </div>
+    </div>
+
+    <section id="nabidka">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Co si u nás dáte</h2>
+          <p>Nabídka stojí na bistru a cukrárně přímo v areálu nemocnice. Hodí se na krátkou pauzu, cestu na oddělení i setkání po vyšetření.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <div class="num">01</div>
+            <div>
+              <h3>Káva a posezení</h3>
+              <p>Teplý šálek, klidnější zastavení a drobné občerstvení v budově L u vrátnice a jídelny.</p>
+            </div>
+            <span class="tag">bistro</span>
+          </article>
+          <article class="menu-row">
+            <div class="num">02</div>
+            <div>
+              <h3>Cukrářské výrobky</h3>
+              <p>Zákusky a sladké produkty z vlastní výroby RH v Červeném Kostelci.</p>
+            </div>
+            <span class="tag">cukrárna</span>
+          </article>
+          <article class="menu-row">
+            <div class="num">03</div>
+            <div>
+              <h3>Pekařské produkty</h3>
+              <p>Pečivo a doplňky k rychlému občerstvení, které si můžete vzít s sebou.</p>
+            </div>
+            <span class="tag">s sebou</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="cukrarna">
+      <div class="shell split">
+        <div class="panel">
+          <div class="eyebrow">Vlastní výroba RH</div>
+          <p class="quote">Sladké i pekařské produkty pocházejí z výrobny RH v Červeném Kostelci.</p>
+          <p>Navazujeme na jednoduchý rytmus nemocničního dne: něco rychlého do ruky, klidné posezení u kávy a zákusky pro návštěvu nebo cestu domů.</p>
+          <div class="facts">
+            <div class="fact"><strong>4,0</strong><span>aktuální hodnocení</span></div>
+            <div class="fact"><strong>4</strong><span>recenze v profilu</span></div>
+            <div class="fact"><strong>292</strong><span>sledujících</span></div>
+          </div>
+        </div>
+        <div class="image-grid" aria-label="Atmosféra bistra">
+          <figure>
+            <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+            <figcaption>Klidné posezení u kávy.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl pro krátké zastavení.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>Bistro je v areálu oblastní nemocnice Náchod. Podle informací z profilu se nachází v budově L, u vrátnice a jídelny.</p>
+        </div>
+        <div class="hours-wrap">
+          <aside class="contact-card">
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Adresa</span>
+                <strong>Purkyňova 402, 547 01 Náchod 1</strong>
+              </div>
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420604331354">+420 604 331 354</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:romanahanke@seznam.cz">romanahanke@seznam.cz</a>
+              </div>
+            </div>
+            <table class="hours" aria-label="Provozní informace">
+              <tr><td>Umístění</td><td>budova L</td></tr>
+              <tr><td>Orientační bod</td><td>vrátnice · jídelna</td></tr>
+              <tr><td>Město</td><td>Náchod</td></tr>
+            </table>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Bistro RH nemocnice"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <h2>Než se zastavíte</h2>
+          <p>Praktické informace pro návštěvníky nemocnice, pacienty i doprovod.</p>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Je bistro přímo v nemocnici?</h3>
+            <p>Ano, podle veřejných informací je v budově L oblastní nemocnice Náchod, u vrátnice a jídelny.</p>
+          </article>
+          <article class="qa">
+            <h3>Odkud jsou zákusky a pečivo?</h3>
+            <p>Cukrářské a pekařské produkty jsou vlastní produkty vyrobené ve výrobně RH v Červeném Kostelci.</p>
+          </article>
+          <article class="qa">
+            <h3>Mohu se zeptat na aktuální nabídku?</h3>
+            <p>Pro aktuální dostupnost sladkého, pečiva nebo objednávky zavolejte na uvedené telefonní číslo.</p>
+          </article>
+          <article class="qa">
+            <h3>Jak se dá bistro kontaktovat?</h3>
+            <p>Telefonicky na +420 604 331 354 nebo e-mailem na romanahanke@seznam.cz.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="shell">
+        <div>
+          <h2>Stavte se na kávu cestou kolem.</h2>
+          <p>Najdete nás v budově L oblastní nemocnice Náchod, u vrátnice a jídelny.</p>
+        </div>
+        <a class="btn secondary" href="tel:+420604331354">Zavolat do bistra</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <span>Prezentační stránka od Webflex. Nejste majitel? Stránku odstraníte přes <a href="https://webflex.cz/remove/oe473p4">tento odkaz</a>.</span>
+      <span>© Bistro RH nemocnice</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.1664523, 50.4098979],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#C79A5B' })
+      .setLngLat([16.1664523, 50.4098979])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
