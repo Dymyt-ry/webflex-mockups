@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cafe Creperie Strakatý králík | Palačinkárna v Berouně</title>
+  <meta name="description" content="Cafe Creperie Strakatý králík, palačinkárna v centru Berouna na Ostrově. Slané i sladké palačinky, káva s sebou, zahrádka u Berounky.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Geist+Mono:wght@500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f2ea;
+      --surface: #fffaf2;
+      --surface-2: #efe5d8;
+      --ink: #1c1713;
+      --muted: #75675b;
+      --hairline: rgba(28, 23, 19, .14);
+      --accent: #800000;
+      --accent-2: #4d1111;
+      --white: #fffaf5;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .7, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(28, 23, 19, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28, 23, 19, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247, 242, 234, .88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0;
+      line-height: 1.05;
+      max-width: 310px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 26px; font-size: 14px; font-weight: 600; }
+    .nav-links a { color: rgba(28, 23, 19, .74); transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      color: var(--white);
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+    .btn-secondary { color: var(--ink); background: transparent; border-color: currentColor; }
+    .btn-secondary:hover { background: rgba(128, 0, 0, .07); color: var(--accent); }
+
+    .hero { padding: 74px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 32px;
+      height: 1px;
+      background: currentColor;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 690px;
+      font-size: clamp(40px, 6vw, 88px);
+      font-weight: 700;
+    }
+    .lead {
+      max-width: 610px;
+      margin-top: 26px;
+      font-size: 19px;
+      color: rgba(28, 23, 19, .72);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--hairline);
+      background: rgba(255, 250, 242, .62);
+    }
+    .note-cell { padding: 18px; border-right: 1px solid var(--hairline); }
+    .note-cell:last-child { border-right: 0; }
+    .note-k { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+    .note-v { margin-top: 6px; font-weight: 700; color: var(--ink); }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(28, 23, 19, .16);
+      background: #2d261c;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(.98); }
+    .photo-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(28, 23, 19, .72);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 84px 0; border-top: 1px solid var(--hairline); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(280px, .45fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    h2 { font-size: clamp(34px, 4.2vw, 60px); }
+    .section-head p { font-size: 18px; }
+
+    .menu-list {
+      border-top: 1px solid var(--hairline);
+      background: rgba(255, 250, 242, .42);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) 220px;
+      gap: 28px;
+      align-items: baseline;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .row-index { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+    .menu-row h3 { font-size: clamp(25px, 3vw, 38px); line-height: 1.05; }
+    .row-side { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: right; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat-panel, .story-panel {
+      border: 1px solid var(--hairline);
+      background: rgba(255, 250, 242, .58);
+      border-radius: 18px;
+      padding: 30px;
+    }
+    .stat-number {
+      font-family: var(--font-mono);
+      font-size: clamp(46px, 7vw, 86px);
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+    .stat-label { margin-top: 12px; font-weight: 700; }
+    .stat-meta { margin-top: 10px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+    .story-panel blockquote {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3.5vw, 48px);
+      line-height: 1.04;
+    }
+    .story-panel p { margin-top: 24px; font-size: 18px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      grid-template-rows: 230px 230px;
+      gap: 16px;
+    }
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--hairline);
+      background: var(--surface-2);
+    }
+    .gallery figure:first-child { grid-row: 1 / span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms var(--ease); }
+    .gallery figure:hover img { transform: scale(1.035); }
+    .gallery figcaption {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      right: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(28, 23, 19, .68);
+      color: #fff;
+      font-size: 13px;
+      backdrop-filter: blur(10px);
+    }
+
+    .visit-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      background: rgba(255, 250, 242, .72);
+      padding: 28px;
+    }
+    .contact-card h3 { font-size: 36px; margin-bottom: 24px; }
+    .contact-line {
+      padding: 18px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .contact-line span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .contact-line strong { display: block; font-size: 18px; line-height: 1.35; }
+    #map {
+      height: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      background: var(--surface-2);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq article {
+      border: 1px solid var(--hairline);
+      border-radius: 16px;
+      background: rgba(255, 250, 242, .5);
+      padding: 24px;
+    }
+    .faq h3 { font-size: 24px; line-height: 1.12; margin-bottom: 14px; }
+
+    .final {
+      padding: 72px 0;
+      background: var(--accent);
+      color: var(--white);
+      border-top: 0;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 { color: var(--white); font-size: clamp(34px, 5vw, 68px); }
+    .final p { color: rgba(255, 250, 245, .78); margin-top: 12px; max-width: 620px; }
+    .final .btn-primary { background: var(--white); color: var(--accent); border-color: var(--white); }
+    .final .btn-secondary { color: var(--white); border-color: rgba(255, 255, 255, .55); }
+    .final .btn-secondary:hover { background: rgba(255, 255, 255, .12); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 28px 0;
+      background: #19130f;
+      color: rgba(255, 250, 245, .72);
+      font-size: 13px;
+    }
+    .footer-flex { display: flex; justify-content: space-between; gap: 20px; align-items: center; flex-wrap: wrap; }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { padding-top: 46px; }
+      .hero-grid, .section-head, .trust, .visit-grid, .final .wrap {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-photo { min-width: 0; }
+      .menu-row { grid-template-columns: 74px 1fr; }
+      .row-side { grid-column: 2; text-align: left; }
+      .gallery { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .gallery figure, .gallery figure:first-child { grid-row: auto; aspect-ratio: 16 / 10; }
+      .faq { grid-template-columns: 1fr; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .brand { font-size: 18px; }
+      .hero-note { grid-template-columns: 1fr; }
+      .note-cell { border-right: 0; border-bottom: 1px solid var(--hairline); }
+      .note-cell:last-child { border-bottom: 0; }
+      section { padding: 62px 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .row-side { grid-column: auto; }
+      .stat-panel, .story-panel, .contact-card { padding: 22px; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Cafe Creperie Strakatý králík">Cafe Creperie Strakatý králík</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420603547212">Rezervace</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Na Ostrově 9 · Beroun</div>
+          <h1>Palačinky u Berounky</h1>
+          <p class="lead">Slané jako lehký hlavní chod, sladké jako dezert. Palačinkárna v jedné z nejhezčích částí Berouna připravuje francouzské receptury i vlastní kombinace z poctivých surovin.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420603547212">Zavolat na rezervaci</a>
+            <a class="btn btn-secondary" href="mailto:strakaty.kralik@gmail.com">Napsat e-mail</a>
+          </div>
+          <div class="hero-note" aria-label="Rychlé informace">
+            <div class="note-cell">
+              <div class="note-k">Hodnocení</div>
+              <div class="note-v">4,5 z 5</div>
+            </div>
+            <div class="note-cell">
+              <div class="note-k">Recenze</div>
+              <div class="note-v">1 020</div>
+            </div>
+            <div class="note-cell">
+              <div class="note-k">S sebou</div>
+              <div class="note-v">Káva i sortiment</div>
+            </div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+          <figcaption class="photo-label">Cafe · creperie · Beroun</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si dát</h2>
+          <p>Palačinky jsou hlavní důvod návštěvy. Zastavit se můžete na lehké jídlo, dezert po procházce i šálek kávy s sebou.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <div class="row-index">01</div>
+            <h3>Slané palačinky</h3>
+            <p>Lehký hlavní chod podle tradiční francouzské receptury i vlastních kombinací podniku.</p>
+            <div class="row-side">na místě</div>
+          </article>
+          <article class="menu-row">
+            <div class="row-index">02</div>
+            <h3>Sladké palačinky</h3>
+            <p>Dezertní varianty pro chvíli u kávy, rodinné posezení nebo zastávku během procházky.</p>
+            <div class="row-side">dezert</div>
+          </article>
+          <article class="menu-row">
+            <div class="row-index">03</div>
+            <h3>Káva a sortiment s sebou</h3>
+            <p>Na cestu podél Berounky si můžete odnést kávu i další sortiment z nabídky.</p>
+            <div class="row-side">take away</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust">
+        <div class="stat-panel">
+          <div class="stat-number">4,5</div>
+          <div class="stat-label">hodnocení hostů</div>
+          <div class="stat-meta">1 020 recenzí</div>
+        </div>
+        <div class="story-panel">
+          <blockquote>Poctivé suroviny, které by si dali i sami.</blockquote>
+          <p>Podnik staví na jednoduché myšlence: palačinky mají chutnat všem, proto se připravují z kvalitních surovin a v prostředí, kde má smysl chvíli zůstat.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Na ostrově v centru</h2>
+          <p>Kavárna stojí na Na Ostrově u řeky Berounky. V letní sezóně si atmosféru místa můžete vychutnat na zahrádce.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <figcaption>Posezení u stolu s klidnou kavárenskou náladou.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Večer, sklenky a měkké světlo.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl pro pomalé setkání.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Dobré vědět</h2>
+          <p>Praktické detaily pro návštěvu, rezervaci nebo rychlé zastavení po cestě centrem Berouna.</p>
+        </div>
+        <div class="faq">
+          <article>
+            <h3>Dá se objednat s sebou?</h3>
+            <p>Ano. Z nabídky si můžete odnést kávu s sebou i ostatní sortiment.</p>
+          </article>
+          <article>
+            <h3>Je podnik u řeky?</h3>
+            <p>Ano. Kavárna je na ostrově na řece Berounce, v centru Berouna.</p>
+          </article>
+          <article>
+            <h3>Lze využít návštěvnickou kartu?</h3>
+            <p>Ano. Uplatnit můžete návštěvnickou kartu Berounska, Brd a Podbrdska.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Rezervace a cesta</h2>
+          <p>Zavolejte před návštěvou, nebo se zastavte na Na Ostrově 9 v Berouně.</p>
+        </div>
+        <div class="visit-grid">
+          <div class="contact-card">
+            <h3>Kontakt</h3>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <strong><a href="tel:+420603547212">+420 603 547 212</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <strong><a href="mailto:strakaty.kralik@gmail.com">strakaty.kralik@gmail.com</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>9, Na Ostrově 214, 266 01 Beroun-Beroun 1</strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Cafe Creperie Strakatý králík"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div>
+          <h2>Stůl u palačinek</h2>
+          <p>Sladké, slané, káva s sebou a zahrádka u Berounky v letní sezóně.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420603547212">Rezervovat telefonicky</a>
+          <a class="btn btn-secondary" href="mailto:strakaty.kralik@gmail.com">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-flex">
+      <span>Neoficiální prezentační stránka připravená službou Webflex pro Cafe Creperie Strakatý králík.</span>
+      <a href="https://webflex.cz/remove/g1a3akw">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.0763594, 49.964597999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#800000' })
+      .setLngLat([14.0763594, 49.964597999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
