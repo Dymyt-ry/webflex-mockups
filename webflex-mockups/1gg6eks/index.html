@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>U Študáka Hradec Králové</title>
+  <meta name="description" content="Restaurace U Študáka v Hradci Králové. Denní nabídka ve všední dny, nápoje a polévky dopoledne, obědy od 11:00.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --ink: #172223;
+      --muted: #647173;
+      --line: #dfe5e5;
+      --line-strong: #aebbbb;
+      --accent: #54C6CC;
+      --accent-dark: #22858b;
+      --accent-soft: #e6f7f8;
+      --brand: #294142;
+      --font-display: "Archivo", Inter, sans-serif;
+      --font-body: Inter, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,34,35,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,34,35,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: var(--wrap); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(251,251,250,.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font: 600 13px/1 var(--font-mono);
+      color: var(--muted);
+    }
+    .navlinks a {
+      padding: 12px 10px;
+      border: 1px solid transparent;
+      transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+    }
+    .navlinks a:hover { background: var(--paper); border-color: var(--line); transform: translateY(-1px); }
+    .navlinks a:active, .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--accent-dark);
+      background: var(--accent);
+      color: #082c2f;
+      font: 700 13px/1 var(--font-mono);
+      transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+    }
+    .btn:hover { background: #6bd2d7; transform: translateY(-1px); }
+    .btn.secondary { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn.secondary:hover { background: var(--paper); }
+
+    .hero {
+      padding: 76px 0 58px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(360px, .72fr);
+      gap: 44px;
+      align-items: center;
+    }
+    .kicker {
+      font: 700 12px/1 var(--font-mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #394849;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    .hours-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 18px 50px rgba(23,34,35,.08);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      font: 700 12px/1.2 var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .today {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      padding: 7px 9px;
+      border: 1px solid rgba(84,198,204,.45);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font: 700 12px/1 var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      background: #f4f7f7;
+    }
+    td.time, .mono { font-family: var(--font-mono); font-weight: 600; }
+    tr.is-today td { background: var(--accent-soft); border-color: rgba(84,198,204,.75); }
+
+    section { padding: 72px 0; border-bottom: 1px solid var(--line); background: rgba(251,251,250,.72); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .num {
+      font: 800 56px/.9 var(--font-display);
+      color: transparent;
+      -webkit-text-stroke: 1px var(--line-strong);
+    }
+    h2 {
+      margin: 0;
+      font: 800 clamp(30px, 4vw, 54px)/1 var(--font-display);
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 12px 0 0; max-width: 700px; color: var(--muted); font-size: 18px; }
+    .schedule-table {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      overflow: auto;
+    }
+    .schedule-table th { position: sticky; top: 76px; z-index: 3; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      font: 700 12px/1 var(--font-mono);
+      color: var(--brand);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+    .photo {
+      min-height: 430px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .fact {
+      min-height: 170px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .fact:nth-child(2n) { border-right: 0; }
+    .fact:nth-last-child(-n+2) { border-bottom: 0; }
+    .fact strong {
+      font: 800 clamp(28px, 4vw, 48px)/1 var(--font-display);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .fact span { color: var(--muted); }
+    .rules {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .rule {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 24px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .rule:last-child { border-bottom: 0; }
+    .rule .mono { color: var(--accent-dark); }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery .photo { min-height: 300px; aspect-ratio: 16 / 10; }
+    .gallery-stack { display: grid; gap: 18px; }
+    .gallery-stack .photo { min-height: 180px; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 26px;
+      display: grid;
+      gap: 20px;
+    }
+    .contact-row {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      font: 700 12px/1 var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+    }
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .qa {
+      min-height: 170px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .qa:nth-child(2n) { border-right: 0; }
+    .qa:nth-last-child(-n+2) { border-bottom: 0; }
+    .qa h3 { margin: 0 0 10px; font: 800 20px/1.15 var(--font-display); }
+    .qa p { margin: 0; color: var(--muted); }
+    .cta {
+      padding: 58px 0;
+      background: var(--brand);
+      color: #f8ffff;
+      border-bottom: 0;
+    }
+    .cta-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .cta h2 { max-width: 760px; color: #fff; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,.55); }
+    .cta .btn.secondary:hover { background: rgba(255,255,255,.1); }
+    footer {
+      background: #0f1516;
+      color: rgba(255,255,255,.72);
+      padding: 28px 0;
+      font-size: 13px;
+    }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .credits { margin-top: 10px; color: rgba(255,255,255,.52); }
+
+    @media (max-width: 900px) {
+      .nav { height: auto; padding: 14px 0; align-items: flex-start; }
+      .navlinks { display: none; }
+      .hero-grid, .split, .gallery, .contact-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 42px; }
+      .section-head { grid-template-columns: 1fr; gap: 10px; }
+      .num { font-size: 38px; }
+      .facts, .faq { grid-template-columns: 1fr; }
+      .fact, .qa, .fact:nth-child(2n), .qa:nth-child(2n) { border-right: 0; }
+      .fact:nth-last-child(-n+2), .qa:nth-last-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .fact:last-child, .qa:last-child { border-bottom: 0; }
+      .rule { grid-template-columns: 1fr; gap: 8px; }
+      .cta-grid { align-items: flex-start; flex-direction: column; }
+      .photo { min-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="U Študáka Hradec Králové">
+        <img src="https://www.sssoghk.cz/wp-content/uploads/2022/09/Logo_krivky_barvy.png" alt="U Študáka Hradec Králové">
+      </a>
+      <div class="navlinks">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn" href="tel:+420725733075">725 733 075</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Pražské Předměstí · Hradec Králové</div>
+          <h1>Restaurace pro všední oběd</h1>
+          <p class="lead">U Študáka je pracoviště praktického vyučování, kde pro vás vaří a obsluhují žáci Střední školy služeb, obchodu a gastronomie pod vedením učitelů odborného výcviku.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#kontakt">Najít restauraci</a>
+            <a class="btn secondary" href="tel:+420725733075">Zavolat do restaurace</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Dnešní provoz">
+          <div class="card-head">
+            <span>Provoz mimo prázdniny</span>
+            <span class="today">Dnes neděle</span>
+          </div>
+          <table>
+            <tbody>
+              <tr><td>Po-Pá</td><td class="time">09:00-11:00</td><td>Nápoje a polévky</td></tr>
+              <tr><td>Po-Pá</td><td class="time">11:00-14:30</td><td>Denní nabídka</td></tr>
+              <tr class="is-today"><td>So-Ne</td><td class="time">Zavřeno</td><td>Otevřeno ve všední dny</td></tr>
+            </tbody>
+          </table>
+        </aside>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <div>
+            <h2>Co si u nás dáte</h2>
+            <p>Jídelní lístek na daný týden je zveřejňován nejpozději v pondělí do 9:00.</p>
+          </div>
+        </div>
+        <div class="schedule-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Čas</th>
+                <th>Nabídka</th>
+                <th>Pro koho</th>
+                <th>Poznámka</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="time">09:00-11:00</td>
+                <td><span class="tag">káva / nápoje</span> <span class="tag">polévky</span></td>
+                <td>Hosté z okolí i studenti</td>
+                <td>Studené a teplé nápoje, dopolední zastavení v centru Hradce.</td>
+              </tr>
+              <tr>
+                <td class="time">11:00-14:30</td>
+                <td><span class="tag">denní nabídka</span></td>
+                <td>Oběd ve všední den</td>
+                <td>Objednáváte podle aktuální denní nabídky.</td>
+              </tr>
+              <tr>
+                <td class="time">Pondělí do 09:00</td>
+                <td><span class="tag">týdenní lístek</span></td>
+                <td>Plánování obědů</td>
+                <td>Aktuální jídelní lístek sledujte na stránkách školy.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="wrap split">
+        <figure class="photo" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div>
+          <div class="section-head">
+            <div class="num">02</div>
+            <div>
+              <h2>Provoz bez rezervací</h2>
+              <p>Stoly ani jídla nerezervujeme. O mimořádném uzavření restaurace informujeme na webových stránkách.</p>
+            </div>
+          </div>
+          <div class="rules">
+            <div class="rule"><span class="mono">Vstup</span><strong>Pro veřejnost ve všední dny mimo prázdniny.</strong></div>
+            <div class="rule"><span class="mono">Obsluha</span><strong>Žáci pod vedením učitelů odborného výcviku.</strong></div>
+            <div class="rule"><span class="mono">Rezervace</span><strong>Bez rezervace stolů a jídel.</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <div>
+            <h2>Rychlá fakta</h2>
+            <p>Kontaktní údaje a veřejně dostupné hodnocení restaurace v jednom přehledu.</p>
+          </div>
+        </div>
+        <div class="facts">
+          <div class="fact"><span>Hodnocení Google</span><strong class="mono">4,5</strong></div>
+          <div class="fact"><span>Počet recenzí</span><strong class="mono">124</strong></div>
+          <div class="fact"><span>Telefon</span><strong class="mono">725 733 075</strong></div>
+          <div class="fact"><span>Adresa</span><strong>V Lipkách 1523/7</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <div>
+            <h2>Atmosféra restaurace</h2>
+            <p>Klidné místo pro oběd, kávu nebo polévku během dne v Pražském Předměstí.</p>
+          </div>
+        </div>
+        <div class="gallery">
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+          <div class="gallery-stack">
+            <figure class="photo">
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            </figure>
+            <figure class="photo">
+              <img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <div>
+            <h2>Kde nás najdete</h2>
+            <p>Restaurace sídlí na adrese V Lipkách 1523/7 v Hradci Králové, část Pražské Předměstí.</p>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-row">
+              <span class="label">Adresa</span>
+              <strong>V Lipkách 1523/7<br>Pražské Předměstí<br>500 02 Hradec Králové</strong>
+            </div>
+            <div class="contact-row">
+              <span class="label">Telefon</span>
+              <a class="mono" href="tel:+420725733075">+420 725 733 075</a>
+            </div>
+            <div class="contact-row">
+              <span class="label">E-mail</span>
+              <a href="mailto:sekretariat@sssoghk.cz">sekretariat@sssoghk.cz</a>
+            </div>
+            <div class="contact-row">
+              <span class="label">Provoz</span>
+              <span>Pracovní dny mimo prázdniny, obědy podle denní nabídky.</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa restaurace U Študáka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">06</div>
+          <div>
+            <h2>Nejčastější dotazy</h2>
+            <p>Praktické informace před návštěvou restaurace.</p>
+          </div>
+        </div>
+        <div class="faq">
+          <div class="qa">
+            <h3>Dají se rezervovat stoly?</h3>
+            <p>Ne. V restauraci stoly ani jídla nerezervujeme.</p>
+          </div>
+          <div class="qa">
+            <h3>Kdy je zveřejněn jídelní lístek?</h3>
+            <p>Jídelní lístek na daný týden je zveřejněn nejpozději v pondělí do 9:00.</p>
+          </div>
+          <div class="qa">
+            <h3>Kdo jídlo připravuje?</h3>
+            <p>Jídla připravují žáci školy pod vedením učitelů odborného výcviku.</p>
+          </div>
+          <div class="qa">
+            <h3>Je otevřeno o prázdninách?</h3>
+            <p>Restaurace je pro veřejnost otevřena mimo prázdniny v pracovní dny.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-grid">
+        <h2>Zastavte se ve všední den na oběd.</h2>
+        <div class="hero-actions">
+          <a class="btn" href="tel:+420725733075">Zavolat</a>
+          <a class="btn secondary" href="#kontakt">Zobrazit adresu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>Prezentační stránku připravil Webflex. Pokud si nepřejete, aby byla veřejně dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/1gg6eks">odstranit stránku</a>.</div>
+      <div class="credits">Fotografie: Daniil Kondrashin, Alari Tammsalu, Zain Ali, Raphael Loquellano / Pexels.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.815436899999998, 50.206805499999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#54C6CC' })
+      .setLngLat([15.815436899999998, 50.206805499999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
