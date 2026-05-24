@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Slezska P.U.O.R. | Restaurace a bowling v Ostravě</title>
+  <meta name="description" content="Slezska P.U.O.R. v Moravské Ostravě: restaurace Plzeňského pivovaru, polední menu, jídelní lístek, nápojový a vinný lístek, rezervace stolu a bowlingu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f3f2ef;
+      --ink: #200000;
+      --muted: #756c68;
+      --accent: #200000;
+      --line: rgba(32, 0, 0, 0.12);
+      --shadow: 0 34px 100px rgba(32, 0, 0, 0.09);
+      --shadow-soft: 0 18px 70px rgba(32, 0, 0, 0.07);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(32, 0, 0, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32, 0, 0, 0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: geometricPrecision;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin-inline: auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, 0.82);
+      border-bottom: 1px solid rgba(32, 0, 0, 0.08);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .brand small {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .04em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .navlinks a {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .navlinks a:hover { color: #6d2626; transform: translateY(-1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 16px 40px rgba(32, 0, 0, 0.18); }
+    .btn-primary:hover { background: #3a0909; transform: translateY(-1px); }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(32, 0, 0, 0.06); transform: translateY(-1px); }
+
+    .hero {
+      padding: 72px 0 84px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, .85fr);
+      gap: 58px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 600px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+      color: #4d403c;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .86);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
+    }
+    .rating b {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      line-height: 1;
+    }
+    .rating span, .tagline {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .5fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.2vw, 62px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { font-size: 18px; }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 92px 1fr minmax(180px, 260px);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .service-row h3 {
+      font-family: var(--font-body);
+      font-size: 28px;
+      line-height: 1.05;
+    }
+    .service-row p { font-size: 16px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(0, 1fr);
+      gap: 36px;
+      align-items: stretch;
+    }
+    .soft-panel {
+      background: var(--surface);
+      border-radius: 30px;
+      padding: 34px;
+      box-shadow: var(--shadow-soft);
+    }
+    .stat-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .stat {
+      min-height: 138px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 26px;
+      padding: 28px;
+      background: #f1efec;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 1;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+    .story h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      margin-bottom: 24px;
+      overflow-wrap: anywhere;
+    }
+    .story p + p { margin-top: 16px; }
+
+    .menu-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-card {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+    .menu-card:hover { transform: translateY(-2px); box-shadow: 0 26px 80px rgba(32, 0, 0, .1); }
+    .menu-card h3 { font-size: 26px; line-height: 1.08; }
+    .menu-card .mono { font-family: var(--font-mono); color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      min-height: 360px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+    .gallery figure:first-child { min-height: 520px; }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .gallery .side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .reservation {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .steps {
+      display: grid;
+      gap: 14px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.72);
+    }
+    .step b {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+    .step h3 { font-size: 22px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      margin-bottom: 22px;
+    }
+    .info-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .info-item {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .info-item span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .info-item strong { font-size: 18px; }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final {
+      padding-bottom: 56px;
+    }
+    .cta-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+      padding: 42px;
+      border-radius: 34px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 28px 90px rgba(32, 0, 0, .18);
+    }
+    .cta-strip h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+    .cta-strip p { color: rgba(255,255,255,.78); margin-top: 12px; max-width: 650px; }
+    .cta-strip .btn-primary { background: #fff; color: var(--accent); box-shadow: none; }
+    .cta-strip .btn-primary:hover { background: #f1efec; }
+
+    .footer {
+      padding: 26px 0 38px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { height: auto; padding: 16px 0; align-items: flex-start; }
+      .navlinks { display: none; }
+      .hero { padding-top: 44px; }
+      .hero-grid, .section-head, .split, .gallery, .reservation, .contact-grid, .cta-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .menu-board { grid-template-columns: 1fr; }
+      .gallery figure, .gallery figure:first-child { min-height: 300px; }
+      .footer .wrap { flex-direction: column; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(var(--max), calc(100% - 28px)); }
+      section { padding: 58px 0; }
+      .hero-card { position: static; margin: 14px; }
+      .hero-actions, .cta-strip { align-items: stretch; }
+      .btn { width: 100%; }
+      .soft-panel, .menu-card, .cta-strip { padding: 24px; border-radius: 24px; }
+      .info-item { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Slezska P.U.O.R.">
+        <img src="./puor_slezska_logo.png" alt="Slezska P.U.O.R.">
+        <span>
+          <small>Restaurace Plzeňského pivovaru</small>
+        </span>
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#bowling">Bowling</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420774023599">Rezervovat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> Moravská Ostrava a Přívoz</div>
+          <h1>Restaurace, pivo a bowling.</h1>
+          <p class="lead">Slezska P.U.O.R. patří do rodiny originálních Restaurací Plzeňského pivovaru. Přijďte na polední menu, večeři s přáteli nebo rezervaci bowlingu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774023599">Volat +420 774 023 599</a>
+            <a class="btn btn-outline" href="#kontakt">Adresa a mapa</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <div class="hero-card" aria-label="Hodnocení">
+            <div class="rating">
+              <b>4.2</b>
+              <span>Google hodnocení</span>
+            </div>
+            <div class="tagline">2881 recenzí</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si vyberete dnes?</h2>
+          <p>V nabídce najdete polední menu, stálý jídelní lístek, nápoje, vína a akce spojené se speciály z Prazdroje.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Polední menu</h3>
+            <p>Denní nabídka pro rychlý oběd v centru Ostravy, s možností podívat se na nabídku dalších dnů.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Jídelní lístek</h3>
+            <p>Stálá kuchyně restaurace P.U.O.R. Slezska pro posezení u stolu, pracovní oběd i večerní návštěvu.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Nápojový a vinný lístek</h3>
+            <p>Pivo z Plzeňského pivovaru, nealko, vína a nápoje pro delší večer u jídla i bowlingu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="stat-stack">
+          <div class="stat">
+            <strong>4.2</strong>
+            <span>hodnocení hostů na Googlu</span>
+          </div>
+          <div class="stat">
+            <strong>2881</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>P.U.O.R.</strong>
+            <span>originální restaurace Plzeňského pivovaru</span>
+          </div>
+        </div>
+        <article class="soft-panel story">
+          <h2>Velká restaurace pro Ostravu.</h2>
+          <p>Na Kolejní najdete jednu z největších restaurací v Ostravě a okolí. Prostor je stavěný na obědy, větší skupiny, večerní setkání i chvíli u dobře ošetřeného piva.</p>
+          <p>Rezervaci můžete spojit se stolem, bowlingem nebo obojím najednou. Pokud potřebujete časově odlišit stůl a dráhu, stačí to upřesnit při domluvě.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Lístky a akce</h2>
+          <p>Vyberte si podle návštěvy: rychlý oběd, klidná večeře, nápoje k posezení nebo večer s bowlingem.</p>
+        </div>
+        <div class="menu-board">
+          <a class="menu-card" href="#kontakt">
+            <span class="mono">Denně podle nabídky</span>
+            <h3>Polední menu</h3>
+            <p>Dnešní jídla a přehled na další dny.</p>
+          </a>
+          <a class="menu-card" href="#kontakt">
+            <span class="mono">Jídlo a nápoje</span>
+            <h3>Jídelní, nápojový a vinný lístek</h3>
+            <p>Kompletní výběr pro restauraci P.U.O.R. Slezska.</p>
+          </a>
+          <a class="menu-card" href="#kontakt">
+            <span class="mono">Speciály z Prazdroje</span>
+            <h3>Akční nabídka</h3>
+            <p>Sezonní pivní speciály a nabídky k návštěvě.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="side">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="bowling">
+      <div class="wrap reservation">
+        <article class="soft-panel story">
+          <h2>Rezervace stolu i bowlingu.</h2>
+          <p>Pro rezervaci uveďte jméno, kontakt, počet míst, datum, čas a zda chcete stůl, bowling, nebo obě možnosti. U rezervací kratších než 3 hodiny před začátkem je vhodnější zavolat.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774023599">Zavolat rezervaci</a>
+            <a class="btn btn-outline" href="mailto:slezska.restaurace@email.cz">Poslat e-mail</a>
+          </div>
+        </article>
+        <div class="steps">
+          <article class="step">
+            <b>01</b>
+            <div><h3>Vyberte návštěvu</h3><p>Stůl, bowling, nebo obě možnosti zároveň.</p></div>
+          </article>
+          <article class="step">
+            <b>02</b>
+            <div><h3>Doplňte čas</h3><p>Uveďte datum, čas od, čas do a počet míst.</p></div>
+          </article>
+          <article class="step">
+            <b>03</b>
+            <div><h3>Potvrďte telefonicky</h3><p>Pro blízký termín volejte přímo na +420 774 023 599.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="soft-panel contact-card">
+          <h2>Kde nás najdete</h2>
+          <p>Restaurace Slezska P.U.O.R. je na adrese 2, Kolejní 3254, 702 00 Moravská Ostrava a Přívoz.</p>
+          <div class="info-list">
+            <div class="info-item">
+              <span>Telefon</span>
+              <strong><a href="tel:+420774023599">+420 774 023 599</a></strong>
+            </div>
+            <div class="info-item">
+              <span>E-mail</span>
+              <strong><a href="mailto:slezska.restaurace@email.cz">slezska.restaurace@email.cz</a></strong>
+            </div>
+            <div class="info-item">
+              <span>Adresa</span>
+              <strong>2, Kolejní 3254, 702 00 Moravská Ostrava a Přívoz</strong>
+            </div>
+            <div class="info-item">
+              <span>Provoz</span>
+              <strong>Aktuální otevírací dobu ověřte telefonicky.</strong>
+            </div>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa restaurace Slezska P.U.O.R."></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta-strip">
+        <div>
+          <h2>Domluvte si stůl.</h2>
+          <p>Pro oběd, večer s přáteli nebo rezervaci bowlingu volejte přímo do restaurace.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420774023599">+420 774 023 599</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>© Slezska P.U.O.R.</span>
+      <span>Prezentační ukázka od Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/1c7rjuh">tento odkaz</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2839921, 49.8343901],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#200000' })
+      .setLngLat([18.2839921, 49.8343901])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
