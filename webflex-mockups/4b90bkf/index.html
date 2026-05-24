@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Kozlovna U Ježka | Ostrava-Hrabůvka</title>
+  <meta name="description" content="Restaurace Kozlovna U Ježka v Ostravě-Hrabůvce: poctivá česká kuchyně, tankové pivo, polední menu, online rezervace a originální atmosféra Kozlovny.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101113;
+      --panel: #17191c;
+      --panel-2: #202124;
+      --ink: #f7f3eb;
+      --muted: #b8afa4;
+      --line: rgba(247, 243, 235, .18);
+      --line-strong: rgba(247, 243, 235, .42);
+      --accent: #E0A060;
+      --accent-dark: #b7793d;
+      --black: #08090a;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(247,243,235,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(247,243,235,.026) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(224,160,96,.18), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .wrap { width: min(var(--max), calc(100% - 32px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(16,17,19,.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+    .logo img { max-height: 46px; width: auto; object-fit: contain; }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .nav-links a,
+    .small-link {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease);
+    }
+    .nav-links a:hover,
+    .small-link:hover { transform: translateY(-1px); border-color: var(--line-strong); background: rgba(255,255,255,.04); color: var(--ink); }
+    .nav-links a:active,
+    .small-link:active { transform: translateY(1px); }
+    .nav-action { justify-self: end; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 16px;
+      border: 1px solid currentColor;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .18s var(--ease), background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #111; }
+    .btn-primary:hover { background: #f0b779; border-color: #f0b779; }
+    .btn-outline { color: #fff; background: transparent; border-color: rgba(255,255,255,.45); }
+    .btn-outline:hover { background: rgba(255,255,255,.09); border-color: #fff; }
+
+    main { overflow: hidden; }
+    section { padding: 86px 0; }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 720px; font-size: clamp(40px, 6vw, 88px); }
+    h2 { font-size: clamp(34px, 4.8vw, 68px); }
+    h3 { font-size: clamp(21px, 2.4vw, 34px); }
+    p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 52px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 54px;
+    }
+    .hero-copy { display: grid; gap: 24px; }
+    .lead {
+      max-width: 650px;
+      font-size: clamp(18px, 1.8vw, 24px);
+      color: #d6cec4;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .hero-media {
+      position: relative;
+      min-width: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      box-shadow: 12px 12px 0 var(--black);
+    }
+    .hero-photo { aspect-ratio: 4 / 3; overflow: hidden; }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82) contrast(1.08); }
+    .plate {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      width: min(340px, calc(100% - 36px));
+      border: 1px solid var(--line-strong);
+      background: rgba(16,17,19,.88);
+      backdrop-filter: blur(14px);
+    }
+    .plate-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 52px;
+    }
+    .plate-row:last-child { border-bottom: 0; }
+    .plate-row span {
+      display: flex;
+      align-items: center;
+      padding: 13px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .plate-row span:first-child { color: var(--accent); border-right: 1px solid var(--line); font-weight: 700; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) minmax(280px, 420px);
+      align-items: end;
+      gap: 32px;
+      margin-bottom: 34px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(70px, 10vw, 142px);
+      line-height: .78;
+      color: rgba(247,243,235,.08);
+    }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .menu-board {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .board-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .board-tabs a {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: background .18s var(--ease), color .18s var(--ease), transform .18s var(--ease);
+    }
+    .board-tabs a:last-child { border-right: 0; }
+    .board-tabs a:hover { background: rgba(224,160,96,.12); color: var(--ink); transform: translateY(-1px); }
+    .board-tabs a:active { transform: translateY(1px); }
+    .food-rows { display: grid; }
+    .food-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(220px, .45fr);
+      gap: 24px;
+      align-items: center;
+      min-height: 126px;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .food-row:last-child { border-bottom: 0; }
+    .row-code { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .food-row p { max-width: 520px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .stat {
+      min-height: 178px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 6vw, 84px);
+      line-height: .9;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+    .stat span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-transform: uppercase; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 32px;
+      align-items: stretch;
+    }
+    .split-photo {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      min-height: 460px;
+      overflow: hidden;
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) contrast(1.05); }
+    .timeline {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      display: grid;
+      align-content: stretch;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 22px;
+      padding: 25px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 42px;
+      line-height: .9;
+      color: rgba(224,160,96,.9);
+    }
+    .step h3 { font-size: 24px; margin-bottom: 8px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+    }
+    .gallery figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery figure:first-child .gallery-img { aspect-ratio: 4 / 3; }
+    .gallery-img { aspect-ratio: 16 / 10; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82); }
+    figcaption {
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(0, 1.18fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card,
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+    }
+    .contact-card { padding: 26px; display: grid; gap: 22px; }
+    .contact-line {
+      display: grid;
+      gap: 7px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line span { font-family: var(--font-mono); font-size: 12px; color: var(--accent); text-transform: uppercase; }
+    .contact-line strong { font-size: 24px; overflow-wrap: anywhere; }
+    .hours-table { border-top: 1px solid var(--line); }
+    .hours-line {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      min-height: 48px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-line span {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hours-line span:first-child { border-right: 1px solid var(--line); color: var(--accent); font-weight: 700; }
+    .hours-line.today { background: rgba(224,160,96,.12); }
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel-2);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .qa {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 24px;
+      min-height: 178px;
+    }
+    .qa h3 { font-size: 24px; margin-bottom: 12px; }
+
+    .final {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: linear-gradient(90deg, rgba(224,160,96,.14), transparent), var(--panel);
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 26px;
+      align-items: center;
+    }
+    .final h2 { max-width: 760px; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    .site-footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .disclaimer {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #a89f96;
+    }
+    .disclaimer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-inner { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-media { max-width: 680px; }
+      .section-no { display: none; }
+      .food-row { grid-template-columns: 64px 1fr; }
+      .food-row p { grid-column: 2; }
+      .stats,
+      .faq,
+      .gallery { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .gallery figure:first-child { grid-row: auto; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(var(--max), calc(100% - 24px)); }
+      section { padding: 64px 0; }
+      .hero { padding: 42px 0; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-media { box-shadow: 7px 7px 0 var(--black); }
+      .board-tabs { grid-template-columns: 1fr 1fr; }
+      .food-row { grid-template-columns: 1fr; gap: 10px; padding: 22px; }
+      .food-row p { grid-column: auto; }
+      .step { grid-template-columns: 1fr; }
+      .plate { position: static; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Restaurace Kozlovna U Ježka">
+        <img src="https://www.kozlovnaujezka.cz/files/kozlovnaujezka/template/logo.png" alt="Restaurace Kozlovna U Ježka">
+      </a>
+      <div class="nav-links" aria-label="Sekce stránky">
+        <a href="#kuchyne">Kuchyně</a>
+        <a href="#pivo">Tankové pivo</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <div class="nav-action">
+        <a class="btn btn-primary" href="tel:+420770125307">+420 770 125 307</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="kicker">Ostrava-Hrabůvka · Klegova 771/19</div>
+          <h1>Kozlovna U Ježka</h1>
+          <p class="lead">Poctivá česká kuchyně, tankový Kozel 11 a originální prostředí Kozlovny pro oběd, večeři i večerní posezení.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Online rezervace</a>
+            <a class="btn btn-outline" href="#kuchyne">Zobrazit nabídku</a>
+          </div>
+          <div class="hero-meta">
+            <span>Polední menu 11:00-14:00</span>
+            <span>Hodnocení 4,5</span>
+            <span>1810 recenzí</span>
+          </div>
+        </div>
+        <div class="hero-media" aria-label="Atmosféra restaurace">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+          <div class="plate" aria-label="Provozní údaje">
+            <div class="plate-row"><span>Dnes</span><span>11:00 - 22:00</span></div>
+            <div class="plate-row"><span>Telefon</span><span>770 125 307</span></div>
+            <div class="plate-row"><span>Adresa</span><span>Klegova 771/19</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kuchyne">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Poctivá kuchyně</h2>
+          <p>České receptury našich předků, domácí postupy, čerstvé suroviny a vaření bez dochucovadel a umělých přísad.</p>
+        </div>
+        <div class="menu-board">
+          <div class="board-tabs" aria-label="Nabídka">
+            <a href="#kontakt">Denní nabídka</a>
+            <a href="#kontakt">Stálá nabídka</a>
+            <a href="#kontakt">Nápojový lístek</a>
+            <a href="#kontakt">Rezervace</a>
+          </div>
+          <div class="food-rows">
+            <article class="food-row">
+              <div class="row-code">K-01</div>
+              <h3>Polední menu</h3>
+              <p>Každý den mezi 11:00 a 14:00 pro rychlý oběd u stolu nebo domluvené posezení s kolegy.</p>
+            </article>
+            <article class="food-row">
+              <div class="row-code">K-02</div>
+              <h3>Stálá nabídka</h3>
+              <p>Klasická česká restaurace s otevřenou kuchyní, poctivým základem a profesionální obsluhou.</p>
+            </article>
+            <article class="food-row">
+              <div class="row-code">K-03</div>
+              <h3>Nápojový lístek</h3>
+              <p>Pivo z tanku, nápoje k obědu i večeru a servis, který drží rytmus celé restaurace.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pivo">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Tankový Kozel</h2>
+          <p>Velkopopovická jedenáctka čepovaná přímo z tanku proškolenými výčepními, s pěnou hustou jako smetana.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><span>Google hodnocení</span><strong>4,5</strong></div>
+          <div class="stat"><span>Počet recenzí</span><strong>1810</strong></div>
+          <div class="stat"><span>Polední menu</span><strong>11-14</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <div class="step-num">01</div>
+            <div>
+              <h3>Usadit</h3>
+              <p>Vyberete stůl, dorazíte na rezervaci nebo se zastavíte na oběd během dne.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-num">02</div>
+            <div>
+              <h3>Objednat</h3>
+              <p>Denní nabídka, stálý jídelní lístek a tankové pivo jsou připravené v jednom rytmu.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-num">03</div>
+            <div>
+              <h3>Zůstat</h3>
+              <p>Dřevo, kůže, kovové detaily, stoly s kopýtky a socha Kozla tvoří atmosféru každé Kozlovny.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>Uvnitř Kozlovny</h2>
+          <p>Teplé světlo, poctivý výčep a stoly připravené na oběd i delší večer.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <div class="gallery-img"><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></div>
+            <figcaption>Restaurace · večerní stůl</figcaption>
+          </figure>
+          <figure>
+            <div class="gallery-img"><img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting."></div>
+            <figcaption>Světlo · atmosféra</figcaption>
+          </figure>
+          <figure>
+            <div class="gallery-img"><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></div>
+            <figcaption>Stůl · sklo · detail</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Kontakt a provoz</h2>
+          <p>Restaurace sídlí na Klegově v Ostravě-Hrabůvce. Zavolejte, napište nebo rovnou dorazte podle aktuální otevírací doby.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <strong><a href="tel:+420770125307">+420 770 125 307</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <strong><a href="mailto:kozlovnaujezka@seznam.cz">kozlovnaujezka@seznam.cz</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>19 771 Klegova Hrabůvka, 700 30 Ostrava-jih</strong>
+            </div>
+            <div class="hours-table" aria-label="Otevírací doba">
+              <div class="hours-line"><span>Po</span><span>11:00 - 23:00</span></div>
+              <div class="hours-line"><span>Út</span><span>11:00 - 23:00</span></div>
+              <div class="hours-line"><span>St</span><span>11:00 - 23:00</span></div>
+              <div class="hours-line"><span>Čt</span><span>11:00 - 23:00</span></div>
+              <div class="hours-line"><span>Pá</span><span>11:00 - 01:00</span></div>
+              <div class="hours-line"><span>So</span><span>11:00 - 01:00</span></div>
+              <div class="hours-line today"><span>Ne</span><span>11:00 - 22:00</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Restaurace Kozlovna U Ježka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Než dorazíte</h2>
+          <p>Praktické odpovědi pro oběd, večer u piva i rezervaci stolu.</p>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Kdy je polední menu?</h3>
+            <p>Polední menu je uvedené pro čas 11:00-14:00.</p>
+          </article>
+          <article class="qa">
+            <h3>Jaké pivo čepujete?</h3>
+            <p>Velkopopovický Kozel 11 přímo z tanku.</p>
+          </article>
+          <article class="qa">
+            <h3>Kde restauraci najdu?</h3>
+            <p>Na adrese Klegova 771/19 v Ostravě-Hrabůvce.</p>
+          </article>
+          <article class="qa">
+            <h3>Jak udělat rezervaci?</h3>
+            <p>Rezervaci vyřídíte telefonicky na čísle +420 770 125 307.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <div class="kicker">Stůl, oběd, tankové pivo</div>
+          <h2>Zarezervujte si místo u Ježka.</h2>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420770125307">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:kozlovnaujezka@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>JKM gastro s.r.o. · Klegova 771/19 Ostrava-Hrabůvka · IČO 06110746</div>
+      <a class="small-link" href="#top">Nahoru</a>
+    </div>
+    <div class="wrap disclaimer">
+      Webflex připravil tuto dočasnou stránku pro Restaurace Kozlovna U Ježka. Pokud si ji nepřejete zobrazovat, smažete ji zde:
+      <a href="https://webflex.cz/delete/4b90bkf">https://webflex.cz/delete/4b90bkf</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2669542, 49.7879027],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#E0A060' })
+      .setLngLat([18.2669542, 49.7879027])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
