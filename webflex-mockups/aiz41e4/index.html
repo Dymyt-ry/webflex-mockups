@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pizzerie Opatija | Středomořská kuchyně v centru Ostravy</title>
+  <meta name="description" content="Pizzerie Opatija na Zámecké 13 v centru Ostravy. Italská a chorvatská kuchyně, denní menu, kamenná pec a pohodové posezení.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --paper-soft: #f4f3f0;
+      --ink: #171412;
+      --muted: #68625c;
+      --accent: #C06020;
+      --accent-dark: #8f4216;
+      --line: rgba(23, 20, 18, .08);
+      --shadow: 0 28px 90px rgba(35, 28, 22, .10);
+      --shadow-soft: 0 18px 60px rgba(35, 28, 22, .075);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.22, .61, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,20,18,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,20,18,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+      z-index: 10;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .84);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      letter-spacing: 0;
+      cursor: pointer;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .button.primary { color: #fff; background: var(--accent); box-shadow: 0 16px 36px rgba(192, 96, 32, .24); }
+    .button.primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .button.outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .button.outline:hover { background: rgba(192, 96, 32, .08); transform: translateY(-1px); }
+    .button:active, .gallery a:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .maplibregl-ctrl button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 56px;
+      padding: 70px 0 86px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .94;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      margin-top: 18px;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 26px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 21px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.42));
+    }
+    .hero-badge {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(260px, .8fr) minmax(280px, .7fr);
+      align-items: end;
+      gap: 56px;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4.8vw, 70px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+    .service-list {
+      border-radius: 30px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) minmax(220px, .55fr);
+      gap: 26px;
+      align-items: center;
+      padding: 30px;
+      border-top: 1px solid var(--line);
+    }
+    .service-row:first-child { border-top: 0; }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .service-row h3 { font-size: clamp(24px, 2.4vw, 38px); }
+    .service-row p { margin: 0; color: var(--muted); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 58px;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .timeline {
+      display: grid;
+      gap: 16px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 18px;
+      padding: 22px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .step h3 { font-size: 23px; line-height: 1.05; }
+    .step p { margin: 8px 0 0; color: var(--muted); }
+    .menu-callout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
+      gap: 18px;
+    }
+    .menu-panel {
+      min-height: 320px;
+      padding: 34px;
+      border-radius: 30px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .menu-panel.light {
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .menu-panel h2 { font-size: clamp(32px, 4.3vw, 64px); }
+    .menu-panel p { max-width: 520px; color: rgba(255,255,255,.72); font-size: 18px; }
+    .menu-panel.light p { color: var(--muted); }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 280px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .62fr) minmax(420px, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+    .hours { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .hours td {
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours td:last-child { text-align: right; color: var(--accent-dark); font-weight: 700; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+    .final {
+      margin: 56px auto 0;
+      padding: 44px;
+      border-radius: 34px;
+      color: #fff;
+      background: radial-gradient(circle at 18% 0%, rgba(192,96,32,.42), transparent 34%), var(--ink);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(32px, 4vw, 62px); }
+    .final p { margin: 14px 0 0; color: rgba(255,255,255,.72); }
+    .final .button.outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { color: var(--accent-dark); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .menu-callout, .contact-grid, .final {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2) { transform: none; }
+      .final { padding: 30px; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 60px 0; }
+      .hero-card, .split-photo, #map { border-radius: 20px; }
+      .stats { gap: 12px; }
+      .stat { min-height: 150px; }
+      .menu-panel, .contact-card { padding: 24px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Pizzerie Opatija">
+        <img src="https://pizzerieopatija.cz/wp-content/themes/opatija_V10/assets/img/main-logo.png" alt="Pizzerie Opatija">
+      </a>
+      <div class="nav-links">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#menu">Denní menu</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="button primary" href="tel:+420732848602">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Zámecká 13 · Moravská Ostrava</div>
+        <h1 id="hero-title">Pizzerie v srdci Ostravy</h1>
+        <p class="lead">Středomořská kuchyně, italské klasiky i chorvatské speciality připravované v kamenné peci kousek od Masarykova náměstí.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="tel:+420732848602">Rezervovat telefonicky</a>
+          <a class="button outline" href="#kontakt">Otevírací doba</a>
+        </div>
+      </div>
+      <div class="hero-card" aria-label="Atmosféra restaurace">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <div class="hero-badge">
+          <span>Kamenná pec</span>
+          <span>Itálie · Chorvatsko</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="jidlo" class="wrap" aria-labelledby="jidlo-title">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Jídelní lístek</div>
+          <h2 id="jidlo-title">Chuť Středozemního moře</h2>
+        </div>
+        <p>Nabídka stojí na pizze z kamenné pece, italské kuchyni a specialitách, které v Opatiji připomínají blízkost chorvatského pobřeží.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <div class="num">01</div>
+          <h3>Pizza z kamenné pece</h3>
+          <p>Poctivý základ, výrazná chuť a příprava v peci, která dává jídlům typickou vůni.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">02</div>
+          <h3>Italská kuchyně</h3>
+          <p>Středomořské chutě pro oběd, večeři i delší posezení v centru města.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">03</div>
+          <h3>Chorvatské speciality</h3>
+          <p>Mořské ryby, mušle, jehněčí maso a další jídla připravovaná s pečlivostí.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra a poloha">
+      <div class="stats">
+        <div class="stat">
+          <strong>4,5</strong>
+          <span>hodnocení hostů</span>
+        </div>
+        <div class="stat">
+          <strong>1215</strong>
+          <span>recenzí na Googlu</span>
+        </div>
+        <div class="stat">
+          <strong>13</strong>
+          <span>Zámecká, centrum Ostravy</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap split" aria-labelledby="pec-title">
+      <div class="split-photo">
+        <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+      </div>
+      <div>
+        <div class="kicker">Posezení v centru</div>
+        <h2 id="pec-title">Před kulturou i po práci</h2>
+        <p class="lead">Opatija je neformální a pohodová pizzerie poblíž Masarykova náměstí. Hodí se na obědovou pauzu, večeři s rodinou i posezení s přáteli.</p>
+        <div class="timeline" style="margin-top: 28px;">
+          <article class="step">
+            <div class="num">09:00</div>
+            <div><h3>Pracovní den</h3><p>Od pondělí do pátku se začíná už dopoledne.</p></div>
+          </article>
+          <article class="step">
+            <div class="num">22:30</div>
+            <div><h3>Večerní provoz</h3><p>Každý den můžete zůstat až do pozdního večera.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu" class="wrap" aria-labelledby="menu-title">
+      <div class="menu-callout">
+        <div class="menu-panel">
+          <div class="kicker">Každý pracovní den</div>
+          <h2 id="menu-title">Denní menu</h2>
+          <p>Kuchaři připravují oblíbené denní menu pro obědovou pauzu v centru Ostravy.</p>
+          <a class="button primary" href="tel:+420732848602">Zeptat se na dnešek</a>
+        </div>
+        <div class="menu-panel light">
+          <div class="kicker">Z nabídky</div>
+          <h2>Speciality</h2>
+          <p>Mořské ryby, mušle, jehněčí maso a další pochutiny ze Středozemního moře připravované v kamenné peci.</p>
+          <a class="button outline" href="mailto:goldpartner@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="atmosfera-title">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Atmosféra</div>
+          <h2 id="atmosfera-title">Teplé světlo, klidný stůl</h2>
+        </div>
+        <p>Fotografie drží teplý večerní tón, který sedí k večeři, vínu a delšímu posezení.</p>
+      </div>
+      <div class="gallery">
+        <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+        <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        <figure><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap" aria-labelledby="kontakt-title">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Kontakt</div>
+          <h2 id="kontakt-title">Najdete nás na Zámecké</h2>
+        </div>
+        <p>Pizzerie je v centru Moravské Ostravy a Přívozu, poblíž Masarykova náměstí a dobře dostupná autem i MHD.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h3 style="font-size: 28px; line-height: 1.05;">Pizzerie Opatija</h3>
+          <p>Zámecká 13<br>702 00 Moravská Ostrava a Přívoz</p>
+          <p><a href="tel:+420732848602">+420 732 848 602</a><br><a href="mailto:goldpartner@seznam.cz">goldpartner@seznam.cz</a></p>
+          <table class="hours" aria-label="Otevírací doba">
+            <tr><td>Pondělí - pátek</td><td>09:00 - 22:30</td></tr>
+            <tr><td>Sobota</td><td>10:30 - 22:30</td></tr>
+            <tr><td>Neděle</td><td>12:00 - 22:30</td></tr>
+          </table>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Pizzerie Opatija"></div>
+      </div>
+      <div class="final">
+        <div>
+          <h2>Máte chuť na Opatiju?</h2>
+          <p>Zavolejte a domluvte si stůl v centru Ostravy.</p>
+        </div>
+        <a class="button outline" href="tel:+420732848602">+420 732 848 602</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Pizzerie Opatija</div>
+      <div class="disclaimer">
+        Toto je nezávazná prezentační stránka vytvořená službou Webflex. Nejste-li správce podniku, můžete ji ignorovat. Odstranění stránky: <a href="https://webflex.cz/delete/aiz41e4">webflex.cz/delete/aiz41e4</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2903752, 49.8349663],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C06020' })
+      .setLngLat([18.2903752, 49.8349663])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
