@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurant Pod Pokličkou | Pardubice</title>
+  <meta name="description" content="Restaurant Pod Pokličkou v Pardubicích: poctivé obědy, burgery, catering, venkovní posezení a soukromé akce. Rezervace na telefonu +420 776 471 147.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.84);
+      --surface-strong: #ffffff;
+      --ink: #202020;
+      --muted: #66645f;
+      --soft: #efeee9;
+      --hairline: rgba(32, 32, 32, 0.08);
+      --accent: #A51A72;
+      --accent-dark: #801158;
+      --accent-soft: rgba(165, 26, 114, 0.1);
+      --shadow: 0 30px 80px rgba(32, 32, 32, 0.08);
+      --shadow-hover: 0 38px 96px rgba(32, 32, 32, 0.12);
+      --radius: 16px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(32,32,32,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,32,32,.018) 1px, transparent 1px),
+        radial-gradient(circle at 12% 8%, rgba(165,26,114,.09), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      text-rendering: geometricPrecision;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .page { overflow: hidden; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.78);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(32,32,32,.68);
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+    .navlinks a:focus-visible,
+    .btn:focus-visible,
+    .link-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(165,26,114,.18);
+    }
+    .btn-primary:hover { background: var(--accent-dark); box-shadow: 0 18px 36px rgba(165,26,114,.24); }
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(32,32,32,.05); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 72px 0 56px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: 52px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    .kicker::before {
+      content: "";
+      width: 32px;
+      height: 1px;
+      background: currentColor;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      color: var(--ink);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 650px;
+    }
+    .meta-box {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .meta-box strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      line-height: 1.1;
+      margin-bottom: 5px;
+    }
+    .meta-box span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 45px 110px rgba(32,32,32,.16);
+      background: var(--soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo-chip {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.84);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 20px 50px rgba(0,0,0,.16);
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .55fr);
+      gap: 40px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-size: clamp(34px, 4vw, 60px);
+      overflow-wrap: anywhere;
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+    .menu-board {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .board-card {
+      background: var(--surface-strong);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+      min-height: 100%;
+    }
+    .board-card.dark {
+      background: #202020;
+      color: #fff;
+    }
+    .board-card.dark h3,
+    .board-card.dark .price { color: #fff; }
+    .board-card.dark .row { border-color: rgba(255,255,255,.14); }
+    .board-card.dark p,
+    .board-card.dark .desc { color: rgba(255,255,255,.7); }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--hairline);
+      align-items: start;
+    }
+    .row:first-of-type { padding-top: 8px; }
+    .row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .row h3 {
+      font-family: var(--font-body);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+    .desc {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .price {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .feature {
+      min-height: 164px;
+      padding: 24px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+    }
+    .feature:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+    .feature b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    .feature h3 {
+      font-family: var(--font-body);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+    .feature p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 26px;
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .quote-panel {
+      background: var(--surface-strong);
+      border-radius: 28px;
+      padding: 38px;
+      box-shadow: var(--shadow);
+    }
+    .quote-panel h2 { font-size: clamp(32px, 4vw, 56px); }
+    .quote-panel p { color: var(--muted); font-size: 17px; margin: 18px 0 0; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .stat {
+      background: var(--accent-soft);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 24px;
+      color: var(--accent);
+    }
+    .stat span { color: var(--muted); font-size: 13px; font-weight: 700; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .gallery-main { aspect-ratio: 16 / 10; }
+    .gallery-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .gallery-stack img { aspect-ratio: 16 / 10; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--surface-strong);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+    }
+    .contact-card h2 { font-size: clamp(31px, 3.6vw, 54px); margin-bottom: 22px; }
+    .info-list {
+      display: grid;
+      gap: 14px;
+    }
+    .info-item {
+      display: grid;
+      gap: 3px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .info-item:last-child { border-bottom: 0; }
+    .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .value { font-weight: 800; }
+    .hours {
+      margin-top: 24px;
+      display: grid;
+      gap: 8px;
+    }
+    .hour-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: rgba(32,32,32,.035);
+    }
+    .hour-row.today {
+      background: var(--accent);
+      color: #fff;
+    }
+    #map {
+      height: 520px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .final {
+      padding: 86px 0 110px;
+    }
+    .cta-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      background: #202020;
+      color: #fff;
+      border-radius: 34px;
+      padding: clamp(28px, 5vw, 58px);
+      box-shadow: 0 40px 120px rgba(32,32,32,.18);
+    }
+    .cta-strip h2 {
+      color: #fff;
+      font-size: clamp(34px, 5vw, 70px);
+      overflow-wrap: anywhere;
+    }
+    .cta-strip p { margin: 14px 0 0; color: rgba(255,255,255,.72); max-width: 620px; }
+    .cta-strip .btn-outline {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .cta-strip .btn-outline:hover { background: rgba(255,255,255,.08); }
+    footer {
+      padding: 26px 0 34px;
+      color: rgba(32,32,32,.56);
+      font-size: 12px;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 880px;
+    }
+    .disclaimer a {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    @media (max-width: 960px) {
+      .navlinks { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid,
+      .menu-board,
+      .split,
+      .gallery,
+      .contact-grid,
+      .section-head,
+      .cta-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .features { grid-template-columns: repeat(2, 1fr); }
+      #map { height: 420px; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .nav { height: 68px; }
+      .logo img { max-height: 40px; }
+      section { padding: 62px 0; }
+      .hero { padding: 42px 0 38px; }
+      .hero-meta, .features, .stats { grid-template-columns: 1fr; }
+      .board-card, .quote-panel, .contact-card { padding: 22px; border-radius: 22px; }
+      .cta-strip { border-radius: 24px; }
+      .hero-actions { align-items: stretch; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <nav class="wrap nav" aria-label="Hlavní navigace">
+        <a class="logo" href="#top" aria-label="Restaurant Pod Pokličkou">
+          <img src="https://cdn.website.dish.co/media/dc/85/5122435/Restaurant-pod-Poklickou-Logo-podpoklickou-jpg.jpg" alt="Restaurant Pod Pokličkou">
+        </a>
+        <div class="navlinks">
+          <a href="#nabidka">Nabídka</a>
+          <a href="#sluzby">Služby</a>
+          <a href="#kontakt">Kontakt</a>
+        </div>
+        <a class="btn btn-primary" href="tel:+420776471147">Rezervovat</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div>
+            <div class="kicker">Pardubice · J. Palacha 471</div>
+            <h1>Pod Pokličkou</h1>
+            <p class="lead">Poctivá restaurace pro oběd, večerní posezení, burger, rodinnou oslavu i catering. Přijďte k nám nebo si jídlo vezměte s sebou.</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="tel:+420776471147">+420 776 471 147</a>
+              <a class="btn btn-outline" href="mailto:rezervace@restaurantpodpoklickou.cz">Napsat rezervaci</a>
+            </div>
+            <div class="hero-meta" aria-label="Rychlé informace">
+              <div class="meta-box"><strong>4.6</strong><span>hodnocení Google</span></div>
+              <div class="meta-box"><strong>345</strong><span>recenzí hostů</span></div>
+              <div class="meta-box"><strong>Pá–So</strong><span>otevřeno do 23:00</span></div>
+            </div>
+          </div>
+          <figure class="hero-photo">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+            <figcaption class="photo-chip">Rezervace · obědy · večery</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="nabidka">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Dnes na stole</h2>
+            <p>Výběr z aktuální nabídky: polévky, česká klasika, burgery, saláty i jídla na chuť. Ceny a gramáže vycházejí z jídel uvedených restaurací.</p>
+          </div>
+          <div class="menu-board">
+            <div class="board-card">
+              <div class="row">
+                <div>
+                  <h3>Silný masový vývar</h3>
+                  <p class="desc">S játrovými knedlíčky, zeleninou a nudlemi.</p>
+                </div>
+                <div class="price">0,3 l · 69 Kč</div>
+              </div>
+              <div class="row">
+                <div>
+                  <h3>Ukrajinský boršč</h3>
+                  <p class="desc">Se zakysanou smetanou a čerstvým koprem.</p>
+                </div>
+                <div class="price">0,3 l · 69 Kč</div>
+              </div>
+              <div class="row">
+                <div>
+                  <h3>Tataráček z vyzrálého hovězího</h3>
+                  <p class="desc">Na česnekové topince se šalotkou, kapary a kyselými okurkami.</p>
+                </div>
+                <div class="price">3 ks · 159 Kč</div>
+              </div>
+            </div>
+            <div class="board-card dark">
+              <div class="row">
+                <div>
+                  <h3>Vepřová panenka</h3>
+                  <p class="desc">Plněná sušenými švestkami a slaninou, máslové grenaile, bylinkový tvaroh a hořčicová omáčka.</p>
+                </div>
+                <div class="price">150 g · 229 Kč</div>
+              </div>
+              <div class="row">
+                <div>
+                  <h3>Bavorská vepřová žebírka</h3>
+                  <p class="desc">Hořčice, jablečný křen, kyselá okurka a Ličenský chléb.</p>
+                </div>
+                <div class="price">400 g · 199 Kč</div>
+              </div>
+              <div class="row">
+                <div>
+                  <h3>Kuřecí nebo vepřový řízek</h3>
+                  <p class="desc">Mačkané smetanové brambory a rajčatový salát s majonézou.</p>
+                </div>
+                <div class="price">150 g · 189 Kč</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sluzby">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>U nás vyřešíte víc</h2>
+            <p>Restaurace počítá s každodenním obědem, soukromou akcí i hosty, kteří se potřebují najíst bez dlouhého plánování.</p>
+          </div>
+          <div class="features">
+            <article class="feature">
+              <b>01</b>
+              <h3>Catering</h3>
+              <p>Jídlo pro firemní setkání, rodinné oslavy a domluvené akce.</p>
+            </article>
+            <article class="feature">
+              <b>02</b>
+              <h3>Venkovní posezení</h3>
+              <p>Místo pro klidný oběd nebo večerní zastavení, když počasí přeje.</p>
+            </article>
+            <article class="feature">
+              <b>03</b>
+              <h3>Soukromé akce</h3>
+              <p>Pro rodinu, přátele i menší oslavy se zázemím restaurace.</p>
+            </article>
+            <article class="feature">
+              <b>04</b>
+              <h3>Jídlo s sebou</h3>
+              <p>Objednávka na cestu, když chcete oběd nebo večeři mimo stůl restaurace.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap split">
+          <div class="split-photo">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="quote-panel">
+            <div class="kicker">Rezervace a posezení</div>
+            <h2>Oběd i páteční večer</h2>
+            <p>Od úterý do čtvrtka se soustředíme na denní provoz do 15:00. V pátek a sobotu můžete zůstat déle, až do 23:00.</p>
+            <div class="stats">
+              <div class="stat"><strong>10:30</strong><span>začátek provozu</span></div>
+              <div class="stat"><strong>23:00</strong><span>pátek a sobota</span></div>
+              <div class="stat"><strong>Wi‑Fi</strong><span>pro hosty zdarma</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Atmosféra restaurace</h2>
+            <p>Teplé světlo, prostřený stůl a barové zázemí pro oběd, večeři i domluvenou událost.</p>
+          </div>
+          <div class="gallery" aria-label="Fotogalerie atmosféry">
+            <img class="gallery-main" src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <div class="gallery-stack">
+              <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+              <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="kontakt">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Kde nás najdete</h2>
+            <p>Jana Palacha 471, Pardubice II. Pro rezervaci volejte nebo napište e-mail.</p>
+          </div>
+          <div class="contact-grid">
+            <div class="contact-card">
+              <h2>Kontakt</h2>
+              <div class="info-list">
+                <div class="info-item">
+                  <span class="label">Adresa</span>
+                  <span class="value">J. Palacha 471, 530 02 Pardubice II</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Telefon</span>
+                  <a class="value" href="tel:+420776471147">+420 776 471 147</a>
+                </div>
+                <div class="info-item">
+                  <span class="label">E-mail</span>
+                  <a class="value" href="mailto:rezervace@restaurantpodpoklickou.cz">rezervace@restaurantpodpoklickou.cz</a>
+                </div>
+              </div>
+              <div class="hours" aria-label="Otevírací doba">
+                <div class="hour-row"><span>Pondělí</span><span>zavřeno</span></div>
+                <div class="hour-row"><span>Úterý</span><span>10:30–15:00</span></div>
+                <div class="hour-row"><span>Středa</span><span>10:30–15:00</span></div>
+                <div class="hour-row"><span>Čtvrtek</span><span>10:30–15:00</span></div>
+                <div class="hour-row"><span>Pátek</span><span>10:30–23:00</span></div>
+                <div class="hour-row today"><span>Sobota</span><span>10:30–23:00</span></div>
+                <div class="hour-row"><span>Neděle</span><span>zavřeno</span></div>
+              </div>
+            </div>
+            <div id="map" aria-label="Mapa Restaurant Pod Pokličkou"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="final">
+        <div class="wrap">
+          <div class="cta-strip">
+            <div>
+              <h2>Rezervujte si stůl</h2>
+              <p>Stačí zavolat nebo poslat e-mail s datem, časem a počtem hostů. Ozveme se Vám zpět.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="tel:+420776471147">Zavolat</a>
+              <a class="btn btn-outline" href="mailto:rezervace@restaurantpodpoklickou.cz">Napsat</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap footer-line">
+        <div>© Restaurant Pod Pokličkou · Jana Palacha 471, Pardubice</div>
+        <div class="disclaimer">
+          Tento vizuální podklad připravil Webflex. Pokud si nepřejete tento materiál zobrazovat, smažete jej zde:
+          <a href="https://webflex.cz/delete/ee2nxd0">webflex.cz/delete/ee2nxd0</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7705625, 50.02688080000001],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A51A72' })
+      .setLngLat([15.7705625, 50.02688080000001])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
