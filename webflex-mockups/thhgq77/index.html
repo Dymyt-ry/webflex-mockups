@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Indická restaurace Tandoor Pardubice</title>
+  <meta name="description" content="Indická a nepálská restaurace Tandoor v Pardubicích. Buffet ve všední dny, rezervace stolu, rozvoz přes Foodora a Wolt.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f1ea;
+      --fg: #181818;
+      --muted: #6a5f58;
+      --line: rgba(24, 24, 24, .13);
+      --panel: #fffaf3;
+      --panel-2: #181818;
+      --accent: #A0009E;
+      --accent-dark: #760074;
+      --cream: #f7f1ea;
+      --white: #fffdf9;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Hanken Grotesk", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(24,24,24,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,24,24,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      z-index: 20;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(32px, 4.4vw, 64px);
+      line-height: .98;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+    p { color: var(--muted); }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.secondary { border-color: currentColor; color: var(--fg); background: transparent; }
+    .btn.secondary:hover { background: rgba(24,24,24,.06); }
+    .btn.light { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.light:hover { background: rgba(255,255,255,.12); }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      background: rgba(247,241,234,.86);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s4);
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: var(--s4);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #3a332e;
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+
+    .hero {
+      min-height: 100vh;
+      padding: 104px 0 var(--s7);
+      background: #181818;
+      color: #fff;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(420px, 1.14fr);
+      gap: var(--s6);
+      align-items: center;
+    }
+    .hero p { color: rgba(255,255,255,.78); font-size: 20px; max-width: 620px; }
+    .hero .eyebrow { color: #e5cfe5; }
+    .hero-copy { display: grid; gap: var(--s4); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); padding-top: var(--s3); }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 0 0 0 48px;
+      box-shadow: 0 40px 90px rgba(0,0,0,.42);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(1.06); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(24,24,24,.42), transparent 62%);
+    }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin-top: var(--s5);
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .hero-meta div { padding: var(--s3); background: rgba(24,24,24,.74); }
+    .hero-meta strong { display: block; font-family: var(--font-mono); font-size: 18px; color: #fff; }
+    .hero-meta span { font-size: 13px; color: rgba(255,255,255,.66); }
+
+    section { padding: var(--s7) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .78fr 1fr;
+      gap: var(--s6);
+      align-items: end;
+      margin-bottom: var(--s5);
+    }
+    .section-head p { font-size: 19px; max-width: 680px; }
+
+    .menu-rows {
+      border-top: 1px solid var(--line);
+      display: grid;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 220px 1fr minmax(150px, auto);
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .menu-row .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .menu-row .price {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      color: var(--fg);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .buffet {
+      background: var(--panel-2);
+      color: #fff;
+    }
+    .buffet p { color: rgba(255,255,255,.72); }
+    .buffet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.06fr;
+      gap: var(--s6);
+      align-items: center;
+    }
+    .buffet-card {
+      background: #fffdf9;
+      color: var(--fg);
+      border-radius: 8px;
+      padding: var(--s5);
+      display: grid;
+      gap: var(--s4);
+    }
+    .buffet-card p { color: var(--muted); }
+    .buffet-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--s2) var(--s4);
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    .buffet-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(24,24,24,.12);
+      font-weight: 600;
+    }
+    .price-mark {
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 7vw, 86px);
+      line-height: .9;
+      color: var(--accent);
+    }
+
+    .experience {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, .78fr);
+      gap: var(--s6);
+      align-items: stretch;
+    }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s3);
+    }
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #241b17;
+    }
+    .gallery-strip figure:first-child { grid-row: span 2; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+    .story-panel {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: var(--s5) 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: var(--s4);
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 168px;
+      padding: var(--s4);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.34);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat span { color: var(--muted); }
+
+    .order {
+      background: #fffdf9;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .order-grid {
+      display: grid;
+      grid-template-columns: .85fr 1fr;
+      gap: var(--s6);
+      align-items: center;
+    }
+    .steps {
+      counter-reset: step;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: var(--s4);
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: var(--s5);
+      align-items: stretch;
+    }
+    .contact-card {
+      background: #181818;
+      color: #fff;
+      border-radius: 8px;
+      padding: var(--s5);
+      display: grid;
+      gap: var(--s4);
+      align-content: start;
+    }
+    .contact-card p { color: rgba(255,255,255,.72); }
+    .contact-lines {
+      display: grid;
+      gap: var(--s3);
+      padding-top: var(--s3);
+      border-top: 1px solid rgba(255,255,255,.16);
+    }
+    .contact-lines a, .contact-lines span {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: #fff;
+      overflow-wrap: anywhere;
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #eee;
+    }
+
+    .final {
+      padding: var(--s8) 0;
+      background: #181818;
+      color: #fff;
+      text-align: center;
+    }
+    .final .wrap {
+      display: grid;
+      justify-items: center;
+      gap: var(--s4);
+    }
+    .final p { color: rgba(255,255,255,.72); max-width: 650px; font-size: 19px; }
+
+    footer {
+      background: #0f0f0f;
+      color: rgba(255,255,255,.62);
+      padding: var(--s5) 0;
+      font-size: 13px;
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s4);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks a:not(.btn) { display: none; }
+      .hero { min-height: auto; padding-top: 112px; }
+      .hero-grid, .section-head, .buffet-grid, .experience, .order-grid, .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; border-radius: 8px; }
+      .hero-meta, .trust { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: var(--s2); }
+      .menu-row .price { text-align: left; }
+    }
+    @media (max-width: 620px) {
+      body { font-size: 16px; }
+      section { padding: var(--s6) 0; }
+      .wrap { width: min(100% - 24px, 1180px); }
+      .nav { min-height: 64px; }
+      .logo img { max-height: 38px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .buffet-list, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:first-child { grid-row: auto; }
+      .contact-card { padding: var(--s4); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Indická restaurace Tandoor">
+        <img src="https://indickanepalskapardubice.cz/wp-content/uploads/2026/02/LOGO-TANDOOR-1-1.png" alt="Indická restaurace Tandoor">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#buffet">Buffet</a>
+        <a href="#rozvoz">Rozvoz</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420775287231">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Pardubice · Wernerovo nábř. 115</span>
+          <h1 id="hero-title">Taste of Himalayas</h1>
+          <p>Indická a nepálská kuchyně s vůní tandooru, koření a pohostinnosti Atithi Devo Bhava přímo v centru Pardubic.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#menu">Zobrazit menu</a>
+            <a class="btn light" href="tel:+420775287231">Rezervovat stůl</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div><strong>4.5</strong><span>hodnocení hostů</span></div>
+            <div><strong>833</strong><span>recenzí</span></div>
+            <div><strong>11:00</strong><span>začátek buffet menu</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kuchyně</span>
+            <h2>Indie a Nepál na jednom stole</h2>
+          </div>
+          <p>Jídla vycházejí z tradic indických tandoorů i aromatických nepálských kuchyní. Každý chod staví na koření, čisté chuti a pečlivé přípravě.</p>
+        </div>
+        <div class="menu-rows" aria-label="Nabídka restaurace">
+          <article class="menu-row">
+            <span class="tag">Tandoor</span>
+            <div>
+              <h3>Autentické indické speciality</h3>
+              <p>Výrazné koření, vůně pece a jídla připravená pro společný stůl.</p>
+            </div>
+            <span class="price">Menu</span>
+          </article>
+          <article class="menu-row">
+            <span class="tag">Nepál</span>
+            <div>
+              <h3>Himalájské chutě</h3>
+              <p>Kuchyně inspirovaná horskou pohostinností, bylinkami a sytými omáčkami.</p>
+            </div>
+            <span class="price">Denně</span>
+          </article>
+          <article class="menu-row">
+            <span class="tag">Domů</span>
+            <div>
+              <h3>Oblíbená jídla na rozvoz</h3>
+              <p>Objednávky přes Foodora a Wolt, když chcete Tandoor u sebe doma.</p>
+            </div>
+            <span class="price">Online</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="buffet" class="buffet">
+      <div class="wrap buffet-grid">
+        <div>
+          <span class="eyebrow">Pouze všední dny</span>
+          <h2>Buffet menu</h2>
+          <p style="margin-top:24px;">All you can eat od pondělí do pátku mezi 11:00 a 14:30. Ochutnáte polévku, starter, chutney, nudle, masové i vegetariánské varianty, rýži, naan a dezert.</p>
+        </div>
+        <div class="buffet-card">
+          <div>
+            <div class="price-mark">161 Kč</div>
+            <p>All you can eat · Monday-Friday · 11:00-14:30</p>
+          </div>
+          <ul class="buffet-list">
+            <li>Polévka</li>
+            <li>Onion Pakora</li>
+            <li>Tři chutney</li>
+            <li>Nudle</li>
+            <li>Dvě masová jídla</li>
+            <li>Dvě veg / vegan jídla</li>
+            <li>Rýže</li>
+            <li>Naan</li>
+            <li>Dezert</li>
+          </ul>
+          <a class="btn primary" href="#kontakt">Rezervovat oběd</a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="atmosfera-title">
+      <div class="wrap experience">
+        <div class="gallery-strip" aria-label="Atmosféra restaurace">
+          <figure><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></figure>
+          <figure><img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+        <div class="story-panel">
+          <span class="eyebrow">Pohostinnost</span>
+          <h2 id="atmosfera-title">Host je u nás vzácný</h2>
+          <p>Princip Atithi Devo Bhava je v Tandooru víc než fráze. Znamená pozorný servis, poctivou porci a kuchyni, která vypráví příběh Indie a Nepálu bez zkratek.</p>
+          <a class="btn secondary" href="mailto:info@indickanepalskapardubice.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Důvěra hostů</span>
+            <h2 id="duvera-title">Ověřené místo pro oběd i večeři</h2>
+          </div>
+          <p>Hosté oceňují autentické chutě, možnost buffet menu a snadné objednání domů přes rozvozové platformy.</p>
+        </div>
+        <div class="trust">
+          <div class="stat"><strong>4.5</strong><span>hodnocení podle veřejného profilu</span></div>
+          <div class="stat"><strong>833</strong><span>recenzí od hostů</span></div>
+          <div class="stat"><strong>2</strong><span>rozvozové platformy: Foodora a Wolt</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="rozvoz" class="order">
+      <div class="wrap order-grid">
+        <div>
+          <span class="eyebrow">Objednávka domů</span>
+          <h2>Vaše oblíbené jídlo doma</h2>
+          <p style="margin-top:24px;">Když se Vám nechce do restaurace, objednáte si přes Foodora nebo Wolt. Hodí se na rychlý oběd, večeři po práci i klidný večer doma.</p>
+        </div>
+        <div class="steps" aria-label="Jak objednat">
+          <div class="step">
+            <div>
+              <h3>Vyberte si platformu</h3>
+              <p>Foodora nebo Wolt podle toho, co běžně používáte.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div>
+              <h3>Zvolte indické nebo nepálské jídlo</h3>
+              <p>Od sytých hlavních chodů po lehčí svačinu.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div>
+              <h3>Nechte si doručit Tandoor</h3>
+              <p>Objednávka dorazí přímo k Vám domů nebo do práce.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2 id="kontakt-title">Stůl v Tandooru</h2>
+          <p>Najdete nás na Wernerově nábřeží v Pardubicích. Pro rezervaci volejte nebo napište e-mail.</p>
+          <div class="contact-lines">
+            <a href="tel:+420775287231">+420 775 287 231</a>
+            <a href="mailto:info@indickanepalskapardubice.cz">info@indickanepalskapardubice.cz</a>
+            <span>Wernerovo nábř. 115, 530 02 Pardubice I</span>
+          </div>
+          <a class="btn primary" href="tel:+420775287231">Rezervovat telefonicky</a>
+        </div>
+        <div id="map" aria-label="Mapa restaurace Tandoor"></div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap">
+        <span class="eyebrow">Tandoor Pardubice</span>
+        <h2 id="final-title">Přijďte na chuť Himalájí</h2>
+        <p>Rezervujte si stůl, zastavte se na buffet menu ve všední den nebo si objednejte domů přes Foodora a Wolt.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420775287231">Zavolat</a>
+          <a class="btn light" href="mailto:info@indickanepalskapardubice.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Neoficiální prezentační stránka vytvořená studiem Webflex pro Indická restaurace Tandoor.</span>
+      <a href="https://webflex.cz/remove/thhgq77" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7791161, 50.0394719],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#A0009E' })
+      .setLngLat([15.7791161, 50.0394719])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
