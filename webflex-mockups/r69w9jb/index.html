@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>MB restaurace | Ostrava</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --paper-soft: #f1f3f5;
+      --ink: #111827;
+      --muted: #6b7280;
+      --quiet: #dbe1e7;
+      --accent: #204060;
+      --accent-2: #908a47;
+      --shadow: 0 30px 90px rgba(17, 24, 39, 0.08);
+      --shadow-soft: 0 20px 70px rgba(32, 64, 96, 0.09);
+      --font-display: 'Archivo Black', 'Inter Tight', system-ui, sans-serif;
+      --font-body: 'Inter Tight', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 140px);
+      --radius: 28px;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(17, 24, 39, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 24, 39, 0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; hyphens: auto; }
+    .container { width: min(100% - 2 * var(--gutter), 1240px); margin-inline: auto; }
+    .wide { width: min(100% - 2 * var(--gutter), 1400px); margin-inline: auto; }
+
+    .skip {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      transform: translateY(-140%);
+      background: var(--ink);
+      color: white;
+      padding: 10px 14px;
+      z-index: 99;
+      transition: transform 180ms var(--ease);
+    }
+    .skip:focus { transform: translateY(0); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 250, 0.78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { height: 44px; width: auto; max-width: 190px; object-fit: contain; }
+    .links { display: flex; align-items: center; gap: clamp(18px, 3vw, 34px); color: var(--muted); font-size: 15px; font-weight: 600; }
+    .links a { transition: color 180ms var(--ease); }
+    .links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 19px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 16px 36px rgba(32, 64, 96, 0.2); }
+    .btn.primary:hover { background: #18334e; box-shadow: 0 20px 48px rgba(32, 64, 96, 0.28); }
+    .btn.outline { color: var(--ink); border-color: currentColor; background: rgba(255,255,255,0.45); }
+    .btn.outline:hover { background: #fff; }
+
+    .hero {
+      padding: clamp(46px, 7vw, 92px) 0 var(--section);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(40%, 1fr);
+      gap: clamp(34px, 6vw, 84px);
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      color: var(--accent);
+      font: 600 12px/1 var(--font-mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .eyebrow::before { content: ""; width: 32px; height: 1px; background: currentColor; }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 610px;
+      margin-top: 28px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #465161;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .microline { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font: 500 13px/1.2 var(--font-mono); }
+    .microline span { padding: 8px 11px; border-radius: 999px; background: rgba(255,255,255,0.72); box-shadow: 0 14px 42px rgba(17,24,39,0.05); }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--paper-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.92) contrast(1.02); }
+    .float-card {
+      position: absolute;
+      right: clamp(14px, 3vw, 34px);
+      bottom: clamp(14px, 3vw, 34px);
+      width: min(280px, calc(100% - 28px));
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.86);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 70px rgba(17,24,39,0.14);
+    }
+    .float-card strong { display: block; font-family: var(--font-mono); font-size: 28px; color: var(--accent); }
+    .float-card span { color: var(--muted); font-weight: 600; }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: 42px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      display: grid;
+      background: rgba(255,255,255,0.76);
+      box-shadow: var(--shadow-soft);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 72px 1fr minmax(170px, 0.3fr);
+      gap: 24px;
+      align-items: center;
+      padding: clamp(22px, 3vw, 34px);
+      border-bottom: 1px solid rgba(17,24,39,0.07);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num { color: var(--accent); font: 600 13px/1 var(--font-mono); }
+    .service-row h3 { font-size: clamp(23px, 2.6vw, 36px); line-height: 1.05; }
+    .service-row p { color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 170px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { font: 600 clamp(34px, 5vw, 64px)/1 var(--font-mono); color: var(--accent); letter-spacing: -0.04em; }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(40%, 1fr);
+      gap: clamp(28px, 5vw, 70px);
+      align-items: center;
+    }
+    .soft-panel {
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 34px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .timeline { display: grid; gap: 22px; margin-top: 34px; }
+    .step { display: grid; grid-template-columns: 42px 1fr; gap: 18px; }
+    .step b {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--paper-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+    }
+    .step p { color: var(--muted); }
+    .split-photo { aspect-ratio: 16 / 10; border-radius: 34px; overflow: hidden; box-shadow: var(--shadow); }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 0.9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--paper-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-card {
+      padding: 30px;
+      min-height: 240px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .menu-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .menu-card small { color: var(--accent); font: 600 12px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+    .menu-card h3 { font-size: 30px; margin-top: 18px; }
+    .menu-card p { color: var(--muted); margin-top: 12px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.55fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(28px, 4vw, 42px);
+      border-radius: 30px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 30px 80px rgba(32,64,96,0.24);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 34px;
+    }
+    .contact-card p { color: rgba(255,255,255,0.78); }
+    .contact-card a { font-weight: 800; }
+    .contact-lines { display: grid; gap: 16px; }
+    .contact-line span { display: block; color: rgba(255,255,255,0.68); font: 500 12px/1.2 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    #map { height: 420px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); background: var(--paper-soft); }
+
+    .final {
+      padding-bottom: 60px;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 26px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 36px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { font-size: clamp(32px, 4.6vw, 64px); }
+
+    footer {
+      padding: 34px var(--gutter);
+      color: var(--muted);
+      font-size: 13px;
+      background: #f0f2f4;
+    }
+    footer .foot { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    footer a { color: var(--accent); font-weight: 700; }
+
+    @media (max-width: 900px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .menu-grid, .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .cta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#obsah" class="skip">Přejít k obsahu</a>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="MB restaurace">
+        <img src="https://mbrestaurace.cz/wp-content/uploads/2025/01/logomb2-300x129-1.png.webp" alt="MB restaurace">
+      </a>
+      <div class="links">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420606686273">606 686 273</a>
+    </nav>
+  </header>
+
+  <main id="obsah">
+    <section class="hero" id="top">
+      <div class="hero-grid wide">
+        <div>
+          <div class="eyebrow">Ostrava, Mariánské Hory</div>
+          <h1>Místo, kde jídlo chutná</h1>
+          <p class="lead">Zastavte se na steaky z českého masa, pizzu z pece, těstoviny, snídaně nebo rychlý pracovní oběd v samoobslužné jídelně.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420606686273">Rezervovat telefonicky</a>
+            <a class="btn outline" href="#kontakt">Najít restauraci</a>
+          </div>
+          <div class="microline">
+            <span>Baarova 2113/14</span>
+            <span>Parkování u restaurace</span>
+            <span>Bezbariérový přístup</span>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="float-card">
+            <strong>4,3</strong>
+            <span>hodnocení od 1608 hostů</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jidlo">
+      <div class="container">
+        <div class="section-head">
+          <h2>Od snídaně po večerní stůl</h2>
+          <p>Každý den připravujeme čerstvé jídlo pro rychlý oběd, klidnou večeři i setkání s rodinou nebo přáteli.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Steaky z českého masa</h3>
+            <p>Šťavnaté maso, přílohy a pohodové posezení v restauraci.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Pizza z pece</h3>
+            <p>Pravá italská pizza pečená každý den v naší peci.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Denní menu a jídelna</h3>
+            <p>Polévky, hlavní jídla, saláty i dezerty pro pracovní den bez dlouhého čekání.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container stats" aria-label="Důležité informace">
+        <div class="stat"><strong>4,3</strong><span>Google hodnocení</span></div>
+        <div class="stat"><strong>1608</strong><span>recenzí hostů</span></div>
+        <div class="stat"><strong>3</strong><span>nabídky: menu, lístek, snídaně</span></div>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="container split">
+        <div class="soft-panel">
+          <div class="eyebrow">Oslavy a setkání</div>
+          <h2>Prostory pro váš stůl</h2>
+          <p class="lead">Plánujete narozeniny, firemní večírek nebo rodinné setkání? O víkendu připravíme pronájem prostor a menu na míru.</p>
+          <div class="timeline">
+            <div class="step"><b>1</b><p>Zavoláte nám a řeknete termín, počet hostů a představu o jídle.</p></div>
+            <div class="step"><b>2</b><p>Domluvíme uspořádání prostoru, průběh a nabídku pro hosty.</p></div>
+            <div class="step"><b>3</b><p>V den akce se postaráme o příjemné prostředí i každé sousto.</p></div>
+          </div>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>Vyberete si podle dne</h2>
+          <p>Na rychlý oběd, snídani i večer u stolu. Nabídka stojí na známých chutích, čerstvých surovinách a pohodlné dostupnosti.</p>
+        </div>
+        <div class="menu-grid">
+          <a class="menu-card" href="#kontakt">
+            <div><small>Každý den</small><h3>Denní menu</h3><p>Čerstvé polévky a hlavní jídla pro pracovní oběd.</p></div>
+            <span class="num">Volat pro aktuální nabídku</span>
+          </a>
+          <a class="menu-card" href="#kontakt">
+            <div><small>Stálá nabídka</small><h3>Jídelní lístek</h3><p>Maso, těstoviny, pizza, nápoje a oblíbené pokrmy.</p></div>
+            <span class="num">Restaurace a zahrádka</span>
+          </a>
+          <a class="menu-card" href="#kontakt">
+            <div><small>Ráno</small><h3>Snídaně</h3><p>Začněte den u stolu bez spěchu a s dobrou kávou.</p></div>
+            <span class="num">Ostrava-Mariánské Hory</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>Atmosféra MB restaurace</h2>
+          <p>Uvnitř restaurace, v jídelně i venku na zahrádce najdete místo pro rychlý denní režim i klidnější posezení.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Snadno k nám trefíte</h2>
+          <p>Restaurace je dostupná autem, s parkováním u restaurace a bezbariérovým přístupem.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div>
+              <div class="eyebrow" style="color:#fff">Kontakt</div>
+              <h2>Baarova 2113/14</h2>
+              <p>709 00 Ostrava-Mariánské Hory a Hulváky</p>
+            </div>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420606686273">+420 606 686 273</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:info@mbrestaurace.cz">info@mbrestaurace.cz</a></div>
+              <div class="contact-line"><span>Web</span><a href="https://mbrestaurace.cz/">mbrestaurace.cz</a></div>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou MB restaurace"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container cta">
+        <div>
+          <div class="eyebrow">Rezervace a dotazy</div>
+          <h2>Zavolejte před návštěvou</h2>
+        </div>
+        <a class="btn primary" href="tel:+420606686273">606 686 273</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot">
+      <span>Prezentační stránka vytvořená službou Webflex pro MB restaurace.</span>
+      <a href="https://webflex.cz/smazat/r69w9jb" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2604374, 49.831779499999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204060' })
+      .setLngLat([18.2604374, 49.831779499999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
