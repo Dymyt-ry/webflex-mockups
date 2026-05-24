@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pasta & Fidli Restaurant | OC Futurum Ostrava</title>
+  <meta name="description" content="Pasta & Fidli Restaurant v OC Futurum Ostrava. Snídaně, denní menu, pizza, dezerty vlastní výroby, take away a terasa.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f1e8;
+      --paper: #fffaf1;
+      --paper-strong: #ffffff;
+      --ink: #21170f;
+      --muted: #715f50;
+      --line: rgba(96, 64, 32, 0.14);
+      --accent: #F44336;
+      --brown: #604020;
+      --shadow: 0 28px 90px rgba(66, 42, 22, 0.09);
+      --shadow-soft: 0 18px 70px rgba(96, 64, 32, 0.08);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(96, 64, 32, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96, 64, 32, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(247, 241, 232, 0.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-height: 76px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn,
+    .icon-link,
+    .nav-links a,
+    .menu-link,
+    .map-card a {
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 15px 35px rgba(244, 67, 54, .22);
+    }
+
+    .btn-secondary {
+      border-color: currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+
+    .btn:hover,
+    .nav-links a:hover,
+    .menu-link:hover,
+    .map-card a:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 18px 40px rgba(244, 67, 54, .28);
+      background: #e7352a;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(96, 64, 32, .06);
+    }
+
+    .btn:active,
+    .nav-links a:active,
+    .menu-link:active,
+    .map-card a:active {
+      transform: translateY(1px);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 68px 0 72px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin: 0 0 18px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .94;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    h2 {
+      font-size: clamp(34px, 4vw, 62px);
+    }
+
+    h3 {
+      font-size: clamp(22px, 2vw, 30px);
+      line-height: 1.03;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      hyphens: auto;
+    }
+
+    .lead {
+      max-width: 610px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 23px);
+      color: #4e3d30;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--brown);
+    }
+
+    .pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .58);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper);
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(33, 23, 15, 0), rgba(33, 23, 15, .18));
+      pointer-events: none;
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .floating-card {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      width: min(310px, calc(100% - 44px));
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 250, 241, .88);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 80px rgba(33, 23, 15, .16);
+    }
+
+    .floating-card strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.15;
+    }
+
+    .floating-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    section {
+      padding: 88px 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .58fr);
+      gap: 52px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .section-head p {
+      font-size: 19px;
+    }
+
+    .services {
+      display: grid;
+      gap: 10px;
+      border-radius: 30px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .46);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) 180px;
+      gap: 28px;
+      align-items: center;
+      min-height: 112px;
+      padding: 22px 24px;
+      border-radius: 22px;
+      background: rgba(255, 250, 241, .82);
+    }
+
+    .service-row .time {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .service-row p {
+      font-size: 16px;
+    }
+
+    .menu-link {
+      justify-self: end;
+      font-weight: 800;
+      color: var(--brown);
+    }
+
+    .stats-band {
+      display: grid;
+      grid-template-columns: .7fr 1fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .stat-card,
+    .story-card,
+    .contact-panel,
+    .hours-card,
+    .photo-tile,
+    .cta-strip {
+      border-radius: 30px;
+      background: rgba(255, 250, 241, .74);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat-card {
+      padding: 34px;
+      display: grid;
+      align-content: center;
+      min-height: 330px;
+    }
+
+    .rating {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(64px, 8vw, 116px);
+      font-weight: 700;
+      line-height: .9;
+      letter-spacing: 0;
+    }
+
+    .stat-card p {
+      margin-top: 16px;
+      font-size: 19px;
+    }
+
+    .story-card {
+      padding: 34px;
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(240px, .7fr);
+      gap: 30px;
+      align-items: center;
+      min-height: 330px;
+    }
+
+    .story-card img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 24px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 24px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .feature-list strong {
+      color: var(--ink);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .photo-tile {
+      overflow: hidden;
+      min-height: 260px;
+    }
+
+    .photo-tile.large {
+      grid-row: span 2;
+      min-height: 536px;
+    }
+
+    .photo-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 420ms var(--ease);
+    }
+
+    .photo-tile:hover img {
+      transform: scale(1.035);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .contact-panel,
+    .hours-card {
+      padding: 32px;
+    }
+
+    .contact-panel {
+      display: grid;
+      gap: 22px;
+    }
+
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .contact-line a,
+    .contact-line strong {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .hours {
+      display: grid;
+      gap: 9px;
+      margin-top: 22px;
+    }
+
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hours .today {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .maplibregl-ctrl-group {
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .cta-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 42px;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .cta-strip h2,
+    .cta-strip p {
+      color: #fff;
+    }
+
+    .cta-strip p {
+      margin-top: 12px;
+      opacity: .76;
+    }
+
+    footer {
+      padding: 34px 0 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+
+    .footer-grid a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 980px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero-grid,
+      .section-head,
+      .stats-band,
+      .story-card,
+      .contact-grid,
+      .cta-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-grid {
+        gap: 34px;
+      }
+
+      .gallery {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .photo-tile.large {
+        grid-row: auto;
+        grid-column: span 2;
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .nav {
+        min-height: 68px;
+      }
+
+      .brand img {
+        max-height: 36px;
+      }
+
+      .nav-actions .btn-secondary {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 42px 0 54px;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-photo {
+        border-radius: 24px;
+      }
+
+      section {
+        padding: 62px 0;
+      }
+
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .menu-link {
+        justify-self: start;
+      }
+
+      .gallery {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 6px;
+      }
+
+      .photo-tile,
+      .photo-tile.large {
+        flex: 0 0 82%;
+        min-height: 310px;
+        scroll-snap-align: start;
+      }
+
+      .contact-panel,
+      .hours-card,
+      .cta-strip,
+      .stat-card,
+      .story-card {
+        border-radius: 24px;
+        padding: 24px;
+      }
+
+      #map {
+        border-radius: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="Pasta & Fidli Restaurant">
+        <img src="https://www.pastaafidli.cz/base/files/images/21570/logo.png?ver=10" alt="Pasta & Fidli Restaurant">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-secondary" href="mailto:info@pastaafidli.cz">E-mail</a>
+        <a class="btn btn-primary" href="tel:+420593033037">Zavolat</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">OC Futurum Ostrava</p>
+          <h1>Itálie uprostřed Futurum</h1>
+          <p class="lead">Snídaně, denní menu, pizza, domácí dezerty a klidné posezení mezi uměleckými díly. Zastavte se na jídlo před nákupy, po práci nebo jen tak.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420593033037">Rezervace a take away</a>
+            <a class="btn btn-secondary" href="#menu">Dnešní nabídka</a>
+          </div>
+          <div class="hero-note" aria-label="Rychlé informace">
+            <span class="pill">Snídaně Po-So 08:00-10:30</span>
+            <span class="pill">Denní menu 11:00-15:00</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Interiér restaurace">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          <figcaption class="floating-card">
+            <strong>Originální interiér, čerstvé suroviny</strong>
+            <span>Tradiční receptury, dezerty vlastní výroby a možnost zakoupit vystavená umělecká díla.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Jídlo během dne</p>
+            <h2>Od snídaně po večeři</h2>
+          </div>
+          <p>Vyberte si z nabídky restaurace, denního menu a pizzy. Jídlo Vám připravíme také k vyzvednutí po telefonu.</p>
+        </div>
+        <div class="services">
+          <article class="service-row">
+            <div class="time">08:00-10:30</div>
+            <div>
+              <h3>Snídaně</h3>
+              <p>Od pondělí do soboty začíná den u dobrého jídla a šálku kávy.</p>
+            </div>
+            <a class="menu-link" href="tel:+420593033037">Zavolat</a>
+          </article>
+          <article class="service-row">
+            <div class="time">11:00-15:00</div>
+            <div>
+              <h3>Denní menu</h3>
+              <p>Až 10 druhů denního menu, celotýdenní nabídka a pizza za zvýhodněnou cenu.</p>
+            </div>
+            <a class="menu-link" href="#kontakt">Kudy k nám</a>
+          </article>
+          <article class="service-row">
+            <div class="time">TAKE AWAY</div>
+            <div>
+              <h3>Jídlo s sebou</h3>
+              <p>Nemáte čas na návštěvu restaurace? Vybrané pokrmy připravíme k osobnímu vyzvednutí.</p>
+            </div>
+            <a class="menu-link" href="tel:+420593033037">+420 593 033 037</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvody návštěvy">
+      <div class="shell stats-band">
+        <article class="stat-card">
+          <p class="eyebrow">Hodnocení hostů</p>
+          <div class="rating">4.4</div>
+          <p>Průměrné hodnocení z 667 recenzí. Hosté se vracejí na obědové menu, pizzu i příjemné posezení.</p>
+        </article>
+        <article class="story-card">
+          <div>
+            <p class="eyebrow">Pohodlí v centru</p>
+            <h2>Jídlo, terasa, parkování</h2>
+            <ul class="feature-list">
+              <li><strong>Wi-Fi</strong><span>připojení zdarma</span></li>
+              <li><strong>Parkování</strong><span>venkovní i podzemní</span></li>
+              <li><strong>Platby</strong><span>hotově, kartou, stravenkami</span></li>
+              <li><strong>Rozvoz</strong><span>výběr přes Wolt</span></li>
+            </ul>
+          </div>
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </article>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Posezení pro klidný oběd</h2>
+          </div>
+          <p>V restauraci se potkává kuchyně, umění a nákupní centrum. Hodí se na pracovní oběd, rodinnou pizzu i večerní zastavení.</p>
+        </div>
+        <div class="gallery" aria-label="Fotografie atmosféry">
+          <figure class="photo-tile large">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Najdete nás v Ostravě</h2>
+          </div>
+          <p>Restaurace je v OC Futurum na adrese Novinářská 6a. Pro výdej v restauraci volejte přímo obsluze.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-panel">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420593033037">+420 593 033 037</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@pastaafidli.cz">info@pastaafidli.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Novinářská 6a, 702 00 Moravská Ostrava a Přívoz</strong>
+            </div>
+            <div>
+              <h3>Časy z nabídky</h3>
+              <div class="hours">
+                <div><span>Snídaně Po-So</span><strong>08:00-10:30</strong></div>
+                <div class="today"><span>Denní menu</span><strong>11:00-15:00</strong></div>
+                <div><span>Take away</span><strong>telefonicky</strong></div>
+              </div>
+            </div>
+          </div>
+          <div id="map" role="img" aria-label="Mapa s polohou Pasta & Fidli Restaurant"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Rezervace">
+      <div class="shell">
+        <div class="cta-strip">
+          <div>
+            <h2>Máte chuť na oběd?</h2>
+            <p>Zavolejte do restaurace a domluvte si stůl nebo jídlo k vyzvednutí.</p>
+          </div>
+          <a class="btn btn-primary" href="tel:+420593033037">+420 593 033 037</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-grid">
+      <span>Fotografie: Pexels. Poloha: Pasta & Fidli Restaurant, Novinářská 6a.</span>
+      <span class="webflex-disclaimer">Tuto prezentační stránku připravil Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/72c740t">tento odkaz</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2661878, 49.8320225],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#F44336' })
+      .setLngLat([18.2661878, 49.8320225])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
