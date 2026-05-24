@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radegastovna Na náměstí | Restaurace v Moravské Ostravě</title>
+  <meta name="description" content="Radegastovna Na náměstí na Masarykově náměstí: skvělá kuchyně, výborné pivo, polední menu, jídelní a nápojový lístek a rezervace stolu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f4ed;
+      --paper: rgba(255, 255, 255, .72);
+      --paper-strong: #fffdf8;
+      --soft: #efe6d8;
+      --ink: #17130d;
+      --muted: #70665a;
+      --line: rgba(23, 19, 13, .08);
+      --accent: #C0A060;
+      --accent-deep: #806632;
+      --shadow: 0 34px 90px rgba(64, 48, 28, .10);
+      --shadow-soft: 0 20px 70px rgba(64, 48, 28, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --wrap: min(1180px, calc(100vw - 40px));
+      --radius: 30px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(23,19,13,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,19,13,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 10%, rgba(192,160,96,.22), transparent 32rem),
+        radial-gradient(circle at 8% 54%, rgba(255,255,255,.84), transparent 26rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(248, 244, 237, .82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      width: var(--wrap);
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(23,19,13,.68);
+    }
+
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 21px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(23,19,13,.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-deep);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #17130d; }
+    .btn-primary:hover { background: #d0b477; }
+    .btn-outline { background: transparent; border-color: currentColor; color: var(--ink); }
+    .btn-outline:hover { background: rgba(192,160,96,.13); }
+
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .hero {
+      width: var(--wrap);
+      margin: 0 auto;
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, 1.02fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 78px);
+      padding: 58px 0 70px;
+    }
+
+    .eyebrow {
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(192,160,96,.18);
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 610px;
+      margin-top: 26px;
+      font-size: clamp(18px, 1.8vw, 22px);
+      line-height: 1.55;
+      color: #51483d;
+    }
+
+    .hero-actions {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hero-meta {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.58);
+      box-shadow: 0 16px 44px rgba(64,48,28,.06);
+    }
+
+    .hero-media { position: relative; min-width: 0; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 42px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img, .gallery-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .float-card {
+      position: absolute;
+      left: -28px;
+      bottom: -28px;
+      width: min(330px, 82%);
+      padding: 23px;
+      border-radius: 28px;
+      background: rgba(255,253,248,.88);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .float-card b { display: block; margin-bottom: 12px; font-size: 15px; }
+    .float-card span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-top: 9px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 88px 0; }
+
+    .section-head {
+      margin-bottom: 36px;
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .52fr);
+      align-items: end;
+      gap: 48px;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 66px); }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .menu-rows { display: grid; gap: 12px; }
+    .menu-row {
+      min-height: 122px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(220px, .42fr);
+      align-items: center;
+      gap: 24px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .num {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    .menu-row h3 { font-size: clamp(24px, 2.5vw, 38px); }
+    .menu-row p { font-size: 15px; line-height: 1.65; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+
+    .stat-card {
+      min-height: 190px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4.3vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .stat-card span { color: var(--muted); font-size: 15px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .feature-panel {
+      padding: 36px;
+      border-radius: 36px;
+      background: #17130d;
+      color: #fffaf0;
+      box-shadow: var(--shadow);
+    }
+
+    .feature-panel p { color: rgba(255,250,240,.72); font-size: 18px; line-height: 1.72; }
+    .feature-panel h2 { margin-bottom: 26px; font-size: clamp(34px, 4vw, 60px); }
+
+    .daily-list {
+      margin-top: 34px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .daily-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-top: 1px solid rgba(255,255,255,.12);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(255,250,240,.82);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .gallery-frame {
+      min-height: 260px;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 34px;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gallery-frame.tall { grid-row: span 2; aspect-ratio: auto; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 32px;
+      border-radius: 34px;
+      background: var(--paper-strong);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .contact-card h3 { margin-bottom: 22px; font-size: clamp(26px, 3vw, 44px); }
+    .contact-lines { display: grid; gap: 15px; }
+    .contact-line {
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 5px;
+    }
+
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+    }
+
+    .contact-line a, .contact-line b { font-size: 17px; font-weight: 800; }
+    .contact-line p { line-height: 1.55; }
+
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .faq-item {
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-item h3 { margin-bottom: 12px; font-size: 24px; line-height: 1.05; }
+
+    .cta {
+      margin: 20px auto 88px;
+      padding: clamp(34px, 6vw, 70px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      border-radius: 42px;
+      background: var(--accent);
+      color: #17130d;
+      box-shadow: var(--shadow);
+    }
+
+    .cta h2 { font-size: clamp(34px, 4.8vw, 70px); }
+    .cta p { margin-top: 14px; color: rgba(23,19,13,.76); font-weight: 700; }
+    .cta .btn { background: #17130d; color: #fffaf0; }
+
+    .site-footer {
+      padding: 34px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      width: var(--wrap);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+
+    .webflex-disclaimer {
+      max-width: 760px;
+      color: rgba(112,102,90,.82);
+    }
+
+    .webflex-disclaimer a {
+      color: var(--accent-deep);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 42px; }
+      .float-card { position: static; width: auto; margin: 14px 10px 0; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-grid, .faq-list, .gallery { grid-template-columns: 1fr; }
+      .gallery-frame.tall { grid-row: auto; aspect-ratio: 16 / 10; }
+      .cta { margin-bottom: 54px; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      .wordmark { font-size: 17px; white-space: normal; }
+      .hero-photo, .gallery-frame, .contact-card, #map { border-radius: 24px; }
+      section { padding: 58px 0; }
+      .btn { width: 100%; }
+      .hero-actions { width: 100%; }
+      .footer-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Radegastovna Na náměstí</a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420776008053">Rezervovat stůl</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Masarykovo náměstí · Ostrava</div>
+        <h1 id="hero-title">Kuchyně a výborné pivo</h1>
+        <p class="lead">Zastavte se na polední menu, večerní posezení nebo rezervaci stolu v Radegastovně Na náměstí v Moravské Ostravě.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420776008053">Volat rezervaci</a>
+          <a class="btn btn-outline" href="#menu">Prohlédnout menu</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <span class="meta-chip">4.1 hodnocení Google</span>
+          <span class="meta-chip">3 842 recenzí</span>
+          <span class="meta-chip">Polední menu Po-Pá</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="float-card" aria-label="Rychlý kontakt">
+          <b>Rezervace a dotazy</b>
+          <span><em>Telefon</em><strong>+420 776 008 053</strong></span>
+          <span><em>E-mail</em><strong>radegastovnananamesti@email.cz</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si dáte dnes</h2>
+          <p>Jídelní a nápojový lístek stojí na jasných kategoriích: polední menu, pokrmy a pití. Přijďte na oběd i na večerní posezení u piva.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <h3>Polední menu</h3>
+            <p>Pondělí až pátek, praktická volba pro oběd přímo v centru Moravské Ostravy.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <h3>Pokrmy</h3>
+            <p>Stálá jídelní karta pro chvíle, kdy chcete zůstat déle než jen na rychlý oběd.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <h3>Pití</h3>
+            <p>Výborné pivo a nápojový lístek k posezení u stolu, v baru nebo s přáteli.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="duvera-title">Na náměstí se chodí</h2>
+          <p>Kontakt, adresa a veřejné hodnocení jsou na jednom místě, aby bylo jednoduché ověřit si restauraci i domluvit stůl.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="stat-card">
+            <strong>4.1</strong>
+            <span>hodnocení na Google</span>
+          </article>
+          <article class="stat-card">
+            <strong>3 842</strong>
+            <span>veřejných recenzí</span>
+          </article>
+          <article class="stat-card">
+            <strong>13 24</strong>
+            <span>Masarykovo náměstí, Moravská Ostrava</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="feature-panel">
+          <h2>Oběd, pivo, stůl</h2>
+          <p>Radegastovna Na náměstí je místo pro rychlý pracovní oběd i večer, kdy chcete sedět u jídla a piva bez zbytečného plánování.</p>
+          <div class="daily-list" aria-label="Polední menu v týdnu">
+            <div><span>Pondělí</span><span>Polední menu</span></div>
+            <div><span>Úterý</span><span>Polední menu</span></div>
+            <div><span>Středa</span><span>Polední menu</span></div>
+            <div><span>Čtvrtek</span><span>Polední menu</span></div>
+            <div><span>Pátek</span><span>Polední menu</span></div>
+          </div>
+        </div>
+        <div class="gallery" aria-label="Atmosféra restaurace">
+          <figure class="gallery-frame tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-frame">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="gallery-frame">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>Restaurace sídlí na Masarykově náměstí v Moravské Ostravě. Pro rezervaci stolu použijte telefon nebo e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <h3>Kontakt</h3>
+            <div class="contact-lines">
+              <div class="contact-line">
+                <span>Telefon</span>
+                <a href="tel:+420776008053">+420 776 008 053</a>
+              </div>
+              <div class="contact-line">
+                <span>E-mail</span>
+                <a href="mailto:radegastovnananamesti@email.cz">radegastovnananamesti@email.cz</a>
+              </div>
+              <div class="contact-line">
+                <span>Adresa</span>
+                <p><b>13 24, Masarykovo nám.</b><br>702 00 Moravská Ostrava a Přívoz</p>
+              </div>
+              <div class="contact-line">
+                <span>Rezervace</span>
+                <p>Stůl si domluvte telefonicky. U poledního menu doporučujeme zavolat předem.</p>
+              </div>
+            </div>
+          </aside>
+          <div id="map" role="img" aria-label="Mapa s polohou Radegastovny Na náměstí"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="faq-title">Než vyrazíte</h2>
+          <p>Krátké odpovědi na věci, které hosté typicky řeší před rezervací nebo návštěvou v centru.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Máte polední menu?</h3>
+            <p>Ano, polední menu je uvedené pro pondělí až pátek.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Lze rezervovat stůl?</h3>
+            <p>Ano, pro rezervaci volejte na číslo +420 776 008 053.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde restaurace sídlí?</h3>
+            <p>Na Masarykově náměstí v Moravské Ostravě a Přívoze.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co najdu v lístku?</h3>
+            <p>Jídelní a nápojový lístek, pokrmy, pití a polední nabídku.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap cta">
+      <div>
+        <h2>Rezervujte si stůl</h2>
+        <p>Radegastovna Na náměstí · Masarykovo náměstí · Moravská Ostrava</p>
+      </div>
+      <a class="btn" href="tel:+420776008053">+420 776 008 053</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>© Radegastovna Na náměstí</span>
+      <p class="webflex-disclaimer">Tuto stránku připravil Webflex jako nezávaznou prezentační stránku. Pro odstranění použijte <a href="https://webflex.cz/remove/uc74gxm">https://webflex.cz/remove/uc74gxm</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2930735, 49.835971799999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A060' })
+      .setLngLat([18.2930735, 49.835971799999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
