@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Brykule | Poctivé jídlo v Ostravě-Hrabůvce</title>
+  <meta name="description" content="Restaurace Brykule v Ostravě-Hrabůvce. Obědy, pizza, česká kuchyně, káva, catering, soukromé akce a rozvoz.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #11120f;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f7f3e8;
+      --muted: rgba(247, 243, 232, 0.68);
+      --soft: rgba(247, 243, 232, 0.12);
+      --accent: #202000;
+      --accent-2: #d8c680;
+      --accent-3: #8f9f7f;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+      --radius: 8px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 18% 5%, rgba(216, 198, 128, 0.13), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); letter-spacing: 0; }
+
+    .skip {
+      position: absolute; left: 16px; top: -80px; z-index: 100;
+      padding: 12px 14px; background: var(--ink); color: #11120f;
+      transition: top 180ms cubic-bezier(.2,.7,.2,1);
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(20px);
+      background: rgba(17, 18, 15, 0.78);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav {
+      min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display); font-size: 20px; line-height: 1;
+      letter-spacing: 0; overflow-wrap: anywhere; hyphens: none;
+    }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-links a {
+      padding: 10px 12px; color: var(--muted); border-radius: 999px;
+      transition: color 180ms cubic-bezier(.2,.7,.2,1), background 180ms cubic-bezier(.2,.7,.2,1), transform 180ms cubic-bezier(.2,.7,.2,1);
+    }
+    .nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active, .menu-row:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 48px; padding: 14px 18px; border-radius: 999px;
+      font-weight: 700; border: 1px solid transparent;
+      transition: background 180ms cubic-bezier(.2,.7,.2,1), border-color 180ms cubic-bezier(.2,.7,.2,1), transform 180ms cubic-bezier(.2,.7,.2,1), color 180ms cubic-bezier(.2,.7,.2,1);
+    }
+    .btn.primary {
+      background: var(--ink); color: #11120f; box-shadow: 0 18px 46px rgba(247,243,232,0.12);
+    }
+    .btn.primary:hover { background: #ffffff; transform: translateY(-1px); }
+    .btn.secondary { border: 1px solid rgba(255,255,255,0.45); color: #ffffff; }
+    .btn.secondary:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+
+    .hero {
+      min-height: 770px; display: grid; align-items: center; padding: 78px 0 88px;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.78fr);
+      align-items: center; gap: 54px;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px;
+      color: var(--accent-2); font: 700 12px/1 var(--font-mono); text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 34px; height: 1px; background: var(--accent-2); opacity: .75; }
+    h1, h2, h3 { margin: 0; hyphens: none; letter-spacing: 0; }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 640px; margin: 28px 0 0;
+      color: var(--muted); font-size: clamp(18px, 2vw, 22px); line-height: 1.55;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius);
+      background: var(--surface); box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(.98); }
+    .hero-photo::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(17,18,15,.52));
+    }
+    .photo-note {
+      position: absolute; left: 18px; bottom: 18px; right: 18px; z-index: 2;
+      display: flex; justify-content: space-between; gap: 14px; align-items: center;
+      padding: 12px 14px; border-radius: var(--radius);
+      background: rgba(17,18,15,.62); backdrop-filter: blur(12px);
+      font-size: 13px; color: var(--ink);
+    }
+
+    section { padding: 90px 0; }
+    .section-head {
+      display: grid; grid-template-columns: minmax(0, .8fr) minmax(280px, .45fr);
+      gap: 48px; align-items: end; margin-bottom: 34px;
+    }
+    .kicker { color: var(--accent-2); font: 700 12px/1 var(--font-mono); text-transform: uppercase; margin-bottom: 14px; }
+    h2 { font-family: var(--font-display); font-size: clamp(34px, 4.2vw, 64px); line-height: .98; overflow-wrap: anywhere; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.55; }
+
+    .service-list {
+      display: grid; border-radius: var(--radius); overflow: hidden;
+      background: var(--surface); box-shadow: 0 32px 90px rgba(0,0,0,.16);
+    }
+    .service-row {
+      display: grid; grid-template-columns: 86px minmax(0, 1fr) minmax(190px, .36fr);
+      gap: 26px; align-items: center; padding: 26px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { color: var(--accent-2); font: 700 13px/1 var(--font-mono); }
+    .service-row h3 { font-size: 24px; font-weight: 700; }
+    .service-row p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+    .tag { justify-self: end; color: var(--ink); font: 700 13px/1 var(--font-mono); padding: 10px 12px; border-radius: 999px; background: rgba(255,255,255,0.08); }
+
+    .menu-strip {
+      display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: stretch;
+    }
+    .menu-card, .stat-card, .hours-card, .contact-card, .faq-card {
+      border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+    }
+    .menu-card { padding: 30px; display: grid; gap: 12px; }
+    .menu-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline;
+      padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+      transition: transform 180ms cubic-bezier(.2,.7,.2,1), color 180ms cubic-bezier(.2,.7,.2,1);
+    }
+    .menu-row:hover { transform: translateY(-1px); color: #fff; }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row strong { font-size: 20px; }
+    .menu-row span { color: var(--accent-2); font: 700 16px/1 var(--font-mono); }
+    .stat-card {
+      min-height: 100%; padding: 30px; display: grid; align-content: space-between; gap: 30px;
+      background: linear-gradient(145deg, rgba(216,198,128,.16), rgba(255,255,255,.06));
+    }
+    .rating { font: 700 clamp(64px, 10vw, 138px)/.82 var(--font-mono); color: var(--ink); }
+    .stat-card p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.45; }
+
+    .split {
+      display: grid; grid-template-columns: minmax(420px, .95fr) minmax(0, 1fr);
+      gap: 44px; align-items: center;
+    }
+    .gallery {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+    .gallery figure { margin: 0; border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: 0 24px 70px rgba(0,0,0,.22); }
+    .gallery img { width: 100%; height: 100%; min-height: 230px; object-fit: cover; }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery figure:first-child img { min-height: 474px; }
+    .story { padding: 10px 0; }
+    .story p { margin: 22px 0 0; color: var(--muted); font-size: 19px; line-height: 1.62; }
+    .pill-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .pill-list span { padding: 10px 12px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--ink); font: 700 12px/1 var(--font-mono); }
+
+    .hours-contact {
+      display: grid; grid-template-columns: .82fr 1.18fr; gap: 24px; align-items: stretch;
+    }
+    .hours-card, .contact-card { padding: 28px; }
+    .hours-table { display: grid; gap: 10px; margin-top: 24px; }
+    .hours-line {
+      display: grid; grid-template-columns: 1fr auto; gap: 18px; padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-family: var(--font-mono); font-size: 14px;
+    }
+    .hours-line.today { color: var(--accent-2); }
+    .contact-card { display: grid; gap: 18px; }
+    .contact-items { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .contact-item { padding: 16px; border-radius: var(--radius); background: rgba(255,255,255,.06); }
+    .contact-item b { display: block; margin-bottom: 8px; }
+    .contact-item span { color: var(--muted); line-height: 1.45; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; margin-top: 4px; }
+
+    .faq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+    .faq-card { padding: 24px; }
+    .faq-card h3 { font-size: 20px; margin-bottom: 12px; }
+    .faq-card p { margin: 0; color: var(--muted); line-height: 1.55; }
+
+    .final {
+      padding: 100px 0 110px;
+    }
+    .final-panel {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center;
+      padding: 42px; border-radius: var(--radius);
+      background: rgba(255,255,255,.1); box-shadow: var(--shadow);
+    }
+    .final-panel h2 { font-size: clamp(36px, 5vw, 76px); }
+    .final-panel p { margin: 16px 0 0; color: var(--muted); font-size: 18px; line-height: 1.5; }
+
+    footer {
+      padding: 34px 0; color: rgba(247,243,232,.58); border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 14px;
+    }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: 54px; }
+      .hero-grid, .section-head, .menu-strip, .split, .hours-contact, .final-panel {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo, .split { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .tag { justify-self: start; }
+      .faq-grid { grid-template-columns: 1fr; }
+      .contact-items { grid-template-columns: 1fr; }
+      .final-panel { padding: 30px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1160px); }
+      section { padding: 64px 0; }
+      .photo-note { position: static; border-radius: 0; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .gallery figure:first-child img, .gallery img { min-height: 260px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="wordmark" href="#">Restaurace Brykule</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420725095471">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Ostrava-Hrabůvka · Dr. Martínka 1439/4</div>
+          <h1>Nedělej brykule.</h1>
+          <p class="lead">Zastavte se na poctivé jídlo, oběd, pizzu, kávu nebo večer s přáteli. V Brykuli vaříme každý den kromě neděle a postaráme se i o catering pro soukromé a firemní akce.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420725095471">Rezervovat telefonem</a>
+            <a class="btn secondary" href="#jidlo">Prohlédnout nabídku</a>
+          </div>
+        </div>
+        <div class="hero-photo" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-note">
+            <span>Obědy · káva · zahrádka</span>
+            <span class="mono">11:00-20:00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jidlo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Co u nás najdete</div>
+            <h2>Jídlo na klidné posezení i rozvoz.</h2>
+          </div>
+          <p>Menu stojí na české kuchyni, pizze, obědech a jídlech, která si můžete dát u nás nebo objednat domů, do kanceláře či provozu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <div>
+              <h3>Poctivé obědy</h3>
+              <p>Každý den připravujeme vyvážená menu k posezení i pravidelnému rozvozu.</p>
+            </div>
+            <div class="tag">Pondělí-pátek</div>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <div>
+              <h3>Česká kuchyně a pizza</h3>
+              <p>Od svíčkové přes steaky až po pizzu a sladké lívance pro pohodové odpoledne.</p>
+            </div>
+            <div class="tag">K posezení</div>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <div>
+              <h3>Káva a minipivovary</h3>
+              <p>Pečlivě vybrané nápoje, poctivá káva a nabídka piv z menších pivovarů.</p>
+            </div>
+            <div class="tag">Bar</div>
+          </article>
+          <article class="service-row">
+            <div class="num">04</div>
+            <div>
+              <h3>Catering a soukromé akce</h3>
+              <p>Zajistíme občerstvení, raut nebo tematické menu pro rodinné i firemní události.</p>
+            </div>
+            <div class="tag">Na domluvě</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap menu-strip">
+        <div class="menu-card">
+          <div class="kicker">Doporučujeme</div>
+          <a class="menu-row" href="tel:+420725095471"><strong>Bramborák Brykule</strong><span>199 Kč</span></a>
+          <a class="menu-row" href="tel:+420725095471"><strong>Kulajda Brykule 0,3 l</strong><span>79 Kč</span></a>
+          <a class="menu-row" href="tel:+420725095471"><strong>Burger Brykule Caesar</strong><span>229 Kč</span></a>
+          <a class="menu-row" href="tel:+420725095471"><strong>Dřevorubecký steak na prkně</strong><span>238 Kč</span></a>
+          <a class="menu-row" href="tel:+420725095471"><strong>Hovězí svíčková</strong><span>249 Kč</span></a>
+          <a class="menu-row" href="tel:+420725095471"><strong>Lívance s Nutellou</strong><span>99 Kč</span></a>
+        </div>
+        <aside class="stat-card">
+          <div>
+            <div class="kicker">Hodnocení hostů</div>
+            <div class="rating">4.4</div>
+          </div>
+          <p>Restaurace Brykule má na Googlu 159 hodnocení. Přijďte si udělat vlastní názor u stolu, na zahrádce nebo při vyzvednutí objednávky.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap split">
+        <div class="gallery" aria-label="Fotogalerie atmosféry">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+        <div class="story">
+          <div class="kicker">U stolu i mimo restauraci</div>
+          <h2>Pro oběd, kávu i větší událost.</h2>
+          <p>Brykule je místo, kde si můžete na chvíli zpomalit. Přijdete na jídlo, dáte si kávu, vyberete pití k večeru a když chystáte akci, domluvíme občerstvení od malého pohoštění až po větší raut.</p>
+          <div class="pill-list">
+            <span>Rozvoz obědů</span>
+            <span>Firemní catering</span>
+            <span>Soukromé akce</span>
+            <span>Zahrádka</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Kontakt</div>
+            <h2>Najdete nás v Hrabůvce.</h2>
+          </div>
+          <p>Zavolejte kvůli rezervaci, cateringu nebo rozvozu. V neděli máme zavřeno.</p>
+        </div>
+        <div class="hours-contact">
+          <aside class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-table">
+              <div class="hours-line"><span>Pondělí</span><span>11:00-20:00</span></div>
+              <div class="hours-line"><span>Úterý</span><span>11:00-20:00</span></div>
+              <div class="hours-line"><span>Středa</span><span>11:00-20:00</span></div>
+              <div class="hours-line"><span>Čtvrtek</span><span>11:00-20:00</span></div>
+              <div class="hours-line"><span>Pátek</span><span>11:00-20:00</span></div>
+              <div class="hours-line"><span>Sobota</span><span>11:00-20:00</span></div>
+              <div class="hours-line today"><span>Neděle</span><span>Zavřeno</span></div>
+            </div>
+          </aside>
+          <div class="contact-card">
+            <div class="contact-items">
+              <a class="contact-item" href="tel:+420725095471"><b>Telefon</b><span>+420 725 095 471</span></a>
+              <a class="contact-item" href="mailto:restauracebrykule@gmail.com"><b>E-mail</b><span>restauracebrykule@gmail.com</span></a>
+              <div class="contact-item"><b>Adresa</b><span>Dr. Martínka 1439/4<br>700 30 Ostrava-Hrabůvka</span></div>
+              <a class="contact-item" href="https://restauracebrykule.cz/"><b>Online</b><span>restauracebrykule.cz</span></a>
+            </div>
+            <div id="map" aria-label="Mapa s polohou Restaurace Brykule"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Prakticky</div>
+            <h2>Nejčastější otázky.</h2>
+          </div>
+          <p>Krátké odpovědi na věci, které hosté řeší před návštěvou nebo objednávkou.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-card">
+            <h3>Děláte rozvoz obědů?</h3>
+            <p>Ano, obědy připravujeme k posezení i k pravidelnému rozvozu domů, do firem, kanceláří nebo provozů.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Pořádáte catering?</h3>
+            <p>Ano, umíme malé občerstvení, větší raut i tematické menu pro soukromé nebo firemní události.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Máte otevřeno v neděli?</h3>
+            <p>V neděli je zavřeno. Od pondělí do soboty máme otevřeno od 11:00 do 20:00.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <div class="kicker">Dnes v Brykuli</div>
+          <h2>Přijďte si pochutnat.</h2>
+          <p>Rezervace, rozvoz i catering domluvíte přímo na telefonu.</p>
+        </div>
+        <a class="btn primary" href="tel:+420725095471">+420 725 095 471</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Restaurace Brykule</div>
+      <div class="disclaimer">Tato ukázková stránka byla vytvořena službou Webflex pro majitele provozovny. Pokud si nepřejete její další zobrazování, můžete ji odstranit na adrese <a href="https://webflex.cz/remove/g9k4jus">webflex.cz/remove/g9k4jus</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2612605, 49.7844803],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#d8c680' })
+      .setLngLat([18.2612605, 49.7844803])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
