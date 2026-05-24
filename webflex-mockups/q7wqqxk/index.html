@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Penzion a restaurace U Růže | Hradec Králové</title>
+  <meta name="description" content="Rodinný penzion a restaurace U Růže v Hradci Králové. Tradiční česká kuchyně, denní menu, ubytování, oslavy, svatby a firemní večírky.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f3f1ee;
+      --ink: #161312;
+      --muted: #68605b;
+      --accent: #400000;
+      --accent-2: #8d5b45;
+      --line: rgba(64, 0, 0, .12);
+      --shadow: 0 28px 90px rgba(31, 21, 17, .10);
+      --shadow-soft: 0 18px 60px rgba(31, 21, 17, .07);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(64,0,0,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,0,0,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); letter-spacing: 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.82);
+    }
+    .nav {
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+      max-width: 300px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: 15px; font-weight: 700; }
+    .nav-links a { transition: color 180ms var(--ease), transform 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active, .tile-link:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease), transform 200ms var(--ease), box-shadow 200ms var(--ease);
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 16px 34px rgba(64, 0, 0, .18); }
+    .btn-primary:hover { background: #2b0000; transform: translateY(-1px); }
+    .btn-secondary { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn-secondary:hover { color: var(--accent); background: rgba(64,0,0,.045); transform: translateY(-1px); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 76px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: clamp(36px, 5vw, 72px);
+      align-items: center;
+    }
+    h1 {
+      margin: 18px 0 22px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+      color: #3d3531;
+      margin: 0 0 30px;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      width: min(310px, calc(100% - 44px));
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-note strong { display: block; font-size: 18px; margin-bottom: 4px; }
+    .hero-note span { color: var(--muted); font-size: 14px; }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .5fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 {
+      margin: 10px 0 0;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.2vw, 62px);
+      line-height: .98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      border-radius: 28px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px 1fr minmax(180px, 260px);
+      gap: 24px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { color: var(--accent); font-size: 14px; }
+    .service-row h3 { margin: 0 0 6px; font-size: 26px; letter-spacing: 0; }
+    .service-row p { margin: 0; color: var(--muted); }
+    .tag {
+      justify-self: start;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(64,0,0,.07);
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .menu-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(360px, .55fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .menu-card, .booking-card, .contact-card {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: clamp(24px, 3vw, 38px);
+    }
+    .menu-items { margin-top: 26px; display: grid; gap: 0; }
+    .menu-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-item:last-child { border-bottom: 0; }
+    .menu-item b { font-size: 18px; }
+    .menu-item small { color: var(--muted); display: block; margin-top: 4px; }
+    .price { font-family: var(--font-mono); color: var(--accent); font-weight: 700; white-space: nowrap; }
+    .booking-card {
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+    }
+    .booking-card p { color: rgba(255,255,255,.78); }
+    .booking-card .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .booking-card .btn-secondary:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo-tile {
+      min-height: 260px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .photo-tile.large { grid-row: span 2; min-height: 540px; }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms var(--ease); }
+    .photo-tile:hover img { transform: scale(1.035); }
+
+    .events {
+      display: grid;
+      grid-template-columns: minmax(280px, .45fr) 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .event-rail {
+      border-radius: 28px;
+      padding: 34px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .event-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .event {
+      min-height: 150px;
+      border-radius: 24px;
+      padding: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .event h3 { margin: 0 0 8px; font-size: 22px; }
+    .event p { margin: 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .48fr) 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 26px;
+    }
+    .contact-lines { display: grid; gap: 14px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      color: var(--muted);
+    }
+    .contact-line b { color: var(--ink); display: block; }
+    .icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      background: rgba(64,0,0,.08);
+      color: var(--accent);
+    }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .final-cta {
+      padding: 70px 0 96px;
+    }
+    .cta-box {
+      border-radius: 34px;
+      background: #211716;
+      color: #fff;
+      padding: clamp(30px, 5vw, 60px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .cta-box h2 { color: #fff; max-width: 760px; }
+    .cta-box p { color: rgba(255,255,255,.72); margin: 16px 0 0; max-width: 580px; }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: end; }
+    .cta-box .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-box .btn-secondary:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    .footer {
+      padding: 30px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .webflex-disclaimer {
+      font-size: 12px;
+      color: #777;
+      max-width: 760px;
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .menu-panel, .events, .contact-grid, .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .event-list { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .photo-tile.large { grid-row: auto; min-height: 320px; }
+      .cta-actions { justify-content: start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .brand { font-size: 17px; }
+      section { padding: 68px 0; }
+      .hero { padding-top: 32px; }
+      .hero-actions, .cta-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .menu-item { grid-template-columns: 1fr; gap: 6px; }
+      h1 { font-size: clamp(40px, 14vw, 62px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Penzion a restaurace U Růže">Penzion a restaurace U Růže</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#restaurace">Restaurace</a>
+        <a href="#menu">Denní menu</a>
+        <a href="#ubytovani">Ubytování</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420702016700">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Hradec Králové · Pražská třída</div>
+          <h1>U Růže v Hradci</h1>
+          <p class="lead">Rodinný penzion s restaurací pro oběd, večeři, ubytování i slavnostní setkání v klidné části města.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420702016700">Rezervace a objednávky</a>
+            <a class="btn btn-secondary" href="#menu">Dnešní nabídka</a>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="hero-note">
+            <strong>Tradiční česká kuchyně</strong>
+            <span>Doplněná o prvky moderní gastronomie.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="restaurace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co u nás najdete</div>
+            <h2>Restaurace, pokoje a soukromé akce</h2>
+          </div>
+          <p>U Růže spojuje každodenní polední provoz s prostorem pro rodinné a firemní události.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="mono num">01</div>
+            <div>
+              <h3>Denní menu a stálá nabídka</h3>
+              <p>Obědy od 11:00 do 15:00, česká kuchyně, polévky, doporučení kuchaře, moučníky i domácí limonády.</p>
+            </div>
+            <div class="tag">11:00-15:00</div>
+          </article>
+          <article class="service-row">
+            <div class="mono num">02</div>
+            <div>
+              <h3>Pohodlné ubytování</h3>
+              <p>Rodinný penzion v klidné části Hradce Králové včetně bezbariérového pokoje.</p>
+            </div>
+            <div class="tag">Penzion</div>
+          </article>
+          <article class="service-row">
+            <div class="mono num">03</div>
+            <div>
+              <h3>Oslavy, svatby a večírky</h3>
+              <p>Stylové prostředí pro narozeniny, promoce, svatby, rauty, smuteční hostiny i firemní večírky.</p>
+            </div>
+            <div class="tag">Soukromé akce</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <strong>4,3</strong>
+            <span>Hodnocení hostů na Googlu</span>
+          </div>
+          <div class="stat">
+            <strong>856</strong>
+            <span>Veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>2</strong>
+            <span>Telefonní linky pro objednávky</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Denní menu · neděle 24. 5. 2026</div>
+            <h2>Dnešní kuchyně</h2>
+          </div>
+          <p>Výběr z aktuální nabídky. Objednávky přijímáme telefonicky.</p>
+        </div>
+        <div class="menu-panel">
+          <article class="menu-card">
+            <div class="eyebrow">Pan kuchař doporučuje</div>
+            <div class="menu-items">
+              <div class="menu-item">
+                <div><b>Steak z čerstvého lososa</b><small>Pečený na másle, petrželkové brambory, trhaný salátek</small></div>
+                <div class="price">289,-</div>
+              </div>
+              <div class="menu-item">
+                <div><b>Svíčková na smetaně</b><small>Z hovězího válečku, domácí houskové knedlíky, brusinkový terč</small></div>
+                <div class="price">265,-</div>
+              </div>
+              <div class="menu-item">
+                <div><b>Medailonky z vepřové panenky</b><small>Pepřová omáčka, pečené brambůrky grenaille</small></div>
+                <div class="price">229,-</div>
+              </div>
+              <div class="menu-item">
+                <div><b>Zeleninový salát s hermelínem</b><small>Grilovaný hermelín, čerstvá zelenina</small></div>
+                <div class="price">219,-</div>
+              </div>
+            </div>
+          </article>
+          <aside class="booking-card">
+            <div>
+              <div class="eyebrow" style="color:rgba(255,255,255,.72)">Objednávky</div>
+              <h2 style="font-size:clamp(30px,3.4vw,52px)">Oběd s sebou i stůl v restauraci</h2>
+              <p>Pro denní menu volejte na hlavní číslo restaurace. Rádi s vámi domluvíme také oslavu nebo firemní večírek.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="btn btn-secondary" href="tel:+420702016700">+420 702 016 700</a>
+              <a class="btn btn-secondary" href="mailto:info@uruze.cz">info@uruze.cz</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Stůl pro všední den i sváteční večer</h2>
+          </div>
+          <p>Teplé světlo, prostřený stůl a prostor, který se umí přizpůsobit obědu i uzavřené společnosti.</p>
+        </div>
+        <div class="gallery">
+          <div class="photo-tile large"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></div>
+          <div class="photo-tile"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></div>
+          <div class="photo-tile"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></div>
+          <div class="photo-tile"><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></div>
+          <div class="photo-tile"><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ubytovani">
+      <div class="wrap events">
+        <aside class="event-rail">
+          <div class="eyebrow">Penzion a akce</div>
+          <h2 style="font-size:clamp(30px,3.6vw,54px)">Zůstaňte déle. Nebo přiveďte hosty.</h2>
+          <p>Restaurace i penzion jsou připravené pro běžnou návštěvu, rodinné setkání i soukromý program.</p>
+        </aside>
+        <div class="event-list">
+          <article class="event"><h3>Pohodlné ubytování</h3><p>Penzion v klidné části města pro hosty Hradce Králové.</p></article>
+          <article class="event"><h3>Bezbariérový pokoj</h3><p>Možnost ubytování bez zbytečných bariér.</p></article>
+          <article class="event"><h3>Rodinné oslavy</h3><p>Narozeniny, promoce, svatby a setkání u jednoho stolu.</p></article>
+          <article class="event"><h3>Firemní večírky</h3><p>Rauty, firemní programy a uzavřené společnosti po domluvě.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na Pražské třídě</h2>
+          </div>
+          <p>Zavolejte kvůli rezervaci, objednávce denního menu nebo domluvě ubytování.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <div class="contact-lines">
+              <div class="contact-line"><span class="icon">☎</span><span><b>Telefon</b><a href="tel:+420702016700" class="mono">+420 702 016 700</a></span></div>
+              <div class="contact-line"><span class="icon">@</span><span><b>E-mail</b><a href="mailto:info@uruze.cz">info@uruze.cz</a></span></div>
+              <div class="contact-line"><span class="icon">⌖</span><span><b>Adresa</b>Pražská tř. 71/123, 500 04 Hradec Králové 4</span></div>
+              <div class="contact-line"><span class="icon">◷</span><span><b>Denní menu</b><span class="mono">11:00-15:00</span></span></div>
+            </div>
+            <a class="btn btn-primary" href="https://www.uruze.cz/">Přejít na uruže.cz</a>
+          </article>
+          <div id="map" aria-label="Mapa: Penzion a restaurace U Růže"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="cta-box">
+          <div>
+            <div class="eyebrow" style="color:rgba(255,255,255,.72)">Rezervace</div>
+            <h2>Stůl, pokoj nebo celá oslava</h2>
+            <p>Ozvěte se restauraci U Růže a domluvte si návštěvu podle toho, co právě potřebujete.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420702016700">Zavolat</a>
+            <a class="btn btn-secondary" href="mailto:info@uruze.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>© Penzion a restaurace U Růže</div>
+      <div class="webflex-disclaimer">Webflex administrativní patička. Pro odstranění této stránky použijte <a href="https://webflex.cz/delete/q7wqqxk">https://webflex.cz/delete/q7wqqxk</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.787024500000001, 50.202667299999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#400000' })
+      .setLngLat([15.787024500000001, 50.202667299999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
