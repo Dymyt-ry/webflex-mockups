@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Restaurace U Radnice | Moravská Ostrava</title>
+  <meta name="description" content="Restaurace U Radnice v Moravské Ostravě. Denní menu, jídelní lístek, nápojový lístek, akce a fotogalerie. Rezervace na telefonu +420 774 956 685." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f1e8;
+      --surface: rgba(255, 252, 247, 0.82);
+      --surface-strong: #fffaf3;
+      --ink: #241a12;
+      --muted: #74665a;
+      --line: rgba(36, 26, 18, 0.08);
+      --accent: #E0A060;
+      --accent-dark: #87552b;
+      --accent-soft: rgba(224, 160, 96, 0.18);
+      --shadow: 0 34px 96px rgba(74, 48, 24, 0.12);
+      --shadow-small: 0 18px 56px rgba(74, 48, 24, 0.09);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(36,26,18,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36,26,18,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 80% 8%, rgba(224,160,96,0.25), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 241, 232, 0.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(36,26,18,0.10); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #201205; }
+    .btn-primary:hover { background: #ebb274; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(36,26,18,0.05); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 56px;
+      padding: 64px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: 0.96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 42px;
+      background: #d7c1a7;
+      box-shadow: var(--shadow);
+    }
+    .hero-card img, .photo-card img, .gallery-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .hours-float {
+      position: absolute;
+      right: -16px;
+      bottom: -28px;
+      width: min(320px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(255, 250, 243, 0.88);
+      box-shadow: var(--shadow-small);
+      backdrop-filter: blur(20px);
+    }
+    .hours-float strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    .hours-float span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.55fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .menu-rows { display: grid; gap: 12px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(220px, 0.45fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .menu-row .num { color: var(--accent-dark); font-family: var(--font-mono); font-weight: 700; }
+    .menu-row h3 { font-size: clamp(23px, 2.3vw, 36px); }
+    .menu-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 170px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+    }
+    .stat b { display: block; font-family: var(--font-mono); font-size: clamp(34px, 4vw, 56px); line-height: 1; }
+    .stat span { display: block; margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.1fr);
+      gap: 36px;
+      align-items: center;
+    }
+    .photo-card {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 36px;
+      box-shadow: var(--shadow);
+      background: #decbb5;
+    }
+    .feature-panel {
+      padding: 36px;
+      border-radius: 34px;
+      background: rgba(255,250,243,0.76);
+      box-shadow: var(--shadow-small);
+    }
+    .feature-panel h2 { font-size: clamp(32px, 3.4vw, 54px); }
+    .feature-panel p { color: var(--muted); font-size: 18px; line-height: 1.75; hyphens: auto; }
+    .feature-list { display: grid; gap: 14px; margin-top: 28px; }
+    .feature-list a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      font-weight: 800;
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .feature-list a:hover { color: var(--accent-dark); transform: translateX(4px); }
+    .feature-list small { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-frame {
+      min-height: 280px;
+      overflow: hidden;
+      border-radius: 30px;
+      background: #decbb5;
+      box-shadow: var(--shadow-small);
+    }
+    .gallery-frame.tall { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.78fr) minmax(0, 1.22fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      border-radius: 34px;
+      background: rgba(255,250,243,0.84);
+      box-shadow: var(--shadow-small);
+      overflow: hidden;
+    }
+    .contact-card { padding: 30px; }
+    .contact-card h2 { font-size: clamp(31px, 3.2vw, 50px); margin-bottom: 24px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 116px 1fr;
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span:first-child {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .contact-line span:last-child, .contact-line a { font-weight: 800; }
+    .hours-table { margin-top: 24px; border-top: 1px solid var(--line); }
+    .hours-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-table .today {
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: #5d3615;
+      font-weight: 700;
+    }
+    #map { height: 420px; border-radius: 34px; overflow: hidden; }
+
+    .final {
+      padding: 52px;
+      border-radius: 42px;
+      background: #241a12;
+      color: #fff8ef;
+      box-shadow: var(--shadow);
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 { max-width: 760px; color: #fff8ef; }
+    .final p { margin: 18px 0 0; color: rgba(255,248,239,0.72); font-size: 18px; }
+    .final .btn-outline { color: #fff8ef; border-color: rgba(255,255,255,0.45); }
+    .final .btn-outline:hover { background: rgba(255,255,255,0.08); }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .split, .contact-grid, .section-head, .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        gap: 34px;
+        padding-top: 48px;
+      }
+      .hero-card { border-radius: 32px; }
+      .hours-float { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 14px; }
+      .menu-row { grid-template-columns: 1fr; min-height: 0; }
+      .trust-strip, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-frame, .gallery-frame.tall { min-height: 260px; }
+      .final { padding: 34px 24px; }
+      .footer-row { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .wordmark { white-space: normal; font-size: 18px; }
+      section { padding: 64px 0; }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+      .hero-actions, .final-grid > div:last-child { display: grid; width: 100%; }
+      .btn { width: 100%; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#">Restaurace U Radnice</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#prostor">Prostor</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420774956685">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap hero" id="nahoru">
+      <div>
+        <div class="eyebrow">Moravská Ostrava · Sokolská tř.</div>
+        <h1>U Radnice na oběd</h1>
+        <p class="lead">Zastavte se na denní menu, večeři s přáteli nebo sklenku po práci. Jídelní lístek, nápojový lístek i akce najdete pohromadě přímo u nás v centru.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420774956685">Rezervovat stůl</a>
+          <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+        </div>
+        <div class="hero-note">
+          <span>Hodnocení 4,3</span>
+          <span>420 recenzí</span>
+          <span>info@restauraceuradnice.com</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="hours-float" aria-label="Dnešní otevírací doba">
+          <strong>Dnes 11.00 – 22:30</strong>
+          <span><em>Neděle</em><em>klidný večer u stolu</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="menu">
+      <div class="section-head">
+        <h2>Co si u nás vyberete</h2>
+        <p>Každý den držíme jasnou nabídku: denní menu na rychlý oběd, stálý jídelní lístek na delší posezení a nápoje k večeři i k baru.</p>
+      </div>
+      <div class="menu-rows">
+        <article class="menu-row">
+          <span class="num">01</span>
+          <h3>Denní menu</h3>
+          <p>Oběd během pracovního dne bez dlouhého čekání, v dostupném čase od otevření.</p>
+        </article>
+        <article class="menu-row">
+          <span class="num">02</span>
+          <h3>Jídelní lístek</h3>
+          <p>Stálá nabídka pro posezení s rodinou, kolegy nebo hosty v centru Ostravy.</p>
+        </article>
+        <article class="menu-row">
+          <span class="num">03</span>
+          <h3>Nápojový lístek</h3>
+          <p>Sklenka k večeři, káva po obědě i večerní posezení u baru.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="trust-strip">
+        <div class="stat">
+          <b>4,3</b>
+          <span>Průměrné hodnocení hostů podle poskytnutých údajů.</span>
+        </div>
+        <div class="stat">
+          <b>420</b>
+          <span>Recenzí od návštěvníků, kteří restauraci hodnotili online.</span>
+        </div>
+        <div class="stat">
+          <b>3</b>
+          <span>Hlavní části nabídky: denní menu, jídlo a nápoje.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap split" id="prostor">
+      <div class="photo-card">
+        <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+      </div>
+      <div class="feature-panel">
+        <h2>Oběd, večeře, akce</h2>
+        <p>Restaurace je otevřená přes oběd i večer, takže můžete přijít na rychlé jídlo, delší setkání nebo sledovat připravované akce.</p>
+        <div class="feature-list">
+          <a href="#menu"><span>Denní menu</span><small>každý pracovní den</small></a>
+          <a href="#kontakt"><span>Navštivte nás</span><small>Sokolská tř. 1944</small></a>
+          <a href="mailto:info@restauraceuradnice.com"><span>Napsat e-mail</span><small>rezervace a dotazy</small></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Fotogalerie">
+      <div class="section-head">
+        <h2>Atmosféra večera</h2>
+        <p>Teplé světlo, prostřený stůl a prostor, kam se dá přijít bez složitého plánování.</p>
+      </div>
+      <div class="gallery-strip">
+        <div class="gallery-frame tall">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div class="gallery-frame">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </div>
+        <div class="gallery-frame tall">
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap contact-grid" id="kontakt">
+      <div class="contact-card">
+        <h2>Přijďte k nám</h2>
+        <div class="contact-line">
+          <span>Telefon</span>
+          <a href="tel:+420774956685">+420 774 956 685</a>
+        </div>
+        <div class="contact-line">
+          <span>E-mail</span>
+          <a href="mailto:info@restauraceuradnice.com">info@restauraceuradnice.com</a>
+        </div>
+        <div class="contact-line">
+          <span>Adresa</span>
+          <span>51, Sokolská tř. 1944, 702 00 Moravská Ostrava a Přívoz</span>
+        </div>
+        <div class="hours-table" aria-label="Otevírací doba">
+          <div><span>Pondělí – Čtvrtek</span><span>10:00 – 22:30</span></div>
+          <div><span>Pátek – Sobota</span><span>10:00 – 23:30</span></div>
+          <div class="today"><span>Neděle</span><span>11.00 – 22:30</span></div>
+        </div>
+      </div>
+      <div class="map-card">
+        <div id="map" aria-label="Mapa s polohou Restaurace U Radnice"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final">
+        <div class="final-grid">
+          <div>
+            <h2>Rezervujte si stůl na Sokolské.</h2>
+            <p>Pro oběd, večerní posezení i dotaz k akcím volejte přímo do restaurace.</p>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774956685">+420 774 956 685</a>
+            <a class="btn btn-outline" href="mailto:info@restauraceuradnice.com">Napsat</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <div>© Restaurace U Radnice</div>
+      <div class="disclaimer">Tato prezentační stránka byla připravena službou Webflex. Pro odstranění použijte <a href="https://webflex.cz/remove?token=75fp9a3">tento odkaz</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2884627, 49.8429139],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0A060' })
+      .setLngLat([18.2884627, 49.8429139])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
