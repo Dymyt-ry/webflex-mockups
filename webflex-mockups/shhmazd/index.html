@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STRUHADLO Pardubice</title>
+  <meta name="description" content="Restaurace STRUHADLO na náměstí Republiky v Pardubicích. Rezervace, polední menu, řízky, krokety, hotovky a dezerty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #f2f0ea;
+      --ink: #000020;
+      --muted: rgba(0, 0, 32, .68);
+      --line: rgba(0, 0, 32, .18);
+      --line-strong: rgba(0, 0, 32, .72);
+      --accent: #000020;
+      --white: #ffffff;
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,0,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,32,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    ::selection { background: var(--ink); color: var(--white); }
+
+    .shell { width: min(calc(100% - 32px), var(--max)); margin-inline: auto; }
+    .rule { border-top: 1px solid var(--line-strong); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .nav-links a {
+      padding: 10px 0;
+      border-bottom: 2px solid transparent;
+      transition: border-color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .nav-links a:hover { border-color: currentColor; transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: background 180ms var(--ease), color 180ms var(--ease), transform 180ms var(--ease), border-color 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--ink); color: var(--white); }
+    .btn.primary:hover { background: #191940; border-color: #191940; }
+    .btn.outline { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn.outline:hover { background: var(--ink); color: var(--white); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      align-items: center;
+      gap: 48px;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      line-height: .92;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 26px);
+      line-height: 1.16;
+      font-weight: 700;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      margin-top: 42px;
+    }
+
+    .hero-meta div {
+      padding: 16px 14px;
+      border-right: 1px solid var(--line);
+      min-height: 82px;
+    }
+    .hero-meta div:last-child { border-right: 0; }
+    .hero-meta strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .hero-meta span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.12); }
+    .photo-stamp {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      background: var(--ink);
+      color: var(--white);
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(260px, 420px);
+      gap: 28px;
+      align-items: end;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--line-strong);
+      margin-bottom: 28px;
+    }
+
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 8vw, 92px);
+      line-height: .8;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--ink);
+    }
+
+    .section-head h2 { font-size: clamp(34px, 4.5vw, 66px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .menu-list { border-top: 1px solid var(--line); }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .menu-row h3 {
+      font-family: var(--font-body);
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+    .menu-row p { margin: 8px 0 0; color: var(--muted); max-width: 760px; }
+    .price {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255,255,255,.42);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 6vw, 76px);
+      line-height: .86;
+      overflow-wrap: anywhere;
+    }
+    .stat span { color: var(--muted); max-width: 250px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .black-panel {
+      background: var(--ink);
+      color: var(--white);
+      padding: 34px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .black-panel h2 { font-size: clamp(34px, 4vw, 58px); }
+    .black-panel p { color: rgba(255,255,255,.76); font-size: 19px; max-width: 520px; }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-card {
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .photo-card.tall { grid-row: span 2; aspect-ratio: auto; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.08); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+    }
+    .step {
+      padding: 24px 20px;
+      min-height: 210px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step .index { font-family: var(--font-mono); font-weight: 700; }
+    .step h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .step p { margin: 12px 0 0; color: var(--muted); font-size: 15px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .55fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      padding: 24px;
+      background: rgba(255,255,255,.5);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 56px); margin-bottom: 24px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .contact-line a, .contact-line strong { font-weight: 900; overflow-wrap: anywhere; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+    }
+    .qa {
+      padding: 24px;
+      min-height: 172px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .qa h3 {
+      font-family: var(--font-body);
+      font-weight: 900;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .qa p { color: var(--muted); margin: 12px 0 0; }
+
+    .final {
+      background: var(--ink);
+      color: var(--white);
+      padding: 64px 0;
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(38px, 5vw, 74px); max-width: 780px; }
+    .final p { margin: 16px 0 0; color: rgba(255,255,255,.72); font-size: 19px; }
+    .final .btn.primary { background: var(--white); color: var(--ink); border-color: var(--white); }
+    .final .btn.outline { color: var(--white); border-color: rgba(255,255,255,.45); }
+    .final .btn.outline:hover { background: var(--white); color: var(--ink); }
+
+    footer {
+      background: #0b0b16;
+      color: rgba(255,255,255,.72);
+      padding: 24px 0;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .footer-flex { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+    footer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { height: auto; padding: 16px 0; align-items: flex-start; }
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding: 44px 0 64px; }
+      .hero-grid, .split, .contact-grid, .final-inner { grid-template-columns: 1fr; }
+      .hero-grid { gap: 32px; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .hero-meta, .stats, .steps, .faq { grid-template-columns: 1fr; }
+      .stat, .hero-meta div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child, .hero-meta div:last-child { border-bottom: 0; }
+      .photo-grid { grid-template-columns: 1fr; }
+      .photo-card.tall { min-height: 300px; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      section { padding: 58px 0; }
+      .shell { width: min(calc(100% - 24px), var(--max)); }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .hero-actions, .final .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .black-panel { padding: 24px; min-height: 340px; }
+      .contact-line { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="logo" href="#top" aria-label="STRUHADLO Pardubice">
+        <img src="https://cdn.myshoptet.com/usr/www.struhadlopardubice.cz/user/logos/struhadlo-logo.png" alt="STRUHADLO">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420775791088">Rezervace</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="kicker">Pardubice · nám. Republiky 1400/1400</p>
+          <h1>Řízky. Krokety. Střídmá paráda.</h1>
+          <p class="lead">Poctivá restaurace v centru Pardubic: svíčková, kulajda, holandský řízek, sýrové krokety i dezerty podle aktuálního menu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420775791088">Zavolat a rezervovat</a>
+            <a class="btn outline" href="#menu">Prohlédnout menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div><strong>4,5</strong><span>hodnocení hostů</span></div>
+            <div><strong>2258</strong><span>recenzí</span></div>
+            <div><strong>+420 775 791 088</strong><span>rezervace</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-stamp">STRUHADLO · CENTRUM PARDUBIC</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu" class="rule">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Z aktuální tabule</h2>
+          <p>Výběr jídel podle zveřejněného menu. Gramáž, alergeny a dostupnost se řídí denní nabídkou v restauraci.</p>
+        </div>
+        <div class="menu-list">
+          <article class="menu-row">
+            <div>
+              <h3>Krémová kulajda a vejce na 63°</h3>
+              <p>Restované brambory grenaille, lesní houby, čerstvý kopr a koprový olej.</p>
+            </div>
+            <div class="price">89 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Hovězí svíčková z plece</h3>
+              <p>Dušená v zeleninovém základu s divokým kořením a smetanou, houskový knedlík, marinované brusinky.</p>
+            </div>
+            <div class="price">249 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Holandský řízek</h3>
+              <p>Smažený ve světlé strouhance, mléčná bramborová kaše, hrubý okurkový salát s koprem a zakysaná smetana.</p>
+            </div>
+            <div class="price">249 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Degustace řízků</h3>
+              <p>Variace tří druhů řízků, krémová bramborová kaše, variace příloh a dresink s možností přidání.</p>
+            </div>
+            <div class="price">389 Kč</div>
+          </article>
+          <article class="menu-row">
+            <div>
+              <h3>Krokety bolognese</h3>
+              <p>Bramborovo-chedarové těsto v ciabattové strouhance s parmazánem, hovězí ragù a zeleninová ratatouille.</p>
+            </div>
+            <div class="price">278 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Hosté se vracejí</h2>
+          <p>Jasné menu, plná chuť a poloha přímo v pardubickém centru.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>4,5</b><span>průměrné hodnocení restaurace</span></div>
+          <div class="stat"><b>2258</b><span>veřejných recenzí od hostů</span></div>
+          <div class="stat"><b>530 03</b><span>Pardubice I, Zelené Předměstí</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera" class="rule">
+      <div class="shell split">
+        <div class="black-panel">
+          <div>
+            <p class="kicker" style="color:rgba(255,255,255,.62)">03 · Večeře / oběd / rezervace</p>
+            <h2>Stůl pro dnešní chuť</h2>
+          </div>
+          <p>Vyberte si z hotovek, hlavních jídel, kroket a dezertů. Pro rezervaci volejte přímo do restaurace.</p>
+        </div>
+        <div class="photo-grid">
+          <figure class="photo-card tall">
+            <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Jak na stůl</h2>
+          <p>Krátká cesta od chuti k rezervaci. Bez formulářů navíc.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <span class="index">01</span>
+            <div><h3>Vyberete si směr</h3><p>Polévka, hotovka, řízek, krokety nebo dezert podle aktuální nabídky.</p></div>
+          </article>
+          <article class="step">
+            <span class="index">02</span>
+            <div><h3>Zavoláte rezervaci</h3><p>Telefon na restauraci je +420 775 791 088.</p></div>
+          </article>
+          <article class="step">
+            <span class="index">03</span>
+            <div><h3>Přijdete do centra</h3><p>Adresa je nám. Republiky 1400/1400, Pardubice I.</p></div>
+          </article>
+          <article class="step">
+            <span class="index">04</span>
+            <div><h3>Dáte si poctivý talíř</h3><p>Od svíčkové po pistáciové crème brûlée.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="rule">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">05</div>
+          <h2>Časté dotazy</h2>
+          <p>Praktické informace pro návštěvu restaurace STRUHADLO.</p>
+        </div>
+        <div class="faq">
+          <article class="qa"><h3>Kde restauraci najdu?</h3><p>Na adrese nám. Republiky 1400/1400, 530 03 Pardubice I-Zelené Předměstí.</p></article>
+          <article class="qa"><h3>Jak si rezervuji stůl?</h3><p>Pro rezervaci volejte na +420 775 791 088.</p></article>
+          <article class="qa"><h3>Co je v menu?</h3><p>Polévky, tradiční hotovky, hlavní jídla, krokety a dezerty.</p></article>
+          <article class="qa"><h3>Posíláte polední menu e-mailem?</h3><p>Ano, k polednímu menu se můžete přihlásit e-mailem.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="rule">
+      <div class="shell contact-grid">
+        <div class="contact-card">
+          <h2>Kontakt</h2>
+          <div class="contact-line"><span>Telefon</span><a href="tel:+420775791088">+420 775 791 088</a></div>
+          <div class="contact-line"><span>E-mail</span><a href="mailto:info@struhadlopardubice.cz">info@struhadlopardubice.cz</a></div>
+          <div class="contact-line"><span>Adresa</span><strong>nám. Republiky 1400/1400, 530 03 Pardubice I-Zelené Předměstí</strong></div>
+          <div class="contact-line"><span>Web</span><a href="https://www.struhadlopardubice.cz/">struhadlopardubice.cz</a></div>
+        </div>
+        <div id="map" aria-label="Mapa restaurace STRUHADLO"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="shell final-inner">
+        <div>
+          <h2>Rezervujte si stůl ve STRUHADLU</h2>
+          <p>Centrum Pardubic, poctivé talíře a menu, které se čte s chutí.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420775791088">Zavolat</a>
+          <a class="btn outline" href="mailto:info@struhadlopardubice.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-flex">
+      <span>Prezentační HTML připravilo Webflex. Nejste-li oprávněným příjemcem, stránku můžete odstranit zde: <a href="https://www.webflex.cz/delete/shhmazd">webflex.cz/delete/shhmazd</a>.</span>
+      <span>Fotografie: Pexels</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.776732599999999, 50.0379723],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#000020' })
+      .setLngLat([15.776732599999999, 50.0379723])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
