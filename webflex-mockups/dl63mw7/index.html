@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Restaurace All This Sněmovna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --paper: #ffffff;
+      --paper-soft: #f3f2ec;
+      --ink: #181812;
+      --muted: #626257;
+      --quiet: #8d8c80;
+      --accent: #C0A13A;
+      --accent-dark: #745f18;
+      --shadow: 0 28px 90px rgba(24, 24, 18, 0.08);
+      --shadow-soft: 0 18px 70px rgba(24, 24, 18, 0.06);
+      --radius: 8px;
+      --font-display: 'Archivo Black', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 132px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(24,24,18,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,24,18,0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; text-wrap: pretty; }
+    h1, h2, h3 { margin: 0; text-wrap: balance; hyphens: none; }
+
+    .shell { max-width: 1320px; margin: 0 auto; padding: 0 var(--gutter); }
+    .section { padding: var(--section) 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(251,251,248,0.82);
+      backdrop-filter: blur(24px);
+    }
+    .nav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--ink);
+    }
+    .brand img {
+      width: auto;
+      max-width: 220px;
+      max-height: 38px;
+      object-fit: contain;
+      filter: sepia(1) saturate(1.4) hue-rotate(4deg) brightness(0.74);
+    }
+    .brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .nav-links a { transition: color .2s cubic-bezier(.16,1,.3,1); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform .2s cubic-bezier(.16,1,.3,1), background .2s cubic-bezier(.16,1,.3,1), border-color .2s cubic-bezier(.16,1,.3,1), box-shadow .2s cubic-bezier(.16,1,.3,1);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(192,161,58,0.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #17130a; }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+
+    .hero { padding: clamp(48px, 7vw, 92px) 0 clamp(68px, 10vw, 128px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      align-items: center;
+      gap: clamp(40px, 7vw, 96px);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero h1 {
+      margin-top: 18px;
+      max-width: 690px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .hero-lead {
+      margin-top: 26px;
+      max-width: 610px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #3d3d34;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--quiet);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-badge {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      display: grid;
+      gap: 3px;
+      padding: 16px 18px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero-badge strong { font-family: var(--font-mono); font-size: 24px; }
+    .hero-badge span { color: var(--muted); font-size: 13px; font-weight: 700; }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(260px, .72fr) minmax(0, 1fr);
+      gap: clamp(36px, 8vw, 112px);
+      align-items: start;
+    }
+    .intro h2, .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .intro-list { display: grid; gap: 0; background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow-soft); overflow: hidden; }
+    .intro-row { display: grid; grid-template-columns: 120px 1fr; gap: 22px; padding: 24px; align-items: start; }
+    .intro-row + .intro-row { border-top: 1px solid rgba(24,24,18,.07); }
+    .intro-row span { font-family: var(--font-mono); color: var(--accent-dark); font-size: 12px; font-weight: 600; }
+    .intro-row h3 { font-size: 22px; margin-bottom: 8px; }
+
+    .menu-band {
+      background: #191812;
+      color: #fffdf4;
+      border-radius: var(--radius);
+      padding: clamp(28px, 5vw, 56px);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .55fr);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+    }
+    .menu-band p { color: rgba(255,253,244,.74); }
+    .menu-band .eyebrow { color: #d9bd58; }
+    .menu-band h2 { margin-top: 16px; color: #fffdf4; }
+    .menu-links { display: grid; gap: 10px; }
+    .menu-links a {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid rgba(255,255,255,.14);
+      font-weight: 800;
+      transition: color .2s cubic-bezier(.16,1,.3,1), transform .2s cubic-bezier(.16,1,.3,1);
+    }
+    .menu-links a:hover { color: #d9bd58; transform: translateX(2px); }
+    .menu-links a:active { transform: translateX(2px) translateY(1px); }
+    .menu-links small { font-family: var(--font-mono); color: rgba(255,253,244,.5); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 56px); line-height: 1; color: var(--ink); }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .events-grid {
+      display: grid;
+      grid-template-columns: .85fr 1fr;
+      gap: clamp(28px, 6vw, 76px);
+      align-items: center;
+    }
+    .events-copy { display: grid; gap: 18px; }
+    .event-list { margin-top: 12px; display: grid; gap: 12px; }
+    .event-item { padding: 18px 0; border-top: 1px solid rgba(24,24,18,.08); }
+    .event-item h3 { font-size: 20px; }
+    .event-item p { margin-top: 6px; }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .photo-stack figure {
+      margin: 0;
+      min-height: 360px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--paper-soft);
+    }
+    .photo-stack figure:nth-child(2) { margin-top: 48px; }
+    .photo-stack img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 32px;
+      margin-bottom: 30px;
+    }
+    .gallery-head p { max-width: 480px; }
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip img {
+      width: 100%;
+      height: clamp(260px, 34vw, 430px);
+      object-fit: cover;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-strip img:nth-child(2) { height: clamp(220px, 28vw, 360px); align-self: end; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .62fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(26px, 4vw, 44px);
+      background: var(--paper);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      align-content: start;
+      gap: 24px;
+    }
+    .contact-card h2 { font-family: var(--font-display); font-size: clamp(32px, 4vw, 54px); line-height: .98; text-transform: uppercase; }
+    .contact-lines { display: grid; gap: 18px; }
+    .contact-line { display: grid; gap: 4px; }
+    .contact-line span { font-family: var(--font-mono); font-size: 12px; color: var(--quiet); text-transform: uppercase; letter-spacing: .1em; }
+    .contact-line strong, .contact-line a { font-size: 18px; color: var(--ink); font-weight: 800; }
+    #map { height: 420px; min-height: 100%; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-soft); background: var(--paper-soft); }
+
+    .final-cta { padding: clamp(42px, 7vw, 76px); border-radius: var(--radius); background: var(--accent); color: #17130a; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; box-shadow: 0 30px 90px rgba(192,161,58,.25); }
+    .final-cta h2 { font-family: var(--font-display); font-size: clamp(34px, 5vw, 72px); line-height: .92; text-transform: uppercase; overflow-wrap: anywhere; }
+    .final-cta p { color: rgba(23,19,10,.76); max-width: 560px; margin-top: 14px; font-weight: 700; }
+    .final-cta .btn-outline { color: #17130a; background: rgba(255,255,255,.18); }
+
+    .footer { padding: 54px 0 40px; color: var(--muted); }
+    .footer-main { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 28px; }
+    .footer strong { color: var(--ink); }
+    .webflex-disclaimer {
+      max-width: 880px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(24,24,18,.08);
+      font-size: 13px;
+      color: var(--quiet);
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .intro, .menu-band, .events-grid, .contact-grid, .final-cta { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .stats { grid-template-columns: 1fr; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip img, .gallery-strip img:nth-child(2) { height: 300px; }
+      #map { min-height: 360px; }
+    }
+    @media (max-width: 720px) {
+      .nav-links { display: none; }
+      .nav-inner { min-height: 68px; }
+      .brand-name { max-width: 210px; }
+      .hero { padding-top: 34px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 34px; }
+      .intro-row { grid-template-columns: 1fr; gap: 8px; }
+      .photo-stack { grid-template-columns: 1fr; }
+      .photo-stack figure, .photo-stack figure:nth-child(2) { min-height: 260px; margin-top: 0; }
+      .gallery-head { display: grid; }
+      .footer-main { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="shell nav-inner">
+      <a class="brand" href="#top" aria-label="Restaurace All This Sněmovna">
+        <img src="https://www.allthissnemovna.cz/img/sys/ico_telephone.svg" alt="Restaurace All This Sněmovna">
+        <span class="brand-name">All This Sněmovna</span>
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420491041071">Rezervovat telefonicky</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Hradec Králové · Věkoše</span>
+          <h1>Chuť s výhledem</h1>
+          <p class="hero-lead">Restaurace All This Sněmovna spojuje stylový interiér, letní terasu, bar a kuchyni z čerstvých kvalitních surovin.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420491041071">Zavolat +420 491 041 071</a>
+            <a class="btn btn-outline" href="mailto:info@allthissnemovna.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note">
+            <span>Akademika Bedrny 371/12</span>
+            <span>80 míst uvnitř</span>
+            <span>Terasa a bar</span>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="hero-badge">
+            <strong>4.6</strong>
+            <span>Google hodnocení · 224 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell intro">
+        <div>
+          <span class="eyebrow">O restauraci</span>
+          <h2>Místo pro oběd, večer i setkání.</h2>
+        </div>
+        <div class="intro-list">
+          <article class="intro-row">
+            <span>01</span>
+            <div>
+              <h3>Polední menu a speciality</h3>
+              <p>Kromě stálého jídelního lístku připravuje restaurace denní speciality a tematická menu.</p>
+            </div>
+          </article>
+          <article class="intro-row">
+            <span>02</span>
+            <div>
+              <h3>Čerstvé suroviny</h3>
+              <p>Pokrmy vznikají z kvalitních surovin a přírodních dochucovadel v rukou profesionálních kuchařů.</p>
+            </div>
+          </article>
+          <article class="intro-row">
+            <span>03</span>
+            <div>
+              <h3>Prostor pro 80 osob</h3>
+              <p>Vnitřní restaurace, letní terasa a bar se hodí pro běžnou návštěvu, obchodní jednání i rodinné setkání.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="menu">
+      <div class="shell">
+        <div class="menu-band">
+          <div>
+            <span class="eyebrow">Menu</span>
+            <h2 class="section-title">Jídlo, nápoje, polední nabídka.</h2>
+            <p>Vyberte si polední menu, kompletní jídelní lístek nebo nápojový lístek. Rezervace do 24 hodin je nejjistější telefonicky.</p>
+          </div>
+          <div class="menu-links" aria-label="Nabídka restaurace">
+            <a href="#kontakt"><span>Dnešní polední menu</span><small>oběd</small></a>
+            <a href="#kontakt"><span>Kompletní jídelní lístek</span><small>kuchyně</small></a>
+            <a href="#kontakt"><span>Kompletní nápojový lístek</span><small>bar</small></a>
+            <a href="#kontakt"><span>Rezervace stolu</span><small>telefon</small></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell stats">
+        <div class="stat">
+          <strong>80</strong>
+          <span>míst ve vnitřních prostorách</span>
+        </div>
+        <div class="stat">
+          <strong>4.6</strong>
+          <span>hodnocení na Google</span>
+        </div>
+        <div class="stat">
+          <strong>224</strong>
+          <span>veřejných recenzí hostů</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="akce">
+      <div class="shell events-grid">
+        <div class="events-copy">
+          <span class="eyebrow">Akce a eventy</span>
+          <h2 class="section-title">Oslavy se servisem od prvního hovoru.</h2>
+          <p>Restaurace připravuje rodinné oslavy, narozeninové párty, firemní akce, vánoční i novoroční večírky a cateringový servis podle typu akce a rozpočtu.</p>
+          <div class="event-list">
+            <article class="event-item">
+              <h3>Narozeninová párty a rodinná oslava</h3>
+              <p>Pro setkání s rodinou, přáteli nebo oslavu důležitého okamžiku.</p>
+            </article>
+            <article class="event-item">
+              <h3>Firemní akce</h3>
+              <p>Tým se zkušenostmi v gastronomii a hotelnictví pomůže převést zadání do konkrétní realizace.</p>
+            </article>
+            <article class="event-item">
+              <h3>Sezónní nabídky</h3>
+              <p>Tematická menu navazují na aktuální suroviny a sezonu, včetně chřestové nabídky.</p>
+            </article>
+          </div>
+        </div>
+        <div class="photo-stack" aria-label="Atmosféra restaurace">
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="gallery-head">
+          <div>
+            <span class="eyebrow">Fotogalerie</span>
+            <h2 class="section-title">Teplé světlo, klidný stůl.</h2>
+          </div>
+          <p>Interiér je stavěný pro oběd ve dvou, delší večer u baru i rezervaci většího stolu.</p>
+        </div>
+        <div class="gallery-strip">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="shell contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Kde nás najdete</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Akademika Bedrny 371/12<br>500 03 Hradec Králové - Věkoše</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420491041071">+420 491 041 071</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@allthissnemovna.cz">info@allthissnemovna.cz</a>
+            </div>
+          </div>
+          <a class="btn btn-primary" href="tel:+420491041071">Rezervace stolu</a>
+        </div>
+        <div id="map" aria-label="Mapa umístění restaurace"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="final-cta">
+          <div>
+            <h2>Stůl ve Věkoších?</h2>
+            <p>Pro rezervaci dřívější než 24 hodin volejte přímo do restaurace.</p>
+          </div>
+          <a class="btn btn-outline" href="tel:+420491041071">Zavolat restauraci</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <div class="footer-main">
+        <strong>Restaurace All This Sněmovna</strong>
+        <span>Akademika Bedrny 371/12 · Věkoše · <a href="tel:+420491041071">+420 491 041 071</a></span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/dl63mw7" rel="nofollow">webflex.cz/delete/dl63mw7</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.830513, 50.2154147],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A13A' })
+      .setLngLat([15.830513, 50.2154147])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
