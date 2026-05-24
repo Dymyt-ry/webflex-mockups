@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smíchovská - Naše hospoda | Pardubice</title>
+  <meta name="description" content="Smíchovská - Naše hospoda v Pardubicích: denní menu, jídelní a nápojový lístek, rozvoz, akce a rezervace." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101412;
+      --panel: rgba(247, 247, 241, 0.08);
+      --panel-strong: rgba(247, 247, 241, 0.13);
+      --ink: #f6f4ea;
+      --muted: rgba(246, 244, 234, 0.68);
+      --soft: rgba(246, 244, 234, 0.12);
+      --accent: #204020;
+      --accent-2: #8cab78;
+      --paper: #f7f4ea;
+      --shadow: 0 34px 90px rgba(0, 0, 0, 0.34);
+      --radius: 26px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 80% 0%, rgba(32, 64, 32, .55), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 20, 18, .76);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-links a,
+    .button,
+    .menu-row,
+    .faq summary {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .button:focus-visible,
+    .menu-row:focus-visible,
+    .faq summary:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(1px); }
+    .button.primary { background: var(--paper); color: #102015; }
+    .button.primary:hover { background: #ffffff; }
+    .button.secondary {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #ffffff;
+      background: transparent;
+    }
+    .button.secondary:hover { background: rgba(255,255,255,.09); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 78px);
+      padding: 76px 0 68px;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.42;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--panel);
+      position: relative;
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.95) contrast(1.03);
+    }
+
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(16,20,18,.28));
+      pointer-events: none;
+    }
+
+    section { padding: 74px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .55fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 { font-size: clamp(34px, 4.8vw, 68px); }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      hyphens: auto;
+    }
+
+    .menu-board {
+      display: grid;
+      gap: 10px;
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      min-height: 68px;
+      padding: 16px 20px;
+      border-radius: 18px;
+      background: rgba(247, 247, 241, .07);
+      box-shadow: 0 18px 70px rgba(0,0,0,.14);
+    }
+
+    .menu-row:hover { background: rgba(247, 247, 241, .11); transform: translateY(-1px); }
+    .menu-row strong { font-size: 18px; }
+    .price {
+      font-family: var(--font-mono);
+      color: var(--paper);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 164px;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 30px 86px rgba(0,0,0,.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: .9;
+    }
+
+    .stat span { color: var(--muted); font-weight: 600; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .soft-card {
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 42px);
+    }
+
+    .soft-card h3 { font-size: clamp(28px, 3vw, 42px); margin-bottom: 18px; }
+    .soft-card p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .photo-grid figure {
+      margin: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0,0,0,.16);
+    }
+
+    .photo-grid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: .78fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .contact-item span { color: var(--muted); }
+    .contact-item strong,
+    .contact-item a { font-family: var(--font-mono); font-size: 14px; }
+
+    #map {
+      height: 420px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--panel);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .faq details {
+      border-radius: 22px;
+      background: var(--panel);
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .faq summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 22px 24px;
+      font-weight: 800;
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary:hover { background: rgba(255,255,255,.06); }
+    .faq p { margin: 0; padding: 0 24px 24px; color: var(--muted); }
+
+    .cta {
+      padding-bottom: 48px;
+    }
+
+    .cta-inner {
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(32,64,32,.96), rgba(247,244,234,.12));
+      padding: clamp(30px, 6vw, 70px);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 26px;
+      align-items: center;
+    }
+
+    .cta h2 { max-width: 720px; }
+    .cta p { margin: 18px 0 0; color: rgba(255,255,255,.74); font-size: 18px; }
+
+    .site-footer {
+      border-top: 1px solid rgba(255,255,255,.09);
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer {
+      max-width: 780px;
+      color: rgba(246,244,234,.54);
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .split,
+      .hours-contact,
+      .cta-inner {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 50px; }
+      .hero-photo { min-width: 0; }
+      .stats, .faq { grid-template-columns: 1fr; }
+      .cta-inner { align-items: start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      section { padding: 54px 0; }
+      .photo-grid { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      .contact-item { display: grid; gap: 4px; }
+      .brand img { max-height: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Smíchovská - Naše hospoda">
+        <img src="http://www.smichovska.cz/images/logo.png" alt="Smíchovská - Naše hospoda">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Denní menu</a>
+        <a href="#hospoda">O hospodě</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="button primary" href="tel:+420775947999">Rezervace</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="kicker">Pardubice · Jindřišská 276</div>
+        <h1>Poctivá hospoda v centru</h1>
+        <p class="lead">Denní menu, jídelní a nápojový lístek, rozvoz a akce pro chvíle, kdy chcete dobré jídlo bez okolků.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="tel:+420775947999">Volat 775 947 999</a>
+          <a class="button secondary" href="#menu">Zobrazit menu</a>
+        </div>
+      </div>
+      <div class="hero-photo" aria-label="Atmosféra restaurace">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      </div>
+    </div>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Pondělní menu</h2>
+          <p>Výběr z denní nabídky pro 25. 05. 2026 podle zveřejněného jídelníčku Smíchovské.</p>
+        </div>
+        <div class="menu-board">
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Drůbeží vývar se zeleninou a nudlemi</strong>
+            <span class="price">35 Kč</span>
+          </a>
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Hovězí kližka tažená na pivu, šťouchané brambory</strong>
+            <span class="price">155 Kč</span>
+          </a>
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Pikantní kuřecí směs s kroketami, naše tatarská omáčka</strong>
+            <span class="price">149 Kč</span>
+          </a>
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Smažený holandský řízek, vařené brambory, kyselá okurka</strong>
+            <span class="price">155 Kč</span>
+          </a>
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Těstoviny penne se špenátem, smetanou a parmazánem</strong>
+            <span class="price">135 Kč</span>
+          </a>
+          <a class="menu-row" href="mailto:rezervace@smichovska.cz">
+            <strong>Caesar salát s kuřecím masem, slaninou a krutony</strong>
+            <span class="price">175 Kč</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="wrap stats">
+        <div class="stat">
+          <b>4.4</b>
+          <span>hodnocení hostů</span>
+        </div>
+        <div class="stat">
+          <b>886</b>
+          <span>recenzí</span>
+        </div>
+        <div class="stat">
+          <b>530 02</b>
+          <span>Pardubice I</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="hospoda">
+      <div class="wrap split">
+        <article class="soft-card">
+          <div class="kicker">Naše hospoda</div>
+          <h3>Oběd, večeře, rozvoz i akce.</h3>
+          <p>Smíchovská drží přehlednou hospodskou nabídku: denní menu, stálý jídelní a nápojový lístek, rozvoz a sezónní akce včetně zabijačkových hodů.</p>
+        </article>
+        <div class="photo-grid" aria-label="Fotogalerie restaurace">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kde nás najdete</h2>
+          <p>Rezervace, dotazy k menu i domluva rozvozu přes telefon nebo e-mail.</p>
+        </div>
+        <div class="hours-contact">
+          <div class="soft-card">
+            <div class="kicker">Kontakt</div>
+            <h3>Jindřišská 276</h3>
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Adresa</span>
+                <strong>530 02 Pardubice I</strong>
+              </div>
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420775947999">+420 775 947 999</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:rezervace@smichovska.cz">rezervace@smichovska.cz</a>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění restaurace Smíchovská - Naše hospoda"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prakticky</h2>
+          <p>Nejčastější věci, které řešíte před návštěvou nebo objednávkou.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Děláte rozvoz?</summary>
+            <p>Ano, rozvoz patří mezi zveřejněné služby Smíchovské. Pro aktuální možnosti volejte prosím restauraci.</p>
+          </details>
+          <details>
+            <summary>Kde si rezervuji stůl?</summary>
+            <p>Rezervace přijímá restaurace na telefonu 775 947 999 nebo přes e-mail rezervace@smichovska.cz.</p>
+          </details>
+          <details>
+            <summary>Máte denní menu?</summary>
+            <p>Ano, denní menu je součástí nabídky. V ukázce pondělního menu jsou polévka, hotová jídla, těstoviny i salát.</p>
+          </details>
+          <details>
+            <summary>Pořádáte akce?</summary>
+            <p>Ano, mezi zveřejněnými akcemi jsou například zabijačkové hody.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <div>
+          <div class="kicker">Rezervace</div>
+          <h2>Zavolejte a domluvte stůl.</h2>
+          <p>Smíchovská - Naše hospoda, Jindřišská 276, Pardubice.</p>
+        </div>
+        <a class="button primary" href="tel:+420775947999">775 947 999</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>© 2026 Smíchovská - Naše hospoda</div>
+      <div class="disclaimer">
+        Webflex disclaimer: Toto je nezávazná prezentační realizace vytvořená pro oslovení provozovatele. Pro odstranění použijte /delete/bsacvu7.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.777849999999999, 50.034714],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204020' })
+      .setLngLat([15.777849999999999, 50.034714])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
