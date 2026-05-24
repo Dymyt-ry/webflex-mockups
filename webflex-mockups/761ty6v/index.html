@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Nejen55 | Pardubice</title>
+  <meta name="description" content="Restaurace Nejen55 na náměstí Republiky v Pardubicích. Denní menu, stálá nabídka, zahrádka, oslavy, firemní večírky a rezervace na telefonu +420 778 785 780.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-solid: #ffffff;
+      --surface-soft: #f1f2ee;
+      --ink: #171812;
+      --muted: #64675d;
+      --quiet: #8a8d82;
+      --accent: #606040;
+      --accent-dark: #44462f;
+      --line: rgba(96, 96, 64, .13);
+      --shadow: 0 32px 90px rgba(36, 38, 30, .10);
+      --shadow-soft: 0 18px 64px rgba(36, 38, 30, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(96,96,64,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96,96,64,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(260px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: rgba(23, 24, 18, .72);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav-links a { text-decoration: none; transition: color .22s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(96,96,64,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: rgba(23,24,18,.75);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 690px;
+    }
+
+    .meta-tile, .surface, .service-card, .event-panel, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+    }
+
+    .meta-tile {
+      min-height: 108px;
+      border-radius: 20px;
+      padding: 18px;
+    }
+    .meta-tile strong {
+      display: block;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 650; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(10,10,8,.03) 40%, rgba(10,10,8,.42));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 255px;
+      border-radius: var(--radius);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card p { margin: 18px 0 0; color: var(--muted); font-size: 17px; }
+    .card-index { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: .75fr 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      border-radius: 28px;
+      padding: 28px;
+      background: var(--ink);
+      color: #fff;
+      min-height: 220px;
+      box-shadow: var(--shadow);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: .95;
+      color: #f8f8f2;
+    }
+    .stat span { display: block; margin-top: 16px; color: rgba(255,255,255,.72); font-weight: 650; }
+    .trust-copy {
+      border-radius: 28px;
+      padding: 28px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow-soft);
+      min-height: 220px;
+    }
+    .trust-copy p { margin: 14px 0 0; color: var(--muted); font-size: 18px; }
+
+    .menu-table {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow-soft);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 170px 1fr auto;
+      gap: 24px;
+      align-items: center;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row b { font-family: var(--font-mono); color: var(--accent); }
+    .menu-row span { color: var(--muted); font-weight: 650; }
+    .menu-row a {
+      color: var(--ink);
+      font-weight: 800;
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+      transition: color .22s cubic-bezier(.2,.8,.2,1);
+    }
+    .menu-row a:hover { color: var(--accent); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .72fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .event-panel {
+      border-radius: 30px;
+      padding: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 520px;
+    }
+    .event-list { margin: 34px 0 0; padding: 0; list-style: none; }
+    .event-list li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 16px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 650;
+    }
+    .event-list b { color: var(--accent); font-family: var(--font-mono); }
+    .split-photo {
+      aspect-ratio: 4 / 3;
+      min-height: 520px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      object-fit: cover;
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-stack { display: grid; gap: 16px; }
+    .gallery-stack img { min-height: 220px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .42fr) minmax(0, .58fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 30px;
+      padding: 30px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 56px); }
+    .contact-lines { margin: 30px 0 0; display: grid; gap: 18px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      color: rgba(255,255,255,.78);
+      font-size: 18px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .contact-lines b {
+      display: block;
+      margin-bottom: 5px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      border-radius: 24px;
+      padding: 26px;
+      min-height: 210px;
+    }
+    .faq-item p { margin: 16px 0 0; color: var(--muted); font-size: 17px; }
+
+    .final-cta {
+      padding: 72px 0 96px;
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 26px;
+      align-items: center;
+      border-radius: 34px;
+      padding: clamp(30px, 5vw, 56px);
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 34px 90px rgba(96,96,64,.22);
+    }
+    .cta-panel h2 { max-width: 780px; color: #fff; }
+    .cta-panel p { margin: 18px 0 0; color: rgba(255,255,255,.78); font-size: 19px; }
+    .cta-panel .btn { background: #fff; color: var(--accent-dark); }
+
+    footer {
+      padding: 34px 0;
+      color: var(--quiet);
+      background: #f4f4f1;
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .credits, .disclaimer { margin: 0; }
+    .credits a, .disclaimer a { color: var(--accent); text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .contact-grid, .gallery, .section-head, .cta-panel, .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo, .split-photo { min-height: auto; }
+      .trust-strip, .service-grid, .faq-grid { grid-template-columns: 1fr; }
+      .hero-meta { grid-template-columns: 1fr; }
+      #map { min-height: 420px; }
+      .cta-panel { justify-items: start; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 38px 0 58px; }
+      section { padding: 56px 0; }
+      .nav { min-height: 68px; }
+      .nav-links .btn { padding: 0 14px; min-height: 42px; font-size: 14px; }
+      .hero-grid { gap: 28px; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; padding: 20px; }
+      .event-panel { min-height: 0; padding: 26px; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Restaurace Nejen55">
+        <img src="./images/nejen55sirka-logo-dark.png" alt="Restaurace Nejen55">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Denní menu</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420778785780">Rezervace</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">nám. Republiky 55 · Pardubice</p>
+          <h1>Nejen oběd v centru</h1>
+          <p class="lead">Restaurace Nejen55 podává denní menu, stálou nabídku a klasické pokrmy české i světové kuchyně v moderním provedení.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420778785780">Zavolat pro rezervaci</a>
+            <a class="btn btn-secondary" href="#menu">Denní menu</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní údaje">
+            <div class="meta-tile">
+              <strong>4,6</strong>
+              <span>Hodnocení podle 369 recenzí</span>
+            </div>
+            <div class="meta-tile">
+              <strong>Po-Ne</strong>
+              <span>Denní menu každý den v týdnu</span>
+            </div>
+            <div class="meta-tile">
+              <strong>+420</strong>
+              <span>778 785 780</span>
+            </div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">
+            <span>Denní menu · stálá nabídka</span>
+            <span>centrum Pardubic</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kuchyně</p>
+            <h2>Poledne, večeře, setkání.</h2>
+          </div>
+          <p>Menu stojí na známých jídlech, čerstvém servisu a klidném zázemí přímo na náměstí Republiky.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="card-index">01</span>
+            <div>
+              <h3>Denní menu</h3>
+              <p>Pondělí až neděle, s výběrem jídel pro rychlý oběd i delší posezení.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="card-index">02</span>
+            <div>
+              <h3>Stálá nabídka</h3>
+              <p>Klasika české kuchyně a světové pokrmy v současném restauračním podání.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="card-index">03</span>
+            <div>
+              <h3>Zahrádka</h3>
+              <p>Venkovní posezení je hostům k dispozici celý rok.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-strip">
+        <article class="stat">
+          <strong>4,6</strong>
+          <span>Veřejné hodnocení restaurace</span>
+        </article>
+        <article class="stat">
+          <strong>369</strong>
+          <span>Recenzí od hostů</span>
+        </article>
+        <article class="trust-copy">
+          <p class="eyebrow">Důvod zajít</p>
+          <h3>Dobré místo pro oběd i oslavu</h3>
+          <p>Nejen55 kombinuje každodenní provoz restaurace s možností připravit občerstvení pro narozeniny, firemní večírek nebo soukromou oslavu.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Týdenní rytmus</p>
+            <h2>Denní menu bez čekání na správný den.</h2>
+          </div>
+          <p>Výběr se mění podle dne, rezervaci stolu vyřešíte nejrychleji telefonicky.</p>
+        </div>
+        <div class="menu-table" aria-label="Denní menu podle dnů">
+          <div class="menu-row"><b>Pondělí</b><span>Denní menu a stálá nabídka</span><a href="tel:+420778785780">Rezervovat</a></div>
+          <div class="menu-row"><b>Úterý</b><span>Denní menu a stálá nabídka</span><a href="tel:+420778785780">Rezervovat</a></div>
+          <div class="menu-row"><b>Středa</b><span>Denní menu a stálá nabídka</span><a href="tel:+420778785780">Rezervovat</a></div>
+          <div class="menu-row"><b>Čtvrtek</b><span>Denní menu a stálá nabídka</span><a href="tel:+420778785780">Rezervovat</a></div>
+          <div class="menu-row"><b>Pátek až neděle</b><span>Jídlo, posezení a zahrádka</span><a href="#kontakt">Kontakt</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap split">
+        <article class="event-panel">
+          <div>
+            <p class="eyebrow">Oslavy a večírky</p>
+            <h2>Vaše akce u Nejen55.</h2>
+            <ul class="event-list">
+              <li><b>01</b><span>Narozeninové party s individuálním přístupem.</span></li>
+              <li><b>02</b><span>Firemní večírky s výběrem občerstvení podle domluvy.</span></li>
+              <li><b>03</b><span>Rezervace a detaily akce předem na telefonu 778 785 780.</span></li>
+            </ul>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420778785780">Domluvit akci</a>
+            <a class="btn btn-secondary" href="mailto:info@nejen55.cz">Napsat e-mail</a>
+          </div>
+        </article>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Teplé světlo, sklenky, klid.</h2>
+          </div>
+          <p>Pro oběd v pracovním dni, večerní posezení i stůl pro skupinu v centru Pardubic.</p>
+        </div>
+        <div class="gallery">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <div class="gallery-stack">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Stůl rezervujte telefonicky.</h2>
+          <div class="contact-lines">
+            <div>
+              <b>Telefon</b>
+              <a href="tel:+420778785780">+420 778 785 780</a>
+            </div>
+            <div>
+              <b>E-mail</b>
+              <a href="mailto:info@nejen55.cz">info@nejen55.cz</a>
+            </div>
+            <div>
+              <b>Adresa</b>
+              <span>nám. Republiky 55, 530 02 Pardubice-Pardubice I</span>
+            </div>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa restaurace Nejen55"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prakticky</p>
+            <h2>Nejčastější dotazy.</h2>
+          </div>
+          <p>Krátké odpovědi pro hosty, kteří plánují oběd, rezervaci nebo společnou akci.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Máte denní menu?</h3>
+            <p>Ano, denní menu je uvedené pro pondělí až neděli.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Lze uspořádat oslavu?</h3>
+            <p>Ano, restaurace připravuje oslavy, narozeninové party i firemní večírky individuálně.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak rezervovat?</h3>
+            <p>Rezervaci vyřídíte předem na čísle +420 778 785 780.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <p class="eyebrow">Rezervace</p>
+            <h2>Zastavte se na náměstí Republiky 55.</h2>
+            <p>Denní menu, stálá nabídka, zahrádka a prostor pro vaše setkání.</p>
+          </div>
+          <a class="btn" href="tel:+420778785780">+420 778 785 780</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <p class="credits">Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, Alari Tammsalu, NGUYỄN THÀNH NHƠN přes <a href="https://www.pexels.com/" rel="nofollow">Pexels</a>.</p>
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/761ty6v">webflex.cz/delete/761ty6v</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7769908, 50.0373448],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([15.7769908, 50.0373448])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
