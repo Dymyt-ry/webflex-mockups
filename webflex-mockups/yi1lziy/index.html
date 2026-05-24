@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Restaurace u Slunce v Ostravě-Svinově. Teplá kuchyně od 11:00, polední menu, řízné pivo, salonek pro akce a penzion.">
+  <title>Restaurace u Slunce | Ostrava-Svinov</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #100d0d;
+      --bg-2: #171111;
+      --surface: rgba(255, 250, 244, 0.075);
+      --surface-strong: rgba(255, 250, 244, 0.12);
+      --ink: #fff8f0;
+      --muted: rgba(255, 248, 240, 0.72);
+      --dim: rgba(255, 248, 240, 0.48);
+      --line: rgba(255, 248, 240, 0.11);
+      --accent: #E95F35;
+      --accent-2: #ffb36c;
+      --shadow: 0 34px 90px rgba(0, 0, 0, 0.28);
+      --font-display: "Archivo Black", "Inter Tight", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(18px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 136px);
+      --radius: 28px;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 82% 8%, rgba(233, 95, 53, 0.16), transparent 30vw),
+        radial-gradient(circle at 15% 32%, rgba(255, 179, 108, 0.07), transparent 28vw),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .28;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    p, h1, h2, h3 { margin: 0; }
+    p { color: var(--muted); text-wrap: pretty; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    h1, h2 { font-family: var(--font-display); letter-spacing: 0; text-transform: uppercase; }
+    h1 { font-size: clamp(40px, 6vw, 88px); line-height: .92; max-width: 720px; overflow-wrap: anywhere; }
+    h2 { font-size: clamp(34px, 4.6vw, 66px); line-height: .96; overflow-wrap: anywhere; }
+    h3 { font-size: clamp(20px, 2vw, 28px); line-height: 1.08; font-weight: 800; }
+    .wrap { width: min(1320px, 100%); margin: 0 auto; padding-inline: var(--gutter); }
+    .section { padding-block: var(--section); position: relative; }
+    .eyebrow {
+      font: 600 12px/1 var(--font-mono);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #160c08; box-shadow: 0 18px 55px rgba(233, 95, 53, .26); }
+    .btn.primary:hover { background: #ff7045; }
+    .btn.outline { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.outline:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.72); }
+    .soft-card {
+      background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 13, 13, .78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand img { max-height: 44px; width: auto; object-fit: contain; }
+    .links { display: flex; gap: 26px; color: var(--muted); font-weight: 700; }
+    .links a { transition: color .2s var(--ease); }
+    .links a:hover { color: var(--ink); }
+    .nav-call { font-family: var(--font-mono); font-size: 13px; color: var(--accent-2); }
+
+    .hero { padding-block: clamp(58px, 8vw, 112px); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(34px, 6vw, 84px);
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { display: block; margin-bottom: 24px; }
+    .lead { margin-top: 24px; font-size: clamp(19px, 2vw, 25px); line-height: 1.35; max-width: 660px; color: rgba(255,248,240,.82); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 650px;
+    }
+    .meta-item {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.06);
+    }
+    .meta-item strong { display: block; font-family: var(--font-mono); color: var(--ink); font-size: 15px; }
+    .meta-item span { display: block; margin-top: 4px; color: var(--dim); font-size: 13px; }
+    .hero-photo {
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(1.05); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(16,13,13,.56));
+    }
+    .photo-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.84);
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(320px, .45fr);
+      gap: clamp(32px, 7vw, 90px);
+      align-items: end;
+    }
+    .intro p { font-size: clamp(18px, 2vw, 24px); line-height: 1.4; max-width: 780px; margin-top: 24px; }
+    .rating {
+      padding: 30px;
+      display: grid;
+      gap: 18px;
+      align-self: stretch;
+    }
+    .rating-number { font-family: var(--font-display); font-size: clamp(58px, 8vw, 108px); line-height: .8; color: var(--accent); overflow-wrap: anywhere; }
+    .rating small { font-family: var(--font-mono); color: var(--muted); }
+
+    .service-list { margin-top: 48px; display: grid; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, .8fr) minmax(260px, .5fr);
+      gap: 28px;
+      align-items: start;
+      padding: 30px 0;
+      border-top: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 1px solid var(--line); }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-2); }
+    .service-row p { max-width: 520px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure { margin: 0; overflow: hidden; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; min-height: 290px; transition: transform .7s var(--ease); }
+    .gallery figure:hover img { transform: scale(1.035); }
+    .gallery-side { display: grid; gap: 18px; }
+    .gallery figcaption { padding: 18px 20px 20px; color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(360px, .55fr);
+      gap: clamp(28px, 5vw, 64px);
+      align-items: start;
+    }
+    .event-card { padding: clamp(28px, 4vw, 48px); }
+    .event-card p { margin-top: 20px; font-size: 19px; }
+    .detail-table {
+      display: grid;
+      margin-top: 30px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .detail-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+    }
+    .detail-table span:last-child { color: var(--accent-2); text-align: right; }
+    .rooms {
+      padding: 28px;
+      background: rgba(233,95,53,.14);
+      border-radius: var(--radius);
+      box-shadow: 0 30px 80px rgba(0,0,0,.18);
+    }
+    .rooms h3 { margin-bottom: 16px; }
+    .rooms ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .rooms li { color: var(--muted); padding-left: 22px; position: relative; }
+    .rooms li::before { content: ""; position: absolute; left: 0; top: .72em; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .45fr) minmax(0, .75fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card { padding: clamp(26px, 4vw, 42px); }
+    .hours { margin-top: 28px; display: grid; gap: 8px; font-family: var(--font-mono); }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours .today { color: var(--accent-2); }
+    .contact-links { display: grid; gap: 12px; margin-top: 30px; }
+    .contact-links a {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      font-weight: 800;
+      transition: color .2s var(--ease), padding-left .2s var(--ease);
+    }
+    .contact-links a:hover { color: var(--accent-2); padding-left: 6px; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .final {
+      padding: clamp(46px, 7vw, 82px);
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) auto;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: var(--section);
+    }
+    .final p { margin-top: 14px; font-size: 19px; }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 26px var(--gutter);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .webflex-note { max-width: 780px; }
+    .webflex-note a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .intro, .gallery, .split, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .links { display: none; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .final { text-align: left; }
+    }
+    @media (max-width: 560px) {
+      .nav-call { display: none; }
+      .hero-actions { display: grid; }
+      .btn { width: 100%; }
+      .photo-note { position: static; padding: 16px; background: rgba(0,0,0,.3); }
+      .hero-photo::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Restaurace u Slunce">
+        <img src="https://restauraceuslunce.eu/images/site/logo2.png" alt="Restaurace u Slunce">
+      </a>
+      <div class="links" aria-label="Sekce stránky">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#salonek">Salonek</a>
+        <a href="#ubytovani">Ubytování</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="nav-call" href="tel:+420736693633">+420 736 693 633</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Ostrava-Svinov · Nad Porubkou</span>
+          <h1 id="hero-title">U Slunce ve Svinově</h1>
+          <p class="lead">Příjemná hospůdka s domácí atmosférou, teplou kuchyní od 11:00, poledním menu, řízným pivem a salonkem pro oslavy.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420736693633">Zavolat do restaurace</a>
+            <a class="btn outline" href="#kontakt">Kde nás najdete</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-item"><strong>Po-Ne 11:00-22:00</strong><span>otevírací doba</span></div>
+            <div class="meta-item"><strong>4,4 / 610</strong><span>hodnocení a recenze</span></div>
+            <div class="meta-item"><strong>Salonek 40 osob</strong><span>soukromé akce</span></div>
+          </div>
+        </div>
+        <div class="hero-photo soft-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-note"><span>Teplá kuchyně od 11:00</span><span>Ostrava-Svinov</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="about-title">
+      <div class="intro">
+        <div>
+          <span class="eyebrow">Restaurace · penzion · akce</span>
+          <h2 id="about-title">Stálé místo pro oběd, pivo i večer s přáteli</h2>
+          <p>Restaurace u Slunce patří mezi stálice ve Svinově. Přijďte na denní menu, předkrmy, minutky, sportovní přenosy nebo si zarezervujte salonek pro rodinnou oslavu či firemní setkání.</p>
+        </div>
+        <aside class="rating soft-card" aria-label="Hodnocení">
+          <div class="rating-number">4,4</div>
+          <small>Průměrné hodnocení podle veřejného profilu. Celkem 610 recenzí.</small>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section wrap" id="jidlo" aria-labelledby="service-title">
+      <span class="eyebrow">Nabídka</span>
+      <h2 id="service-title">Co u nás najdete</h2>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <h3>Teplá kuchyně a polední menu</h3>
+          <p>Denní menu, předkrmy a minutky. Kuchyně je k dispozici od 11:00, takže se u nás zastavíte na oběd i pozdější jídlo.</p>
+        </article>
+        <article class="service-row" id="salonek">
+          <span class="num">02</span>
+          <h3>Salonek pro soukromé akce</h3>
+          <p>Samostatný salonek až pro 40 osob pro oslavy, setkání a společenské akce. Obsluha i kuchyně jsou k dispozici podle domluvy.</p>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <h3>Řízné pivo a sportovní přenosy</h3>
+          <p>Příjemné posezení u piva a velká televize pro sledování oblíbených sportovních přenosů.</p>
+        </article>
+        <article class="service-row" id="ubytovani">
+          <span class="num">04</span>
+          <h3>Penzion ve Svinově</h3>
+          <p>Ubytování v pokojích s vlastním sociálním zařízením, sprchovým koutem a vybavenou kuchyňkou. Vhodné na jednu noc i delší pobyt.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-label="Atmosféra restaurace">
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <figcaption>Klidné posezení pro oběd, večer i menší setkání.</figcaption>
+        </figure>
+        <div class="gallery-side">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Bar, sklenice a večerní atmosféra.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+            <figcaption>Prostřený stůl pro návštěvy i oslavy.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="events-title">
+      <div class="split">
+        <article class="event-card soft-card">
+          <span class="eyebrow">Rezervace</span>
+          <h2 id="events-title">Domluvte stůl nebo salonek</h2>
+          <p>Pro rezervaci stolu, salonku, oslavy nebo dotaz k ubytování zavolejte přímo do restaurace. Nejrychleji tak domluvíte termín, počet hostů i rozsah občerstvení.</p>
+          <div class="detail-table" aria-label="Praktické informace">
+            <div><span>Telefon restaurace</span><span>+420 736 693 633</span></div>
+            <div><span>Email</span><span>info@restauraceuslunce.eu</span></div>
+            <div><span>Kapacita salonku</span><span>až 40 osob</span></div>
+          </div>
+        </article>
+        <aside class="rooms" aria-labelledby="rooms-title">
+          <h3 id="rooms-title">Ubytování</h3>
+          <ul>
+            <li>Pokoje s vlastním WC a koupelnou.</li>
+            <li>Vybavená kuchyňka, lednice, sporák, nádobí a varná konvice.</li>
+            <li>Možnost snídaně a dlouhodobého pobytu.</li>
+            <li>Klidná část Ostravy s dobrou dopravní obslužností.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section wrap" id="kontakt" aria-labelledby="contact-title">
+      <div class="contact-grid">
+        <div class="contact-card soft-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2 id="contact-title">Najdete nás u Porubky</h2>
+          <p style="margin-top:18px">Restaurace u Slunce<br>Nad Porubkou 259/28<br>721 00 Ostrava-Svinov</p>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="today"><span>Po-Ne</span><span>11:00-22:00</span></div>
+            <div><span>Kuchyně</span><span>od 11:00</span></div>
+          </div>
+          <div class="contact-links">
+            <a href="tel:+420736693633">+420 736 693 633</a>
+            <a href="mailto:info@restauraceuslunce.eu">info@restauraceuslunce.eu</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Restaurace u Slunce"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final soft-card">
+        <div>
+          <span class="eyebrow">Rezervace a dotazy</span>
+          <h2>Přijďte dnes k nám</h2>
+          <p>Na oběd, pivo, sportovní přenos nebo domluvu soukromé akce ve Svinově.</p>
+        </div>
+        <a class="btn primary" href="tel:+420736693633">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© Restaurace u Slunce, Ostrava-Svinov</span>
+      <span class="webflex-note">Vytvořilo Webflex. Pokud si tuto prezentaci nepřejete zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/remove/yi1lziy">odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.189069, 49.8160031],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E95F35' })
+      .setLngLat([18.189069, 49.8160031])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
