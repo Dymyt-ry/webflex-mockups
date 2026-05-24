@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restarurace Plzenka Pardubice</title>
+  <meta name="description" content="Plzeňka Pardubice ve Smilově ulici: tradiční hospoda s výčepem, kuchyní z čerstvých surovin a kapacitou přibližně 120 míst.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #10120f;
+      --panel: #171a15;
+      --panel-2: #20241d;
+      --ink: #f7f4e9;
+      --muted: #b8b09d;
+      --line: rgba(216, 200, 137, .22);
+      --line-strong: rgba(216, 200, 137, .48);
+      --accent: #D8C889;
+      --accent-dark: #8f7f42;
+      --green: #2f4b2f;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(216, 200, 137, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216, 200, 137, .035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+
+    .skip {
+      position: absolute; left: 16px; top: -80px; z-index: 20;
+      background: var(--accent); color: #10120f; padding: 10px 14px;
+      border-radius: 6px; font-weight: 800;
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(16, 18, 15, .88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 28px;
+    }
+    .logo img { max-height: 46px; width: auto; object-fit: contain; }
+    .navlinks {
+      display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;
+      font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
+    }
+    .navlinks a, .link-btn {
+      padding: 10px 12px; border-radius: 6px;
+      transition: background .2s var(--ease), transform .2s var(--ease), color .2s var(--ease);
+    }
+    .navlinks a:hover, .link-btn:hover { background: rgba(216, 200, 137, .1); transform: translateY(-1px); }
+    .navlinks a:active, .link-btn:active, .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 46px; padding: 12px 18px; border-radius: 6px;
+      border: 1px solid var(--accent); background: var(--accent); color: #10120f;
+      font-weight: 800; transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+    }
+    .btn:hover { background: #eee0a4; border-color: #eee0a4; transform: translateY(-1px); }
+    .btn.secondary { background: transparent; color: var(--ink); border: 1px solid rgba(255,255,255,.45); }
+    .btn.secondary:hover { border-color: var(--accent); background: rgba(216, 200, 137, .08); }
+
+    .hero {
+      padding: 72px 0 52px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(380px, .85fr);
+      gap: 40px; align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono); color: var(--accent); font-size: 12px;
+      letter-spacing: 0; text-transform: uppercase; font-weight: 700;
+    }
+    h1 {
+      margin: 16px 0 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      max-width: 720px;
+    }
+    .lead { font-size: clamp(18px, 2vw, 24px); color: #ded8c8; max-width: 660px; margin: 0 0 30px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(180deg, rgba(216,200,137,.09), rgba(216,200,137,.02));
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0,0,0,.28);
+    }
+    .card-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 14px;
+      padding: 18px; border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono); font-size: 13px; text-transform: uppercase;
+    }
+    .status { color: #10120f; background: var(--accent); padding: 5px 8px; border-radius: 999px; font-weight: 800; white-space: nowrap; }
+    .hours-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); }
+    .hours-table td { padding: 13px 18px; border-bottom: 1px solid var(--line); }
+    .hours-table tr.today td { background: rgba(216, 200, 137, .13); color: #fff9df; font-weight: 700; }
+    .hours-table td:last-child { text-align: right; color: var(--accent); }
+    .card-foot { padding: 18px; color: var(--muted); }
+
+    section { padding: 68px 0; }
+    .section-head {
+      display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(260px, 420px);
+      gap: 28px; align-items: end; margin-bottom: 28px;
+    }
+    .num { font-family: var(--font-mono); color: rgba(216,200,137,.52); font-size: 52px; line-height: 1; }
+    h2 {
+      margin: 0; font-family: var(--font-display); font-size: clamp(30px, 4vw, 56px);
+      line-height: 1; letter-spacing: 0; hyphens: none; overflow-wrap: anywhere;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .matrix {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(23,26,21,.78);
+    }
+    .row {
+      display: grid; grid-template-columns: 1.1fr .85fr .7fr;
+      min-height: 78px; border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row > div { padding: 18px; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; }
+    .row > div:last-child { border-right: 0; }
+    .row.header { position: sticky; top: 73px; z-index: 5; min-height: 48px; background: #0f120f; font-family: var(--font-mono); color: var(--accent); text-transform: uppercase; font-size: 12px; }
+    .row.header > div { padding: 12px 18px; }
+    .service-title { font-weight: 800; font-size: 20px; }
+    .service-note { color: var(--muted); margin-top: 4px; }
+    .mono { font-family: var(--font-mono); color: var(--accent); }
+
+    .trust-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden;
+    }
+    .trust {
+      padding: 26px; min-height: 150px; border-right: 1px solid var(--line);
+      background: rgba(216,200,137,.045);
+    }
+    .trust:last-child { border-right: 0; }
+    .trust strong { display: block; font-family: var(--font-mono); font-size: clamp(28px, 4vw, 54px); line-height: 1; color: var(--accent); }
+    .trust span { display: block; margin-top: 12px; color: var(--muted); }
+
+    .split {
+      display: grid; grid-template-columns: .88fr 1.12fr; gap: 28px; align-items: stretch;
+    }
+    .photo-panel {
+      min-height: 430px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line);
+    }
+    .photo-panel img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.9) contrast(1.05); }
+    .timeline { border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+    .step { display: grid; grid-template-columns: 82px 1fr; border-bottom: 1px solid var(--line); min-height: 112px; }
+    .step:last-child { border-bottom: 0; }
+    .step .mono { padding: 22px; border-right: 1px solid var(--line); }
+    .step div:last-child { padding: 20px 22px; }
+    .step h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 22px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .gallery {
+      display: grid; grid-template-columns: 1.2fr .8fr .8fr; gap: 14px;
+    }
+    .gallery figure {
+      margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+      background: var(--panel); min-height: 230px;
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; min-height: 230px; object-fit: cover; }
+
+    .contact-grid {
+      display: grid; grid-template-columns: .78fr 1.22fr; gap: 24px; align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong); border-radius: 8px; background: rgba(23,26,21,.78);
+      padding: 24px;
+    }
+    .contact-card h3 { margin: 0 0 18px; font-family: var(--font-display); font-size: 28px; }
+    .facts { display: grid; gap: 14px; }
+    .fact { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .fact:last-child { border-bottom: 0; padding-bottom: 0; }
+    .fact small { display: block; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 4px; }
+    #map { height: 420px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .final {
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, rgba(216,200,137,.13), rgba(47,75,47,.18));
+    }
+    .final-inner { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; }
+    .final h2 { max-width: 760px; }
+    .final p { color: var(--muted); max-width: 660px; margin: 14px 0 0; }
+
+    footer { padding: 28px 0; color: var(--muted); font-size: 13px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 22px; }
+    .disclaimer { width: 100%; margin-top: 10px; font-size: 12px; color: #918a7a; }
+    .disclaimer a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-inner { grid-template-columns: 1fr; }
+      .section-head { gap: 12px; }
+      .row { grid-template-columns: 1fr; }
+      .row > div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .row > div:last-child { border-bottom: 0; }
+      .row.header { display: none; }
+      .trust-strip, .gallery { grid-template-columns: 1fr; }
+      .trust { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust:last-child { border-bottom: 0; }
+      .gallery figure:first-child { grid-row: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Restarurace Plzenka Pardubice">
+        <img src="https://www.plzenkapardubice.cz/wp-content/themes/theme1211/images/head.png" alt="Restarurace Plzenka Pardubice">
+      </a>
+      <div class="navlinks">
+        <a href="#jidlo">Kuchyně</a>
+        <a href="#tradice">Tradice</a>
+        <a href="#prostory">Prostory</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn" href="tel:+420466612351">Volat</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Smilova 386 · Pardubice I</div>
+          <h1>Plzeňka pro klidný oběd</h1>
+          <p class="lead">Tradiční pardubická hospoda s výjimečným pivem, znamenitou kuchyní z čerstvých surovin a přibližně 120 místy k sezení.</p>
+          <div class="hero-actions">
+            <a class="btn" href="tel:+420466612351">Rezervovat telefonem</a>
+            <a class="btn secondary" href="#kontakt">Zobrazit adresu</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <div class="card-head">
+            <span>Dnes · neděle</span>
+            <span class="status">11:00-22:00</span>
+          </div>
+          <table class="hours-table">
+            <tbody>
+              <tr><td>Pondělí</td><td>11:00-22:00</td></tr>
+              <tr><td>Úterý</td><td>11:00-22:00</td></tr>
+              <tr><td>Středa</td><td>11:00-22:00</td></tr>
+              <tr><td>Čtvrtek</td><td>11:00-22:00</td></tr>
+              <tr><td>Pátek</td><td>11:00-22:00</td></tr>
+              <tr><td>Sobota</td><td>11:00-22:00</td></tr>
+              <tr class="today"><td>Neděle</td><td>11:00-22:00</td></tr>
+            </tbody>
+          </table>
+          <div class="card-foot">Telefon: <a class="mono" href="tel:+420466612351">+420 466 612 351</a></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="jidlo">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Výčep, kuchyně, pohodlí</h2>
+          <p>Jednoduchý přehled toho, kvůli čemu hosté do Plzeňky míří během dne i večer.</p>
+        </div>
+        <div class="matrix" role="table" aria-label="Nabídka restaurace">
+          <div class="row header" role="row"><div>Oblast</div><div>Pro hosty</div><div>Detail</div></div>
+          <div class="row" role="row">
+            <div><span class="service-title">Výjimečné pivo</span><span class="service-note">Hospoda zařazená mezi členy klubu PUOR.</span></div>
+            <div>Poctivý výčep pro posezení u oběda i večerní zastávku.</div>
+            <div class="mono">po-ne</div>
+          </div>
+          <div class="row" role="row">
+            <div><span class="service-title">Znamenitá kuchyně</span><span class="service-note">Jídla připravovaná z čerstvých a kvalitních surovin.</span></div>
+            <div>V klidu si dáte oběd, večeři nebo společné posezení u stolu.</div>
+            <div class="mono">11:00-22:00</div>
+          </div>
+          <div class="row" role="row">
+            <div><span class="service-title">Čisté prostředí</span><span class="service-note">Restaurace s obnoveným interiérem a vzduchotechnikou.</span></div>
+            <div>Příjemné zázemí pro hosty, kteří chtějí pohodlí bez spěchu.</div>
+            <div class="mono">cca 120 míst</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tradice">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Dlouholetá tradice v Pardubicích</h2>
+          <p>Plzeňka patří ke známým pardubickým hospodám s historií sahající k počátku 20. století.</p>
+        </div>
+        <div class="trust-strip">
+          <div class="trust"><strong>4,3</strong><span>Hodnocení podle údajů v profilu restaurace.</span></div>
+          <div class="trust"><strong>1084</strong><span>Recenzí od hostů, kteří Plzeňku navštívili.</span></div>
+          <div class="trust"><strong>120</strong><span>Přibližná kapacita míst k sezení v restauraci.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="photo-panel">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="timeline">
+          <div class="step">
+            <div class="mono">I</div>
+            <div><h3>Usadíte se</h3><p>Vyberete si místo v restauraci ve Smilově ulici, kde je dost prostoru pro oběd i delší posezení.</p></div>
+          </div>
+          <div class="step">
+            <div class="mono">II</div>
+            <div><h3>Dáte si pivo a jídlo</h3><p>Kuchyně stojí na čerstvých surovinách a výčep na pivu, kvůli kterému má Plzeňka své jméno.</p></div>
+          </div>
+          <div class="step">
+            <div class="mono">III</div>
+            <div><h3>Zůstanete v klidu</h3><p>Čisté a příjemné prostředí je hlavní cíl restaurace: žádný shon, jen pohodové posezení.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prostory">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <h2>Atmosféra u stolu</h2>
+          <p>Teplé světlo, sklo, dřevo a večerní hospodská nálada bez okázalosti.</p>
+        </div>
+        <div class="gallery" aria-label="Fotogalerie atmosféry">
+          <figure><img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Kontakt a cesta</h2>
+          <p>Restauraci najdete v Pardubicích I, ve Smilově ulici nedaleko centra.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Plzeňka Pardubice s.r.o.</h3>
+            <div class="facts">
+              <div class="fact"><small>Adresa</small>Smilova 386, 530 02 Pardubice-Pardubice I</div>
+              <div class="fact"><small>Telefon</small><a class="mono" href="tel:+420466612351">+420 466 612 351</a></div>
+              <div class="fact"><small>E-mail</small><a href="mailto:plzenka@volny.cz">plzenka@volny.cz</a></div>
+              <div class="fact"><small>Otevřeno</small><span class="mono">po-ne 11:00-22:00</span></div>
+              <div class="fact"><small>IČ</small><span class="mono">288 21 335</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa restaurace"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <h2>Zastavte se ve Smilově ulici.</h2>
+          <p>Máte chuť na pivo, teplé jídlo a klidné posezení? Plzeňka je otevřená každý den od jedenácti do deseti.</p>
+        </div>
+        <a class="btn" href="tel:+420466612351">+420 466 612 351</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Plzeňka Pardubice s.r.o.</div>
+      <div>Smilova 386 · Pardubice</div>
+      <div class="disclaimer">Neoficiální prezentační stránka připravená službou Webflex. Pokud si nepřejete její zobrazení, můžete ji odstranit na adrese <a href="https://www.webflex.cz/delete/wtnq85r">webflex.cz/delete/wtnq85r</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.774264200000001, 50.0346943],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#D8C889' })
+      .setLngLat([15.774264200000001, 50.0346943])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
