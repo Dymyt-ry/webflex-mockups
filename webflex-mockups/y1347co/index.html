@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Petřkovická restaurace | Kuchyně, menu a akce v Ostravě-Petřkovicích</title>
+  <meta name="description" content="Petřkovická restaurace v Ostravě-Petřkovicích: týdenní menu, rozvoz, catering na míru a sály pro soukromé akce, plesy a oslavy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;650;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcff;
+      --paper: rgba(255, 255, 255, .86);
+      --paper-strong: #ffffff;
+      --soft: #eef4fb;
+      --ink: #111827;
+      --muted: #647084;
+      --line: rgba(17, 24, 39, .08);
+      --accent: #004080;
+      --accent-2: #0b5cad;
+      --accent-soft: rgba(0, 64, 128, .10);
+      --shadow: 0 28px 90px rgba(20, 48, 78, .10);
+      --shadow-sm: 0 18px 54px rgba(20, 48, 78, .08);
+      --radius: 28px;
+      --wrap: min(1180px, calc(100% - 40px));
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(0, 64, 128, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 64, 128, .018) 1px, transparent 1px),
+        radial-gradient(circle at 88% 12%, rgba(0, 64, 128, .12), transparent 34rem),
+        radial-gradient(circle at 8% 44%, rgba(153, 211, 251, .18), transparent 30rem),
+        var(--bg);
+      background-size: 26px 26px, 26px 26px, auto, auto, auto;
+      font-size: 16px;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .wrap { width: var(--wrap); margin-inline: auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 252, 255, .82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo { display: inline-flex; align-items: center; min-width: 0; }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(17, 24, 39, .68);
+    }
+
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .btn:focus-visible,
+    .menu-link:focus-visible,
+    .footer-disclaimer a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 21px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease), color 180ms var(--ease);
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(0, 64, 128, .14); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-2); }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(0, 64, 128, .06); }
+
+    .hero {
+      min-height: calc(100svh - 78px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 82px);
+      padding: 62px 0 72px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 9px var(--accent-soft);
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 650px;
+      margin-top: 26px;
+      font-size: clamp(18px, 1.7vw, 22px);
+      line-height: 1.5;
+      color: #344055;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 32px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .68);
+      box-shadow: 0 10px 30px rgba(20, 48, 78, .06);
+    }
+
+    .hero-media { position: relative; min-width: 0; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 42px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img,
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .floating-card {
+      position: absolute;
+      right: -18px;
+      bottom: -26px;
+      width: min(332px, 78%);
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, .90);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(20px);
+    }
+
+    .floating-card strong { display: block; margin-bottom: 12px; font-size: 15px; }
+    .floating-card span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .54fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { font-size: 18px; line-height: 1.7; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) minmax(230px, .45fr);
+      align-items: center;
+      gap: 26px;
+      min-height: 130px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .service-row .num { color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+    .service-row h3 { font-size: clamp(24px, 2.5vw, 38px); }
+    .service-row p { line-height: 1.65; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 194px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat b {
+      color: var(--accent);
+      font-family: var(--font-display);
+      font-size: clamp(42px, 5vw, 72px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .stat span { color: var(--muted); font-weight: 800; }
+
+    .story {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .story-copy {
+      padding: clamp(28px, 4vw, 46px);
+      border-radius: 34px;
+      background: var(--paper-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .story-copy h2 { margin-bottom: 22px; }
+    .story-copy p + p { margin-top: 16px; }
+    .story-photo {
+      min-height: 440px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .story-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .menu-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .46fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .menu-main,
+    .menu-aside,
+    .contact-card {
+      border-radius: 32px;
+      background: var(--paper);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .menu-main { padding: clamp(28px, 4vw, 44px); }
+    .menu-main h2 { margin-bottom: 18px; }
+    .menu-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      width: min(100%, 460px);
+      margin-top: 30px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    .menu-link:hover { transform: translateY(-1px); background: var(--accent-2); box-shadow: 0 18px 38px rgba(0, 64, 128, .18); }
+    .menu-link:active { transform: translateY(1px); }
+    .menu-link span:last-child { font-family: var(--font-mono); }
+
+    .menu-aside { padding: 26px; display: grid; align-content: space-between; gap: 28px; }
+    .aside-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .aside-row:last-child { border-bottom: 0; padding-bottom: 0; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .gallery-card {
+      min-height: 300px;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .gallery-card.tall { min-height: 430px; }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .faq-item h3 {
+      margin-bottom: 12px;
+      font-family: var(--font-body);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .44fr) minmax(0, .56fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card { padding: 30px; }
+    .contact-card h2 { margin-bottom: 22px; }
+    .contact-lines { display: grid; gap: 14px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .contact-line span:first-child {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .contact-line a,
+    .contact-line strong { font-weight: 800; overflow-wrap: anywhere; }
+
+    #map {
+      height: 420px;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .final-cta {
+      padding: clamp(34px, 6vw, 58px);
+      border-radius: 36px;
+      background: #101826;
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .final-cta h2 { color: #fff; font-size: clamp(32px, 4.2vw, 66px); }
+    .final-cta p { margin-top: 14px; color: rgba(255,255,255,.72); font-size: 18px; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.08); }
+
+    .site-footer {
+      padding: 52px 0 30px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 26px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .footer-disclaimer {
+      margin-top: 22px;
+      color: #7b8493;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .footer-disclaimer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero,
+      .section-head,
+      .story,
+      .menu-panel,
+      .contact-grid,
+      .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-photo { border-radius: 30px; }
+      .floating-card { position: static; width: auto; margin: 14px 0 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust,
+      .faq-list,
+      .gallery { grid-template-columns: 1fr; }
+      .gallery-card,
+      .gallery-card.tall,
+      .story-photo { min-height: 300px; }
+      section { padding: 62px 0; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --wrap: min(100% - 28px, 1180px); }
+      .logo img { max-height: 38px; }
+      .nav { min-height: 70px; }
+      .hero { padding: 38px 0 54px; }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+      h2 { font-size: clamp(32px, 11vw, 48px); }
+      .btn { width: 100%; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      .footer-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Petřkovická restaurace">
+        <img src="https://petrkovickarestaurace.cz/wp-content/uploads/2023/11/Petrkovicka_logo_web.png" alt="Petřkovická restaurace">
+      </a>
+      <div class="nav-links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#akce">Akce</a>
+        <a href="#pribeh">O restauraci</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420774211108">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Ostrava-Petřkovice · Hlučínská 139</div>
+        <h1 id="hero-title">Chutě pro každý stůl</h1>
+        <p class="lead">Petřkovická restaurace spojuje poctivou kuchyni, týdenní menu, rozvoz a zázemí pro oslavy, plesy i soukromé akce.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#nabidka">Prohlédnout nabídku</a>
+          <a class="btn btn-outline" href="#kontakt">Rezervace a kontakt</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <span class="meta-chip">4.6 / 5 podle 278 recenzí</span>
+          <span class="meta-chip">rozvoz domů i do kanceláře</span>
+          <span class="meta-chip">sály pro 40 a 200 osob</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-card" aria-label="Rychlý kontakt">
+          <strong>Rezervace a domluva akce</strong>
+          <span><em>Telefon</em><b>774 211 108</b></span>
+          <span><em>E-mail</em><b>seznam.cz</b></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co si u nás dáte</h2>
+          <p>Každý týden připravujeme obědové menu, stálou nabídku jídel a víkendové tematické hody podle aktuální sezóny.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Týdenní menu</h3>
+            <p>Nové menu s výběrem jídel pro rychlý oběd v restauraci, domů nebo do kanceláře.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Catering na míru</h3>
+            <p>Občerstvení pro soukromou akci, ples nebo firemní setkání připravené podle počtu hostů.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Sály pro akce</h3>
+            <p>Elegantní prostory pro menší oslavy i větší plesy, s možností pomoci při plánování.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="trust-title">Důvěra z Petřkovic</h2>
+          <p>Hodnocení, kapacita sálů a kontakt jsou uvedené přímo, aby se host rychle rozhodl a mohl rovnou zavolat.</p>
+        </div>
+        <div class="trust">
+          <article class="stat">
+            <b>4.6</b>
+            <span>průměrné hodnocení hostů</span>
+          </article>
+          <article class="stat">
+            <b>278</b>
+            <span>veřejných recenzí</span>
+          </article>
+          <article class="stat">
+            <b>40 / 200</b>
+            <span>osob v dostupných sálech</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="wrap story">
+        <div class="story-copy">
+          <span class="eyebrow">Michael a Kateřina</span>
+          <h2>Sourozenci za provozem</h2>
+          <p>Restauraci vedou Michael a Kateřina, kteří spojili vztah ke gastronomii s osobním přístupem k hostům.</p>
+          <p>Michael se stará o kuchyni a prezentaci jídel, Kateřina o atmosféru u stolu a plynulý průběh návštěvy i domluvených akcí.</p>
+        </div>
+        <div class="story-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="menu-title">
+      <div class="wrap menu-panel">
+        <div class="menu-main">
+          <span class="eyebrow">Týdenní menu a rozvoz</span>
+          <h2 id="menu-title">Oběd bez čekání</h2>
+          <p>Pokud nemáte čas dorazit osobně, restaurace nabízí rozvoz až domů nebo do kanceláře. Aktuální týdenní menu je hlavní orientační bod pro každodenní obědy.</p>
+          <a class="menu-link" href="#kontakt">
+            <span>Objednat nebo se zeptat</span>
+            <span>→</span>
+          </a>
+        </div>
+        <aside class="menu-aside" aria-label="Pro jaké situace je restaurace vhodná">
+          <div class="aside-row"><span>Oběd</span><strong>týdenní menu</strong></div>
+          <div class="aside-row"><span>Rozvoz</span><strong>domů / kancelář</strong></div>
+          <div class="aside-row"><span>Akce</span><strong>catering na míru</strong></div>
+          <div class="aside-row"><span>Sály</span><strong>40 a 200 osob</strong></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="akce" aria-labelledby="gallery-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="gallery-title">Atmosféra pro večer</h2>
+          <p>Teplé světlo, prostřený stůl a prostor, který funguje pro běžnou návštěvu i společenskou událost.</p>
+        </div>
+        <div class="gallery">
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </div>
+          <div class="gallery-card tall">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="faq-title">Nejčastější domluva</h2>
+          <p>Krátké odpovědi k obědům, rozvozu a akcím podle informací, které restaurace uvádí veřejně.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Připravujete menu každý týden?</h3>
+            <p>Ano, restaurace pravidelně připravuje týdenní menu s výběrem jídel.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je možné objednat rozvoz?</h3>
+            <p>Ano, rozvoz je dostupný domů i do kanceláře podle aktuální domluvy.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Zajistíte občerstvení na akci?</h3>
+            <p>Ano, catering se řeší na míru podle typu akce a přání hostitele.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak velké akce zvládnou sály?</h3>
+            <p>Restaurace uvádí sály pro 40 a 200 osob, vhodné pro soukromé akce i plesy.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Stůl, oběd nebo sál</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420774211108">+420 774 211 108</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:petrkovickarestaurace@seznam.cz">petrkovickarestaurace@seznam.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Hlučínská 139, 725 29 Ostrava-Petřkovice</strong>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <a href="https://petrkovickarestaurace.cz/kontakt/">petrkovickarestaurace.cz</a>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Petřkovické restaurace"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <h2>Domluvte si návštěvu</h2>
+          <p>Pro rezervaci, rozvoz nebo akci volejte restauraci přímo na uvedené číslo.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420774211108">+420 774 211 108</a>
+          <a class="btn btn-outline" href="mailto:petrkovickarestaurace@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-top">
+        <strong>Petřkovická restaurace</strong>
+        <span>Hlučínská 139, Ostrava-Petřkovice</span>
+      </div>
+      <p class="footer-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/y1347co" rel="nofollow">webflex.cz/delete/y1347co</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.258407, 49.875508499999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004080' })
+      .setLngLat([18.258407, 49.875508499999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
