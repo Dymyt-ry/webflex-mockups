@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Restaurace U Jarošů | Česká kuchyně v Ostravě-Pustkovci</title>
+  <meta name="description" content="Restaurace U Jarošů v Ostravě-Pustkovci: tradiční česká kuchyně, denní menu, jídelní lístek, catering a degustace na míru." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101112;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f7f3ed;
+      --muted: #b7aea4;
+      --dim: #746a61;
+      --line: rgba(255, 255, 255, 0.10);
+      --accent: #A06020;
+      --accent-light: #d79a5d;
+      --accent-ink: #fff7ed;
+      --shadow: 0 34px 100px rgba(0, 0, 0, 0.28);
+      --shadow-soft: 0 28px 90px rgba(160, 96, 32, 0.10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 12% 8%, rgba(160,96,32,0.20), transparent 32rem),
+        radial-gradient(circle at 84% 28%, rgba(255,255,255,0.06), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(16, 17, 18, 0.78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .logo img {
+      width: auto;
+      max-width: 210px;
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0,0,0,0.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #b87535; }
+    .btn-outline { background: transparent; border-color: rgba(255,255,255,0.45); color: #fff; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.72); }
+
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.94fr) minmax(420px, 1.06fr);
+      align-items: center;
+      gap: 54px;
+      padding: 68px 0 58px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--accent-light);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(160,96,32,0.22);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.68;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-media { position: relative; min-width: 0; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 38px;
+      background: #1c1815;
+      box-shadow: var(--shadow);
+    }
+    .hero-card img, .gallery-card img, .feature-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-card {
+      position: absolute;
+      right: -18px;
+      bottom: -28px;
+      width: min(330px, 82%);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(22, 20, 18, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+    .floating-card strong { display: block; margin-bottom: 12px; font-size: 15px; }
+    .floating-card span { display: flex; justify-content: space-between; gap: 18px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .55fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .menu-rows { display: grid; gap: 12px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(220px, .45fr);
+      align-items: center;
+      gap: 24px;
+      min-height: 126px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .num { color: var(--accent-light); font-family: var(--font-mono); font-weight: 700; }
+    .menu-row h3 { font-size: clamp(24px, 2.4vw, 36px); }
+    .menu-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+    .stat {
+      min-height: 210px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat b {
+      display: block;
+      margin-bottom: 16px;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: 1;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .story {
+      display: grid;
+      grid-template-columns: minmax(380px, .86fr) minmax(0, 1.14fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .feature-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+    }
+    .story-card {
+      padding: 38px;
+      border-radius: 32px;
+      background: rgba(255,255,255,0.085);
+      box-shadow: var(--shadow-soft);
+    }
+    .story-card p { margin: 18px 0 0; color: var(--muted); font-size: 18px; line-height: 1.75; hyphens: auto; }
+    .timeline { margin-top: 28px; display: grid; gap: 14px; }
+    .timeline div {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .timeline b { color: var(--accent-light); font-family: var(--font-mono); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-card:nth-child(2) { min-height: 420px; }
+    .gallery-card img { transition: transform 260ms var(--ease); }
+    .gallery-card:hover img { transform: scale(1.035); }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .75fr) minmax(0, 1.25fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .panel {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .panel h3 { margin-bottom: 18px; font-size: clamp(26px, 2.6vw, 38px); }
+    .hours { display: grid; gap: 10px; margin-top: 22px; }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours .today { color: var(--ink); }
+    .contact-lines { display: grid; gap: 12px; color: var(--muted); font-weight: 700; }
+    .contact-lines a:hover { color: var(--ink); }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .qa {
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .qa h3 { font-size: 24px; line-height: 1.1; }
+    .qa p { margin: 14px 0 0; color: var(--muted); line-height: 1.7; hyphens: auto; }
+
+    .final {
+      margin: 54px 0 88px;
+      padding: clamp(34px, 6vw, 68px);
+      border-radius: 38px;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(160,96,32,0.30), transparent 28rem),
+        rgba(255,255,255,0.09);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 { max-width: 820px; }
+    .final p { margin: 18px 0 0; color: var(--muted); font-size: 18px; }
+
+    .site-footer {
+      padding: 34px 0 44px;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 780px;
+      color: #8f857b;
+      line-height: 1.65;
+    }
+    .credits { font-family: var(--font-mono); font-size: 11px; color: #675f58; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .story, .hours-contact, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-media { order: -1; }
+      .floating-card { right: 14px; bottom: 14px; }
+      .section-head, .menu-row, .gallery, .faq, .trust { grid-template-columns: 1fr; }
+      .menu-row { min-height: auto; }
+      .gallery-card, .gallery-card:nth-child(2) { min-height: 260px; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .hero-card { border-radius: 26px; }
+      .floating-card { position: static; width: 100%; margin-top: 12px; }
+      .btn { width: 100%; }
+      .final { margin-bottom: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Restaurace U Jarošů">
+        <img src="https://www.ujarosu.cz/img/logo.svg" alt="Restaurace U Jarošů">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420596925524">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero">
+      <div>
+        <span class="eyebrow">Ostrava-Pustkovec · Pustkovecká 138/156</span>
+        <h1>Poctivá česká kuchyně</h1>
+        <p class="lead">Restaurace U Jarošů navazuje na místo známé dobrým masem a sousedským setkáváním. Dnes tu najdete denní menu, jídelní lístek, catering a degustace sestavené na míru.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420596925524">Rezervovat telefonicky</a>
+          <a class="btn btn-outline" href="#menu">Denní menu</a>
+        </div>
+        <div class="hero-note">
+          <span>4,5 Google</span>
+          <span>1199 recenzí</span>
+          <span>ujarosu@seznam.cz</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="floating-card" aria-label="Otevírací doba">
+          <strong>Dnes otevřeno</strong>
+          <span><em>Ne</em><em>11:00 - 22:00</em></span>
+          <span><em>Po</em><em>10:45 - 22:00</em></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu" class="wrap">
+      <div class="section-head">
+        <h2>Co u nás najdete</h2>
+        <p>Jídlo postavené na poctivě zpracovaných surovinách, tradiční české kuchyni a doplněné o různé světové chutě.</p>
+      </div>
+      <div class="menu-rows">
+        <article class="menu-row">
+          <span class="num">01</span>
+          <h3>Denní menu</h3>
+          <p>Obědová nabídka pro všední den, s kuchyní otevřenou už od 10:45.</p>
+        </article>
+        <article class="menu-row">
+          <span class="num">02</span>
+          <h3>Jídelní lístek</h3>
+          <p>Tradiční česká kuchyně v současném pojetí a chuťové variace mimo domácí klasiku.</p>
+        </article>
+        <article class="menu-row">
+          <span class="num">03</span>
+          <h3>Catering a degustace</h3>
+          <p>Vícechodové degustační menu a pohoštění připravené podle charakteru Vaší akce.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-label="Důvěra">
+      <div class="trust">
+        <div class="stat"><b>4,5</b><span>hodnocení na Googlu</span></div>
+        <div class="stat"><b>1199</b><span>recenzí od hostů</span></div>
+        <div class="stat"><b>7 dní</b><span>otevřeno každý týden</span></div>
+      </div>
+    </section>
+
+    <section id="pribeh" class="wrap story">
+      <div class="feature-photo">
+        <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+      </div>
+      <div class="story-card">
+        <span class="eyebrow">Historie místa</span>
+        <h2>Od řeznictví k restauraci</h2>
+        <p>V místě dnešní restaurace bývalo do roku 1989 vyhlášené řeznictví pana Jaroše Křibka. Lidé sem chodili za dobrým masem a často zůstali na kus řeči. Rodina na tento zvyk navázala restaurací, kde lze u dobře připraveného jídla zůstat déle.</p>
+        <div class="timeline">
+          <div><b>do 1989</b><span>vyhlášené řeznictví pana Jaroše Křibka</span></div>
+          <div><b>dnes</b><span>restaurace s českou kuchyní a degustacemi na míru</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Atmosféra u stolu</h2>
+        <p>Teplé světlo, klidný interiér a stoly připravené pro oběd, večeři i delší posezení.</p>
+      </div>
+      <div class="gallery">
+        <div class="gallery-card">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+        <div class="gallery-card">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="gallery-card">
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="section-head">
+        <h2>Kontakt a otevřeno</h2>
+        <p>Najdete nás na adrese Pustkovecká 138/156 v Ostravě-Pustkovci. Pro rezervaci volejte nebo napište e-mail.</p>
+      </div>
+      <div class="hours-contact">
+        <div class="panel">
+          <h3>Restaurace U Jarošů</h3>
+          <div class="contact-lines">
+            <a href="tel:+420596925524">+420 596 925 524</a>
+            <a href="mailto:ujarosu@seznam.cz">ujarosu@seznam.cz</a>
+            <span>Pustkovecká 138/156, 708 00 Ostrava-Pustkovec</span>
+          </div>
+          <div class="hours">
+            <div><span>Po</span><span>10:45 - 22:00</span></div>
+            <div><span>Út - Pá</span><span>10:45 - 23:00</span></div>
+            <div><span>So</span><span>11:00 - 23:00</span></div>
+            <div class="today"><span>Ne</span><span>11:00 - 22:00</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Restaurace U Jarošů"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <h2>Časté dotazy</h2>
+        <p>Krátké odpovědi pro hosty, kteří plánují oběd, večeři nebo soukromé pohoštění.</p>
+      </div>
+      <div class="faq">
+        <article class="qa">
+          <h3>Máte denní menu?</h3>
+          <p>Ano, denní menu je součástí běžné nabídky restaurace. V pracovní dny otevíráme od 10:45.</p>
+        </article>
+        <article class="qa">
+          <h3>Připravujete catering?</h3>
+          <p>Ano, připravujeme catering a pohoštění podle typu akce. Přímá domluva je telefonicky.</p>
+        </article>
+        <article class="qa">
+          <h3>Děláte degustace?</h3>
+          <p>Ano, specialitou restaurace je vícechodové degustační menu sestavené na míru.</p>
+        </article>
+        <article class="qa">
+          <h3>Kde restaurace sídlí?</h3>
+          <p>Na adrese Pustkovecká 138/156, 708 00 Ostrava-Pustkovec.</p>
+        </article>
+      </div>
+    </section>
+
+    <div class="wrap final">
+      <div>
+        <h2>Rezervujte si stůl u Jarošů</h2>
+        <p>Pro oběd, večerní posezení, catering nebo degustaci na míru.</p>
+      </div>
+      <a class="btn btn-primary" href="tel:+420596925524">+420 596 925 524</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="disclaimer">Tato nezávazná vizualizace byla připravena studiem Webflex jako podklad pro Restaurace U Jarošů. Pokud si nepřejete tento podklad dále zobrazovat, můžete jej odstranit na adrese <a href="https://webflex.cz/remove/wqw4r09">webflex.cz/remove/wqw4r09</a>.</div>
+      <div class="credits">Foto: Valeria Boltneva, Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN, Alari Tammsalu · Pexels</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.1571782, 49.8402938],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A06020' })
+      .setLngLat([18.1571782, 49.8402938])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
