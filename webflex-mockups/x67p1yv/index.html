@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pivovarka | Pardubický PUB</title>
+  <meta name="description" content="Pivovarka v Pardubicích: tankové pivo přímo z pivovaru, denní menu, stálá nabídka, terasa, grilovačky a sportovní přenosy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #171614;
+      --muted: #6d6860;
+      --soft: #eee9e1;
+      --accent: #E0A060;
+      --accent-dark: #9d642c;
+      --shadow: 0 28px 90px rgba(37, 29, 20, .09);
+      --shadow-soft: 0 18px 70px rgba(37, 29, 20, .06);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,22,20,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,22,20,.018) 1px, transparent 1px),
+        radial-gradient(circle at 80% 8%, rgba(224,160,96,.22), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.45;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(23,22,20,.06);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-weight: 700;
+      color: #312d28;
+    }
+    .links a {
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .links a:hover { color: var(--accent-dark); transform: translateY(-1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-dark);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #1c1309; box-shadow: 0 14px 34px rgba(224,160,96,.28); }
+    .btn.primary:hover { background: #e8ad72; }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: rgba(255,255,255,.28); }
+    .btn.secondary:hover { background: #fff; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 74px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(36px, 5vw, 72px);
+    }
+    h1 {
+      max-width: 720px;
+      margin: 18px 0 22px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      font-size: clamp(19px, 2vw, 24px);
+      color: #3f3931;
+      margin: 0 0 30px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-note {
+      margin-top: 30px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .photo-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.28));
+    }
+    .hero-badge {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      z-index: 1;
+      padding: 14px 16px;
+      border-radius: 18px;
+      color: #fff;
+      background: rgba(18,16,14,.48);
+      backdrop-filter: blur(14px);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(280px, .3fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 {
+      margin: 8px 0 0;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-card, .soft-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      padding: 26px;
+      min-height: 100%;
+      backdrop-filter: blur(16px);
+    }
+    .menu-card h3 {
+      margin: 0 0 18px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    .menu-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+      color: #3d372f;
+      font-size: 17px;
+    }
+    .menu-card li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(23,22,20,.07);
+    }
+    .menu-card li:last-child { border-bottom: 0; padding-bottom: 0; }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      white-space: nowrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .82fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .image-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .image-strip figure {
+      margin: 0;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: #eee;
+    }
+    .image-strip figure:first-child { grid-row: span 2; }
+    .image-strip img { width: 100%; height: 100%; min-height: 220px; object-fit: cover; }
+    .desire {
+      display: grid;
+      align-content: center;
+      gap: 22px;
+      padding: 34px;
+      border-radius: 30px;
+      background: #161310;
+      color: #fff8ef;
+      box-shadow: var(--shadow);
+    }
+    .desire h2 { color: #fff; }
+    .desire p { color: rgba(255,248,239,.76); font-size: 19px; margin: 0; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.08);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(24px, 3vw, 38px);
+      color: var(--accent);
+    }
+    .stat span { color: rgba(255,248,239,.68); font-size: 14px; }
+
+    .timeline {
+      display: grid;
+      background: var(--surface-strong);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 26px 30px;
+      border-bottom: 1px solid rgba(23,22,20,.07);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b { font-family: var(--font-mono); color: var(--accent-dark); }
+    .step h3 { margin: 0 0 4px; font-size: 22px; }
+    .step p { margin: 0; color: var(--muted); }
+    .step .mini { font-family: var(--font-mono); color: #8b8378; font-size: 12px; text-transform: uppercase; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(360px, .75fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card {
+      background: var(--surface-strong);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(23,22,20,.07);
+    }
+    .contact-row:last-child { border-bottom: 0; }
+    .contact-row span:first-child {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .hours {
+      margin-top: 20px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(23,22,20,.035);
+    }
+    .hours .today { background: rgba(224,160,96,.23); color: #37210c; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    details {
+      background: var(--surface-strong);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff; }
+    summary { cursor: pointer; font-weight: 800; font-size: 19px; }
+    details p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 88px 0;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 26px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 54px);
+      border-radius: 34px;
+      background: #171614;
+      color: #fff8ef;
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { color: #fff; margin: 0; }
+    .cta p { color: rgba(255,248,239,.74); margin: 12px 0 0; font-size: 19px; }
+    .cta .secondary { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; }
+    .cta .secondary:hover { background: rgba(255,255,255,.08); }
+    .cta-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(23,22,20,.08);
+      padding-top: 22px;
+    }
+    .webflex-note {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #8a8176;
+    }
+
+    @media (max-width: 920px) {
+      .links a:not(.btn) { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .split, .section-head, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .photo-card { aspect-ratio: 16 / 10; }
+      .menu-grid, .faq { grid-template-columns: 1fr; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      section { padding: 58px 0; }
+      .nav { min-height: 68px; }
+      .logo img { max-height: 34px; }
+      .hero-grid { gap: 28px; }
+      .stats { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; gap: 10px; }
+      .image-strip { grid-template-columns: 1fr; }
+      .image-strip figure:first-child { grid-row: auto; }
+      .contact-row { grid-template-columns: 1fr; gap: 4px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Pivovarka">
+        <img src="https://www.pardubickypub.cz/wp-content/uploads/2021/06/Datovy-zdroj-11.svg" alt="Pivovarka">
+      </a>
+      <div class="links">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420602667482">Rezervovat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Pardubice · tankové pivo · kuchyně</div>
+          <h1>Restaurace přímo v pivovaru</h1>
+          <p class="lead">Přijďte na speciality kuchařů, stálou nabídku, denní menu a tankové pivo z Pardubického pivovaru. V létě terasa s grilovačkami, po celý rok posezení u sportovních přenosů.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420602667482">Zavolat na rezervaci</a>
+            <a class="btn secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-note">
+            <span>Palackého třída 250</span>
+            <span>Po-Čt 10:30-22:00</span>
+            <span>Pá 10:30-24:00</span>
+          </div>
+        </div>
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="hero-badge">centrum Pardubic · kousek od nádraží</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Stálá nabídka</div>
+            <h2>Na talíři i na čepu.</h2>
+          </div>
+          <p>Výběr drží pohromadě poctivá hospodská kuchyně, burgery a pardubická piva. Denní menu je připravené pro všední dny, o víkendu vybíráte ze stálé nabídky.</p>
+        </div>
+        <div class="menu-grid">
+          <article class="menu-card">
+            <h3>Naše speciality</h3>
+            <ul>
+              <li><span>Pečená křidýlka v Buffalo marinádě a sezamu</span><span class="tag">specialita</span></li>
+              <li><span>Vepřová žebírka</span><span class="tag">poctivě</span></li>
+              <li><span>Pečené vepřové koleno</span><span class="tag">klasika</span></li>
+            </ul>
+          </article>
+          <article class="menu-card">
+            <h3>Burgery</h3>
+            <ul>
+              <li><span>Beef King</span><span class="tag">burger</span></li>
+              <li><span>Hot Chipotle</span><span class="tag">pikantní</span></li>
+              <li><span>Jucy Lucy extra cheese</span><span class="tag">sýr</span></li>
+            </ul>
+          </article>
+          <article class="menu-card">
+            <h3>Pardubická piva</h3>
+            <ul>
+              <li><span>Vilém jedenáctka</span><span class="tag">11°</span></li>
+              <li><span>Hořká dvanáctka ze sklepa</span><span class="tag">12°</span></li>
+              <li><span>Kvasňák nefiltrované</span><span class="tag">pivovar</span></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="navsteva">
+      <div class="wrap split">
+        <div class="image-strip" aria-label="Atmosféra restaurace">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+        <div class="desire">
+          <div class="eyebrow">Pro oběd, večer i zápas</div>
+          <h2>Stylový PUB s pivem od zdroje.</h2>
+          <p>Pivovarka sídlí v areálu Pardubického pivovaru. Dorazíte pohodlně z centra, autobusového i vlakového nádraží, ať jdete na rychlý oběd, večeři s přáteli nebo sportovní přenos.</p>
+          <div class="stats" aria-label="Důvěra hostů">
+            <div class="stat"><strong>4.2</strong><span>hodnocení Google</span></div>
+            <div class="stat"><strong>1089</strong><span>recenzí hostů</span></div>
+            <div class="stat"><strong>150+</strong><span>let historie pivovaru</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Jak si návštěvu zařídit</div>
+            <h2>Jednoduše a bez čekání.</h2>
+          </div>
+          <p>Rezervaci vyřídíte telefonicky nebo přes online formulář. Týdenní menu si můžete nechat posílat, aby Vám oblíbené jídlo neuteklo.</p>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <b>01</b>
+            <div><h3>Vyberte si čas</h3><p>Na oběd, večerní posezení, terasu nebo sportovní přenos.</p></div>
+            <span class="mini">rezervace</span>
+          </article>
+          <article class="step">
+            <b>02</b>
+            <div><h3>Zavolejte do restaurace</h3><p>Telefon pro kontakt i rezervace je +420 602 667 482.</p></div>
+            <span class="mini">telefon</span>
+          </article>
+          <article class="step">
+            <b>03</b>
+            <div><h3>Dorazte do pivovaru</h3><p>Najdete nás na Palackého třídě v centru Pardubic.</p></div>
+            <span class="mini">adresa</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt a otevírací doba</div>
+            <h2>Navštivte nás v Pardubicích.</h2>
+          </div>
+          <p>Jsme kousek od autobusového a vlakového nádraží. Pro rezervaci volejte přímo do restaurace.</p>
+        </div>
+        <div class="contact-grid">
+          <div id="map" aria-label="Mapa s polohou restaurace Pivovarka"></div>
+          <aside class="contact-card">
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420602667482">+420 602 667 482</a></div>
+            <div class="contact-row"><span>E-mail</span><a href="mailto:info@pardubickypub.cz">info@pardubickypub.cz</a></div>
+            <div class="contact-row"><span>Adresa</span><span>Palackého třída 250, 530 02 Pardubice</span></div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><span>Po-Čt</span><strong>10:30-22:00</strong></div>
+              <div><span>Pá</span><strong>10:30-24:00</strong></div>
+              <div><span>So</span><strong>11:00-24:00</strong></div>
+              <div class="today"><span>Ne a svátky</span><strong>11:00-22:00</strong></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než vyrazíte.</h2>
+          </div>
+          <p>Praktické informace pro hosty, kteří jdou na oběd, pivo nebo večerní posezení.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Máte denní menu?</summary>
+            <p>Ano. Ve všední dny připravujeme denní menu, o víkendu vybíráte ze stálé nabídky.</p>
+          </details>
+          <details>
+            <summary>Je možné přijít na tankové pivo?</summary>
+            <p>Ano. Čepujeme pardubická piva včetně Viléma jedenáctky, Hořké dvanáctky ze sklepa a nefiltrovaného Kvasňáku.</p>
+          </details>
+          <details>
+            <summary>Má restaurace terasu?</summary>
+            <p>Ano. K restauraci patří prostorná terasa, v létě také s grilovačkami.</p>
+          </details>
+          <details>
+            <summary>Kde přesně sídlíte?</summary>
+            <p>V centru Pardubic, přímo v Pardubickém pivovaru, kousek od autobusového a vlakového nádraží.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <h2>Stůl v Pivovarce?</h2>
+          <p>Zavolejte nám a domluvíme místo pro oběd, večeři, terasu nebo sportovní přenos.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420602667482">+420 602 667 482</a>
+          <a class="btn secondary" href="mailto:info@pardubickypub.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-line">
+      <span>Copyright © Pardubický pivovar a.s. · IČ 474 68 556</span>
+      <span class="webflex-note">Webflex · informační patička · odebrání: https://webflex.cz/remove?token=x67p1yv</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7620468, 50.03550320000001],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0A060' })
+      .setLngLat([15.7620468, 50.03550320000001])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
