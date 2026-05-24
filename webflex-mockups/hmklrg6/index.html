@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PANORAMICO pizza, pasta, grill</title>
+  <meta name="description" content="PANORAMICO v Hradci Králové: rodinná italská restaurace, Pinsa Romana, pasta, pizza, polední menu, výhled na Hradec a rezervace na telefonu +420 702 031 329.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --paper: #ffffff;
+      --paper-soft: #f2f3ef;
+      --ink: #171915;
+      --muted: #676c61;
+      --line: rgba(23, 25, 21, .11);
+      --accent: #7A9A00;
+      --accent-dark: #506600;
+      --brand-deep: #200000;
+      --shadow: 0 32px 90px rgba(18, 20, 15, .13);
+      --shadow-soft: 0 18px 54px rgba(18, 20, 15, .08);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,25,21,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,25,21,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(250,250,250,.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), box-shadow 190ms var(--ease), color 190ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(18, 20, 15, .12); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #142000; }
+    .btn-primary:hover { background: #8aae00; }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(23,25,21,.05); }
+    .hero .btn-outline { border-color: rgba(255,255,255,.55); color: #fff; }
+    .hero .btn-outline:hover { background: rgba(255,255,255,.12); }
+
+    .hero {
+      min-height: calc(100svh - 72px);
+      position: relative;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      color: #fff;
+      background: #181818;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(24,24,24,.88), rgba(24,24,24,.50) 45%, rgba(24,24,24,.25)),
+        linear-gradient(180deg, rgba(24,24,24,.20), rgba(24,24,24,.72));
+      z-index: 1;
+    }
+    .hero img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.05);
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      padding: 96px 0 64px;
+      max-width: 720px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+      color: rgba(255,255,255,.78);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(122,154,0,.24);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: rgba(255,255,255,.78);
+      font-size: clamp(18px, 1.7vw, 23px);
+      line-height: 1.58;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 48px;
+      color: rgba(255,255,255,.72);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .48fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 40px;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .menu-rows {
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(220px, .45fr);
+      gap: 32px;
+      align-items: center;
+      min-height: 128px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .num { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-dark); }
+    .menu-row h3 { font-size: clamp(24px, 2.5vw, 38px); }
+    .menu-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(360px, .72fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      background: var(--paper-soft);
+    }
+    .split-photo img, .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .split-panel {
+      padding: 48px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+    .split-panel h2 { font-size: clamp(32px, 3.8vw, 56px); }
+    .split-panel p { color: var(--muted); font-size: 18px; line-height: 1.72; hyphens: auto; }
+    .cert {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .trust-band {
+      background: #181818;
+      color: #fff;
+    }
+    .trust-band .section-head p { color: rgba(255,255,255,.68); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 172px;
+      padding: 28px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.055);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(28px, 4vw, 56px);
+      line-height: 1;
+    }
+    .stat span { display: block; margin-top: 16px; color: rgba(255,255,255,.72); font-weight: 600; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      min-height: 280px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--paper-soft);
+    }
+    .gallery-card.tall { aspect-ratio: auto; min-height: 420px; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 238px;
+      padding: 28px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+    .step h3 { margin-top: 34px; font-size: 24px; line-height: 1.05; }
+    .step p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 32px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card h2 { font-size: clamp(32px, 3.6vw, 54px); }
+    .contact-list { margin-top: 28px; display: grid; gap: 16px; }
+    .contact-list a, .contact-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .contact-list strong { color: var(--ink); }
+    .hours {
+      margin-top: 28px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours .today { color: var(--accent-dark); font-weight: 700; }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      min-height: 170px;
+      padding: 28px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+    .faq-item h3 { font-size: 24px; }
+    .faq-item p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final-cta {
+      padding: 96px 0;
+      color: #fff;
+      background: #181818;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .cta-box h2 { max-width: 780px; }
+    .cta-box p { max-width: 660px; color: rgba(255,255,255,.68); font-size: 18px; line-height: 1.7; }
+
+    footer {
+      padding: 32px 0;
+      background: #101010;
+      color: rgba(255,255,255,.58);
+      font-size: 12px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    footer a { color: rgba(255,255,255,.82); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-inner { padding: 72px 0 56px; }
+      .section-head, .split, .contact-grid, .cta-box { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .stats, .steps, .gallery, .faq { grid-template-columns: 1fr; }
+      .split-panel { padding: 32px; }
+      #map { height: 420px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .wordmark { white-space: normal; font-size: 18px; }
+      section { padding: 64px 0; }
+      .contact-list a, .contact-list div { display: grid; gap: 6px; }
+      .hero-facts { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="PANORAMICO pizza, pasta, grill">PANORAMICO pizza, pasta, grill</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#kuchyne">Kuchyně</a>
+        <a href="#pinsa">Pinsa Romana</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420702031329">Rezervovat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      <div class="wrap">
+        <div class="hero-inner">
+          <p class="eyebrow">Hradec Králové · Gočárova třída</p>
+          <h1>Kousek Itálie v Hradci</h1>
+          <p class="lead">Rodinná italská restaurace s výhledem na Hradec, poctivou pastou, pizzou, grilem a křupavou Pinsou Romana z prvotřídních surovin.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420702031329">Zavolat a rezervovat</a>
+            <a class="btn btn-outline" href="#kuchyne">Prohlédnout kuchyni</a>
+          </div>
+          <div class="hero-facts">
+            <span>Otevřeno denně 10:00-21:00</span>
+            <span>Hodnocení 4,7 z 1049 recenzí</span>
+            <span>+420 702 031 329</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kuchyne">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Poctivá kuchyně pro každý den</h2>
+          <p>Na oběd, večeři při svíčkách i nedělní setkání s rodinou. Jídelní lístek se mění podle sezónních surovin a část produktů míří do kuchyně přímo z Itálie.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <h3>Pasta a pizza</h3>
+            <p>Italská klasika z prvotřídních surovin, salámů, sýrů a vín od dodavatelů, které restaurace osobně zná.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <h3>Polední menu</h3>
+            <p>Ve všední dny od jedenácti do dvou najdete v nabídce pastu, pizzu, českou i mezinárodní kuchyni.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <h3>Grill a sezóna</h3>
+            <p>Jídla laděná podle sezónních surovin od místních pěstitelů, s důrazem na čistou chuť a poctivé zpracování.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pinsa">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="split-panel">
+          <p class="eyebrow" style="color: var(--accent-dark);">Pinsa Romana</p>
+          <h2>Oválná, lehká, křupavá</h2>
+          <p>PANORAMICO peče moderní římskou pizzu Pinsa Romana. Je lehčí, lépe stravitelná a krásně křupavá, přesně pro večer, kdy chcete ochutnat něco jiného než klasiku.</p>
+          <div class="cert">Certifikát L'ASSOCIAZIONE ORIGINALE PINSA ROMANA</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-band">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Rodinná atmosféra, výhled na město</h2>
+          <p>Majitele potkáte často přímo na place nebo v kuchyni. Restaurace počítá s pracovním obědem, romantickou večeří i dětmi, pro které je připravený hrací koutek.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4,7</strong><span>hodnocení hostů podle dostupných recenzí</span></div>
+          <div class="stat"><strong>1049</strong><span>recenzí od návštěvníků restaurace</span></div>
+          <div class="stat"><strong>7/7</strong><span>otevřeno každý den od 10:00 do 21:00</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Večer má být klidný</h2>
+          <p>Svíčky, víno, měkké světlo a stůl připravený na chvíli, která nikam nespěchá.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-card"><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+          <figure class="gallery-card tall"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure class="gallery-card"><img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak si užít PANORAMICO</h2>
+          <p>Jednoduše: vyberete čas, zavoláte, přijdete na Gočárovu třídu a necháte kuchyni pracovat.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><span class="num">01</span><h3>Rezervace</h3><p>Zavolejte na +420 702 031 329 a domluvte si stůl na oběd, večeři nebo rodinné setkání.</p></article>
+          <article class="step"><span class="num">02</span><h3>Příchod</h3><p>Restauraci najdete na Gočárově třídě 1754 v Hradci Králové 2.</p></article>
+          <article class="step"><span class="num">03</span><h3>Výběr</h3><p>Vyberete si z pasty, pizzy, Pinsy Romana, grilu nebo denního poledního menu.</p></article>
+          <article class="step"><span class="num">04</span><h3>Čas u stolu</h3><p>Pracovní oběd, romantický večer i děti v hracím koutku mají svoje místo.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow" style="color: var(--accent-dark);">Kontakt</p>
+          <h2>Stůl v centru Hradce</h2>
+          <div class="contact-list">
+            <a href="tel:+420702031329"><strong>Telefon</strong><span>+420 702 031 329</span></a>
+            <a href="mailto:restaurace@panoramico.cz"><strong>E-mail</strong><span>restaurace@panoramico.cz</span></a>
+            <div><strong>Adresa</strong><span>48a, Gočárova tř. 1754, 500 02 Hradec Králové 2</span></div>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Pondělí</span><span>10:00-21:00</span></div>
+            <div><span>Úterý</span><span>10:00-21:00</span></div>
+            <div><span>Středa</span><span>10:00-21:00</span></div>
+            <div><span>Čtvrtek</span><span>10:00-21:00</span></div>
+            <div><span>Pátek</span><span>10:00-21:00</span></div>
+            <div><span>Sobota</span><span>10:00-21:00</span></div>
+            <div class="today"><span>Neděle</span><span>10:00-21:00</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa restaurace PANORAMICO"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Dobré vědět před návštěvou</h2>
+          <p>Krátké odpovědi pro hosty, kteří plánují oběd, večer nebo návštěvu s rodinou.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Máte polední menu?</h3><p>Ano. Ve všední dny od 11:00 do 14:00 najdete v nabídce polední menu s pastou, pizzou i českou a mezinárodní kuchyní.</p></article>
+          <article class="faq-item"><h3>Je restaurace vhodná pro děti?</h3><p>Ano. Pro děti je k dispozici hrací koutek, takže můžete přijít i na klidný nedělní oběd s rodinou.</p></article>
+          <article class="faq-item"><h3>Co je Pinsa Romana?</h3><p>Moderní římská pizza oválného tvaru. Je lehčí, lépe stravitelná a křupavá.</p></article>
+          <article class="faq-item"><h3>Odkud jsou suroviny?</h3><p>Sezónní suroviny dodávají místní pěstitelé, velká část produktů se dováží přímo z Itálie.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Rezervujte si stůl na dnešek</h2>
+          <p>Oběd, večeře při svíčkách nebo Pinsa Romana s výhledem na Hradec. Jsme tu každý den od 10:00 do 21:00.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420702031329">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>Neoficiální prezentační stránka vytvořená službou Webflex. Nejste-li adresátem, můžete ji odstranit.</span>
+      <a href="https://webflex.cz/delete/hmklrg6">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.812279199999999, 50.2121922],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#7A9A00' })
+      .setLngLat([15.812279199999999, 50.2121922])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
