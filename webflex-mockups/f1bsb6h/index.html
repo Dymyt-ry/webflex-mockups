@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Šalanda Hradec Králové</title>
+  <meta name="description" content="Restaurace Šalanda v Hradci Králové: tankové pivo, stálá nabídka, denní menu, věrnostní program a rezervace u Střelecké 2.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255,255,255,.74);
+      --surface-strong: #ffffff;
+      --ink: #191b17;
+      --muted: #65685e;
+      --hairline: rgba(25,27,23,.1);
+      --accent: #A0A080;
+      --accent-dark: #74745e;
+      --dark: #10120f;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --shadow: 0 28px 90px rgba(33,35,29,.09);
+      --radius: 28px;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(16,18,15,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,18,15,.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(160,160,128,.22), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, h2 { font-family: var(--font-display); letter-spacing: 0; text-transform: uppercase; overflow-wrap: anywhere; }
+    h1 { font-size: clamp(40px, 6vw, 88px); line-height: .92; max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.6vw, 68px); line-height: .95; }
+    h3 { font-size: 22px; line-height: 1.1; }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .skip { position: absolute; left: -999px; top: 12px; background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 10px; z-index: 100; }
+    .skip:focus { left: 12px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,18,15,.92);
+      color: #fff;
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      color: rgba(255,255,255,.78);
+    }
+
+    .links a, .btn, .menu-row, .gallery img, .faq details {
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+    }
+
+    .links a:hover { color: #fff; }
+    .links a:focus-visible, .btn:focus-visible, .menu-row:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #15160f; }
+    .btn.primary:hover { background: #b1b192; }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .topbar .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+
+    .hero {
+      padding: 76px 0 92px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, 1.05fr);
+      align-items: center;
+      gap: 52px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent-dark);
+      margin-bottom: 20px;
+    }
+
+    .lead {
+      margin-top: 26px;
+      max-width: 610px;
+      font-size: clamp(19px, 2vw, 24px);
+      color: #3b3e35;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      background: #ddd;
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-badge {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(16px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    section { padding: 76px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .28fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .menu-panel, .soft-panel, .contact-card, .stat, .faq details {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .menu-panel { padding: 18px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: baseline;
+      padding: 20px;
+      border-radius: 18px;
+    }
+    .menu-row + .menu-row { border-top: 1px solid var(--hairline); }
+    .menu-row:hover { background: rgba(160,160,128,.12); transform: translateY(-1px); }
+    .menu-row b { font-size: 18px; }
+    .menu-row small, .price-note { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
+    .price { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; color: var(--ink); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 18px;
+    }
+    .stat { padding: 28px; min-height: 190px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat strong { font-family: var(--font-display); font-size: clamp(40px, 5vw, 72px); line-height: .9; overflow-wrap: anywhere; }
+    .stat span { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 36px;
+      align-items: center;
+    }
+    .soft-panel { padding: 34px; }
+    .soft-panel h3 { margin-bottom: 14px; font-size: 28px; }
+    .steps { margin-top: 28px; display: grid; gap: 14px; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 16px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .step code {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #15160f;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .gallery img:hover { transform: translateY(-2px); }
+    .gallery-side { display: grid; gap: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .42fr) minmax(0, .58fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 30px; }
+    .contact-list { margin-top: 24px; display: grid; gap: 16px; }
+    .contact-item { padding-top: 16px; border-top: 1px solid var(--hairline); }
+    .contact-item span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+    .contact-item a, .contact-item strong { font-size: 20px; font-weight: 800; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .faq details { padding: 22px 24px; }
+    .faq details:hover { transform: translateY(-1px); }
+    .faq summary { cursor: pointer; font-weight: 800; }
+    .faq p { margin-top: 12px; }
+
+    .cta {
+      padding: 80px 0;
+      background: var(--dark);
+      color: #fff;
+    }
+    .cta p { color: rgba(255,255,255,.72); }
+    .cta .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    footer {
+      background: #0b0c0a;
+      color: rgba(255,255,255,.7);
+      padding: 26px 0;
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.58);
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 880px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .split, .gallery, .contact-grid, .cta .wrap { grid-template-columns: 1fr; }
+      .hero { padding-top: 48px; }
+      .trust-grid, .faq { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 8px; }
+      h1 { max-width: 100%; }
+    }
+
+    @media (max-width: 520px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 54px 0; }
+      .hero-photo, .gallery img, .menu-panel, .soft-panel, .contact-card, .stat { border-radius: 20px; }
+      .hero-actions { align-items: stretch; }
+      .btn { width: 100%; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Přejít na obsah</a>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="logo" href="#" aria-label="Restaurace Šalanda Hradec Králové">
+        <img src="https://www.salandahradec.cz/img/logo-white.svg" alt="Restaurace Šalanda/ tradiční podnik/ tankové pivo">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#menu">Denní menu</a>
+        <a href="#program">Věrnostní program</a>
+        <a href="#kontakt">Kontakty</a>
+        <a class="btn secondary" href="tel:+420734822496">Rezervace</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Hradec Králové · Střelecká 2</div>
+          <h1 id="hero-title">Špičkové pivo. Výborná kuchyně.</h1>
+          <p class="lead">Tradiční Šalanda založená na tankovém pivu, stálé nabídce českých jídel a denním menu pro oběd i večerní posezení.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420734822496">Zavolat pro rezervaci</a>
+            <a class="btn secondary" href="#menu">Prohlédnout menu</a>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="hero-badge">4.3 hodnocení · 1143 recenzí</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="menu" aria-labelledby="menu-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="menu-title">Denní a stálá nabídka</h2>
+          <p>Výběr z aktuální nabídky: polévky, česká klasika, lehčí jídla i zvýhodněné ceny pro členy věrnostního programu.</p>
+        </div>
+        <div class="menu-panel">
+          <a class="menu-row" href="#kontakt">
+            <small>0.3 l</small>
+            <b>Hovězí vývar se zeleninou a nudlemi</b>
+            <span class="price">45 Kč * / 48 Kč</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <small>150 g</small>
+            <b>Svíčková na smetaně s brusinkovým terčem, houskové knedlíky</b>
+            <span class="price">219 Kč * / 235 Kč</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <small>150 g</small>
+            <b>Pikantní hovězí guláš, houskové knedlíky nebo bramboráčky</b>
+            <span class="price">219 Kč * / 235 Kč</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <small>150 g</small>
+            <b>Kuřecí nebo vepřový řízek, bramborový salát</b>
+            <span class="price">189 Kč * / 203 Kč</span>
+          </a>
+          <a class="menu-row" href="#kontakt">
+            <small>1 ks</small>
+            <b>Vege tortilla se zeleninou a sýrem, hranolky</b>
+            <span class="price">159 Kč * / 171 Kč</span>
+          </a>
+        </div>
+        <p class="price-note" style="margin-top:14px">* Zvýhodněná cena pro členy věrnostního programu.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="trust-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="trust-title">Místo pro oběd i večer</h2>
+          <p>Šalanda drží jasný rytmus: dobré pivo, čitelný jídelní lístek, pravidelné akce a výhody pro hosty, kteří se vracejí.</p>
+        </div>
+        <div class="trust-grid">
+          <div class="stat">
+            <strong>4.3</strong>
+            <span>Hodnocení hostů na Googlu.</span>
+          </div>
+          <div class="stat">
+            <strong>1143</strong>
+            <span>Recenzí od návštěvníků restaurace.</span>
+          </div>
+          <div class="stat">
+            <strong>QR</strong>
+            <span>Věrnostní program s osobním kódem do Apple Wallet nebo Google Wallet.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="program" aria-labelledby="program-title">
+      <div class="wrap split">
+        <div class="soft-panel">
+          <div class="eyebrow">Věrnostní program</div>
+          <h2 id="program-title">Výhody při placení</h2>
+          <p>Registrace je zdarma. Po přihlášení získáte osobní QR kód, kterým se prokážete obsluze a u vybraných položek čerpáte výhodnější ceny.</p>
+          <div class="steps">
+            <div class="step"><code>01</code><p>Zaregistrujete se do programu Šalandy.</p></div>
+            <div class="step"><code>02</code><p>QR kód uložíte do telefonu nebo vytisknete.</p></div>
+            <div class="step"><code>03</code><p>Při placení jej ukážete obsluze.</p></div>
+          </div>
+        </div>
+        <div class="gallery" aria-label="Atmosféra restaurace">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <div class="gallery-side">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="faq-title">Nejčastější dotazy</h2>
+          <p>Praktické informace k návštěvě restaurace, rezervaci a zvýhodněným cenám ve stálé i denní nabídce.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak si rezervuji stůl?</summary>
+            <p>Zavolejte na číslo +420 734 822 496. Obsluha s Vámi domluví čas a počet hostů.</p>
+          </details>
+          <details>
+            <summary>Kde restauraci najdu?</summary>
+            <p>Adresa je 45, Střelecká 2, 500 02 Hradec Králové-Hradec Králové 2.</p>
+          </details>
+          <details>
+            <summary>Jak fungují ceny s hvězdičkou?</summary>
+            <p>Položky označené hvězdičkou mají zvýhodněnou cenu pro členy věrnostního programu.</p>
+          </details>
+          <details>
+            <summary>Má Šalanda i akce?</summary>
+            <p>V programu se objevují večerní akce, například oldies party nebo posezení s obchodním sládkem.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="contact-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="contact-title">Rezervace a kontakt</h2>
+          <p>Pro rezervaci stolu volejte přímo do restaurace. Mapu najdete níže podle adresy ve Střelecké ulici.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Restaurace Šalanda Hradec</h3>
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420734822496">+420 734 822 496</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:info@salandahradec.cz">info@salandahradec.cz</a>
+              </div>
+              <div class="contact-item">
+                <span>Adresa</span>
+                <strong>45, Střelecká 2, 500 02 Hradec Králové-Hradec Králové 2</strong>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa restaurace Šalanda v Hradci Králové"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" aria-labelledby="cta-title">
+      <div class="wrap">
+        <div>
+          <h2 id="cta-title">Stůl ve Šalandě?</h2>
+          <p>Zavolejte a domluvte si rezervaci na oběd, večeři nebo večerní posezení.</p>
+        </div>
+        <a class="btn primary" href="tel:+420734822496">+420 734 822 496</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>Restaurace Šalanda/ tradiční podnik/ tankové pivo</span>
+        <span>Střelecká 2 · Hradec Králové</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto prezentaci připravil Webflex pro provozovatele podniku. Nejste-li správná kontaktní osoba nebo si přejete stránku odstranit, použijte prosím <a href="https://www.webflex.cz/delete/f1bsb6h">odkaz pro smazání</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.820289799999998, 50.2132274],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0A080' })
+      .setLngLat([15.820289799999998, 50.2132274])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
