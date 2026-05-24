@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jack's Burger Bar - Ostrava Poruba</title>
+  <meta name="description" content="Jack's Burger Bar v Ostravě-Porubě: burgery, tortilly, domácí hranolky, polední menu, whiskey Jack Daniels, rezervace a jídlo s sebou." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700;800&family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0f0d;
+      --panel: #151915;
+      --panel-2: #101310;
+      --ink: #f5f7f2;
+      --muted: #aab2a5;
+      --line: rgba(245,247,242,0.14);
+      --line-strong: rgba(245,247,242,0.28);
+      --accent: #004000;
+      --accent-hot: #2fac35;
+      --paper: #eee8db;
+      --danger: #ff6b1a;
+      --shadow: 0 28px 80px rgba(0,0,0,0.36);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --font-condensed: "Barlow Condensed", Arial Narrow, sans-serif;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(245,247,242,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,247,242,0.025) 1px, transparent 1px),
+        radial-gradient(circle at 80% 8%, rgba(0,64,0,0.58), transparent 31rem),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(13,15,13,0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--danger); outline-offset: 3px; }
+    .btn-primary { background: var(--accent-hot); color: #061006; border-color: var(--accent-hot); }
+    .btn-primary:hover { background: #45c84c; border-color: #45c84c; }
+    .btn-outline { border-color: rgba(255,255,255,0.45); color: #fff; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.7); }
+
+    .hero {
+      min-height: calc(100svh - 74px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(430px, 1.08fr);
+      align-items: center;
+      gap: 54px;
+      padding: 58px 0 46px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 8px;
+      background: repeating-linear-gradient(90deg, var(--danger) 0 8px, transparent 8px 14px);
+      border: 1px solid var(--danger);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: 0.96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.45vw, 21px);
+      line-height: 1.65;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 34px;
+      border: 1px solid var(--line);
+      background: var(--line);
+      max-width: 520px;
+    }
+    .meta-cell {
+      padding: 16px;
+      background: rgba(16,19,16,0.92);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-cell b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+      font-family: var(--font-condensed);
+      font-size: 24px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .hero-media {
+      position: relative;
+      min-width: 0;
+    }
+    .photo-frame {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+      background: var(--panel);
+    }
+    .photo-frame img, .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.88) contrast(1.08);
+    }
+    .tag-plate {
+      position: absolute;
+      left: -18px;
+      bottom: 28px;
+      width: min(330px, 76%);
+      padding: 18px;
+      background: var(--paper);
+      color: #101310;
+      border: 1px solid #101310;
+      box-shadow: 10px 10px 0 var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    section { padding: 86px 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(290px, .52fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 34px;
+    }
+    .section-kicker {
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h2 { font-size: clamp(34px, 4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; hyphens: auto; }
+
+    .bay-list {
+      display: grid;
+      border: 1px solid var(--line);
+      background: var(--line);
+      gap: 1px;
+    }
+    .bay-row {
+      display: grid;
+      grid-template-columns: 94px minmax(0, 1fr) minmax(210px, .42fr);
+      align-items: center;
+      gap: 28px;
+      min-height: 128px;
+      padding: 28px;
+      background: rgba(21,25,21,0.92);
+    }
+    .bay-row .num {
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .bay-row h3 { font-size: clamp(24px, 2.5vw, 39px); }
+    .bay-row p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 5vw, 76px);
+      line-height: 1;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      gap: 30px;
+      align-items: stretch;
+    }
+    .menu-board {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      color: #111511;
+      padding: 28px;
+      min-height: 100%;
+    }
+    .menu-board h2 { color: #111511; font-size: clamp(32px, 4vw, 60px); }
+    .board-item {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(17,21,17,0.18);
+    }
+    .board-item:last-child { border-bottom: 0; }
+    .board-item strong { display: block; font-weight: 800; }
+    .board-item span { color: #4a5148; }
+    .price { font-family: var(--font-mono); font-weight: 800; white-space: nowrap; }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .gallery-card {
+      min-height: 248px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .gallery-card.wide { grid-column: 1 / -1; aspect-ratio: 16 / 10; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .step {
+      min-height: 230px;
+      padding: 24px;
+      background: var(--panel-2);
+    }
+    .step .n {
+      display: block;
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 48px;
+    }
+    .step h3 { font-size: 28px; margin-bottom: 12px; }
+    .step p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(0, 1.18fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-panel {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 28px;
+    }
+    .contact-panel h2 { font-size: clamp(32px, 4vw, 58px); margin-bottom: 24px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 118px minmax(0,1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line span {
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .contact-line b { overflow-wrap: anywhere; }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .final {
+      padding: 64px 0 78px;
+      background: var(--paper);
+      color: #111511;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(34px, 5vw, 76px); color: #111511; }
+    .final p { margin: 14px 0 0; color: #4b5248; font-size: 18px; }
+    .final .btn-outline { color: #111511; border-color: currentColor; }
+    .final .btn-outline:hover { background: rgba(17,21,17,0.07); }
+
+    .disclaimer {
+      padding: 20px 0;
+      background: #080a08;
+      color: rgba(245,247,242,0.58);
+      border-top: 1px solid rgba(245,247,242,0.12);
+      font-size: 12px;
+    }
+    .disclaimer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .contact-grid, .final .wrap {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .tag-plate { left: 16px; bottom: 16px; }
+      .stats, .steps { grid-template-columns: 1fr 1fr; }
+      .bay-row { grid-template-columns: 1fr; gap: 14px; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .brand img { max-height: 38px; }
+      .hero { gap: 34px; padding-top: 36px; }
+      .hero-meta, .stats, .steps, .photo-stack { grid-template-columns: 1fr; }
+      .gallery-card.wide { grid-column: auto; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      section { padding: 62px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Jack's Burger Bar - Ostrava Poruba">
+        <img src="img/jack_logo_bile_v2.png" alt="Jack's Burger Bar - Ostrava Poruba">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#menu">Denní menu</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420775770779">Volat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Ostrava-Poruba · Hlavní třída</div>
+        <h1>Burgery bez kompromisu</h1>
+        <p class="lead">Vymazlené burgery, tortilly, domácí hranolky a polední menu po celý týden. Přijďte se pořádně najíst, posedět s přáteli nebo si nechte jídlo zabalit s sebou.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420775770779">Rezervovat stůl</a>
+          <a class="btn btn-outline" href="#menu">Denní menu</a>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé údaje">
+          <div class="meta-cell"><b>4,5</b>hodnocení Google</div>
+          <div class="meta-cell"><b>1 589</b>recenzí hostů</div>
+          <div class="meta-cell"><b>16+</b>druhů Jack Daniels</div>
+          <div class="meta-cell"><b>775 770 779</b>rezervace</div>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="photo-frame">
+          <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+        </div>
+        <div class="tag-plate">Jídlo na místě · s sebou · posezení u baru</div>
+      </div>
+    </div>
+
+    <section id="jidlo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">01 / Kuchyň</div>
+            <h2>Co se u nás řeší</h2>
+          </div>
+          <p>Jídelní lístek stojí na burgerech, tortillách a domácích hranolkách. K obědu najdete i českou kuchyni podle denní nabídky.</p>
+        </div>
+        <div class="bay-list">
+          <article class="bay-row">
+            <span class="num">BAY 01</span>
+            <h3>Burgery</h3>
+            <p>Poctivá porce, výrazná chuť a sezónní akce jako hokejová nabídka nebo letní ochutnávka světa.</p>
+          </article>
+          <article class="bay-row">
+            <span class="num">BAY 02</span>
+            <h3>Tortilly</h3>
+            <p>Wrapy a tortilly pro rychlý oběd, večeři s přáteli i jídlo s sebou.</p>
+          </article>
+          <article class="bay-row">
+            <span class="num">BAY 03</span>
+            <h3>Domácí hranolky</h3>
+            <p>K burgeru, ke kuřecímu nebo jen tak ke sklenici. Bez nich se barový servis nepočítá.</p>
+          </article>
+          <article class="bay-row">
+            <span class="num">BAY 04</span>
+            <h3>Polední menu</h3>
+            <p>Každý týden jídla z denní nabídky včetně polévky k menu podle programu kuchyně.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <b>4,5</b>
+            <span>průměrné hodnocení na Google</span>
+          </div>
+          <div class="stat">
+            <b>1 589</b>
+            <span>zveřejněných recenzí</span>
+          </div>
+          <div class="stat">
+            <b>16+</b>
+            <span>druhů whiskey Jack Daniels</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap split">
+        <div class="menu-board">
+          <div class="section-kicker">02 / Denní menu</div>
+          <h2>Neděle 24. 05. 2026</h2>
+          <div class="board-item">
+            <div>
+              <strong>Polévka dle denní nabídky</strong>
+              <span>K menu zdarma</span>
+            </div>
+            <div class="price">0 Kč</div>
+          </div>
+          <div class="board-item">
+            <div>
+              <strong>160g Hovězí svíčková na smetaně</strong>
+              <span>Houskový knedlík, brusinkový terč</span>
+            </div>
+            <div class="price">234 Kč</div>
+          </div>
+          <div class="board-item">
+            <div>
+              <strong>Májové mistrovství chutí</strong>
+              <span>Playoff Burger, Spring Love Burger, Medová střela, Game Chicken Burger, Májový mango wrap</span>
+            </div>
+            <div class="price">AKCE</div>
+          </div>
+        </div>
+        <div class="photo-stack" aria-label="Atmosféra restaurace">
+          <div class="gallery-card wide">
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/10215907/pexels-photo-10215907.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An array of pendant lamps casting a warm glow in a modern indoor setting.">
+          </div>
+          <div class="gallery-card">
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">03 / Servis hosta</div>
+            <h2>Jak to probíhá</h2>
+          </div>
+          <p>Jednoduše: zavoláte, přijdete, objednáte. Když není čas sedět, kuchyně jídlo zabalí s sebou.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <span class="n">STEP 01</span>
+            <h3>Rezervace</h3>
+            <p>Stůl si domluvíte telefonicky na čísle 775 770 779.</p>
+          </article>
+          <article class="step">
+            <span class="n">STEP 02</span>
+            <h3>Výběr</h3>
+            <p>Burgery, tortilly, polední menu, nápoje a whiskey z baru.</p>
+          </article>
+          <article class="step">
+            <span class="n">STEP 03</span>
+            <h3>Posezení</h3>
+            <p>Barový večer, oběd během dne nebo setkání s přáteli.</p>
+          </article>
+          <article class="step">
+            <span class="n">STEP 04</span>
+            <h3>S sebou</h3>
+            <p>Jakékoliv jídlo vám zabalíme, když potřebujete pokračovat dál.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-panel">
+          <div class="section-kicker">04 / Kontakt</div>
+          <h2>Poruba, Hlavní třída</h2>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <b>Hlavní tř. 583/101, 708 00 Ostrava-Poruba</b>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <b><a href="tel:+420775770779">+420 775 770 779</a></b>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <b><a href="mailto:jbbporuba@seznam.cz">jbbporuba@seznam.cz</a></b>
+          </div>
+          <div class="contact-line">
+            <span>Web</span>
+            <b><a href="https://www.jacksburgerbar.cz/">jacksburgerbar.cz</a></b>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Jack's Burger Bar - Ostrava Poruba"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div>
+          <h2>Stůl, burger, Jack.</h2>
+          <p>Rezervujte si místo v Porubě nebo se zastavte pro jídlo s sebou.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420775770779">Volat</a>
+          <a class="btn btn-outline" href="mailto:jbbporuba@seznam.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="disclaimer">
+    <div class="wrap">
+      <span>Tuto prezentační stránku připravilo studio Webflex pro Jack's Burger Bar - Ostrava Poruba.</span>
+      <a href="https://www.webflex.cz/remove/lt9fzvt">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.1672357, 49.829784],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#2fac35' })
+      .setLngLat([18.1672357, 49.829784])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
