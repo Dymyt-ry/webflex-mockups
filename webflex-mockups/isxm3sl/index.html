@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Na Hradě | Hospoda v Hradci Králové</title>
+  <meta name="description" content="Hospoda Na Hradě ve Špitálské ulici v Hradci Králové. Právovárečná historie od 15. století, denní nabídka, jídelní a nápojový lístek.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #141211;
+      --bg-deep: #0d0c0b;
+      --surface: #1d1917;
+      --surface-2: #26201d;
+      --paper: #f6f1e9;
+      --paper-ink: #1d1714;
+      --fg: #f7f3ed;
+      --muted: rgba(247, 243, 237, .68);
+      --muted-2: rgba(247, 243, 237, .52);
+      --line: rgba(247, 243, 237, .13);
+      --accent: #402020;
+      --accent-bright: #8a4a3d;
+      --gold: #c6a46f;
+      --shadow: 0 34px 90px rgba(0, 0, 0, .42);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--fg);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(13,12,11,.88), rgba(13,12,11,.42) 72%, transparent);
+      backdrop-filter: blur(10px);
+    }
+    .nav {
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: min(230px, 52vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(247,243,237,.76);
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), box-shadow 190ms var(--ease), color 190ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(0,0,0,.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: rgba(255,255,255,.14); }
+    .btn-primary:hover { background: #55302b; }
+    .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+    .btn-paper { color: var(--paper-ink); border-color: currentColor; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: clamp(23px, 2.3vw, 34px); }
+    p { hyphens: auto; }
+    .eyebrow {
+      margin: 0 0 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      background: var(--bg-deep);
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+    }
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.06);
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(13,12,11,.88) 0%, rgba(13,12,11,.62) 42%, rgba(13,12,11,.18) 100%),
+        linear-gradient(180deg, rgba(13,12,11,.42) 0%, rgba(13,12,11,.28) 38%, #141211 100%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 150px 0 82px;
+    }
+    .hero-copy { max-width: 720px; }
+    .lead {
+      max-width: 610px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 1.8vw, 23px);
+      line-height: 1.62;
+      color: rgba(247,243,237,.8);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 64px;
+      max-width: 860px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .hero-strip div {
+      min-height: 112px;
+      padding: 20px;
+      background: rgba(13,12,11,.54);
+      backdrop-filter: blur(12px);
+    }
+    .hero-strip strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: #fff;
+    }
+    .hero-strip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .5fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 40px;
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .menu-rows {
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(220px, .42fr);
+      gap: 24px;
+      align-items: center;
+      min-height: 132px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row .num {
+      font-family: var(--font-mono);
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .menu-row p { margin: 0; color: var(--muted); }
+
+    .story {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .story-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(380px, .72fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .story .eyebrow { color: var(--accent); }
+    .story p { color: rgba(29,23,20,.7); font-size: 19px; line-height: 1.72; }
+    .story-card {
+      border: 1px solid rgba(64,32,32,.18);
+      background: #fffaf2;
+      padding: 32px;
+      min-height: 360px;
+      display: grid;
+      align-content: space-between;
+    }
+    .story-card .stamp {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .story-card strong {
+      display: block;
+      margin-top: 42px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 190px;
+      padding: 28px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 190ms var(--ease), border-color 190ms var(--ease), background 190ms var(--ease);
+    }
+    .trust-card:hover { transform: translateY(-2px); border-color: rgba(198,164,111,.42); background: var(--surface-2); }
+    .trust-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 1;
+      color: #fff;
+    }
+    .trust-card span { color: var(--muted); font-weight: 600; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 320px;
+      background: var(--surface);
+      overflow: hidden;
+      position: relative;
+    }
+    .gallery figure:first-child { min-height: 560px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms var(--ease); }
+    .gallery figure:hover img { transform: scale(1.035); }
+    .gallery-stack {
+      display: grid;
+      gap: 16px;
+    }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      padding: 12px 14px;
+      background: rgba(13,12,11,.72);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    .contact {
+      background: #0f0e0d;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(420px, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 32px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+    .contact-card dl { margin: 28px 0 0; display: grid; gap: 18px; }
+    .contact-card div {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-card dt {
+      font-family: var(--font-mono);
+      color: var(--gold);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .contact-card dd { margin: 0; color: rgba(247,243,237,.82); font-weight: 650; }
+    #map { height: 420px; overflow: hidden; border: 1px solid var(--line); }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    details {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 24px;
+      transition: border-color 190ms var(--ease), background 190ms var(--ease), transform 190ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); border-color: rgba(198,164,111,.42); background: var(--surface-2); }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 18px;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 16px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 104px 0 112px;
+      text-align: center;
+    }
+    .final h2 { max-width: 840px; margin-inline: auto; }
+    .final p {
+      max-width: 620px;
+      margin: 24px auto 0;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.7;
+    }
+    .final-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 34px; }
+
+    footer {
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 760px;
+    }
+    .credits {
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-content { padding-top: 130px; }
+      .hero-strip, .trust-grid, .faq-grid, .section-head, .story-grid, .contact-grid, .gallery {
+        grid-template-columns: 1fr;
+      }
+      .menu-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        min-height: 0;
+      }
+      .gallery figure, .gallery figure:first-child { min-height: 320px; }
+      .contact-card div { grid-template-columns: 1fr; gap: 6px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 72px 0; }
+      .hero-strip div { min-height: 96px; }
+      .story-card, .contact-card, .trust-card, details { padding: 22px; }
+      .btn { width: 100%; }
+      .final-actions, .hero-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Na Hradě">
+        <img src="https://na-hrade.cz/wp-content/uploads/2020/04/Na-Hradě.png" alt="Na Hradě">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#historie">Historie</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420603873667">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Hospoda Na Hradě">
+      <div class="hero-bg" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+      </div>
+      <div class="wrap hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">Špitálská 175/5 · Hradec Králové</p>
+          <h1>Hospoda Na Hradě</h1>
+          <p class="lead">Jedna z mála původních hospod na starém městě, s právovárečnou historií od 15. století, denní nabídkou a poctivým posezením v centru Hradce Králové.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420603873667">+420 603 873 667</a>
+            <a class="btn btn-outline" href="#kontakt">Adresa a mapa</a>
+          </div>
+        </div>
+        <div class="hero-strip" aria-label="Základní informace">
+          <div>
+            <strong>4,5</strong>
+            <span>hodnocení hostů</span>
+          </div>
+          <div>
+            <strong>1 948</strong>
+            <span>recenzí</span>
+          </div>
+          <div>
+            <strong>15. století</strong>
+            <span>právovárečná historie</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Denní nabídka, jídlo a pití.</h2>
+          </div>
+          <p>Přijďte na oběd, večeři nebo sklenici po práci. Aktuální výběr držíme přehledně ve třech hlavních částech.</p>
+        </div>
+        <div class="menu-rows">
+          <article class="menu-row">
+            <span class="num">01</span>
+            <h3>Denní nabídka</h3>
+            <p>Krátký výběr jídel pro všední den, připravený pro hosty, kteří se chtějí najíst bez zdržování.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">02</span>
+            <h3>Jídelní lístek</h3>
+            <p>Stálá hospodská kuchyně pro posezení u stolu, rodinný oběd i večer s přáteli.</p>
+          </article>
+          <article class="menu-row">
+            <span class="num">03</span>
+            <h3>Nápojový lístek</h3>
+            <p>Pivo, víno, nealko a další nápoje k jídlu i k delšímu večeru v historickém centru.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="story" id="historie">
+      <div class="wrap story-grid">
+        <div>
+          <p class="eyebrow">O hospodě</p>
+          <h2>Staré město má svůj stůl.</h2>
+          <p>Na Hradě stojí v části Hradce Králové, kde se historie potkává s každodenním provozem města. Je to místo pro hosty, kteří hledají klasickou hospodu, jasnou nabídku a adresu, na kterou se dá vracet.</p>
+          <p>Najdete nás ve Špitálské ulici, jen pár kroků od ruchu centra.</p>
+        </div>
+        <aside class="story-card" aria-label="Historická poznámka">
+          <span class="stamp">Právovárečná historie</span>
+          <strong>od 15. století</strong>
+          <a class="btn btn-paper" href="#kontakt">Najít cestu</a>
+        </aside>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra hostů">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Hosté a místo</p>
+            <h2>Hospoda, kterou lidé znají.</h2>
+          </div>
+          <p>Reálné hodnocení, tisíce zkušeností hostů a pevná adresa v centru Hradce Králové.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <strong>4,5</strong>
+            <span>průměrné hodnocení</span>
+          </article>
+          <article class="trust-card">
+            <strong>1 948</strong>
+            <span>recenzí od hostů</span>
+          </article>
+          <article class="trust-card">
+            <strong>500 03</strong>
+            <span>Hradec Králové 3</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Večer, sklenice, staré město.</h2>
+          </div>
+          <p>Teplé světlo, dřevěné stoly a klidnější rytmus hospody, kam se chodí sednout, najíst a zůstat o chvíli déle.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <figcaption>Stůl pro oběd i večerní posezení</figcaption>
+          </figure>
+          <div class="gallery-stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+              <figcaption>Teplé světlo a klid u stolu</figcaption>
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+              <figcaption>Nápojový lístek k večeru</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact" id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Kudy k nám.</h2>
+          <dl>
+            <div>
+              <dt>Adresa</dt>
+              <dd>Špitálská 175/5, 500 03 Hradec Králové-Hradec Králové 3</dd>
+            </div>
+            <div>
+              <dt>Telefon</dt>
+              <dd><a href="tel:+420603873667">+420 603 873 667</a></dd>
+            </div>
+            <div>
+              <dt>E-mail</dt>
+              <dd><a href="mailto:nahrade@centrum.cz">nahrade@centrum.cz</a></dd>
+            </div>
+            <div>
+              <dt>Web</dt>
+              <dd><a href="https://na-hrade.cz/">na-hrade.cz</a></dd>
+            </div>
+          </dl>
+        </div>
+        <div id="map" aria-label="Mapa s polohou hospody Na Hradě"></div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Než vyrazíte</p>
+            <h2>Prakticky a bez oklik.</h2>
+          </div>
+          <p>Nejdůležitější informace pro návštěvu hospody ve Špitálské ulici.</p>
+        </div>
+        <div class="faq-grid">
+          <details>
+            <summary>Kde přesně Na Hradě najdu?</summary>
+            <p>Hospoda je na adrese Špitálská 175/5, 500 03 Hradec Králové-Hradec Králové 3.</p>
+          </details>
+          <details>
+            <summary>Máte denní nabídku?</summary>
+            <p>Ano, kromě jídelního a nápojového lístku je uvedená i denní nabídka.</p>
+          </details>
+          <details>
+            <summary>Jak se dá nejrychleji spojit?</summary>
+            <p>Zavolejte na +420 603 873 667 nebo napište na nahrade@centrum.cz.</p>
+          </details>
+          <details>
+            <summary>Je to historická hospoda?</summary>
+            <p>Na Hradě uvádí právovárečnou historii od 15. století a patří mezi původní hospody starého města.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <p class="eyebrow">Na Hradě</p>
+        <h2>Rezervaci a dotazy vyřídíme po telefonu.</h2>
+        <p>Chystáte se na oběd, večeři nebo jen na chvíli posedět? Ozvěte se nám a domluvíme se.</p>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420603873667">Zavolat do hospody</a>
+          <a class="btn btn-outline" href="mailto:nahrade@centrum.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Na Hradě</strong><br>
+        Špitálská 175/5, Hradec Králové
+        <div class="credits">Fotografie: Pexels · Nathan J Hilton, Janko Ferlic, Daniil Kondrashin, Zain Ali</div>
+      </div>
+      <div class="disclaimer">
+        Toto je nezávazný vizuální koncept od Webflex. Pokud si nepřejete tuto ukázku zobrazovat, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/isxm3sl">webflex.cz/delete/isxm3sl</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.8328185, 50.210018999999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([15.8328185, 50.210018999999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
