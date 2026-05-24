@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace U Rudolfa - tankové pivo</title>
+  <meta name="description" content="Restaurace U Rudolfa v Hradci Králové: tankový Pilsner Urquell, česká kuchyně, týdenní menu, salónek, catering a rezervace na telefonu 734 300 111.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: #ffffff;
+      --surface-soft: #f0f2ed;
+      --ink: #151914;
+      --muted: #687064;
+      --line: rgba(32, 64, 32, .12);
+      --accent: #204020;
+      --accent-2: #a18952;
+      --shadow: 0 34px 90px rgba(24, 32, 22, .10);
+      --shadow-soft: 0 18px 70px rgba(32, 64, 32, .08);
+      --radius: 22px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(32,64,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,64,32,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 248, .82);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      height: auto;
+      max-height: 42px;
+      width: min(280px, 54vw);
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav-links a { text-decoration: none; color: rgba(21,25,20,.76); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(32,64,32,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero {
+      padding: 64px 0 86px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(21,25,20,.76);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 680px;
+    }
+
+    .meta-tile, .float-card, .service-card, .hours-card, .map-card, .faq-item {
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .meta-tile {
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 104px;
+    }
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      color: var(--accent);
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(13,18,13,.42));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 250px;
+      border-radius: var(--radius);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card h3 { font-size: 25px; line-height: 1.04; }
+    .service-card p { margin: 16px 0 0; color: var(--muted); }
+    .service-card .num { font-family: var(--font-mono); color: var(--accent-2); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .float-card {
+      border-radius: 28px;
+      padding: 34px;
+    }
+    .float-card.dark {
+      background: var(--accent);
+      color: #fff;
+    }
+    .float-card.dark p { color: rgba(255,255,255,.78); }
+    .quote {
+      font-size: clamp(28px, 3.8vw, 54px);
+      font-family: var(--font-display);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .check-list {
+      display: grid;
+      gap: 14px;
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .check-list li {
+      display: flex;
+      gap: 12px;
+      color: rgba(255,255,255,.84);
+      font-weight: 700;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      margin-top: 8px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--accent-2);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface);
+    }
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+    .gallery img { width: 100%; height: 310px; object-fit: cover; }
+    .gallery figcaption {
+      padding: 16px 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 46px;
+    }
+    .trust-item {
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface-soft);
+    }
+    .trust-item strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .trust-item span { display: block; margin-top: 10px; color: var(--muted); font-weight: 700; }
+
+    .rows {
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) auto;
+      gap: 24px;
+      padding: 24px 28px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row b { font-family: var(--font-mono); color: var(--accent); }
+    .row p { margin: 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card, .map-card {
+      border-radius: 28px;
+      padding: 30px;
+    }
+    .hours-card h2 { font-size: clamp(32px, 4vw, 56px); margin-bottom: 22px; }
+    .hours-table { display: grid; gap: 10px; margin: 24px 0; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-line.today {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .contact-links { display: grid; gap: 10px; margin-top: 22px; }
+    .contact-links a {
+      text-decoration: none;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--surface-soft);
+      font-weight: 800;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s;
+    }
+    .contact-links a:hover { transform: translateY(-1px); background: rgba(32,64,32,.10); }
+    .contact-links a:active { transform: translateY(1px); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      border-radius: 22px;
+      padding: 26px;
+    }
+    .faq-item h3 { font-size: 22px; line-height: 1.1; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding-bottom: 38px;
+    }
+    .cta {
+      min-height: 360px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 34px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 64px);
+      border-radius: 34px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { font-size: clamp(38px, 5vw, 76px); max-width: 780px; }
+    .cta p { color: rgba(255,255,255,.78); max-width: 610px; font-size: 19px; }
+    .cta .btn-primary { background: #fff; color: var(--accent); }
+    .cta .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+    .webflex-disclaimer {
+      max-width: 860px;
+      font-size: 12px;
+      color: rgba(104,112,100,.86);
+    }
+    .webflex-disclaimer a { text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-width: 0; }
+      .service-grid, .trust-strip, .faq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2) { transform: none; }
+      .row { grid-template-columns: 1fr; gap: 8px; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1160px); }
+      .hero { padding: 38px 0 56px; }
+      section { padding: 56px 0; }
+      .hero-meta, .service-grid, .trust-strip, .faq { grid-template-columns: 1fr; }
+      .hero-actions, .cta-actions { display: grid; }
+      .btn { width: 100%; }
+      .float-card, .hours-card, .map-card { padding: 24px; }
+      .footer-main { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Restaurace U Rudolfa - tankové pivo">
+        <img src="https://www.urudolfa.restaurant/image/cache/catalog/urudolfa/u-rudolfa-restaurant-logo-671x116.png" alt="Restaurace U Rudolfa - tankové pivo">
+      </a>
+      <div class="nav-links">
+        <a href="#jidlo">Jídlo a pití</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420734300111">734 300 111</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Hradec Králové · Československé armády 300</p>
+          <h1>Tankový Pilsner U Rudolfa</h1>
+          <p class="lead">Poctivě ošetřený tankový Pilsner Urquell, česká kuchyně, týdenní menu a klidné zázemí pro oběd, večeři i větší setkání.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420734300111">Rezervovat telefonicky</a>
+            <a class="btn btn-secondary" href="#jidlo">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile"><strong>4,4</strong><span>hodnocení hostů</span></div>
+            <div class="meta-tile"><strong>317</strong><span>recenzí</span></div>
+            <div class="meta-tile"><strong>12:00</strong><span>dnes otevřeno</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-label"><span>Tankové pivo</span><span>Česká kuchyně</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jidlo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co si u nás dáte</p>
+            <h2>Klasika, meníčko, pití.</h2>
+          </div>
+          <p>Nabídka stojí na chuti domova, dobře načepovaném pivu a prostoru, kde se dá zůstat na rychlý oběd i dlouhý večer.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Tankový Pilsner Urquell</h3><p>Ošetřovaný a čepovaný s péčí, oceněný Hvězdou sládků.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Česká kuchyně</h3><p>Stálá nabídka, akční speciality a jídla pro chuť domova.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Týdenní menu</h3><p>Polední rytmus pro pracovní den, posezení s kolegy i rychlé vyřízení oběda.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>Dárkové vouchery</h3><p>Poukaz na steak, Rudolfovu baštu, Párty Mix, pivo nebo podle vlastní částky.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap split">
+        <article class="float-card dark">
+          <p class="eyebrow" style="color:#d8c38b">Salónek & catering</p>
+          <div class="quote">Pro rodinu, firmu i svatbu.</div>
+          <ul class="check-list">
+            <li><span class="dot"></span><span>Soukromé prostředí pro menší i větší akce.</span></li>
+            <li><span class="dot"></span><span>Cateringové služby pro oslavy, prezentace a firemní večírky.</span></li>
+            <li><span class="dot"></span><span>Domluva rezervace a potvrzení telefonicky.</span></li>
+          </ul>
+        </article>
+        <article class="float-card">
+          <p class="eyebrow">Představujeme se Vám</p>
+          <h2>Fakt pohoda u stolu.</h2>
+          <p class="lead" style="font-size:20px">Přijďte si vychutnat tankový Pilsner Urquell, inspirujte se nabídkou a nechte si čas na jídlo, které má být příjemnou součástí dne.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="gallery" aria-label="Atmosféra restaurace">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Nápojový lístek a večerní posezení</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>Interiér pro běžný i výjimečný den</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <figcaption>Uvolněné prostředí pro rezervace</figcaption>
+          </figure>
+        </div>
+        <div class="trust-strip">
+          <div class="trust-item"><strong>4,4</strong><span>průměrné hodnocení</span></div>
+          <div class="trust-item"><strong>317</strong><span>veřejných recenzí</span></div>
+          <div class="trust-item"><strong>★</strong><span>Hvězda sládků za péči o pivo</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Jak rezervovat</p>
+            <h2>Domluva bez zbytečných kroků.</h2>
+          </div>
+          <p>Pro rezervaci na dnešní den i následující dny volejte. Rezervace se potvrzuje telefonicky.</p>
+        </div>
+        <div class="rows">
+          <div class="row"><b>01</b><p>Zavolejte na číslo 734 300 111.</p><strong>Telefon</strong></div>
+          <div class="row"><b>02</b><p>Řekněte termín, počet hostů a případně salónek nebo catering.</p><strong>Domluva</strong></div>
+          <div class="row"><b>03</b><p>Rezervaci vám restaurace potvrdí telefonicky.</p><strong>Potvrzení</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <aside class="hours-card">
+          <p class="eyebrow">Otevírací doba</p>
+          <h2>Kdy se stavit</h2>
+          <div class="hours-table">
+            <div class="hours-line"><span>Pondělí - Čtvrtek</span><span>11:00 - 23:00</span></div>
+            <div class="hours-line"><span>Pátek - Sobota</span><span>11:00 - 00:00</span></div>
+            <div class="hours-line today"><span>Neděle</span><span>12:00 - 22:00</span></div>
+          </div>
+          <p><strong>Adresa:</strong><br>Československé armády 300, 500 03 Hradec Králové</p>
+          <div class="contact-links">
+            <a href="tel:+420734300111">+420 734 300 111</a>
+            <a href="mailto:urudolfa.hk@seznam.cz">urudolfa.hk@seznam.cz</a>
+          </div>
+        </aside>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa umístění restaurace"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než zavoláte.</h2>
+          </div>
+          <p>Krátké odpovědi k rezervaci, akcím a voucherům podle informací restaurace.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Lze rezervovat na dnešní den?</h3><p>Ano, pro dnešní den i následující dny prosím volejte na 734 300 111.</p></article>
+          <article class="faq-item"><h3>Pořádáte soukromé akce?</h3><p>Restaurace nabízí salónek a catering pro oslavy, svatby, setkání spolužáků, prezentace i firemní večírky.</p></article>
+          <article class="faq-item"><h3>Kde koupím voucher?</h3><p>Dárkové vouchery jsou k dispozici přímo v restauraci, částku si určíte sami.</p></article>
+          <article class="faq-item"><h3>Máte týdenní menu?</h3><p>Ano, v nabídce jsou týdenní menu, stálá nabídka, akční speciality i nápojový lístek.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow" style="color:#d8c38b">Rezervace</p>
+          <h2>Stůl U Rudolfa čeká.</h2>
+          <p>Na oběd, večer s tankovým Pilsnerem nebo soukromou akci se domluvte přímo s restaurací.</p>
+        </div>
+        <div class="hero-actions cta-actions">
+          <a class="btn btn-primary" href="tel:+420734300111">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:urudolfa.hk@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Restaurace U Rudolfa - tankové pivo</strong>
+        <span>Československé armády 300 · Hradec Králové · 734 300 111</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/soiav0v">webflex.cz/delete/soiav0v</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.8310661, 50.2110449],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204020' })
+      .setLngLat([15.8310661, 50.2110449])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
