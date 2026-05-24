@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Zelená Žába | Restaurace a penzion v Pardubicích</title>
+  <meta name="description" content="Restaurace Zelená Žába v Pardubicích: denní menu, tankové pivo, venkovní zahrádka, penzion a rezervace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfa;
+      --surface: rgba(255, 255, 255, 0.76);
+      --surface-strong: #ffffff;
+      --ink: #112019;
+      --muted: #66736b;
+      --line: rgba(0, 64, 32, 0.12);
+      --accent: #004020;
+      --accent-soft: #e2efe8;
+      --shadow: 0 28px 90px rgba(10, 35, 22, 0.10);
+      --shadow-small: 0 18px 50px rgba(10, 35, 22, 0.08);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --radius: 22px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0, 64, 32, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 64, 32, 0.018) 1px, transparent 1px),
+        radial-gradient(circle at 18% 0%, rgba(0, 64, 32, 0.08), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 252, 250, 0.82);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+    .btn-primary:hover { background: #062d19; }
+    .btn-outline { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn-outline:hover { background: var(--accent-soft); color: var(--accent); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      align-items: center;
+      padding: 56px 0 70px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      align-items: center;
+      gap: 48px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      margin-bottom: 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      max-width: 720px;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 600px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 23px);
+      color: #38483f;
+      line-height: 1.42;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-note {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 640px;
+    }
+    .pill {
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .pill strong { display: block; font-family: var(--font-mono); font-size: 18px; color: var(--accent); }
+    .pill span { color: var(--muted); font-size: 14px; font-weight: 700; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #dfe8e2;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,64,32,.05), rgba(255,255,255,.06));
+      pointer-events: none;
+    }
+    .floating-card {
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      width: min(310px, calc(100% - 44px));
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 22px 70px rgba(0,0,0,.14);
+    }
+    .floating-card b { display: block; font-size: 20px; }
+    .floating-card span { color: var(--muted); }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(300px, .42fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 64px);
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 19px; }
+
+    .menu-board {
+      display: grid;
+      grid-template-columns: .72fr 1.28fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .daily-card, .menu-list, .soft-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-small);
+    }
+    .daily-card { padding: 30px; display: flex; flex-direction: column; justify-content: space-between; min-height: 420px; }
+    .daily-card .price { font-family: var(--font-display); font-size: clamp(52px, 7vw, 82px); line-height: .9; color: var(--accent); }
+    .daily-card .date { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+    .menu-list { padding: 10px 26px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: baseline;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .gram, .cost { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+    .menu-row p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(420px, .95fr) minmax(0, 1.05fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .photo-card {
+      min-height: 520px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-list {
+      display: grid;
+      gap: 14px;
+    }
+    .feature {
+      padding: 26px;
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .feature h3 { font-size: 24px; font-weight: 800; }
+    .feature p { margin: 8px 0 0; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      min-height: 170px;
+    }
+    .stat b { display: block; font-family: var(--font-display); font-size: clamp(38px, 5vw, 66px); line-height: .95; color: var(--accent); }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); font-weight: 700; }
+
+    .pension {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .pension .soft-card { padding: 34px; }
+    .details {
+      display: grid;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .detail-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .detail-row span:first-child { font-family: var(--font-mono); color: var(--accent); font-size: 13px; font-weight: 700; }
+    .detail-row span:last-child { color: var(--muted); }
+    .pension-photo { border-radius: var(--radius); overflow: hidden; min-height: 430px; box-shadow: var(--shadow-small); }
+    .pension-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 300px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-small);
+      background: #edf2ef;
+    }
+    .gallery-strip figure:nth-child(2) { margin-top: 54px; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 30px; }
+    .contact-card h3 { font-size: 26px; }
+    .contact-lines { display: grid; gap: 14px; margin: 24px 0; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .contact-lines small { display: block; color: var(--muted); font-family: var(--font-mono); margin-bottom: 4px; }
+    #map { height: 420px; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-small); }
+
+    .final {
+      padding: 52px 0 78px;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 30px;
+      padding: clamp(30px, 5vw, 56px);
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { color: #fff; font-size: clamp(34px, 5vw, 70px); }
+    .cta p { margin: 16px 0 0; color: rgba(255,255,255,.78); max-width: 620px; }
+    .cta .btn-primary { background: #fff; color: var(--accent); border-color: #fff; }
+    .cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 920px) {
+      .navlinks a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .menu-board, .split, .pension, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .photo-card, .pension-photo { min-height: 340px; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .nav { height: 68px; }
+      .logo img { max-height: 38px; }
+      .hero { padding: 36px 0 48px; }
+      .hero-grid { gap: 28px; }
+      .hero-note, .stats, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { margin-top: 0; }
+      .menu-row { grid-template-columns: 1fr auto; gap: 8px 14px; }
+      .gram { grid-column: 1 / -1; }
+      .detail-row { grid-template-columns: 1fr; gap: 4px; }
+      section { padding: 58px 0; }
+      .floating-card { position: static; width: auto; margin: -72px 14px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Restaurace Zelená Žába">
+        <img src="../../../wms/frontend/uploads/images/zaba-logo.svg" alt="Restaurace Zelená Žába">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#menu">Denní menu</a>
+        <a href="#penzion">Penzion</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420466616016">Volat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Pardubice, Hronovická 929</div>
+          <h1>Zelená Žába v centru</h1>
+          <p class="lead">Restaurace s denním menu, tankovým pivem, letní zahrádkou a penzionem pár kroků od pardubického centra.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#menu">Denní menu</a>
+            <a class="btn btn-outline" href="tel:+420466616016">+420 466 616 016</a>
+          </div>
+          <div class="hero-note" aria-label="Rychlé informace">
+            <div class="pill"><strong>4.3</strong><span>hodnocení Google</span></div>
+            <div class="pill"><strong>1858</strong><span>recenzí hostů</span></div>
+            <div class="pill"><strong>70</strong><span>míst na zahrádce</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="floating-card">
+            <b>Oběd, večeře i rezervace</b>
+            <span>Jídelní lístek, nápojový lístek a ubytování pod jednou střechou.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Denní menu 18. 5. - 24. 5. 2026</div>
+            <h2>Poledne bez kompromisu</h2>
+          </div>
+          <p>Výběr z aktuální nabídky: vývar, česká klasika, steaky, těstoviny, salát i jídla k pivu.</p>
+        </div>
+        <div class="menu-board">
+          <article class="daily-card">
+            <div>
+              <div class="date">Polévka 0,3 l</div>
+              <h3>Hovězí vývar s těstovinou</h3>
+            </div>
+            <div>
+              <div class="price">34 Kč</div>
+              <p>Alergeny: 1, 3, 6, 7, 9, 13</p>
+            </div>
+          </article>
+          <div class="menu-list">
+            <div class="menu-row">
+              <span class="gram">120 g</span>
+              <div>Svíčková na smetaně, houskový knedlík<p>citron, brusinky, šlehačka</p></div>
+              <span class="cost">156 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="gram">150 g</span>
+              <div>Hovězí roštěná na roštu, sázené vejce<p>hranolky nebo rýže</p></div>
+              <span class="cost">164 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="gram">350 g</span>
+              <div>Tortilla plněná kuřecím masem a zeleninou<p>česnekový dresink, hranolky nebo čerstvá zelenina</p></div>
+              <span class="cost">151 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="gram">200 g</span>
+              <div>Biftek s houbovou omáčkou<p>hranolky</p></div>
+              <span class="cost">317 Kč</span>
+            </div>
+            <div class="menu-row">
+              <span class="gram">100 g</span>
+              <div>Tatarský biftek míchaný<p>5 ks topinek</p></div>
+              <span class="cost">206 Kč</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+        </div>
+        <div class="feature-list">
+          <div class="feature">
+            <div class="eyebrow">Restaurace</div>
+            <h3>Tankové pivo a poctivé jídlo</h3>
+            <p>Místo pro oběd, večeři i posezení s přáteli, s nabídkou české klasiky i lehčích jídel z denního menu.</p>
+          </div>
+          <div class="feature">
+            <div class="eyebrow">Léto</div>
+            <h3>Venkovní zahrádka</h3>
+            <p>V letních měsících je k dispozici prostorná zahrádka s kapacitou až 70 osob.</p>
+          </div>
+          <div class="feature">
+            <div class="eyebrow">Rezervace</div>
+            <h3>Stůl domluvíte telefonicky</h3>
+            <p>Zavolejte na +420 466 616 016 a domluvte si čas, počet hostů nebo pobyt v penzionu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><b>4.3</b><span>průměrné hodnocení na Googlu</span></div>
+          <div class="stat"><b>1858</b><span>veřejných recenzí hostů</span></div>
+          <div class="stat"><b>50 m</b><span>parkoviště s bezpečnostní bránou od penzionu</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="penzion">
+      <div class="wrap pension">
+        <article class="soft-card">
+          <div class="eyebrow">Penzion v centru Pardubic</div>
+          <h2>Pokoje, studia a apartmány</h2>
+          <p class="lead">Ubytování ve dvou pokojích, třech studiích a dvou apartmánech. Každá jednotka má klimatizaci, vlastní sociální zařízení, koupelnu, televizi se satelitem a internetové připojení.</p>
+          <div class="details">
+            <div class="detail-row"><span>Check-in</span><span>Ubytování a parkování vozidla je možné od 14:00 do 22:00.</span></div>
+            <div class="detail-row"><span>Check-out</span><span>Odjezd z ubytování je do 11:00.</span></div>
+            <div class="detail-row"><span>Apartmány</span><span>Vhodné pro vícedenní pobyt, s vlastní kuchyní a oddělenými ložnicemi.</span></div>
+            <div class="detail-row"><span>Parkování</span><span>Parkoviště s bezpečnostní bránou je 50 m od penzionu, další možnost je u OC Jamall 100 m od ubytování.</span></div>
+          </div>
+        </article>
+        <div class="pension-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Večer u Žáby</h2>
+          </div>
+          <p>Teplé světlo, sklenka na stole a klidné zázemí pro oběd, rodinnou večeři i ubytované hosty.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure><img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt a cesta</div>
+            <h2>Hronovická 929</h2>
+          </div>
+          <p>Restaurace a penzion najdete v Pardubicích I. Rezervace stolu i ubytování řešíte nejrychleji telefonicky.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="soft-card contact-card">
+            <h3>Restaurace Zelená Žába</h3>
+            <div class="contact-lines">
+              <span><small>Adresa</small>Hronovická 929, 530 02 Pardubice I</span>
+              <a href="tel:+420466616016"><small>Telefon</small>+420 466 616 016</a>
+              <a href="mailto:info@zelenazaba.cz"><small>E-mail</small>info@zelenazaba.cz</a>
+            </div>
+            <a class="btn btn-primary" href="tel:+420466616016">Zavolat do restaurace</a>
+          </article>
+          <div id="map" aria-label="Mapa s polohou Restaurace Zelená Žába"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="cta">
+          <div>
+            <h2>Rezervujte si stůl</h2>
+            <p>Domluvte si oběd, večeři, posezení na zahrádce nebo ubytování v penzionu na Hronovické.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420466616016">+420 466 616 016</a>
+            <a class="btn btn-outline" href="mailto:info@zelenazaba.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© Restaurace Zelená Žába</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex. Pokud si ji nepřejete zobrazovat, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/kx7i9fv">webflex.cz/delete/kx7i9fv</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7735241, 50.0337325],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004020' })
+      .setLngLat([15.7735241, 50.0337325])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
