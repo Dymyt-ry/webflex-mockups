@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace Anamii | Sushi, wok a bento v Pardubicích</title>
+  <meta name="description" content="Restaurace Anamii v Pardubicích: sushi, bento, wok, předkrmy, jídlo s sebou, rezervace a objednávky na telefonu +420 774 318 884.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-solid: #ffffff;
+      --surface-warm: #f3efed;
+      --ink: #202020;
+      --muted: #6c6868;
+      --soft: #8b8584;
+      --line: rgba(32, 32, 32, .08);
+      --accent: #A65F66;
+      --accent-dark: #7d4249;
+      --shadow: 0 38px 100px rgba(47, 43, 43, .11);
+      --shadow-soft: 0 22px 70px rgba(47, 43, 43, .08);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(166, 95, 102, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(166, 95, 102, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 251, 250, .86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(238px, 48vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 800;
+      color: rgba(32, 32, 32, .72);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .22s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+    a:focus-visible, button:focus-visible, .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 21px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s, background .22s, border-color .22s, color .22s;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(166, 95, 102, .18); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent-dark); background: rgba(166, 95, 102, .06); }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.08; }
+    p { hyphens: auto; }
+
+    .hero { padding: 62px 0 84px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 50px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(32, 32, 32, .74);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 690px;
+      margin-top: 40px;
+    }
+
+    .meta-tile, .service-card, .hours-card, .map-card, .faq-item, .feature-panel, .quote-panel {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .meta-tile {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 18px;
+    }
+
+    .meta-tile span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hero-photo {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      background: var(--surface-warm);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(18, 16, 16, .48));
+    }
+
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .44fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .service-card {
+      min-height: 245px;
+      padding: 24px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s;
+    }
+
+    .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .service-card p { margin: 18px 0 0; color: var(--muted); font-size: 16px; }
+    .service-card .num {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .feature-panel {
+      border-radius: 30px;
+      padding: clamp(28px, 5vw, 54px);
+    }
+
+    .feature-list {
+      margin: 34px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      gap: 22px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .feature-list strong {
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .gallery-item {
+      position: relative;
+      overflow: hidden;
+      min-height: 260px;
+      border-radius: 26px;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-warm);
+    }
+
+    .gallery-item.tall { grid-row: span 2; min-height: 536px; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .quote-panel {
+      border-radius: 26px;
+      padding: 28px;
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .quote-panel .big {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 5vw, 74px);
+      line-height: .9;
+      color: var(--accent-dark);
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .quote-panel p { margin: 18px 0 0; color: var(--muted); font-weight: 700; }
+
+    .hours-map {
+      display: grid;
+      grid-template-columns: minmax(330px, .52fr) minmax(0, .9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hours-card, .map-card {
+      border-radius: 30px;
+      overflow: hidden;
+    }
+
+    .hours-card { padding: 30px; }
+    .hours-card h3 { margin-bottom: 22px; }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hours-row.today {
+      color: var(--ink);
+      font-weight: 700;
+      background: rgba(166, 95, 102, .08);
+      margin: 0 -12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border-top-color: transparent;
+    }
+
+    .contact-links {
+      display: grid;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .contact-links a {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 14px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+      background: rgba(166, 95, 102, .08);
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), background .22s;
+    }
+
+    .contact-links a:hover { transform: translateY(-1px); background: rgba(166, 95, 102, .14); }
+    .contact-links a:active { transform: translateY(1px); }
+
+    #map { height: 420px; border-radius: 30px; overflow: hidden; }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .faq-item {
+      min-height: 170px;
+      padding: 24px;
+      border-radius: 24px;
+    }
+
+    .faq-item h3 { font-size: 22px; }
+    .faq-item p { margin: 16px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 76px 0;
+    }
+
+    .cta-band {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 56px);
+      border-radius: 34px;
+      color: #fff;
+      background:
+        linear-gradient(135deg, rgba(32, 32, 32, .94), rgba(55, 41, 43, .94)),
+        var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .cta-band p { margin: 18px 0 0; max-width: 620px; color: rgba(255,255,255,.76); font-size: 18px; }
+    .cta-band .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0 42px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+
+    .disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      color: rgba(32, 32, 32, .54);
+    }
+
+    .disclaimer a { color: var(--accent-dark); font-weight: 800; }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .hours-map, .cta-band {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .trust { grid-template-columns: 1fr; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 38px; }
+      section { padding: 58px 0; }
+      .hero-meta, .service-grid, .gallery-strip, .faq-list { grid-template-columns: 1fr; }
+      .gallery-item, .gallery-item.tall { min-height: 260px; grid-row: auto; }
+      .feature-list li { grid-template-columns: 1fr; gap: 8px; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+      .footer-grid { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Restaurace Anamii">
+        <img src="https://cdn.website.dish.co/media/29/5b/9158599/Anamii-306558081-421751353422906-5918598386900920777-n-jpg.jpg" alt="Restaurace Anamii">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#sluzby">Služby</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420774318884">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Pardubice · 17. listopadu 519</p>
+          <h1>Sushi, wok a bento</h1>
+          <p class="lead">Restaurace Anamii pro oběd, večeři i jídlo s sebou. Rezervace a objednávky přijímáme na telefonu +420 774 318 884.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774318884">Rezervovat stůl</a>
+            <a class="btn btn-secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile">
+              <strong>4,4 / 5</strong>
+              <span>hodnocení od 406 hostů</span>
+            </div>
+            <div class="meta-tile">
+              <strong>09:00–21:30</strong>
+              <span>pondělí až čtvrtek</span>
+            </div>
+            <div class="meta-tile">
+              <strong>S sebou</strong>
+              <span>objednávky i bezbariérový přístup</span>
+            </div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label">
+            <span>ANAMII · PARDUBICE</span>
+            <span>Rezervace · Objednávky</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Naše nabídka</p>
+            <h2>Od předkrmů po wok</h2>
+          </div>
+          <p>Vyberte si z kategorií, které v Anamii hosté hledají nejčastěji: polévky a předkrmy, sushi, bento, přílohy a wok.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div>
+              <h3>Polévky a předkrmy</h3>
+              <p>Lehký začátek k obědu nebo sdílení ke stolu.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div>
+              <h3>Sushi</h3>
+              <p>Role a sety pro rychlou zastávku i delší večer.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div>
+              <h3>Bento</h3>
+              <p>Kompletní porce, když chcete mít vše pohromadě.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div>
+              <h3>Wok a přílohy</h3>
+              <p>Teplá jídla z woku a doplnění podle chuti.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap split">
+        <div class="feature-panel">
+          <p class="eyebrow">Služby pro hosty</p>
+          <h2>U stolu i s sebou</h2>
+          <ul class="feature-list">
+            <li><strong>Rezervace</strong><span>Stůl si můžete domluvit telefonicky předem.</span></li>
+            <li><strong>Objednávky</strong><span>Jídlo připravujeme také s sebou.</span></li>
+            <li><strong>Posezení</strong><span>K dispozici je venkovní posezení.</span></li>
+            <li><strong>V restauraci</strong><span>Bezbariérový přístup, bezplatná wi-fi, hotovost i bezkontaktní platby.</span></li>
+          </ul>
+        </div>
+        <div class="gallery-strip" aria-label="Atmosféra restaurace">
+          <figure class="gallery-item tall">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          </figure>
+          <figure class="gallery-item">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust">
+          <article class="quote-panel">
+            <div class="big">4,4</div>
+            <p>Průměrné hodnocení hostů.</p>
+          </article>
+          <article class="quote-panel">
+            <div class="big">406</div>
+            <p>Veřejných recenzí u restaurace.</p>
+          </article>
+          <article class="quote-panel">
+            <div class="big">7 dní</div>
+            <p>Otevřeno každý den v týdnu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kde nás najdete</p>
+            <h2>17. listopadu 519</h2>
+          </div>
+          <p>Restaurace Anamii, 530 02 Pardubice I-Zelené Předměstí. Pro rezervaci, objednávku nebo dotaz volejte +420 774 318 884.</p>
+        </div>
+        <div class="hours-map">
+          <article class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-row"><span>Pondělí</span><span>09:00–21:30</span></div>
+            <div class="hours-row"><span>Úterý</span><span>09:00–21:30</span></div>
+            <div class="hours-row"><span>Středa</span><span>09:00–21:30</span></div>
+            <div class="hours-row"><span>Čtvrtek</span><span>09:00–21:30</span></div>
+            <div class="hours-row"><span>Pátek</span><span>09:00–22:00</span></div>
+            <div class="hours-row"><span>Sobota</span><span>09:00–22:00</span></div>
+            <div class="hours-row today"><span>Neděle</span><span>10:00–21:00</span></div>
+            <div class="contact-links">
+              <a href="tel:+420774318884"><span>Telefon</span><span>+420 774 318 884</span></a>
+              <a href="mailto:anamii.restaurant@seznam.cz"><span>E-mail</span><span>anamii.restaurant@seznam.cz</span></a>
+            </div>
+          </article>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa restaurace Anamii"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Praktické informace vycházejí z dostupných údajů restaurace.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Dá se jídlo objednat s sebou?</h3>
+            <p>Ano, Anamii nabízí jídlo s sebou. Nejlepší je zavolat na uvedené telefonní číslo.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jaké platby přijímáte?</h3>
+            <p>Platba je možná hotově i bezkontaktně.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je restaurace bezbariérová?</h3>
+            <p>Ano, mezi uvedenými službami je bezbariérový přístup.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Máte venkovní posezení?</h3>
+            <p>Ano, při vhodném počasí můžete využít venkovní posezení.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="cta-band">
+          <div>
+            <p class="eyebrow" style="color: rgba(255,255,255,.72);">Rezervace · objednávky</p>
+            <h2>Přijďte do Anamii</h2>
+            <p>Domluvte si stůl, objednejte jídlo s sebou nebo se zeptejte na aktuální nabídku.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420774318884">Volat restauraci</a>
+            <a class="btn btn-secondary" href="mailto:anamii.restaurant@seznam.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Restaurace Anamii</strong><br>
+        17. listopadu 519, 530 02 Pardubice I-Zelené Předměstí
+      </div>
+      <div class="disclaimer">
+        Prezentační stránku připravilo studio Webflex jako nezávazný vizuální podklad pro provozovatele. Pokud si nepřejete stránku zobrazovat, můžete ji odstranit na <a href="https://webflex.cz/delete/wbtrfqs">webflex.cz/delete/wbtrfqs</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.769873599999999, 50.0346163],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A65F66' })
+      .setLngLat([15.769873599999999, 50.0346163])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
