@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bonté Daily Restaurant | Pardubice</title>
+  <meta name="description" content="Bonté Daily Restaurant v Pardubicích: denní nabídka, business menu, snídaně, kavárna, take away, dárkové poukazy a cateringové služby.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, 0.74);
+      --surface-strong: #ffffff;
+      --ink: #200000;
+      --muted: rgba(32, 0, 0, 0.64);
+      --faint: rgba(32, 0, 0, 0.09);
+      --accent: #A34F0B;
+      --accent-dark: #713607;
+      --shadow: 0 30px 90px rgba(32, 0, 0, 0.08);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,0,0,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,0,0,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      z-index: 10;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .btn, .icon-link, .nav a, .panel, .service-row, .gallery img {
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 18px 40px rgba(163,79,11,.18); }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: rgba(255,255,255,.34); }
+    .btn:hover, .icon-link:hover, .nav a:hover { transform: translateY(-1px); }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.secondary:hover { background: rgba(32,0,0,.05); }
+    .btn:active, .icon-link:active, .nav a:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(251,251,250,.78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(32,0,0,.06);
+    }
+    .header-inner { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .nav { display: flex; align-items: center; gap: 6px; }
+    .nav a { padding: 10px 12px; border-radius: 999px; color: var(--muted); font-weight: 700; font-size: 15px; }
+    .nav a:hover { color: var(--ink); background: rgba(32,0,0,.045); }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .hero { padding: 70px 0 54px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .72fr);
+      align-items: center;
+      gap: 52px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .kicker::before { content: ""; width: 32px; height: 1px; background: currentColor; }
+    h1, h2, h3 { margin: 0; hyphens: none; overflow-wrap: anywhere; }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      max-width: 720px;
+      text-transform: uppercase;
+    }
+    .lead { max-width: 620px; color: var(--muted); font-size: 21px; line-height: 1.45; margin: 24px 0 30px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 34px;
+      max-width: 690px;
+    }
+    .mini {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .mini b { display: block; font-family: var(--font-mono); font-size: 20px; }
+    .mini span { color: var(--muted); font-size: 14px; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 44px 110px rgba(32,0,0,.14);
+      position: relative;
+      background: #eee;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "Masarykovo nám. 1458";
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(12px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    section { padding: 74px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(280px, .45fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .eyebrow { font-family: var(--font-mono); color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+    h2 { font-family: var(--font-display); font-size: clamp(34px, 4vw, 60px); line-height: 1; text-transform: uppercase; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .services { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) minmax(180px, .36fr);
+      gap: 24px;
+      align-items: center;
+      padding: 24px;
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: 0 22px 70px rgba(32,0,0,.055);
+    }
+    .service-row:hover { transform: translateY(-2px); background: #fff; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent); }
+    .service-row h3 { font-size: 25px; font-weight: 800; letter-spacing: 0; }
+    .service-row p { margin: 4px 0 0; color: var(--muted); }
+    .tag { justify-self: end; font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 8px 10px; border-radius: 999px; background: rgba(32,0,0,.045); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--surface-strong);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+      min-height: 220px;
+    }
+    .panel:hover { transform: translateY(-2px); }
+    .stat { font-family: var(--font-display); font-size: clamp(46px, 5vw, 78px); line-height: .9; color: var(--accent); overflow-wrap: anywhere; hyphens: none; }
+    .panel p { color: var(--muted); margin: 16px 0 0; }
+    .wide-split {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(360px, .55fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+    .feature {
+      min-height: 430px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .feature img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .feature::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(32,0,0,.52), rgba(32,0,0,.03)); }
+    .feature-copy { position: absolute; left: 32px; bottom: 30px; color: #fff; max-width: 430px; z-index: 1; }
+    .feature-copy h3 { font-family: var(--font-display); font-size: 42px; line-height: 1; text-transform: uppercase; }
+    .feature-copy p { margin: 12px 0 0; color: rgba(255,255,255,.82); }
+    .hours {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hour-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--faint);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hour-row.today { color: var(--accent); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure { margin: 0; min-height: 310px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: #fff; }
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figure:hover img { transform: scale(1.025); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .45fr) minmax(0, .75fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { background: var(--surface-strong); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); }
+    .contact-card h3 { font-size: 28px; }
+    .contact-list { display: grid; gap: 18px; margin: 26px 0; }
+    .contact-list a, .contact-list div { display: grid; gap: 4px; }
+    .contact-list span { color: var(--muted); font-size: 14px; }
+    .contact-list strong { font-family: var(--font-mono); font-size: 15px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .final {
+      padding: 78px 0;
+    }
+    .final-box {
+      border-radius: 36px;
+      padding: clamp(32px, 6vw, 70px);
+      background: var(--ink);
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) auto;
+      gap: 32px;
+      align-items: center;
+      box-shadow: 0 40px 120px rgba(32,0,0,.18);
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { color: rgba(255,255,255,.72); margin: 18px 0 0; max-width: 560px; }
+    .final .btn.secondary { color: #fff; border: 1px solid rgba(255,255,255,.45); background: transparent; }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    footer { padding: 34px 0; color: var(--muted); font-size: 14px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-top: 1px solid var(--faint); padding-top: 22px; }
+    .credits { max-width: 780px; }
+    .disclaimer { margin-top: 14px; font-size: 12px; color: rgba(32,0,0,.52); }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { display: none; }
+      .hero-grid, .section-head, .wide-split, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { min-width: 0; }
+      .hero-meta, .trust-grid, .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2) { transform: none; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .tag { justify-self: start; }
+      .header-actions .secondary { display: none; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 26px, 1180px); }
+      .hero { padding-top: 44px; }
+      section { padding: 54px 0; }
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .panel, .contact-card { padding: 24px; }
+      .mini { min-height: auto; }
+      .logo img { max-height: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap header-inner">
+      <a class="logo" href="#top" aria-label="Bonté Daily Restaurant">
+        <img src="https://bontedaily.cz/data/filecache/8e/output-onlinepngtools-1.png" alt="Bonté Daily Restaurant">
+      </a>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#zazitky">Restaurant</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn secondary" href="tel:+420467007400">Zavolat</a>
+        <a class="btn primary" href="#kontakt">Rezervace</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">BONTÉ DAILY RESTAURANT</div>
+          <h1>Chuť dne v Pardubicích</h1>
+          <p class="lead">Snídaně, denní nabídka, business menu a kavárna na Masarykově náměstí. Přijďte na oběd, kávu nebo si jídlo vezměte s sebou.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420467007400">+420 467 007 400</a>
+            <a class="btn secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="mini"><b>4.5</b><span>hodnocení od hostů</span></div>
+            <div class="mini"><b>322</b><span>recenzí na profilu</span></div>
+            <div class="mini"><b>8:00-17:00</b><span>pondělí až pátek</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Nabídka</div>
+            <h2>Od rána po odpolední kávu</h2>
+          </div>
+          <p>V Bonté najdete každodenní provoz pro rychlý pracovní oběd, klidnou snídani i posezení v kavárně.</p>
+        </div>
+        <div class="services">
+          <article class="service-row">
+            <div class="num">01</div>
+            <div><h3>Denní nabídka</h3><p>Aktuální jídla pro všední den, připravená pro oběd v centru Pardubic.</p></div>
+            <div class="tag">PO-PÁ</div>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <div><h3>Business menu</h3><p>Oběd pro schůzku, pracovní pauzu nebo setkání u stolu bez zbytečného čekání.</p></div>
+            <div class="tag">RESTAURANT</div>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <div><h3>Snídaně a kavárna</h3><p>Ranní káva, snídaně a klidné místo pro začátek dne na náměstí.</p></div>
+            <div class="tag">OD 8:00</div>
+          </article>
+          <article class="service-row">
+            <div class="num">04</div>
+            <div><h3>Take away a rozvoz jídel</h3><p>Jídlo s sebou, telefonické rezervace a rozvoz podle aktuálních možností provozu.</p></div>
+            <div class="tag">S SEBOU</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="zazitky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Restaurant</div>
+            <h2>Stůl, poukaz, catering</h2>
+          </div>
+          <p>Vedle běžného provozu můžete řešit také dárkový poukaz, nápojový a vinný lístek nebo cateringové služby.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="panel">
+            <div class="stat">4.5</div>
+            <p>Průměrné hodnocení hostů podle poskytnutých dat.</p>
+          </article>
+          <article class="panel">
+            <div class="stat">322</div>
+            <p>Recenzí pomáhá novým hostům vybrat si místo pro oběd i kávu.</p>
+          </article>
+          <article class="panel">
+            <div class="stat">5</div>
+            <p>Pracovních dnů v týdnu s provozem od 8:00 do 17:00.</p>
+          </article>
+        </div>
+        <div class="wide-split">
+          <article class="feature">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <div class="feature-copy">
+              <h3>Večer začíná detailem</h3>
+              <p>Vinný lístek, nápojový lístek a prostředí pro setkání, kde se nespěchá.</p>
+            </div>
+          </article>
+          <aside class="panel hours" aria-label="Otevírací doba">
+            <div>
+              <div class="eyebrow">Otevírací doba</div>
+              <h3>Přijďte ve všední den</h3>
+            </div>
+            <div class="hour-row today"><span>PO-PÁ</span><strong>8:00-17:00</strong></div>
+            <div class="hour-row"><span>SO</span><strong>Zavřeno</strong></div>
+            <div class="hour-row"><span>NE</span><strong>Zavřeno</strong></div>
+            <p>Pro telefonické rezervace volejte přímo do restaurace.</p>
+            <a class="btn primary" href="tel:+420467007400">Zavolat do Bonté</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Atmosféra</div>
+            <h2>Teplé světlo, klidný stůl</h2>
+          </div>
+          <p>Prostor pro pracovní oběd, dárkový poukaz i kávu po cestě centrem Pardubic.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+          <figure><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Najdete nás na náměstí</h2>
+          </div>
+          <p>Masarykovo náměstí 1458, Pardubice-Pardubice I. Pro rezervaci stolu nebo dotaz použijte telefon nebo e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <h3>Bonté Daily Restaurant</h3>
+            <div class="contact-list">
+              <a href="tel:+420467007400"><span>Telefon</span><strong>+420 467 007 400</strong></a>
+              <a href="mailto:tvuj@email.cz"><span>E-mail</span><strong>tvuj@email.cz</strong></a>
+              <div><span>Adresa</span><strong>Masarykovo nám. 1458, 530 12 Pardubice-Pardubice I</strong></div>
+            </div>
+            <a class="btn primary" href="tel:+420467007400">Telefonická rezervace</a>
+          </aside>
+          <div id="map" aria-label="Mapa restaurace Bonté Daily Restaurant"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Bonté Pardubice</div>
+          <h2>Zastavte se na dnešní menu</h2>
+          <p>Snídaně od 8:00, oběd v centru a kavárna pro klidnou pauzu během pracovního dne.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420467007400">Zavolat</a>
+          <a class="btn secondary" href="mailto:tvuj@email.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Bonté Daily Restaurant</strong><br>
+        Masarykovo nám. 1458, Pardubice
+      </div>
+      <div class="credits">
+        Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN, Việt Anh Nguyễn / Pexels.
+        <div class="disclaimer">Tato prezentační stránka byla připravena společností Webflex pro Bonté Daily Restaurant. Pro odstranění použijte <a href="https://webflex.cz/delete/jyi1o4n">tento odkaz</a>.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.770221999999999, 50.037472],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A34F0B' })
+      .setLngLat([15.770221999999999, 50.037472])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
