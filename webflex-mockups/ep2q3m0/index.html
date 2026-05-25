@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tommy's Dine&amp;Wine | Pardubice</title>
+  <meta name="description" content="Tommy's Dine&amp;Wine v Pardubicích: poctivá domácí jídla, obědy, večerní tematická menu, oslavy, firemní večeře a catering na míru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101010;
+      --panel: #181613;
+      --panel-soft: #211d18;
+      --ink: #f7f1e6;
+      --muted: #b9ad9b;
+      --faint: rgba(247, 241, 230, .09);
+      --accent: #402000;
+      --accent-light: #d9d0b7;
+      --shadow: 0 38px 110px rgba(0, 0, 0, .38);
+      --shadow-soft: 0 22px 80px rgba(0, 0, 0, .22);
+      --radius: 22px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(217, 208, 183, .10), transparent 34%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 16, 16, .78);
+      border-bottom: 1px solid var(--faint);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(250px, 52vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(247,241,230,.76);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-light); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0,0,0,.24); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 3px; }
+    .btn-primary { background: var(--accent-light); color: #16110d; }
+    .btn-secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+
+    .hero { padding: 66px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(430px, .78fr);
+      gap: 50px;
+      align-items: center;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 25px; line-height: 1.05; }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(247,241,230,.78);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 40px;
+      max-width: 690px;
+    }
+
+    .meta-tile, .soft-card, .service-row, .hours-card, .faq-item, .quote-card {
+      background: rgba(31, 28, 24, .78);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255,255,255,.04);
+    }
+
+    .meta-tile {
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 108px;
+    }
+
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent-light);
+    }
+
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--panel);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16,16,16,.05) 38%, rgba(16,16,16,.66));
+    }
+
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p, .soft-card p, .service-row p, .faq-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      hyphens: auto;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 70px minmax(0, .7fr) minmax(280px, .55fr);
+      gap: 28px;
+      align-items: center;
+      min-height: 126px;
+      padding: 26px;
+      border-radius: 20px;
+    }
+
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(360px, .52fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .soft-card {
+      border-radius: 24px;
+      padding: 34px;
+      min-height: 100%;
+    }
+
+    .soft-card.large {
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(64,32,0,.72), rgba(31,28,24,.86));
+    }
+
+    .line-list { display: grid; gap: 14px; margin-top: 26px; }
+    .line-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 14px;
+      border-top: 1px solid var(--faint);
+      color: rgba(247,241,230,.82);
+      font-weight: 700;
+    }
+
+    .line-list span {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 190px;
+      border-radius: 24px;
+      padding: 28px;
+      background: rgba(31, 28, 24, .78);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+      color: var(--accent-light);
+    }
+
+    .stat span { display: block; margin-top: 14px; color: var(--muted); font-weight: 700; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.05fr .7fr .7fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      min-height: 260px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gallery figure:first-child { min-height: 460px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-shadow: 0 2px 18px rgba(0,0,0,.7);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .48fr) minmax(0, .72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hours-card {
+      border-radius: 24px;
+      padding: 30px;
+    }
+
+    .contact-lines { display: grid; gap: 14px; margin-top: 26px; }
+    .contact-lines a, .contact-lines div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 0 0;
+      border-top: 1px solid var(--faint);
+      text-decoration: none;
+      color: rgba(247,241,230,.88);
+      font-weight: 700;
+    }
+
+    .contact-lines span {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      text-align: right;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--panel);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      border-radius: 22px;
+      padding: 26px;
+      min-height: 220px;
+    }
+
+    .faq-item h3 { margin-bottom: 16px; font-size: 22px; }
+
+    .final {
+      padding-bottom: 96px;
+    }
+
+    .cta-band {
+      border-radius: 30px;
+      padding: clamp(34px, 6vw, 64px);
+      background:
+        linear-gradient(135deg, rgba(217,208,183,.12), rgba(64,32,0,.72)),
+        var(--panel-soft);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    footer {
+      padding: 34px 0 42px;
+      color: rgba(247,241,230,.56);
+      border-top: 1px solid var(--faint);
+      font-size: 14px;
+    }
+
+    footer .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    footer a { color: rgba(247,241,230,.8); }
+    .credits { text-align: right; }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta-band {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { min-height: 340px; }
+      .service-row { grid-template-columns: 48px 1fr; }
+      .service-row p { grid-column: 2; }
+      .stats, .faq-grid, .gallery { grid-template-columns: 1fr; }
+      .gallery figure, .gallery figure:first-child { min-height: 300px; }
+      .credits { text-align: left; }
+      footer .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 38px; }
+      .hero-meta { grid-template-columns: 1fr; }
+      section { padding: 58px 0; }
+      .soft-card, .hours-card, .stat, .faq-item { padding: 24px; }
+      .contact-lines a, .contact-lines div, .line-list div {
+        display: grid;
+        gap: 8px;
+      }
+      .contact-lines span { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Tommy's Dine&amp;Wine">
+        <img src="http://www.tommysrestaurant.cz/wp-content/uploads/2019/03/cropped-logo.png" alt="Tommy's Dine&amp;Wine">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#jidlo">Jídlo</a>
+        <a href="#vecery">Večery</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420775360123">Rezervovat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Pardubice · Malá 211</p>
+          <h1>Poctivé jídlo a víno</h1>
+          <p class="lead">Malá osobní restaurace, kde se vaří jednoduchá domácí jídla, obědy a několikrát měsíčně také vícechodová večerní tematická menu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420775360123">Zavolat pro rezervaci</a>
+            <a class="btn btn-secondary" href="mailto:info@tommysrestaurant.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>4,9 / 5</strong><span>hodnocení od 104 hostů</span></div>
+            <div class="meta-tile"><strong>Malá 211</strong><span>Pardubice I-Zelené Předměstí</span></div>
+            <div class="meta-tile"><strong>+420 775 360 123</strong><span>rezervace míst i jídel</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-label"><span>Tommy's Dine&amp;Wine</span><span>domácí kuchyně</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jidlo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Jídlo bez zbytečných gest</h2>
+          </div>
+          <p>Vycházíme z toho, co restaurace říká sama o sobě: poctivě, jednoduše, domácím způsobem a s důrazem na spokojenost hostů.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Obědy</h3>
+            <p>Poctivá domácí jídla pro běžný den, bez těžkopádnosti a s osobním přístupem malé restaurace.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Večerní menu</h3>
+            <p>Několikrát v měsíci vícechodové tematické menu pro hosty, kteří chtějí večer pojmout jako zážitek.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Oslavy a catering</h3>
+            <p>Firemní večeře, rodinné oslavy, promoce, přátelské posezení a netradiční catering podle vašich potřeb.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="vecery">
+      <div class="wrap split">
+        <article class="soft-card large">
+          <div>
+            <p class="eyebrow">Na míru</p>
+            <h2>Večer, který drží pohromadě</h2>
+          </div>
+          <p class="lead">Když plánujete firemní večeři, promoci nebo rodinné setkání, domluvíte se přímo na jídle, víně i průběhu. Restaurace doporučuje rezervovat místa a ideálně i jídla předem.</p>
+        </article>
+        <article class="soft-card">
+          <p class="eyebrow">Možnosti</p>
+          <h3>Domluva podle příležitosti</h3>
+          <div class="line-list">
+            <div>Rodinná oslava <span>na dotaz</span></div>
+            <div>Firemní večeře <span>na dotaz</span></div>
+            <div>Promoce <span>na dotaz</span></div>
+            <div>Catering <span>na míru</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Důvěra</p>
+            <h2>Osobní podnik, osobní péče</h2>
+          </div>
+          <p>Malý provoz dává prostor přizpůsobit večer vašim požadavkům a držet komunikaci přímo, bez anonymního provozního odstupu.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4,9</strong><span>aktuální hodnocení v profilu podniku</span></div>
+          <div class="stat"><strong>104</strong><span>hostů zanechalo veřejnou recenzi</span></div>
+          <div class="stat"><strong>1</strong><span>adresa v centru Pardubic na Malé 211</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra restaurace">
+      <div class="wrap gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <figcaption>víno a večerní atmosféra</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+          <figcaption>klidné posezení</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          <figcaption>teplé světlo interiéru</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Před návštěvou</p>
+            <h2>Krátce a prakticky</h2>
+          </div>
+          <p>Nejlepší zkušenost začíná rezervací. U tematických menu a větších setkání se vyplatí domluvit i jídlo předem.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Je nutná rezervace?</h3>
+            <p>Restaurace ji doporučuje, hlavně když vyrážíte ve více lidech nebo chcete mít jistotu u konkrétního jídla.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Pořádáte soukromé akce?</h3>
+            <p>Ano. V textu podniku jsou uvedené firemní večeře, rodinné oslavy, promoce i přátelská posezení.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Děláte catering?</h3>
+            <p>Ano, netradiční catering se připravuje na míru podle potřeb konkrétní akce.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Rezervace na Malé 211</h2>
+          </div>
+          <p>Ozvěte se telefonicky nebo e-mailem a domluvte místa, jídlo, večerní menu nebo akci na míru.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="hours-card">
+            <h3>Tommy's Dine&amp;Wine</h3>
+            <div class="contact-lines">
+              <a href="tel:+420775360123">Telefon <span>+420 775 360 123</span></a>
+              <a href="mailto:info@tommysrestaurant.cz">E-mail <span>info@tommysrestaurant.cz</span></a>
+              <div>Adresa <span>Malá 211, Pardubice I-Zelené Předměstí</span></div>
+              <div>Rezervace <span>míst i jídel předem</span></div>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa restaurace Tommy's Dine&amp;Wine"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta-band">
+        <div>
+          <p class="eyebrow">Tommy's Dine&amp;Wine</p>
+          <h2>Domluvte si stůl</h2>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420775360123">Volat restauraci</a>
+          <a class="btn btn-secondary" href="mailto:info@tommysrestaurant.cz">Poslat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Tommy's Dine&amp;Wine</strong><br>
+        Malá 211, 530 02 Pardubice I-Zelené Předměstí<br>
+        <a href="tel:+420775360123">+420 775 360 123</a> · <a href="mailto:info@tommysrestaurant.cz">info@tommysrestaurant.cz</a>
+      </div>
+      <div class="credits">
+        Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, NGUYỄN THÀNH NHƠN / Pexels.<br>
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/delete/ep2q3m0">webflex.cz/delete/ep2q3m0</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.769441200000001, 50.0350386],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#d9d0b7' })
+      .setLngLat([15.769441200000001, 50.0350386])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
