@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Restaurace Globus Pardubice</title>
+  <meta name="description" content="Restaurace Globus Pardubice: denní nabídka, týdenní menu, otevírací doba a kontakt." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --ink: #171717;
+      --muted: #66645f;
+      --line: #d8d4cd;
+      --soft: #f1eee9;
+      --accent: #604020;
+      --accent-2: #8a6240;
+      --ok: #1f7a4d;
+      --font-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+      --font-body: "Inter Tight", Inter, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23,23,23,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,23,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .93;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h2 {
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 20px; line-height: 1.15; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: -80px;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      z-index: 30;
+    }
+    .skip:focus { top: 16px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn, .nav a, .menu-row, .gallery img, .map-card a {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+    }
+    .btn:hover, .nav a:hover, .menu-row:hover, .map-card a:hover { transform: translateY(-1px); }
+    .btn:active, .nav a:active, .menu-row:active, .map-card a:active { transform: translateY(1px); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand img {
+      width: auto;
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .brand-text {
+      display: grid;
+      gap: 1px;
+      min-width: 0;
+    }
+    .brand-text strong { font-family: var(--font-display); font-size: 18px; line-height: 1; }
+    .brand-text span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .nav a { padding: 10px 12px; border: 1px solid transparent; }
+    .nav a:hover { border-color: var(--line); background: var(--paper); }
+
+    .hero {
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(360px, .72fr);
+      gap: 44px;
+      align-items: center;
+    }
+    .hero-copy { display: grid; gap: 24px; }
+    .lead {
+      max-width: 650px;
+      font-size: clamp(18px, 2vw, 24px);
+      color: #34322e;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.secondary { color: var(--ink); background: transparent; border-color: currentColor; }
+    .hours-card {
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      box-shadow: 10px 10px 0 var(--accent);
+    }
+    .hours-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--ink);
+      background: var(--soft);
+    }
+    .hours-head strong { font-family: var(--font-display); text-transform: uppercase; }
+    .open-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .open-dot::before { content: ""; width: 9px; height: 9px; border-radius: 999px; background: var(--ok); }
+    .hours-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); }
+    .hours-table th, .hours-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 13px;
+    }
+    .hours-table tr.today th, .hours-table tr.today td { background: #fff7dc; color: var(--ink); font-weight: 700; }
+    .hours-foot {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+    }
+    .hours-foot div { padding: 16px 18px; border-right: 1px solid var(--line); }
+    .hours-foot div:last-child { border-right: 0; }
+    .hours-foot span { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; }
+    .hours-foot strong { font-family: var(--font-mono); font-size: 14px; }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr) minmax(280px, 420px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+    .section-no {
+      font-family: var(--font-mono);
+      font-size: clamp(44px, 8vw, 104px);
+      line-height: .8;
+      color: rgba(96,64,32,.22);
+      font-weight: 700;
+    }
+    .menu-board {
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      overflow: clip;
+    }
+    .menu-head, .menu-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1.4fr) 160px 110px;
+      align-items: stretch;
+    }
+    .menu-head {
+      position: sticky;
+      top: 73px;
+      z-index: 5;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .menu-head span, .menu-row > div { padding: 14px 16px; border-right: 1px solid var(--line); }
+    .menu-head span { border-color: rgba(255,255,255,.18); }
+    .menu-head span:last-child, .menu-row > div:last-child { border-right: 0; }
+    .menu-row { border-top: 1px solid var(--line); background: var(--paper); }
+    .menu-row:hover { background: #faf6ef; }
+    .menu-row .item { font-weight: 700; color: var(--ink); }
+    .menu-row .small { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
+    .menu-row .price { font-family: var(--font-mono); font-weight: 800; text-align: right; color: var(--accent); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .feature {
+      background: var(--ink);
+      color: #fff;
+      padding: 32px;
+      display: grid;
+      align-content: space-between;
+      min-height: 430px;
+      border: 1px solid var(--ink);
+    }
+    .feature p { color: rgba(255,255,255,.72); max-width: 520px; font-size: 18px; }
+    .feature .stamp {
+      width: fit-content;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,.28);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .week-list {
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      display: grid;
+    }
+    .week-line {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) 120px;
+      gap: 16px;
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .week-line:last-child { border-bottom: 0; }
+    .week-line strong { font-family: var(--font-display); text-transform: uppercase; }
+    .week-line span, .week-line em { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-style: normal; }
+    .week-line b { font-family: var(--font-mono); text-align: right; color: var(--accent); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 178px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      align-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 6vw, 70px); line-height: .9; color: var(--accent); }
+    .stat span { font-family: var(--font-mono); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      overflow: hidden;
+      min-height: 100%;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.03);
+    }
+    .gallery figure:hover img { transform: scale(1.018); opacity: .94; }
+    .gallery-side { display: grid; gap: 18px; }
+    .gallery-side img { min-height: 210px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .8fr) minmax(0, 1.2fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .map-card {
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child { border-bottom: 0; }
+    .contact-row span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    .contact-row strong, .contact-row a { font-weight: 700; overflow-wrap: anywhere; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--ink); }
+
+    .final {
+      padding: 54px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; max-width: 720px; }
+    .final p { color: rgba(255,255,255,.78); margin-top: 12px; }
+    .final .btn { border-color: #fff; color: #fff; }
+    .final .btn.primary { background: #fff; color: var(--accent); }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0 34px;
+      color: var(--muted);
+      font-size: 13px;
+      background: var(--bg);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      color: #807b72;
+    }
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { display: none; }
+      .hero-grid, .split, .contact-grid, .gallery, .final .wrap { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; gap: 14px; }
+      .section-no { font-size: 54px; }
+      .menu-head { display: none; }
+      .menu-row {
+        grid-template-columns: 86px 1fr;
+        gap: 0;
+      }
+      .menu-row > div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .menu-row > div:nth-child(3), .menu-row > div:nth-child(4) { border-bottom: 0; }
+      .menu-row .price { text-align: left; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .week-line { grid-template-columns: 1fr; gap: 8px; }
+      .week-line b { text-align: left; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .hero { padding-top: 46px; }
+      section { padding: 54px 0; }
+      .hours-foot { grid-template-columns: 1fr; }
+      .hours-foot div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand-text span { display: none; }
+      .contact-row { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap topbar">
+      <a class="brand" href="#top" aria-label="Restaurace Globus Pardubice">
+        <img src="https://a.storyblok.com/f/228091/52x56/e5f4dcd048/isolation_mode.svg" alt="Restaurace Globus">
+        <span class="brand-text">
+          <strong>Restaurace Globus</strong>
+          <span>Pardubice · Poděbradská 293</span>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="#nabidka">Dnešní nabídka</a>
+        <a href="#tyden">Týdenní menu</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Pardubice · Restaurace</span>
+          <h1>Poctivý oběd každý den</h1>
+          <p class="lead">Vaříme z čerstvých surovin, s masem od globusových řezníků a pečivem od globusových pekařů.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#nabidka">Zobrazit menu</a>
+            <a class="btn secondary" href="tel:+420800241242">+420 800 241 242</a>
+          </div>
+        </div>
+
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <div class="hours-head">
+            <strong>Otevírací doba</strong>
+            <span class="open-dot">Dnes otevřeno</span>
+          </div>
+          <table class="hours-table">
+            <tbody>
+              <tr class="today"><th>Pondělí</th><td>07:30-20:00</td></tr>
+              <tr><th>Úterý</th><td>07:30-20:00</td></tr>
+              <tr><th>Středa</th><td>07:30-20:00</td></tr>
+              <tr><th>Čtvrtek</th><td>07:30-20:00</td></tr>
+              <tr><th>Pátek</th><td>07:30-20:00</td></tr>
+              <tr><th>Sobota</th><td>07:30-20:00</td></tr>
+              <tr><th>Neděle</th><td>07:30-20:00</td></tr>
+            </tbody>
+          </table>
+          <div class="hours-foot">
+            <div><span>Adresa</span><strong>Poděbradská 293</strong></div>
+            <div><span>Linka</span><strong>800 241 242</strong></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Dnešní nabídka</h2>
+          <p>Pondělí 25. 5. 2026. Dostupnost pokrmů se může v průběhu dne měnit; alergeny jsou vyznačeny u každého jídla v restauraci.</p>
+        </div>
+        <div class="menu-board" role="table" aria-label="Dnešní nabídka">
+          <div class="menu-head" role="row">
+            <span>Porce</span><span>Jídlo</span><span>Alergeny</span><span>Cena</span>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">0,33 l</div><div class="item">Gulášová</div><div class="small">1, 1a, 9</div><div class="price">39 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">0,33 l</div><div class="item">Hovězí vývar s rýží a hráškem</div><div class="small">9</div><div class="price">39 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">150 g</div><div class="item">Hovězí kostky na houbách, vařené těstoviny</div><div class="small">1, 1a, 3, 12</div><div class="price">139 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">150 g</div><div class="item">Vepřová játra na slanině, dušená rýže</div><div class="small">1, 1a</div><div class="price">89 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">150 g</div><div class="item">Vepřový kotlet se šunkou, sýrem a chřestem, hranolky</div><div class="small">1, 1a</div><div class="price">159 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">150 g</div><div class="item">Vepřový řízek z kotlety, bramborový salát</div><div class="small">1, 1a, 1c, 6, 7</div><div class="price">145 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">480 g</div><div class="item">Kuřecí rizoto se sýrem a okurkou</div><div class="small">7</div><div class="price">99 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">150 g</div><div class="item">Pečený candát na másle, vařené brambory</div><div class="small">4, 7</div><div class="price">179 Kč</div>
+          </div>
+          <div class="menu-row" role="row">
+            <div class="small">200 g</div><div class="item">Šopský salát</div><div class="small">7</div><div class="price">49 Kč</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tyden">
+      <div class="wrap split">
+        <div class="feature">
+          <div>
+            <span class="stamp">25. 5.-31. 5. 2026</span>
+          </div>
+          <div>
+            <h2>Menu na celý týden</h2>
+            <p>Výhodné menu a nabídka od šéfkuchařů jsou připravené pro rychlý oběd i klidnou pauzu během nákupu.</p>
+          </div>
+        </div>
+        <div class="week-list" aria-label="Týdenní menu">
+          <div class="week-line">
+            <span>Výhodné menu</span>
+            <strong>Vepřový vrabec, kysané zelí, bramborové knedlíky</strong>
+            <b>159 Kč</b>
+          </div>
+          <div class="week-line">
+            <span>Šéfkuchaři</span>
+            <strong>Hovězí kostky na houbách, vařené těstoviny</strong>
+            <b>139 Kč</b>
+          </div>
+          <div class="week-line">
+            <span>Šéfkuchaři</span>
+            <strong>Kuřecí plátek s rajčaty a mozzarellou, hranolky</strong>
+            <b>139 Kč</b>
+          </div>
+          <div class="week-line">
+            <span>S sebou</span>
+            <strong>Krabička na hlavní jídlo</strong>
+            <b>6 Kč</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Pro oběd bez čekání</h2>
+          <p>Jídelní lístek je postavený na srozumitelných porcích, cenách a alergenech, aby šlo rychle vybrat u stolu i na cestě.</p>
+        </div>
+        <div class="stats" aria-label="Základní údaje">
+          <div class="stat"><span>Hodnocení návštěvníků</span><strong>4,1</strong></div>
+          <div class="stat"><span>Recenzí</span><strong>1 802</strong></div>
+          <div class="stat"><span>Každý den</span><strong>07:30</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>U stolu</h2>
+          <p>Teplé světlo, čistý stůl a jednoduchý servis pro snídani, oběd i odpolední kávu.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          </figure>
+          <div class="gallery-side">
+            <figure>
+              <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Kudy k nám</h2>
+          <p>Restauraci najdete v Globusu Pardubice. Před cestou můžete zavolat na zákaznickou linku nebo otevřít trasu v mapě.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="map-card">
+            <div class="contact-row"><span>Adresa</span><strong>Poděbradská 293, 530 09 Pardubice-Pardubice VII</strong></div>
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420800241242">+420 800 241 242</a></div>
+            <div class="contact-row"><span>E-mail</span><a href="mailto:info@globus.cz">info@globus.cz</a></div>
+            <div class="contact-row"><span>Souřadnice</span><strong class="mono">50.0576021, 15.7520011</strong></div>
+            <a class="btn primary" href="https://www.globus.cz/pardubice/sluzby/restaurace?y_source=1_MTYyODMwMTMtNzE1LWxvY2F0aW9uLndlYnNpdGU=">Objednat online</a>
+          </div>
+          <div id="map" aria-label="Mapa Restaurace Globus Pardubice"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div>
+          <h2>Dnes do 20:00</h2>
+          <p>Přijďte na teplé jídlo během nákupu nebo si vyberte porci s sebou.</p>
+        </div>
+        <a class="btn primary" href="tel:+420800241242">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Restaurace Globus Pardubice · Poděbradská 293</span>
+      <span class="webflex-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele podniku. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/remove?TOKEN=41tmdlg">webflex.cz/remove?TOKEN=41tmdlg</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7520011, 50.0576021],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#604020' })
+      .setLngLat([15.7520011, 50.0576021])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
