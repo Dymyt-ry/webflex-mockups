@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pierre hotel & Restaurant | Pardubice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #181818;
+      --bg-2: #101010;
+      --surface: #202020;
+      --surface-2: #26231f;
+      --fg: #f7f4ed;
+      --muted: #b8b0a3;
+      --dim: #81796d;
+      --paper: #f6f1e8;
+      --paper-ink: #181818;
+      --line: rgba(247, 244, 237, .12);
+      --line-strong: rgba(247, 244, 237, .22);
+      --accent: #A77A2D;
+      --accent-ink: #120d07;
+      --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
+      --font-body: "Geist", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; hyphens: none; letter-spacing: 0; }
+    h1, .display { overflow-wrap: anywhere; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .container { width: min(100% - 2 * var(--gutter), 1280px); margin-inline: auto; }
+    .section { padding-block: clamp(64px, 9vw, 128px); }
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      background: rgba(24,24,24,.72);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2.4vw, 36px);
+      color: rgba(247,244,237,.76);
+      font-size: 14px;
+    }
+    .nav-links a { transition: color .2s cubic-bezier(.16,1,.3,1); }
+    .nav-links a:hover { color: var(--fg); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .18s cubic-bezier(.16,1,.3,1), background .22s cubic-bezier(.16,1,.3,1), border-color .22s cubic-bezier(.16,1,.3,1), color .22s cubic-bezier(.16,1,.3,1);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #bd8c39; }
+    .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; }
+    .btn-outline:hover { border-color: rgba(255,255,255,.75); background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      align-items: stretch;
+      position: relative;
+      isolation: isolate;
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.08);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(10,10,10,.92), rgba(10,10,10,.58) 46%, rgba(10,10,10,.24)),
+        linear-gradient(0deg, var(--bg) 0%, transparent 30%);
+    }
+    .hero-inner {
+      width: min(100% - 2 * var(--gutter), 1280px);
+      margin-inline: auto;
+      padding-top: 128px;
+      padding-bottom: 96px;
+      display: grid;
+      grid-template-columns: minmax(0, 690px) minmax(320px, 1fr);
+      align-items: center;
+      gap: 64px;
+    }
+    .hero-copy { max-width: 690px; }
+    .hero h1 {
+      margin-top: 24px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      font-weight: 600;
+      max-width: 720px;
+    }
+    .lead {
+      margin-top: 24px;
+      max-width: 610px;
+      color: rgba(247,244,237,.82);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 32px; }
+    .hero-panel {
+      justify-self: end;
+      width: min(100%, 430px);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(18,18,18,.66);
+      backdrop-filter: blur(18px);
+      padding: 24px;
+    }
+    .panel-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-block: 16px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .panel-row:first-child { padding-top: 0; }
+    .panel-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .panel-label { color: var(--muted); font-size: 13px; }
+    .panel-value { font-family: var(--font-mono); font-size: 14px; text-align: right; }
+
+    .intro-grid {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .section-title {
+      margin-top: 16px;
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 600;
+      max-width: 720px;
+    }
+    .text-stack { display: grid; gap: 24px; color: var(--muted); font-size: 17px; }
+
+    .service-list {
+      margin-top: 48px;
+      border-top: 1px solid var(--line);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px 1fr minmax(220px, .55fr);
+      gap: 32px;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .service-row span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .service-row h3 { font-size: clamp(24px, 3vw, 38px); line-height: 1.05; font-weight: 600; }
+    .service-row p { color: var(--muted); }
+
+    .paper-band {
+      background: var(--paper);
+      color: var(--paper-ink);
+    }
+    .paper-band .eyebrow { color: #8b6123; }
+    .paper-band .muted { color: rgba(24,24,24,.62); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid rgba(24,24,24,.14);
+      background: rgba(255,255,255,.42);
+    }
+    .stat {
+      min-height: 190px;
+      padding: 32px;
+      border-right: 1px solid rgba(24,24,24,.14);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+    .stat p { margin-top: 16px; color: rgba(24,24,24,.68); max-width: 260px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .photo-card {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-lines {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+      margin-top: 32px;
+    }
+    .feature-lines div {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .feature-lines b { color: var(--fg); font-family: var(--font-mono); font-size: 13px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.05fr .7fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 48px;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--line);
+    }
+    .gallery figure:first-child { min-height: 430px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      right: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+      text-shadow: 0 1px 16px rgba(0,0,0,.55);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 48px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 32px;
+      display: grid;
+      gap: 24px;
+      align-content: start;
+    }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line span { color: var(--dim); font-size: 13px; }
+    .contact-line a, .contact-line strong { font-family: var(--font-mono); font-size: 15px; overflow-wrap: anywhere; }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .final {
+      padding-block: 96px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--bg-2);
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final h2 {
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 1;
+      font-weight: 600;
+      max-width: 850px;
+      overflow-wrap: anywhere;
+    }
+
+    .footer {
+      padding: 40px var(--gutter);
+      color: rgba(247,244,237,.58);
+      font-size: 13px;
+    }
+    .footer-inner {
+      width: min(100%, 1280px);
+      margin-inline: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .footer a { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-inner, .intro-grid, .split, .contact-grid, .final-inner { grid-template-columns: 1fr; }
+      .hero-panel { justify-self: start; }
+      .service-row { grid-template-columns: 1fr; gap: 16px; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid rgba(24,24,24,.14); }
+      .stat:last-child { border-bottom: 0; }
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .hero { min-height: auto; }
+      .hero-inner { padding-top: 112px; padding-bottom: 72px; gap: 32px; }
+      .hero-panel, .contact-card { padding: 24px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .topbar .btn { display: none; }
+      .panel-row { grid-template-columns: 1fr; }
+      .panel-value { text-align: left; }
+      .gallery figure:first-child, .gallery figure { min-height: 260px; }
+      #map { min-height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Pierre hotel & Restaurant">
+        <img src="templates/frontend/images/logo-dark.png" alt="Pierre hotel & Restaurant">
+      </a>
+      <div class="nav-links">
+        <a href="#ubytovani">Ubytování</a>
+        <a href="#restaurace">Restaurace</a>
+        <a href="#konference">Konference</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420778511677">Rezervace</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Pierre Hotel Pardubice">
+      <div class="hero-media" aria-hidden="true">
+        <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+      </div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Kunětická 227 · Pardubice</p>
+          <h1>Pierre Hotel Pardubice</h1>
+          <p class="lead">Pohodlné ubytování, restaurace s kavárnou a zázemí pro pracovní setkání nedaleko centra Pardubic.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420778511677">Volat recepci</a>
+            <a class="btn btn-outline" href="#restaurace">Restaurace a kavárna</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Rychlý kontakt">
+          <div class="panel-row">
+            <span class="panel-label">Recepce</span>
+            <a class="panel-value" href="tel:+420778511677">+420 778 511 677</a>
+          </div>
+          <div class="panel-row">
+            <span class="panel-label">E-mail</span>
+            <a class="panel-value" href="mailto:info@pierrehotel.cz">info@pierrehotel.cz</a>
+          </div>
+          <div class="panel-row">
+            <span class="panel-label">Adresa</span>
+            <span class="panel-value">Kunětická 227, Pardubice-Cihelna</span>
+          </div>
+          <div class="panel-row">
+            <span class="panel-label">Hodnocení</span>
+            <span class="panel-value">4,5 / 5 · 243 recenzí</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section container" id="ubytovani">
+      <div class="intro-grid">
+        <div>
+          <p class="eyebrow">Hotel</p>
+          <h2 class="section-title">Klidné zázemí pro pobyt v Pardubicích.</h2>
+        </div>
+        <div class="text-stack">
+          <p>Pierre hotel & Restaurant je situovaný v části Pardubice-Cihelna, s dostupností do města pěšky i veřejnou dopravou.</p>
+          <p>Hosté, kteří přijedou autem, mají k dispozici bezplatné parkoviště přímo u hotelu. Ubytování je zaměřené i na business klientelu.</p>
+        </div>
+      </div>
+
+      <div class="service-list" aria-label="Služby hotelu">
+        <article class="service-row">
+          <span>01</span>
+          <h3>Moderní pokoje</h3>
+          <p>Standard a Deluxe dvoulůžkové pokoje s komfortem pro pracovní cestu i víkendový pobyt.</p>
+        </article>
+        <article class="service-row" id="restaurace">
+          <span>02</span>
+          <h3>Restaurace a kavárna</h3>
+          <p>Restaurace s kavárnou přímo v hotelu, místo pro snídani, kávu i klidné posezení během dne.</p>
+        </article>
+        <article class="service-row" id="konference">
+          <span>03</span>
+          <h3>Konference a salonky</h3>
+          <p>Prostory pro obchodní jednání, školení i neformální setkání v diskrétním hotelovém prostředí.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section paper-band">
+      <div class="container">
+        <p class="eyebrow">Důvěra hostů</p>
+        <h2 class="section-title">Hotel pro hosty, kteří chtějí mít vše na jednom místě.</h2>
+        <div class="stats" style="margin-top:48px">
+          <div class="stat">
+            <strong>4,5</strong>
+            <p>Průměrné hodnocení Pierre hotel & Restaurant v Pardubicích.</p>
+          </div>
+          <div class="stat">
+            <strong>243</strong>
+            <p>Recenzí od hostů, kteří hodnotili pobyt, servis i prostředí.</p>
+          </div>
+          <div class="stat">
+            <strong>0 Kč</strong>
+            <p>Parkování pro hotelové hosty přímo u hotelu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container">
+      <div class="split">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <p class="eyebrow">Restaurace · kavárna · zahrádka</p>
+          <h2 class="section-title">Posezení pod korunami platanů.</h2>
+          <div class="feature-lines">
+            <div><b>01</b><p>V letních měsících je pro hosty připravena zahrádka pro relaxaci i neformální setkání.</p></div>
+            <div><b>02</b><p>Kavárna Pierre doplňuje hotelové zázemí o místo pro šálek kávy během dne.</p></div>
+            <div><b>03</b><p>Restaurace navazuje na ubytování, konferenční prostory a salonky v jednom domě.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container" aria-label="Atmosféra">
+      <p class="eyebrow">Galerie</p>
+      <h2 class="section-title">Večer, káva, tiché zázemí.</h2>
+      <div class="gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <figcaption>Restaurace</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+          <figcaption>Kavárna</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+          <figcaption>Večerní posezení</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section container" id="kontakt">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2 class="section-title">Rezervace a dotazy.</h2>
+          </div>
+          <div class="contact-line">
+            <span>Recepce</span>
+            <a href="tel:+420778511677">+420 778 511 677</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a href="mailto:info@pierrehotel.cz">info@pierrehotel.cz</a>
+          </div>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <strong>Kunětická 227, 530 09 Pardubice-Cihelna</strong>
+          </div>
+          <div class="contact-line">
+            <span>Online</span>
+            <a href="https://www.pierrehotel.cz/">www.pierrehotel.cz</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Pierre hotel & Restaurant"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container final-inner">
+        <h2>Ozvěte se recepci.</h2>
+        <div class="hero-actions" style="margin-top:0">
+          <a class="btn btn-primary" href="tel:+420778511677">+420 778 511 677</a>
+          <a class="btn btn-outline" href="mailto:info@pierrehotel.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>© Pierre hotel & Restaurant · Kunětická 227, Pardubice-Cihelna</span>
+      <span>Neoficiální prezentační stránka od Webflexu. <a href="https://app.webflex.cz/delete/d1w5sa7">Smazat tuto stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.7712388, 50.0540394],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#A77A2D' })
+      .setLngLat([15.7712388, 50.0540394])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
