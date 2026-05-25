@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>eBistro | Bistro & catering Liberec</title>
+  <meta name="description" content="eBistro v Liberci: snídaně, káva, brunch, polévky, dezerty, rezervace a catering pro firemní i rodinné akce.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111111;
+      --bg-soft: #181818;
+      --fg: #f8f5ee;
+      --muted: rgba(248, 245, 238, .68);
+      --line: rgba(248, 245, 238, .14);
+      --accent: #F2C230;
+      --paper: #fbf8ef;
+      --paper-ink: #17130b;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image:
+        linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px);
+      background-size: 24px 24px;
+      z-index: 20;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .container { width: min(1160px, calc(100% - 48px)); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 1;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.12; font-weight: 700; }
+    p { margin: 0; color: var(--muted); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #141006; }
+    .btn-primary:hover { background: #ffd955; }
+    .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn-outline:hover { border-color: var(--accent); background: rgba(242,194,48,.08); }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      background: linear-gradient(to bottom, rgba(17,17,17,.88), rgba(17,17,17,.35), transparent);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 80px;
+      gap: 24px;
+    }
+    .logo img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; gap: 24px; align-items: center; color: rgba(255,255,255,.78); font-size: 14px; font-weight: 700; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      position: relative;
+      isolation: isolate;
+      padding: 128px 0 64px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+    }
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.88) contrast(1.08); }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(17,17,17,.94) 0%, rgba(17,17,17,.74) 42%, rgba(17,17,17,.38) 100%),
+        linear-gradient(0deg, rgba(17,17,17,1) 0%, rgba(17,17,17,0) 38%);
+    }
+    .hero-copy { display: grid; gap: 24px; max-width: 720px; }
+    .hero-copy p { max-width: 610px; font-size: clamp(18px, 2vw, 23px); color: rgba(255,255,255,.78); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 8px; }
+    .hero-meta {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      max-width: 720px;
+      border-top: 1px solid rgba(255,255,255,.18);
+      border-bottom: 1px solid rgba(255,255,255,.18);
+    }
+    .meta-item { padding: 18px 20px 18px 0; }
+    .meta-item strong { display: block; font-family: var(--font-mono); color: var(--fg); font-size: 17px; }
+    .meta-item span { color: rgba(255,255,255,.62); font-size: 13px; }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 64px;
+      align-items: end;
+      margin-bottom: 48px;
+    }
+    .section-head p { font-size: 18px; max-width: 620px; }
+
+    .menu-board {
+      background: var(--paper);
+      color: var(--paper-ink);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 24px 90px rgba(0,0,0,.28);
+    }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid rgba(0,0,0,.12); }
+    .tab { padding: 18px 20px; font-family: var(--font-mono); font-size: 13px; font-weight: 800; color: rgba(23,19,11,.7); border-right: 1px solid rgba(0,0,0,.12); }
+    .tab:last-child { border-right: 0; }
+    .menu-list { display: grid; }
+    .dish {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 24px;
+      border-bottom: 1px solid rgba(0,0,0,.1);
+      align-items: start;
+    }
+    .dish:last-child { border-bottom: 0; }
+    .dish p { color: rgba(23,19,11,.62); margin-top: 6px; }
+    .price { font-family: var(--font-mono); font-weight: 800; font-size: 18px; color: var(--paper-ink); }
+    .badge { display: inline-flex; margin-left: 8px; font-family: var(--font-mono); font-size: 10px; color: #141006; background: var(--accent); border-radius: 999px; padding: 3px 7px; vertical-align: middle; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 64px;
+      align-items: center;
+    }
+    .photo-frame {
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #222;
+    }
+    .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .story { display: grid; gap: 24px; }
+    .story p { font-size: 18px; }
+    .signals {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      align-items: stretch;
+    }
+    .signal {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      min-height: 128px;
+      background: rgba(255,255,255,.025);
+    }
+    .signal strong { display: block; font-family: var(--font-mono); font-size: 24px; color: var(--fg); }
+    .signal span { color: var(--muted); font-size: 14px; }
+
+    .catering { background: var(--bg-soft); }
+    .service-rows { border-top: 1px solid var(--line); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 220px 1fr auto;
+      gap: 32px;
+      align-items: center;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent); }
+    .service-row p { max-width: 640px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-stack { display: grid; gap: 16px; }
+    .gallery-strip .photo-frame { border-radius: 14px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 32px;
+      background: rgba(255,255,255,.035);
+      display: grid;
+      gap: 24px;
+      align-content: start;
+    }
+    .contact-line { display: grid; gap: 6px; }
+    .contact-line span { font-family: var(--font-mono); color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .contact-line a, .contact-line strong { font-size: 20px; color: var(--fg); }
+    .hours { border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 10px; }
+    .hour-row { display: flex; justify-content: space-between; gap: 20px; font-family: var(--font-mono); font-size: 13px; color: rgba(255,255,255,.78); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
+
+    .final {
+      padding: 96px 0 128px;
+      text-align: center;
+    }
+    .final .container { display: grid; justify-items: center; gap: 24px; }
+    .final p { max-width: 620px; font-size: 18px; }
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: rgba(255,255,255,.48);
+      font-size: 12px;
+    }
+    .footer .container { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .footer a { color: rgba(255,255,255,.7); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 820px) {
+      .container { width: min(100% - 32px, 1160px); }
+      .nav { min-height: 70px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding: 112px 0 48px; }
+      .hero-meta, .tabs, .signals, .section-head, .split, .gallery-strip, .contact-grid { grid-template-columns: 1fr; }
+      .section-head { gap: 18px; }
+      section { padding: 64px 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .dish { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="eBistro">
+        <img src="img/logo.svg" alt="eBistro">
+      </a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a>
+        <a href="#catering">Catering</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420702169080">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="eBistro">
+      <div class="hero-bg">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      </div>
+      <div class="container">
+        <div class="hero-copy">
+          <span class="eyebrow">Bistro & catering · Liberec</span>
+          <h1>Zastavte se. Ochutnejte.</h1>
+          <p>Snídaně, káva, brunch, polévky i dezerty na Hodkovické. Připravujeme čerstvě, s otevřenou kuchyní a přivítáním, kvůli kterému se dobře zůstává.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#menu">Prohlédnout menu</a>
+            <a class="btn btn-outline" href="#kontakt">Rezervovat stůl</a>
+          </div>
+        </div>
+        <div class="hero-meta" aria-label="Rychlé informace">
+          <div class="meta-item"><strong>07:00</strong><span>otevíráme</span></div>
+          <div class="meta-item"><strong>20+</strong><span>pokrmů v menu</span></div>
+          <div class="meta-item"><strong>4,7 / 33</strong><span>hodnocení hostů</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Nabídka jídel</span>
+            <h2>Od rána po odpoledne</h2>
+          </div>
+          <p>Vyberte si ze snídaní, brunche, polévek a dezertů. Níže najdete ochutnávku položek, které hosté v eBistru vyhledávají nejčastěji.</p>
+        </div>
+        <div class="menu-board">
+          <div class="tabs" aria-label="Kategorie menu">
+            <div class="tab">Snídaně · 7:00-12:00</div>
+            <div class="tab">Brunch · 11:00-18:00</div>
+            <div class="tab">Polévky · 10:00-18:00</div>
+            <div class="tab">Dezerty</div>
+          </div>
+          <div class="menu-list">
+            <article class="dish">
+              <div><h3>Slunečné ráno</h3><p>3 ks vajec, slanina, chléb a salátek.</p></div>
+              <div class="price">129 Kč</div>
+            </article>
+            <article class="dish">
+              <div><h3>Anglie jak má být</h3><p>Míchaná vejce, slanina, fazole, klobásky, houby, rajčata a chléb.</p></div>
+              <div class="price">159 Kč</div>
+            </article>
+            <article class="dish">
+              <div><h3>Krupicová kaše <span class="badge">Bestseller</span></h3><p>Máslo, kakao, cukr a ovoce.</p></div>
+              <div class="price">99 Kč</div>
+            </article>
+            <article class="dish">
+              <div><h3>Skandinávský chléb</h3><p>Krémový sýr, uzený losos, rukola, kandovaný zázvor a zelenina.</p></div>
+              <div class="price">85 Kč</div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container split">
+        <div class="photo-frame">
+          <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+        </div>
+        <div class="story">
+          <span class="eyebrow">Příběh eBistro</span>
+          <h2>Kde vášeň potkává kvalitu</h2>
+          <p>eBistro vzniklo z jednoduché myšlenky: nabídnout Liberci místo, kde se dobré jídlo stává každodenním rituálem. Od snídaně přes brunch až po odpolední svačinu.</p>
+          <div class="signals">
+            <div class="signal"><strong>4,7</strong><span>hodnocení podle hostů</span></div>
+            <div class="signal"><strong>33</strong><span>recenzí</span></div>
+            <div class="signal"><strong>7 dní</strong><span>v týdnu pro vaše plány</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="catering" class="catering">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Catering</span>
+            <h2>Jídlo tam, kde ho potřebujete</h2>
+          </div>
+          <p>Firemní eventy, rodinné oslavy, pracovní obědy i denní rozvoz jídel. Nabídku cateringu a rozvozu eBistro postupně připravuje.</p>
+        </div>
+        <div class="service-rows">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div><h3>Firemní catering</h3><p>Obsluha a menu na míru pro firemní akce, prezentace a teambuildingy v Liberci a okolí.</p></div>
+            <span class="eyebrow">Připravujeme</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div><h3>Oslavy & slavnosti</h3><p>Narozeniny, svatby i křtiny s menu pro den, na kterém vám záleží.</p></div>
+            <span class="eyebrow">Na dotaz</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div><h3>Rozvoz jídel</h3><p>Čerstvé obědy a snídaně do kanceláře nebo domů každý všední den.</p></div>
+            <span class="eyebrow">Sledujte novinky</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="container gallery-strip">
+        <div class="photo-frame">
+          <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+        </div>
+        <div class="gallery-stack">
+          <div class="photo-frame">
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          </div>
+          <div>
+            <span class="eyebrow">Hodkovická 471</span>
+            <h2>Místo na kávu, snídani i chvíli klidu</h2>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Rezervace & kontakt</span>
+            <h2>Najdete nás v Doubí</h2>
+          </div>
+          <p>Zavolejte, napište nebo se zastavte na Hodkovické. Rezervaci vám potvrdíme podle aktuální obsazenosti.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420702169080">+420 702 169 080</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@bistroliberec.cz">info@bistroliberec.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Hodkovická 471, Doubí, 463 12 Liberec</strong>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hour-row"><span>Pondělí-neděle</span><span>od 07:00</span></div>
+              <div class="hour-row"><span>Snídaně</span><span>7:00-12:00</span></div>
+              <div class="hour-row"><span>Brunch</span><span>11:00-18:00</span></div>
+              <div class="hour-row"><span>Polévky</span><span>10:00-18:00</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění eBistro"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container">
+        <span class="eyebrow">Dnes na Hodkovické</span>
+        <h2>Rezervujte si místo</h2>
+        <p>Stůl na snídani, brunch nebo kávu domluvíte nejrychleji telefonicky. Pro cateringové poptávky napište e-mail s termínem a počtem hostů.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420702169080">Zavolat do bistra</a>
+          <a class="btn btn-outline" href="mailto:info@bistroliberec.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <span>Neoficiální prezentační stránka připravená službou Webflex pro eBistro.</span>
+      <a href="https://webflex.cz/remove/aimnfb2" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.056066800000002, 50.731342999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#F2C230' })
+      .setLngLat([15.056066800000002, 50.731342999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
