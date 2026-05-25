@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tele mele Bistro | Farma v srdci Plzně</title>
+  <meta name="description" content="Tele mele Bistro v Plzni: snídaně, obědy a týdenní nabídka z lokálních surovin, bio hovězí z Telecího mlýna a výdej bedýnek.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f3ea;
+      --paper: #fffdf8;
+      --panel: #f1e8da;
+      --ink: #191611;
+      --muted: #6f6659;
+      --line: rgba(25, 22, 17, .13);
+      --accent: #E0A040;
+      --accent-ink: #1b1204;
+      --soft-accent: rgba(224, 160, 64, .16);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(25,22,17,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,22,17,.028) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .skip {
+      position: absolute;
+      top: -64px;
+      left: 16px;
+      z-index: 50;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 800;
+    }
+    .skip:focus { top: 14px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(248, 243, 234, .88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(250px, 54vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .links a { padding: 8px 0; transition: color .2s var(--ease); }
+    .links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.primary:hover { background: #edb45a; }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { color: var(--accent-ink); border-color: var(--accent); background: var(--soft-accent); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 72px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #8b5c14;
+    }
+    .kicker::before { content: ""; width: 42px; height: 2px; background: var(--accent); }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      text-transform: uppercase;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 650px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 23px);
+      hyphens: auto;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 38px;
+      max-width: 690px;
+    }
+    .meta {
+      min-height: 104px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,253,248,.58);
+    }
+    .meta strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: #8b5c14;
+    }
+    .meta span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #2b170c;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.03);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(25, 14, 5, .58));
+    }
+    .photo-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff9ef;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .45fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 66px); }
+    .section-head p { color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .menu-board {
+      border: 1px solid var(--line);
+      background: rgba(255,253,248,.72);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) 96px;
+      gap: 24px;
+      align-items: start;
+      padding: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .menu-row:first-child { border-top: 0; }
+    .menu-cat {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #8b5c14;
+    }
+    .menu-row h3 { font-size: clamp(22px, 2.2vw, 34px); line-height: 1.04; }
+    .menu-row p { margin-top: 10px; color: var(--muted); }
+    .price {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .origin {
+      display: grid;
+      grid-template-columns: minmax(360px, .82fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .origin-photo, .origin-copy, .box, .hours, .faq-item {
+      border: 1px solid var(--line);
+      background: rgba(255,253,248,.68);
+    }
+    .origin-photo {
+      min-height: 420px;
+      overflow: hidden;
+    }
+    .origin-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .origin-copy {
+      padding: clamp(28px, 4vw, 52px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 36px;
+    }
+    .origin-copy p { color: var(--muted); font-size: 19px; hyphens: auto; }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-top: 0;
+      background: rgba(241,232,218,.54);
+    }
+    .fact { padding: 24px; border-left: 1px solid var(--line); }
+    .fact:first-child { border-left: 0; }
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 1;
+      color: #8b5c14;
+    }
+    .fact span { display: block; margin-top: 10px; color: var(--muted); font-weight: 600; }
+
+    .pickup {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .42fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .box { padding: clamp(26px, 4vw, 46px); }
+    .box h3 { font-size: clamp(30px, 4vw, 54px); }
+    .box p { margin-top: 16px; color: var(--muted); font-size: 18px; }
+    .specs {
+      margin-top: 30px;
+      border-top: 1px solid var(--line);
+    }
+    .spec {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .spec span:first-child { color: var(--muted); }
+    .pickup .box:last-child { background: var(--accent); color: var(--accent-ink); }
+    .pickup .box:last-child p { color: rgba(27, 18, 4, .75); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 320px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #3b2617;
+    }
+    .gallery figure:nth-child(2) { margin-top: 42px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s var(--ease); }
+    .gallery figure:hover img { transform: scale(1.025); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .46fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .hours { padding: 28px; }
+    .hours h3 { font-size: 34px; margin-bottom: 22px; }
+    .hours-table { border-top: 1px solid var(--line); }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-line.today { color: #8b5c14; font-weight: 700; }
+    .contact-list { display: grid; gap: 12px; margin-top: 24px; }
+    .contact-list a, .contact-list span {
+      display: block;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      transition: color .2s var(--ease);
+    }
+    .contact-list a:hover { color: var(--ink); }
+    #map { height: 420px; border: 1px solid var(--line); overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      padding: 24px;
+      min-height: 210px;
+    }
+    .faq-item h3 { font-size: 22px; line-height: 1.12; }
+    .faq-item p { margin-top: 14px; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding: 76px 0;
+      background: var(--ink);
+      color: #fff9ef;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final h2 { max-width: 780px; font-size: clamp(34px, 5vw, 72px); }
+    .final p { margin-top: 16px; color: rgba(255,249,239,.72); font-size: 18px; }
+    .final .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+
+    footer {
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .origin, .pickup, .contact-grid, .final .wrap { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .hero-meta, .facts, .faq, .gallery { grid-template-columns: 1fr; }
+      .menu-row { grid-template-columns: 1fr; gap: 12px; }
+      .price { justify-self: start; }
+      .origin-photo { min-height: 310px; }
+      .gallery figure:nth-child(2) { margin-top: 0; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-grid { gap: 32px; }
+      section { padding: 62px 0; }
+      .meta, .menu-row, .box, .hours, .faq-item { padding: 20px; }
+      .photo-note { flex-direction: column; }
+      .fact { border-left: 0; border-top: 1px solid var(--line); }
+      .fact:first-child { border-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Tele mele Bistro">
+        <img src="https://www.telemelebistro.cz/themes/tele/logo.svg" alt="Tele mele Bistro">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Týdenní nabídka</a>
+        <a href="#farma">Farma</a>
+        <a href="#bedynka">Bedýnka</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420603279953">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Husova 1, Plzeň</div>
+          <h1>Farma v srdci města</h1>
+          <p class="lead">Snídaně a obědy z kvalitních, převážně lokálních surovin. Dobré jídlo tu začíná původem, čerstvostí a poctivou přípravou.</p>
+          <div class="actions">
+            <a class="btn primary" href="#nabidka">Prohlédnout nabídku</a>
+            <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta"><strong>Út-Sob</strong><span>9:00-15:00</span></div>
+            <div class="meta"><strong>5,0</strong><span>32 hodnocení</span></div>
+            <div class="meta"><strong>BIO</strong><span>hovězí z vlastního chovu</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-note"><span>Sezónní kuchyně</span><span>Lokální suroviny</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Týdenní nabídka</h2>
+          <p>Výběr z nabídky pro úterý 26. 5. 2026 až sobotu 30. 5. 2026. Jídla se řídí sezónou a tím, co zrovna roste v české přírodě.</p>
+        </div>
+        <div class="menu-board">
+          <div class="menu-row">
+            <div class="menu-cat">Polévky</div>
+            <div>
+              <h3>Pomalu tažený hovězí vývar</h3>
+              <p>Hovězí z biochovu, kořenová zelenina Mlýn Podhora, vejce ze Šumavy a domácí nudle.</p>
+            </div>
+            <div class="price">60 / 90 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-cat">Vegetariánské</div>
+            <div>
+              <h3>Bramborová polévka s houbami</h3>
+              <p>Velká polévka s pomazánkou s ředkvičkami a chlebem, dostupná i bezlepkově bez chlebu.</p>
+            </div>
+            <div class="price">65 / 130 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-cat">Malé přežvykování</div>
+            <div>
+              <h3>Pomazánka z louženského kuřátka</h3>
+              <p>Tvaroh Šumavská mlékárna, louženské kuře, celer, paprika, hroznové víno a chléb Breadhaus.</p>
+            </div>
+            <div class="price">130 Kč</div>
+          </div>
+          <div class="menu-row">
+            <div class="menu-cat">Jíme týden</div>
+            <div>
+              <h3>Hovězí kuličky s rajčaty</h3>
+              <p>Hovězí z biochovu, cuketa v tomatové omáčce, rýže a cibule Mlýn Podhora.</p>
+            </div>
+            <div class="price">210 Kč</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="farma">
+      <div class="wrap">
+        <div class="origin">
+          <div class="origin-photo">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </div>
+          <div class="origin-copy">
+            <div>
+              <div class="kicker">Telecí Mlýn</div>
+              <h2>Od půdy po talíř</h2>
+            </div>
+            <p>Tele mele Bistro navazuje na rodinnou BIO farmu Telecí Mlýn ve Všerubech u Plzně. Hovězí maso pochází z vlastního chovu, vepřové a kuřecí z malých farem na západě Čech.</p>
+          </div>
+        </div>
+        <div class="facts">
+          <div class="fact"><strong>BIO</strong><span>hovězí z vlastního chovu</span></div>
+          <div class="fact"><strong>5,0</strong><span>hodnocení hostů</span></div>
+          <div class="fact"><strong>32</strong><span>veřejných recenzí</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bedynka">
+      <div class="wrap pickup">
+        <div class="box">
+          <div class="kicker">Výdej 30. 5.</div>
+          <h3>Rezervujte si svou bedýnku</h3>
+          <p>Další výdej bio hovězího z vlastního chovu proběhne 30. 5. Objednávky přijímají zprávou, telefonicky nebo přes objednávkový formulář.</p>
+          <div class="specs">
+            <div class="spec"><span>Obsah</span><strong>cca 5 kg masa (+-10 %)</strong></div>
+            <div class="spec"><span>Cena</span><strong>350 Kč / kg</strong></div>
+            <div class="spec"><span>Kontakt</span><strong>+420 603 279 953</strong></div>
+          </div>
+        </div>
+        <div class="box">
+          <h3>Oběd, káva, vyzvednutí</h3>
+          <p>V Husově ulici jste blízko centra. Přijďte na jídlo, zavolejte kvůli bedýnce nebo napište na e-mail.</p>
+          <div class="actions">
+            <a class="btn secondary" href="mailto:info@telemelebistro.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Teplo všedního dne</h2>
+          <p>Jednoduché místo na snídani, oběd a sezónní jídlo, které stojí na surovinách a řemesle.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window."></figure>
+          <figure><img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs."></figure>
+          <figure><img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Než dorazíte</h2>
+          <p>Praktické odpovědi pro hosty, kteří si chtějí vybrat jídlo, ověřit suroviny nebo se zeptat na výdej masa.</p>
+        </div>
+        <div class="faq">
+          <div class="faq-item">
+            <h3>Vaříte i vegetariánská jídla?</h3>
+            <p>Ano. V týdenní nabídce se objevují vegetariánské položky, například bramborová polévka s houbami nebo pomazánka z ředkviček.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Odkud jsou suroviny?</h3>
+            <p>Hovězí je z vlastní BIO farmy Telecí Mlýn, další maso z malých farem na západě Čech a část surovin od lokálních dodavatelů.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Jak objednat bedýnku?</h3>
+            <p>Objednávky přijímají zprávou, telefonicky nebo přes objednávkový formulář. Nejbližší uvedený výdej je 30. 5.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kontakt</h2>
+          <p>Tele mele Bistro najdete na adrese Husova 314/1, 301 00 Plzeň 3-Jižní Předměstí.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="hours">
+            <h3>Otevírací doba</h3>
+            <div class="hours-table">
+              <div class="hours-line"><span>Pondělí</span><span>Zavřeno</span></div>
+              <div class="hours-line today"><span>Úterý</span><span>9:00-15:00</span></div>
+              <div class="hours-line"><span>Středa</span><span>9:00-15:00</span></div>
+              <div class="hours-line"><span>Čtvrtek</span><span>9:00-15:00</span></div>
+              <div class="hours-line"><span>Pátek</span><span>9:00-15:00</span></div>
+              <div class="hours-line"><span>Sobota</span><span>9:00-15:00</span></div>
+              <div class="hours-line"><span>Neděle</span><span>Zavřeno</span></div>
+            </div>
+            <div class="contact-list">
+              <a href="tel:+420603279953">+420 603 279 953</a>
+              <a href="mailto:info@telemelebistro.cz">info@telemelebistro.cz</a>
+              <span>Husova 314/1, Plzeň</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Tele mele Bistro"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div>
+          <h2>Dnes od 9:00 do 15:00</h2>
+          <p>Snídaně, oběd, káva a sezónní jídlo z farem kolem Plzně.</p>
+        </div>
+        <div class="actions">
+          <a class="btn primary" href="tel:+420603279953">Zavolat</a>
+          <a class="btn secondary" href="https://www.telemelebistro.cz/">Menu online</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>© Tele mele Bistro</span>
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný vizuální materiál. Pokud si nepřejete být dále kontaktováni, můžete záznam odstranit zde: <a href="https://webflex.cz/delete/ez91xly">webflex.cz/delete/ez91xly</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3720172, 49.7450188],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#E0A040' })
+      .setLngLat([13.3720172, 49.7450188])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
