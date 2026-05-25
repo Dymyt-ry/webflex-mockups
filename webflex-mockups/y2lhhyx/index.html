@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurace U Zeleného stromu | Tábor</title>
+  <meta name="description" content="Restaurace U Zeleného stromu v Táboře na adrese Arbeiterova 53. Česká restaurace s menu, fotogalerií, kontaktem a telefonem +420 608 955 811.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f5ed;
+      --surface: rgba(255, 253, 247, .86);
+      --surface-strong: #fffdf7;
+      --ink: #171a14;
+      --muted: #66695e;
+      --line: rgba(23, 26, 20, .11);
+      --accent: #0B6B2C;
+      --accent-dark: #06451d;
+      --accent-soft: rgba(11, 107, 44, .11);
+      --warm: #c0c0a0;
+      --radius: 22px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(11,107,44,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(11,107,44,.026) 1px, transparent 1px),
+        radial-gradient(circle at 85% 10%, rgba(192,192,160,.30), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(248,245,237,.84);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: min(260px, 52vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(11,107,44,.07); }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    h2 { font-size: clamp(34px, 4.2vw, 64px); }
+    h3 { font-size: clamp(23px, 2.2vw, 34px); }
+    p { hyphens: auto; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .92fr);
+      align-items: center;
+      gap: 54px;
+      padding: 64px 0 72px;
+      min-height: calc(100svh - 78px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.55vw, 22px);
+      line-height: 1.68;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .hero-media { position: relative; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.72);
+      background: #2d261c;
+    }
+    .hero-photo img, .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-badge {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      max-width: calc(100% - 48px);
+      padding: 16px 18px;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 18px;
+      color: #fff;
+      background: rgba(14, 19, 12, .62);
+      backdrop-filter: blur(14px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .5fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.72; }
+
+    .menu-list {
+      border-top: 1px solid var(--line);
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) minmax(220px, .38fr);
+      gap: 28px;
+      align-items: center;
+      min-height: 126px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .menu-row p { margin: 0; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+    }
+    .stat:hover { transform: translateY(-2px); border-color: rgba(11,107,44,.34); background: var(--surface-strong); }
+    .stat b { font-family: var(--font-display); font-size: clamp(40px, 5vw, 72px); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 800; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .86fr) minmax(0, 1.14fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      padding: 34px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--surface);
+    }
+    .panel.green {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .panel.green p { color: rgba(255,255,255,.78); }
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3.8vw, 54px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .detail-list {
+      display: grid;
+      gap: 0;
+      margin-top: 28px;
+      border-top: 1px solid rgba(255,255,255,.24);
+    }
+    .detail-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255,255,255,.24);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .story p { margin: 18px 0 0; color: var(--muted); font-size: 18px; line-height: 1.75; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-side {
+      display: grid;
+      gap: 18px;
+    }
+    .gallery-card {
+      position: relative;
+      min-height: 230px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: #403225;
+    }
+    .gallery-card.large { min-height: 520px; }
+    .gallery-card span {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-shadow: 0 1px 18px rgba(0,0,0,.72);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .78fr) minmax(0, 1.22fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--surface-strong);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 0;
+      margin-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-lines a, .contact-lines div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+      transition: color 180ms var(--ease);
+    }
+    .contact-lines a:hover { color: var(--accent); }
+    .contact-lines strong { color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 160px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .faq-item h3 { font-size: 24px; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 76px 0 92px;
+    }
+    .final-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 38px;
+      border-radius: 30px;
+      color: #fff;
+      background: var(--accent);
+    }
+    .final h2 { max-width: 760px; }
+    .final p { margin: 16px 0 0; color: rgba(255,255,255,.78); font-size: 18px; }
+    .final .btn-primary { background: #fff; color: var(--accent-dark); }
+    .final .btn-outline { border-color: rgba(255,255,255,.5); color: #fff; }
+    .final .btn-outline:hover { background: rgba(255,255,255,.1); }
+
+    footer {
+      padding: 30px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .footer-inner a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .gallery, .contact-grid, .final-inner {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-media { order: -1; }
+      .menu-row { grid-template-columns: 64px 1fr; }
+      .menu-row p { grid-column: 2; }
+      .stats, .faq { grid-template-columns: 1fr; }
+      .gallery-card.large { min-height: 360px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .hero-photo { border-radius: 22px; }
+      .hero-badge { position: static; max-width: none; margin-top: 12px; color: var(--ink); background: var(--surface); border-color: var(--line); }
+      .panel, .contact-card, .final-inner { padding: 24px; border-radius: 22px; }
+      .menu-row { gap: 16px; padding: 22px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Restaurace U Zeleného stromu">
+        <img src="https://www.uzelenehostromutabor.cz/wp-content/uploads/2018/08/logo_mobil.png" alt="Restaurace U Zeleného stromu">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Fotogalerie</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420608955811">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <p class="eyebrow">Tábor · Arbeiterova 53</p>
+        <h1>U Zeleného stromu</h1>
+        <p class="lead">Restaurace v Táboře pro oběd, večeři i klidné posezení. Najdete nás na Arbeiterově 53, pár minut od centra.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420608955811">Rezervace telefonem</a>
+          <a class="btn btn-outline" href="#kontakt">Ukázat adresu</a>
+        </div>
+        <div class="hero-note">
+          <span>+420 608 955 811</span>
+          <span>4,5 / 5 z 1318 recenzí</span>
+          <span>burg.p@seznam.cz</span>
+        </div>
+      </div>
+      <div class="hero-media">
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </figure>
+        <div class="hero-badge">Restaurace · Menu · Polední menu · Fotogalerie</div>
+      </div>
+    </div>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Jídlo, pití a polední zastávka</h2>
+          </div>
+          <p>Stručně a přehledně: stálé menu, polední menu a prostor, kam můžete přijít posedět bez složité domluvy.</p>
+        </div>
+        <div class="menu-list">
+          <div class="menu-row">
+            <span class="num">01</span>
+            <h3>Menu restaurace</h3>
+            <p>Výběr jídel a nápojů pro běžnou návštěvu během dne i večera.</p>
+          </div>
+          <div class="menu-row">
+            <span class="num">02</span>
+            <h3>Polední menu</h3>
+            <p>Praktická volba pro oběd v Táboře, když chcete jíst bez čekání.</p>
+          </div>
+          <div class="menu-row">
+            <span class="num">03</span>
+            <h3>Posezení u stolu</h3>
+            <p>Teplá atmosféra restaurace pro pár lidí i větší společnost.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap stats" aria-label="Hodnocení a kontakt">
+        <div class="stat">
+          <b>4,5</b>
+          <span>hodnocení hostů</span>
+        </div>
+        <div class="stat">
+          <b>1318</b>
+          <span>recenzí od návštěvníků</span>
+        </div>
+        <div class="stat">
+          <b>53</b>
+          <span>Arbeiterova, Tábor 1</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="panel green">
+          <p class="eyebrow" style="color:#fff">Myšlenka kuchyně</p>
+          <div class="quote">„Při kuchyni je to znát.“</div>
+          <p>Citát Jaroslava Haška patří k místu a vystihuje jednoduchou věc: na jídle, obsluze i atmosféře záleží.</p>
+          <div class="detail-list">
+            <div><span>Místo</span><span>Tábor</span></div>
+            <div><span>Kontakt</span><span>Telefon i e-mail</span></div>
+            <div><span>Obsah</span><span>Menu a fotogalerie</span></div>
+          </div>
+        </div>
+        <div class="panel story">
+          <p class="eyebrow">Pro návštěvu</p>
+          <h2>Stačí přijít nebo zavolat předem</h2>
+          <p>Chystáte se na oběd, večeři nebo posezení s přáteli? Restauraci najdete na adrese Arbeiterova 53. Pro jistotu místa u stolu zavolejte přímo do podniku.</p>
+          <p>Telefonní kontakt je přímá cesta, pokud potřebujete ověřit aktuální polední nabídku, domluvit rezervaci nebo se zeptat na volný stůl.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Fotogalerie</p>
+            <h2>Teplé světlo a klidný stůl</h2>
+          </div>
+          <p>Vybrané snímky drží komorní atmosféru restaurace: dřevo, sklo, svíčky a měkké večerní světlo.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-card large">
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+            <span>Stůl pro večer</span>
+          </figure>
+          <div class="gallery-side">
+            <figure class="gallery-card">
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+              <span>Barové světlo</span>
+            </figure>
+            <figure class="gallery-card">
+              <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+              <span>Posezení u okna</span>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Najdete nás v Táboře</h2>
+          </div>
+          <p>Arbeiterova 53, 390 01 Tábor-Tábor 1. Pro rezervaci nebo aktuální informace volejte přímo do restaurace.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Restaurace U Zeleného stromu</h3>
+            <div class="contact-lines">
+              <a href="tel:+420608955811"><strong>Telefon</strong><span>+420 608 955 811</span></a>
+              <a href="mailto:burg.p@seznam.cz"><strong>E-mail</strong><span>burg.p@seznam.cz</span></a>
+              <div><strong>Adresa</strong><span>Arbeiterova 53, Tábor</span></div>
+              <a href="https://www.uzelenehostromutabor.cz/kontakt/"><strong>Web</strong><span>uzelenehostromutabor.cz</span></a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Restaurace U Zeleného stromu"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prakticky</p>
+            <h2>Než vyrazíte</h2>
+          </div>
+          <p>Pro ověření detailů volejte přímo do restaurace. Provozní informace si potvrdíte u obsluhy.</p>
+        </div>
+        <div class="faq">
+          <div class="faq-item">
+            <h3>Kde restaurace sídlí?</h3>
+            <p>Na adrese Arbeiterova 53, 390 01 Tábor-Tábor 1.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Jak se spojit?</h3>
+            <p>Zavolejte na +420 608 955 811 nebo napište na burg.p@seznam.cz.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Je k dispozici polední menu?</h3>
+            <p>Ano, restaurace uvádí polední menu mezi hlavními informacemi pro hosty.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Kde najdu fotografie?</h3>
+            <p>Fotogalerie je součástí informací restaurace a pomůže vám udělat si představu o atmosféře.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <h2>Rezervujte si stůl telefonem</h2>
+          <p>Ozvěte se před návštěvou, zejména pokud jdete ve více lidech nebo chcete ověřit aktuální nabídku.</p>
+        </div>
+        <div class="hero-actions" style="margin-top:0">
+          <a class="btn btn-primary" href="tel:+420608955811">+420 608 955 811</a>
+          <a class="btn btn-outline" href="mailto:burg.p@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>© Restaurace U Zeleného stromu · Arbeiterova 53, Tábor</span>
+      <span>Správa zobrazení: Webflex. <a href="https://webflex.cz/remove/y2lhhyx">Odstranit</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.657249, 49.4136727],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#0B6B2C' })
+      .setLngLat([14.657249, 49.4136727])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
