@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autoservis v Praze Nonstop | K Třebonicům 64</title>
+  <meta name="description" content="Nonstop autoservis Praha 5. Diagnostika, pneuservis, geometrie, brzdy, podvozky, motory, převodovky, lakovna a odtah po Praze.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Geist+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101216;
+      --panel: #151922;
+      --panel-2: #0c0e12;
+      --ink: #f6f8fb;
+      --muted: #aeb6c2;
+      --line: rgba(255,255,255,.14);
+      --line-strong: rgba(255,255,255,.28);
+      --accent: #204080;
+      --accent-2: #2d62bd;
+      --ok: #e3dfd8;
+      --font-display: "Archivo", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      line-height: 1.45;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--ok);
+      outline-offset: 3px;
+    }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: rgba(16,18,22,.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .nav-links a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover { border-color: var(--line); background: rgba(255,255,255,.04); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 2px;
+      border: 1px solid var(--accent-2);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-family: var(--font-body);
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+    }
+    .btn:hover { background: var(--accent-2); transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+    }
+    .btn.secondary:hover { border-color: rgba(255,255,255,.75); background: rgba(255,255,255,.06); }
+
+    .hero {
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      gap: 42px;
+      align-items: center;
+    }
+    .kicker, .section-kicker {
+      font-family: var(--font-mono);
+      color: var(--ok);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin: 0 0 18px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 680px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 20px;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+      box-shadow: 0 24px 80px rgba(0,0,0,.22);
+    }
+    .hours-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+    }
+    .status {
+      color: #fff;
+      background: var(--accent);
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .hours-table, .price-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-table td, .price-table td, .price-table th {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      vertical-align: top;
+    }
+    .hours-table tr.today td { background: rgba(32,64,128,.56); color: #fff; }
+    .hours-table td:last-child, .price-table td:last-child { text-align: right; white-space: nowrap; color: var(--ok); }
+
+    section { padding: 70px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 30px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: .8;
+      color: rgba(255,255,255,.12);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: .98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+      text-transform: uppercase;
+    }
+    .section-copy { color: var(--muted); max-width: 720px; margin: 12px 0 0; font-size: 18px; }
+
+    .service-list {
+      border-top: 1px solid var(--line-strong);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(220px, 320px);
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .row-code, .price, .metric-value {
+      font-family: var(--font-mono);
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .service-row h3 { margin: 0 0 8px; font-size: 24px; }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 160px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .metric-value { font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .metric-label { color: var(--muted); margin-top: 14px; }
+
+    .pricing-shell {
+      border: 1px solid var(--line-strong);
+      overflow: auto;
+      background: rgba(255,255,255,.025);
+    }
+    .price-table { min-width: 860px; }
+    .price-table th {
+      position: sticky;
+      top: 72px;
+      z-index: 5;
+      background: #151922;
+      text-align: left;
+      color: #fff;
+      font-weight: 700;
+    }
+    .price-table td:first-child, .price-table th:first-child { width: 46%; }
+    .note { margin-top: 14px; color: var(--muted); font-size: 14px; font-family: var(--font-mono); }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+    }
+    .step {
+      padding: 22px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      min-height: 190px;
+    }
+    .step strong { display: block; font-family: var(--font-mono); color: var(--ok); margin-bottom: 36px; }
+    .step h3 { margin: 0 0 10px; font-size: 21px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo-tile {
+      border: 1px solid var(--line);
+      min-height: 260px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82) contrast(1.08); }
+    .photo-stack { display: grid; gap: 18px; grid-template-rows: 1fr 1fr; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      padding: 24px;
+      background: rgba(255,255,255,.03);
+    }
+    .contact-card dl { margin: 0; display: grid; gap: 18px; }
+    .contact-card dt { font-family: var(--font-mono); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .contact-card dd { margin: 4px 0 0; font-size: 22px; font-weight: 800; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    details {
+      border-top: 1px solid var(--line);
+      padding: 18px 0;
+    }
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 20px;
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    summary:hover { color: var(--ok); transform: translateY(-1px); }
+    summary:active { transform: translateY(1px); }
+    details p { color: var(--muted); max-width: 780px; margin: 12px 0 0; }
+
+    .cta {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: linear-gradient(90deg, rgba(32,64,128,.42), rgba(255,255,255,.03));
+    }
+    .cta-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .cta h2 { max-width: 760px; }
+
+    footer {
+      padding: 28px 0 36px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .credits a, footer a { text-decoration: underline; text-underline-offset: 3px; }
+    .webflex-disclaimer { margin-top: 18px; font-size: 12px; color: rgba(255,255,255,.62); }
+
+    @media (max-width: 900px) {
+      .nav { height: auto; padding: 14px 0; align-items: flex-start; }
+      .nav-links { display: none; }
+      .hero-grid, .contact-grid, .gallery { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; gap: 8px; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats, .process { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .cta-inner { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: clamp(40px, 13vw, 68px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#" aria-label="Autoservis v Praze Nonstop">
+        <img src="https://www.arslan.cz/wp-content/uploads/2018/10/arslan_logo.jpg" alt="Autoservis v Praze Nonstop">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn" href="tel:+420602100330">+420 602 100 330</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="kicker">Praha 5 · K Třebonicům 64 · Nonstop</p>
+          <h1>Autoservis Praha nonstop</h1>
+          <p class="lead">Diagnostika, pneuservis, geometrie, brzdy, podvozky, motory, převodovky, lakování i odtah po Praze na jednom místě.</p>
+          <div class="hero-actions">
+            <a class="btn" href="tel:+420602100330">Zavolat servis</a>
+            <a class="btn secondary" href="#cenik">Zobrazit ceny</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <div class="hours-head">
+            <strong>Provoz</strong>
+            <span class="status">Otevřeno 24/7</span>
+          </div>
+          <table class="hours-table">
+            <tbody>
+              <tr class="today"><td>Pondělí</td><td>00:00-24:00</td></tr>
+              <tr><td>Úterý</td><td>00:00-24:00</td></tr>
+              <tr><td>Středa</td><td>00:00-24:00</td></tr>
+              <tr><td>Čtvrtek</td><td>00:00-24:00</td></tr>
+              <tr><td>Pátek</td><td>00:00-24:00</td></tr>
+              <tr><td>Sobota</td><td>00:00-24:00</td></tr>
+              <tr><td>Neděle</td><td>00:00-24:00</td></tr>
+            </tbody>
+          </table>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <p class="section-kicker">Servisní program</p>
+            <h2>Auta známe od brzdy až po výfuk</h2>
+            <p class="section-copy">Objednejte běžný zásah i expresní servis. Rozsah vychází z aktuální nabídky autoservisu.</p>
+          </div>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="row-code">S-01</div>
+            <div><h3>Autodiagnostika a elektronika</h3><p>PC diagnostika, hloubková diagnostika a opravy elektronických systémů.</p></div>
+            <div class="price">od 1 815 Kč</div>
+          </article>
+          <article class="service-row">
+            <div class="row-code">S-02</div>
+            <div><h3>Pneuservis a geometrie kol</h3><p>Přezutí 4 pneumatik včetně vyvážení, opravy pneumatik a geometrie kol.</p></div>
+            <div class="price">od 605 Kč / ks</div>
+          </article>
+          <article class="service-row">
+            <div class="row-code">S-03</div>
+            <div><h3>Brzdy, tlumiče a podvozky</h3><p>Diagnostika a opravy brzd, tlumičů, ložisek a podvozkových částí.</p></div>
+            <div class="price">od 1 815 Kč</div>
+          </article>
+          <article class="service-row">
+            <div class="row-code">S-04</div>
+            <div><h3>Motory a převodovky</h3><p>Výměna spojky, rozvodů, oleje v převodovce a generální opravy motorů i automatických převodovek.</p></div>
+            <div class="price">od 7 260 Kč</div>
+          </article>
+          <article class="service-row">
+            <div class="row-code">S-05</div>
+            <div><h3>Autolakovna a karoserie</h3><p>Lakování, tmelení, rovnání klempířských dílů, svařování a tónování skel.</p></div>
+            <div class="price">od 1 815 Kč / díl</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <div class="metric-value">4,1</div>
+            <div class="metric-label">Hodnocení na Googlu</div>
+          </div>
+          <div class="stat">
+            <div class="metric-value">675</div>
+            <div class="metric-label">Zákaznických recenzí</div>
+          </div>
+          <div class="stat">
+            <div class="metric-value">24/7</div>
+            <div class="metric-label">Nonstop provoz autoservisu</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <p class="section-kicker">Ceník autoservisu</p>
+            <h2>Přehled položek včetně DPH</h2>
+            <p class="section-copy">Ceny jsou převzaté z veřejného ceníku autoservisu. Materiál a rozsah opravy se řeší podle konkrétního vozu.</p>
+          </div>
+        </div>
+        <div class="pricing-shell">
+          <table class="price-table">
+            <thead>
+              <tr><th>Položka</th><th>Rozsah</th><th>Cena</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Jedna hodina práce</td><td>Osobní vůz</td><td>1 210 Kč</td></tr>
+              <tr><td>Jedna hodina práce</td><td>Užitkový vůz</td><td>1 815 Kč</td></tr>
+              <tr><td>PC diagnostika</td><td>Kontrola systémů vozu</td><td>1 815 Kč</td></tr>
+              <tr><td>Hloubková diagnostika</td><td>Rozšířený rozsah</td><td>8 470-18 150 Kč</td></tr>
+              <tr><td>Pneuservis</td><td>4 pneu včetně vyvážení do 18"</td><td>1 815 Kč</td></tr>
+              <tr><td>Pneuservis</td><td>4 pneu včetně vyvážení 18"-20"</td><td>2 420 Kč</td></tr>
+              <tr><td>Pneuservis</td><td>4 pneu včetně vyvážení od 20"</td><td>3 025 Kč</td></tr>
+              <tr><td>Geometrie kol</td><td>Kontrola a nastavení</td><td>3 025 Kč</td></tr>
+              <tr><td>Výměna brzdových destiček</td><td>Jedna náprava + materiál</td><td>1 815 Kč</td></tr>
+              <tr><td>Výměna oleje v motoru</td><td>Práce + materiál</td><td>1 815 Kč</td></tr>
+              <tr><td>Výměna spojky</td><td>Práce + materiál</td><td>od 8 470 Kč</td></tr>
+              <tr><td>Výměna převodovky</td><td>Práce + materiál</td><td>od 7 260 Kč</td></tr>
+              <tr><td>Generální opravy</td><td>Motory a automatické převodovky</td><td>od 36 300 Kč</td></tr>
+              <tr><td>Odtah po Praze</td><td>Dle rozsahu</td><td>2 420-3 025 Kč</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Jsme plátci DPH. Uvedené ceny jsou vč. DPH 21 %. Víkend, noční práce od 18:00 do 08:00 a expres autoservis: +100 % běžné ceny.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div>
+            <p class="section-kicker">Průběh zakázky</p>
+            <h2>Od telefonátu po předání vozu</h2>
+          </div>
+        </div>
+        <div class="process">
+          <article class="step"><strong>01</strong><h3>Zavoláte servis</h3><p>Na telefonu probereme vůz, potíže a nejbližší možný termín.</p></article>
+          <article class="step"><strong>02</strong><h3>Přijedete do Prahy 5</h3><p>Adresa provozovny je K Třebonicům 64, 155 00 Praha 5.</p></article>
+          <article class="step"><strong>03</strong><h3>Diagnostika nebo oprava</h3><p>Mechanici řeší diagnostiku, brzdy, pneumatiky, motor, převodovku nebo lak.</p></article>
+          <article class="step"><strong>04</strong><h3>Předání a platba</h3><p>Cena vychází z ceníku, rozsahu práce a potřebného materiálu.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <p class="section-kicker">Dílna</p>
+            <h2>Práce s nářadím a diagnostikou</h2>
+          </div>
+        </div>
+        <div class="gallery">
+          <figure class="photo-tile">
+            <img src="https://images.pexels.com/photos/27665740/pexels-photo-27665740.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up view of a mechanic's hands working on a car engine with a wrench in an industrial setting.">
+          </figure>
+          <div class="photo-stack">
+            <figure class="photo-tile">
+              <img src="https://images.pexels.com/photos/7564871/pexels-photo-7564871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic using hand tools to fix an engine, showcasing precision and skill.">
+            </figure>
+            <figure class="photo-tile">
+              <img src="https://images.pexels.com/photos/4488662/pexels-photo-4488662.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A mechanic fixing a vintage car part in a dimly lit garage with neon lights and tools around.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <div>
+            <p class="section-kicker">Kontakt</p>
+            <h2>K Třebonicům 64, Praha 5</h2>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <dl>
+              <div><dt>Telefon</dt><dd><a href="tel:+420602100330">+420 602 100 330</a></dd></div>
+              <div><dt>E-mail</dt><dd><a href="mailto:info@arslan.cz">info@arslan.cz</a></dd></div>
+              <div><dt>Adresa</dt><dd>K Třebonicům 64, 155 00 Praha 5</dd></div>
+              <div><dt>Provoz</dt><dd>Nonstop</dd></div>
+            </dl>
+          </div>
+          <div id="map" aria-label="Mapa provozovny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <div>
+            <p class="section-kicker">Časté dotazy</p>
+            <h2>Než vyrazíte do servisu</h2>
+          </div>
+        </div>
+        <details>
+          <summary>Řeší servis i noční nebo víkendové práce?</summary>
+          <p>Ano. V ceníku je uveden příplatek +100 % běžné ceny pro víkend, noční práci od 18:00 do 08:00 a expres autoservis.</p>
+        </details>
+        <details>
+          <summary>Kolik stojí základní hodina práce?</summary>
+          <p>Jedna hodina práce pro osobní vůz je 1 210 Kč vč. DPH. U užitkového vozu je uvedeno 1 815 Kč vč. DPH.</p>
+        </details>
+        <details>
+          <summary>Máte v nabídce pneuservis?</summary>
+          <p>Ano. Přezutí 4 pneumatik včetně vyvážení začíná na 1 815 Kč podle průměru kol. Oprava pneumatiky je uvedena v rozmezí 847-1 815 Kč za kus.</p>
+        </details>
+        <details>
+          <summary>Umíte odtah po Praze?</summary>
+          <p>Ano. Odtah po Praze je v ceníku uveden v rozmezí 2 420-3 025 Kč.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <h2>Potřebujete servis ještě dnes?</h2>
+        <a class="btn" href="tel:+420602100330">Volat nonstop linku</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>Autoservis v Praze Nonstop · K Třebonicům 64, 155 00 Praha 5</div>
+        <div class="credits">Foto: <a href="https://www.pexels.com/@christian-buehner-336302433">christian buehner</a>, <a href="https://www.pexels.com/@cottonbro">cottonbro studio</a></div>
+      </div>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávaznou vizualizaci. Pro odstranění použijte <a href="https://webflex.cz/remove?token=nxe3q62">tento odkaz</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.3043303, 50.0356744],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#204080' })
+      .setLngLat([14.3043303, 50.0356744])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
