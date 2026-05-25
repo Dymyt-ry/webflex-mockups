@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tatarák Bistro | nám. Svobody Brno</title>
+  <meta name="description" content="Tatarák Bistro na náměstí Svobody v Brně. Rezervace, menu, doručení a otevřeno každý den 10:30-22:00.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --ink: #171812;
+      --muted: #696b61;
+      --soft: #eeeee8;
+      --accent: #606040;
+      --accent-dark: #46462f;
+      --warm: #8e6c51;
+      --shadow: 0 28px 90px rgba(33, 34, 26, 0.09);
+      --shadow-soft: 0 18px 70px rgba(33, 34, 26, 0.065);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23, 24, 18, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 24, 18, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 248, 0.78);
+      border-bottom: 1px solid rgba(23, 24, 18, 0.06);
+    }
+    .nav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-weight: 700; font-size: 14px; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: rgba(96, 96, 64, 0.08); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.78fr);
+      align-items: center;
+      gap: clamp(36px, 5vw, 72px);
+      padding: 58px 0 76px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      margin-bottom: 22px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      margin: 0;
+      hyphens: none;
+    }
+    h1 {
+      font-size: clamp(40px, 6vw, 88px);
+      max-width: 720px;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 24px; line-height: 1.08; text-transform: uppercase; }
+    .lead {
+      max-width: 610px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.36;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 52%, rgba(0,0,0,.42));
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .45fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 19px; }
+    .panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+    }
+    .menu-list { padding: 12px 28px; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid rgba(23, 24, 18, .08);
+      align-items: center;
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row p { margin: 8px 0 0; color: var(--muted); max-width: 650px; }
+    .mono { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 30px;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: var(--surface-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 62px); line-height: 1; color: var(--accent); }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .feature-photo {
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 440px;
+      box-shadow: var(--shadow);
+    }
+    .feature-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .steps { padding: 36px; display: flex; flex-direction: column; justify-content: center; }
+    .step {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 18px;
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(23, 24, 18, .08);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      background: rgba(96, 96, 64, .1);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+    }
+    .step p { margin: 5px 0 0; color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery .tall { min-height: 520px; }
+    .gallery-stack { display: grid; gap: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 34px; }
+    .contact-card p { color: var(--muted); margin: 12px 0 0; }
+    .hours { margin-top: 26px; }
+    .hour-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(23, 24, 18, .07);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hour-row.today {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    #map {
+      height: 460px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final {
+      padding: 58px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      background: var(--ink);
+      color: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .final p { margin: 12px 0 0; color: rgba(255,255,255,.7); font-size: 19px; }
+    .final .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn-outline:hover { background: rgba(255,255,255,.09); }
+    .footer {
+      margin-top: 84px;
+      padding: 32px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(23, 24, 18, .08);
+      color: #777970;
+    }
+    .footer-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .gallery, .contact-grid, .final {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 42px; }
+      .hero-card { min-width: 0; }
+      .stats { grid-template-columns: 1fr; }
+      .feature-photo, .gallery .tall { min-height: 320px; }
+      .final { padding: 34px; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      section { padding: 58px 0; }
+      .hero-actions, .final-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .menu-row { grid-template-columns: 1fr; gap: 10px; }
+      .hero-note { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="shell nav-inner">
+      <a class="wordmark" href="#top" aria-label="Tatarák Bistro">Tatarák Bistro</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420777119639">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="shell hero">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> nám. Svobody 72/8 · Brno</div>
+        <h1>Tatarák v centru Brna</h1>
+        <p class="lead">Bistro pro oběd, večer u sklenky i rezervaci stolu přímo na náměstí Svobody. Otevřeno každý den od 10:30 do 22:00.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420777119639">Rezervovat telefonicky</a>
+          <a class="btn btn-outline" href="#kontakt">Adresa a hodiny</a>
+        </div>
+      </div>
+      <figure class="hero-card" aria-label="Interiér bistra">
+        <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        <figcaption class="hero-note">
+          <span>TATARÁK SHOW</span>
+          <span>10:30-22:00</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <section id="menu">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Co najdete u nás</h2>
+          <p>Menu, rezervace a doručení držíme pohromadě: stačí zavolat, dorazit na náměstí Svobody nebo si ověřit oblast doručení.</p>
+        </div>
+        <div class="panel menu-list">
+          <div class="menu-row">
+            <div>
+              <h3>Menu</h3>
+              <p>Jídla z nabídky bistra včetně položek pro rychlý oběd i delší posezení.</p>
+            </div>
+            <span class="mono">Denně</span>
+          </div>
+          <div class="menu-row">
+            <div>
+              <h3>Rezervace</h3>
+              <p>Stůl si domluvíte telefonicky na čísle +420 777 119 639.</p>
+            </div>
+            <span class="mono">Telefon</span>
+          </div>
+          <div class="menu-row">
+            <div>
+              <h3>Oblasti doručení</h3>
+              <p>Pro doručení ověřte dostupnost podle adresy a aktuální nabídky.</p>
+            </div>
+            <span class="mono">Brno</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a dostupnost">
+      <div class="shell stats">
+        <div class="stat">
+          <strong>5,0</strong>
+          <span>Google hodnocení</span>
+        </div>
+        <div class="stat">
+          <strong>22</strong>
+          <span>recenzí od hostů</span>
+        </div>
+        <div class="stat">
+          <strong>7/7</strong>
+          <span>otevřeno každý den</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell split">
+        <div class="feature-photo">
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </div>
+        <div class="panel steps">
+          <div class="eyebrow"><span class="dot"></span> Jak si u nás sednout</div>
+          <h2>Jednoduše na stůl</h2>
+          <div class="step">
+            <b>01</b>
+            <div><h3>Zavolejte</h3><p>Rezervaci vyřídíte na +420 777 119 639.</p></div>
+          </div>
+          <div class="step">
+            <b>02</b>
+            <div><h3>Doražte do centra</h3><p>Najdete nás na adrese nám. Svobody 72/8 v Brně.</p></div>
+          </div>
+          <div class="step">
+            <b>03</b>
+            <div><h3>Zůstaňte na večer</h3><p>Kuchyně a posezení běží každý den do 22:00.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Teplý stůl, městský rytmus</h2>
+          <p>Fotky drží náladu večerního bistra: světlo, sklo, dřevo a klidné posezení uprostřed Brna.</p>
+        </div>
+        <div class="gallery">
+          <img class="tall" src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+          <div class="gallery-stack">
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Kontakt a navigace</h2>
+          <p>Jsme přímo v centru Brna. Pro rezervaci volejte, pro dotaz napište e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="panel contact-card">
+            <h3>Tatarák Bistro</h3>
+            <p>nám. Svobody 72/8, 602 00 Brno-střed-Brno-město</p>
+            <p><a class="mono" href="tel:+420777119639">+420 777 119 639</a></p>
+            <p><a href="mailto:tatarak.bistro@seznam.cz">tatarak.bistro@seznam.cz</a></p>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hour-row today"><span>Pondělí</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Úterý</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Středa</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Čtvrtek</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Pátek</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Sobota</span><span>10:30-22:00</span></div>
+              <div class="hour-row"><span>Neděle</span><span>10:30-22:00</span></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Tatarák Bistro"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="final">
+          <div>
+            <h2>Stůl v centru čeká</h2>
+            <p>Rezervujte si místo na oběd nebo večer v Tatarák Bistro.</p>
+          </div>
+          <div class="hero-actions final-actions">
+            <a class="btn btn-primary" href="tel:+420777119639">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:tatarak.bistro@seznam.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <div>© 2026 Tatarák Bistro · nám. Svobody 72/8, Brno</div>
+      <div class="footer-disclaimer">
+        Prezentační stránku připravilo studio Webflex. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde:
+        <a href="https://webflex.cz/remove/tf0iyyf">https://webflex.cz/remove/tf0iyyf</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6088937, 49.194947199999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606040' })
+      .setLngLat([16.6088937, 49.194947199999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
