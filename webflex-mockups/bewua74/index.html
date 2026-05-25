@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Autoservis KN | Servis, pneuservis a geometrie v Ostravě-Kunčicích</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --ink: #151515;
+      --muted: #5f5a56;
+      --quiet: #efeeeb;
+      --line: rgba(21, 21, 21, 0.16);
+      --line-strong: rgba(21, 21, 21, 0.78);
+      --accent: #A00000;
+      --accent-dark: #6f0000;
+      --accent-soft: #f0dddd;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(18px, 4vw, 64px);
+      --section: clamp(72px, 9vw, 132px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(21,21,21,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,21,21,0.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    h1, h2 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; text-transform: uppercase; }
+    h1, h2, .display-wrap { overflow-wrap: anywhere; }
+    main, header, footer { position: relative; z-index: 2; }
+
+    .container { width: min(100% - (var(--gutter) * 2), 1280px); margin-inline: auto; }
+    .section { padding-block: var(--section); border-top: 1px solid var(--line-strong); }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 13px 20px;
+      border: 1px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .button:hover { transform: translateY(-1px); background: var(--ink); color: #fff; }
+    .button:active { transform: translateY(1px); }
+    .button:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .button.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(251, 251, 250, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      min-width: 180px;
+    }
+    .brand img {
+      width: auto;
+      max-width: 210px;
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 38px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .navlinks a { color: var(--muted); transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+    .nav-call {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .hero {
+      min-height: calc(100svh - 74px);
+      display: grid;
+      align-items: center;
+      padding-block: clamp(44px, 7vw, 88px);
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.78fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .hero-copy { max-width: 700px; }
+    .hero h1 {
+      margin-top: 18px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.94;
+      max-width: 690px;
+    }
+    .hero-lead {
+      margin-top: 24px;
+      max-width: 620px;
+      font-size: clamp(18px, 1.55vw, 22px);
+      color: #2d2a28;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-spec {
+      margin-top: 38px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .hero-spec div {
+      padding: 17px 16px;
+      border-right: 1px solid var(--line);
+      min-height: 86px;
+    }
+    .hero-spec div:last-child { border-right: 0; }
+    .hero-spec strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .hero-spec span {
+      display: block;
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: #191512;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.72) contrast(1.08);
+    }
+    .bay-label {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 9px 12px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 0.16fr 0.84fr;
+      gap: clamp(20px, 4vw, 54px);
+      align-items: start;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(46px, 7vw, 94px);
+      line-height: 0.84;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+    }
+    .section-title {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.42fr);
+      gap: 32px;
+      align-items: end;
+    }
+    .section-title h2 {
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: 0.98;
+    }
+    .section-title p { max-width: 470px; }
+
+    .service-table {
+      border-top: 2px solid var(--ink);
+      background: var(--paper);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 0.36fr 1fr 0.26fr;
+      gap: 26px;
+      align-items: center;
+      min-height: 128px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .service-row h3 {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 0.98;
+      text-transform: uppercase;
+    }
+    .service-code, .service-note, .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+    .service-note { color: var(--muted); text-align: right; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(24px, 4vw, 54px);
+      align-items: stretch;
+    }
+    .rating-panel, .quote-panel {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: clamp(24px, 4vw, 42px);
+    }
+    .rating-number {
+      font-family: var(--font-mono);
+      font-size: clamp(70px, 10vw, 132px);
+      line-height: 0.9;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .rating-panel p { margin-top: 14px; max-width: 360px; }
+    .quote-list { display: grid; gap: 20px; }
+    blockquote {
+      margin: 0;
+      padding: 0 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    blockquote:last-child { border-bottom: 0; padding-bottom: 0; }
+    blockquote p {
+      color: var(--ink);
+      font-size: clamp(20px, 2vw, 28px);
+      line-height: 1.18;
+      font-weight: 700;
+    }
+    blockquote cite {
+      display: block;
+      margin-top: 12px;
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(360px, 0.58fr);
+      gap: clamp(30px, 5vw, 72px);
+      align-items: center;
+    }
+    .floorplan {
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(90deg, transparent 49%, rgba(160,0,0,0.13) 50%, transparent 51%),
+        repeating-linear-gradient(0deg, transparent, transparent 34px, rgba(21,21,21,0.09) 35px),
+        var(--paper);
+      min-height: 430px;
+      padding: clamp(22px, 3vw, 34px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .floorplan h3 {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 58px);
+      text-transform: uppercase;
+      line-height: 0.96;
+    }
+    .bay-grid {
+      align-self: end;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .bay {
+      border: 1px solid var(--line-strong);
+      min-height: 96px;
+      padding: 14px;
+      background: rgba(255,255,255,0.72);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: flex;
+      align-items: flex-end;
+    }
+    .about-copy { display: grid; gap: 20px; }
+    .about-copy h2 {
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: 0.96;
+    }
+    .about-copy p { font-size: 18px; max-width: 620px; color: #36322f; }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      align-items: stretch;
+    }
+    .step {
+      min-height: 250px;
+      padding: 24px;
+      border-right: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .step:last-child { border-right: 0; }
+    .step span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .step h3 {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .step p { font-size: 15px; }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-card {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      padding: clamp(24px, 3vw, 36px);
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .price-card h3 {
+      font-family: var(--font-display);
+      font-size: clamp(26px, 3.5vw, 48px);
+      text-transform: uppercase;
+      line-height: 0.98;
+    }
+    .price-card .price {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(26px, 3vw, 42px);
+      font-weight: 700;
+    }
+    .price-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+    }
+    .price-card li {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+    .price-card li::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      flex: 0 0 9px;
+      background: var(--accent);
+      margin-top: 8px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 0.9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      overflow: hidden;
+      min-height: 320px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+    .gallery figure:first-child { min-height: 420px; }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.72) contrast(1.05);
+    }
+    .gallery figcaption {
+      padding: 13px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-top: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: 0.72fr 1fr;
+      gap: clamp(30px, 5vw, 70px);
+    }
+    .faq h2 {
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: 0.96;
+      position: sticky;
+      top: 108px;
+    }
+    .qa { border-top: 2px solid var(--ink); }
+    .qa details {
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(255,255,255,0.72);
+    }
+    .qa summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 22px 0;
+      font-weight: 800;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      transition: color 180ms var(--ease);
+    }
+    .qa summary::-webkit-details-marker { display: none; }
+    .qa summary::after { content: "+"; font-family: var(--font-mono); color: var(--accent); }
+    .qa details[open] summary::after { content: "-"; }
+    .qa summary:hover { color: var(--accent); }
+    .qa details p { padding-bottom: 24px; max-width: 680px; }
+
+    .contact-wrap {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.55fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--ink);
+      color: #fff;
+      padding: clamp(24px, 4vw, 42px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 34px;
+    }
+    .contact-card h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: 0.96;
+    }
+    .contact-card p, .contact-card a { color: rgba(255,255,255,0.78); }
+    .contact-card .button { color: #fff; border-color: rgba(255,255,255,0.45); }
+    .contact-card .button:hover { background: #fff; color: var(--ink); }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .hours {
+      margin-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.14);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours .today { color: #fff; background: rgba(160,0,0,0.34); padding-inline: 10px; margin-inline: -10px; }
+    #map {
+      height: 520px;
+      min-height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--quiet);
+    }
+
+    .final-cta {
+      padding-block: clamp(54px, 8vw, 96px);
+      background: var(--accent);
+      color: #fff;
+      border-top: 1px solid var(--line-strong);
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta h2 {
+      font-size: clamp(34px, 5.5vw, 76px);
+      line-height: 0.94;
+      max-width: 760px;
+    }
+    .final-cta p { color: rgba(255,255,255,0.82); margin-top: 14px; max-width: 570px; }
+    .final-cta .button { border-color: #fff; color: #fff; }
+    .final-cta .button:hover { background: #fff; color: var(--accent); }
+
+    footer {
+      border-top: 1px solid var(--line-strong);
+      padding: 28px 0;
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-title, .trust-grid, .split, .faq, .contact-wrap, .final-grid { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .service-note { text-align: left; }
+      .process { grid-template-columns: repeat(2, 1fr); }
+      .step:nth-child(2) { border-right: 0; }
+      .step:nth-child(-n+2) { border-bottom: 1px solid var(--line-strong); }
+      .pricing, .gallery { grid-template-columns: 1fr; }
+      .faq h2 { position: static; }
+    }
+    @media (max-width: 620px) {
+      body { font-size: 16px; }
+      .hero-spec { grid-template-columns: 1fr; }
+      .hero-spec div { border-right: 0; border-bottom: 1px solid var(--line); min-height: auto; }
+      .hero-spec div:last-child { border-bottom: 0; }
+      .section-head { grid-template-columns: 1fr; }
+      .section-no { font-size: 54px; }
+      .process { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--line-strong); min-height: 210px; }
+      .step:last-child { border-bottom: 0; }
+      .contact-wrap { grid-template-columns: 1fr; }
+      .brand img { max-width: 176px; max-height: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Autoservis KN">
+        <img src="http://www.autoserviskn.cz/wp-content/uploads/2021/02/logo_Web.png" alt="Autoservis KN">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#prace">Přístup</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="nav-call" href="tel:+420736175118">736 175 118</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="kicker">Ostrava-Kunčice · Frýdecká 732/300</span>
+          <h1>Kvalitní servis pro váš vůz</h1>
+          <p class="hero-lead">Autoservis KN se stará o běžné opravy, pneuservis, geometrii i klimatizace. Práce stojí na kvalitních dílech a jasné domluvě předem.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="tel:+420736175118">Zavolat servis</a>
+            <a class="button" href="#kontakt">Adresa a hodiny</a>
+          </div>
+          <div class="hero-spec" aria-label="Základní informace">
+            <div><strong>4.9</strong><span>Hodnocení zákazníků</span></div>
+            <div><strong>52</strong><span>Recenzí</span></div>
+            <div><strong>Po-Pá</strong><span>7.00-15.30</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/27665740/pexels-photo-27665740.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up view of a mechanic's hands working on a car engine with a wrench in an industrial setting.">
+          <span class="bay-label">Servisní příjem</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sluzby">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div class="section-title">
+            <h2>Co řešíme v dílně</h2>
+            <p>Základ tvoří autoservis, pneuservis, geometrie a plnění klimatizací. U každé opravy dává smysl kvalita práce i použitých náhradních dílů.</p>
+          </div>
+        </div>
+        <div class="service-table">
+          <div class="service-row">
+            <span class="service-code">SERV-01</span>
+            <h3>Autoservis</h3>
+            <p>Běžné opravy a údržba vozidel s důrazem na díly, které mají vydržet.</p>
+            <span class="service-note">Domluva předem</span>
+          </div>
+          <div class="service-row">
+            <span class="service-code">PNEU-02</span>
+            <h3>Pneuservis</h3>
+            <p>Kompletní práce kolem pneumatik jako součást služeb servisu.</p>
+            <span class="service-note">Sezónní termíny</span>
+          </div>
+          <div class="service-row">
+            <span class="service-code">GEO-03</span>
+            <h3>Geometrie</h3>
+            <p>Profesionální zařízení pro seřízení geometrie a kontrolu jízdních vlastností.</p>
+            <span class="service-note">Po opravě náprav</span>
+          </div>
+          <div class="service-row">
+            <span class="service-code">AC-04</span>
+            <h3>Klimatizace</h3>
+            <p>Doplnění, vyčištění a kontrola klimatizace podle stavu vozu.</p>
+            <span class="service-note">Kontrola těsnosti</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container trust-grid">
+        <div class="rating-panel">
+          <span class="kicker">Reference zákazníků</span>
+          <div class="rating-number">4.9</div>
+          <p>Průměrné hodnocení z 52 recenzí. Zákazníci opakovaně zmiňují vstřícnost a dobrou zkušenost se servisem.</p>
+        </div>
+        <div class="quote-panel">
+          <div class="quote-list">
+            <blockquote>
+              <p>Vždy vyjdou zákazníkovi vstříc. Mám jen dobré zkušenosti.</p>
+              <cite>Jakub Veselka</cite>
+            </blockquote>
+            <blockquote>
+              <p>Za mě spokojenost, vždy vyjdou vstříc a auto do týdne doma, bez problémů.</p>
+              <cite>Petra Michalíková</cite>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="prace">
+      <div class="container split">
+        <div class="floorplan" aria-label="Schéma servisních prací">
+          <span class="kicker">Dílenský režim</span>
+          <h3>Od příjmu po předání</h3>
+          <div class="bay-grid">
+            <div class="bay">Diagnostika</div>
+            <div class="bay">Díly</div>
+            <div class="bay">Oprava</div>
+            <div class="bay">Kontrola</div>
+          </div>
+        </div>
+        <div class="about-copy">
+          <span class="kicker">Karel Neplecha</span>
+          <h2>Mechanik s praxí a jasným názorem na díly</h2>
+          <p>Majitel servisu je vyučený automechanik a opravám vozidel včetně úprav se věnuje přes 17 let. Levnější oprava může dávat smysl jen tehdy, když není pouze dočasná.</p>
+          <p>Vedle rutinních oprav se servis věnuje i individuálním úpravám vozů, včetně stavby repliky inspirované filmem Rychle a zběsile.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div class="section-title">
+            <h2>Postup bez hádání</h2>
+            <p>Každé auto má jiný stav. Proto je důležitý příjem, kontrola, domluva rozsahu a až poté samotná práce.</p>
+          </div>
+        </div>
+        <div class="process">
+          <div class="step">
+            <span>01</span>
+            <div>
+              <h3>Příjem</h3>
+              <p>Popíšete závadu, termín a požadovaný rozsah práce.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span>02</span>
+            <div>
+              <h3>Kontrola</h3>
+              <p>Servis ověří stav vozu a navrhne odpovídající řešení.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span>03</span>
+            <div>
+              <h3>Díly</h3>
+              <p>Důraz je na náhradní díly, které opravu neřeší jen krátkodobě.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span>04</span>
+            <div>
+              <h3>Předání</h3>
+              <p>Po opravě dostanete auto zpět s jasnou informací, co se řešilo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div class="section-title">
+            <h2>Orientační domluva</h2>
+            <p>Přesná cena závisí na stavu vozu a použitých dílech. U složitější opravy dává smysl nejdřív kontrola v dílně.</p>
+          </div>
+        </div>
+        <div class="pricing">
+          <article class="price-card">
+            <div>
+              <span class="kicker">Servisní práce</span>
+              <h3>Rozsah podle kontroly</h3>
+            </div>
+            <ul>
+              <li>běžné opravy a údržba vozidla</li>
+              <li>domluva náhradních dílů před prací</li>
+              <li>vhodné i po zjištění závady za jízdy</li>
+            </ul>
+            <div class="price">Cena po domluvě</div>
+          </article>
+          <article class="price-card">
+            <div>
+              <span class="kicker">Pneuservis / klima</span>
+              <h3>Sezónní servisní úkony</h3>
+            </div>
+            <ul>
+              <li>pneuservis jako součást služeb</li>
+              <li>doplnění a vyčištění klimatizace</li>
+              <li>kontrola geometrie na zařízení servisu</li>
+            </ul>
+            <div class="price">Termín telefonicky</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div class="section-title">
+            <h2>Práce, nářadí, dílna</h2>
+            <p>Fotografie drží atmosféru servisního provozu: detail rukou, práce s nářadím a kontrola dílů.</p>
+          </div>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/7564871/pexels-photo-7564871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic using hand tools to fix an engine, showcasing precision and skill.">
+            <figcaption>Motorový prostor</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/4489761/pexels-photo-4489761.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Mechanic performing repairs in a vintage garage setting, using tools and machinery.">
+            <figcaption>Servisní práce</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/8985914/pexels-photo-8985914.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bald mechanic in blue coveralls checking tools inside an automotive workshop.">
+            <figcaption>Kontrola nářadí</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container faq">
+        <div>
+          <span class="kicker">Rychlé odpovědi</span>
+          <h2>Než zavoláte</h2>
+        </div>
+        <div class="qa">
+          <details open>
+            <summary>Jak se objednat do servisu?</summary>
+            <p>Pro objednání zavolejte na 736 175 118. Pro e-mailovou domluvu můžete použít info@autoserviskn.cz.</p>
+          </details>
+          <details>
+            <summary>Kdy je servis otevřený?</summary>
+            <p>Otevírací doba je pondělí až pátek 7.00-15.30. V sobotu a neděli je zavřeno.</p>
+          </details>
+          <details>
+            <summary>Řešíte i geometrii?</summary>
+            <p>Ano. Servis používá profesionální zařízení včetně geometrie.</p>
+          </details>
+          <details>
+            <summary>Doplňujete klimatizace?</summary>
+            <p>Ano. Autoservis KN zajišťuje doplnění, vyčištění a překontrolování klimatizace.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="container contact-wrap">
+        <div class="contact-card">
+          <div>
+            <span class="kicker">Kontakt</span>
+            <h2>Přijeďte do Kunčic</h2>
+            <p>Autoservis najdete na adrese Frýdecká 732/300, Kunčice, 719 00 Ostrava-Slezská Ostrava.</p>
+          </div>
+          <div>
+            <div class="contact-lines">
+              <a href="tel:+420736175118">Tel. +420 736 175 118</a>
+              <a href="mailto:info@autoserviskn.cz">info@autoserviskn.cz</a>
+              <span>IČ: 88660788 · DIČ: CZ8604236036</span>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="today"><span>Po-Pá</span><strong>7.00-15.30</strong></div>
+              <div><span>So-Ne</span><strong>Zavřeno</strong></div>
+            </div>
+          </div>
+          <a class="button" href="tel:+420736175118">Domluvit termín</a>
+        </div>
+        <div id="map" aria-label="Mapa s polohou Autoservis KN"></div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="container final-grid">
+        <div>
+          <h2>Potřebujete servis vozu?</h2>
+          <p>Zavolejte během otevírací doby a domluvte příjem auta, pneuservis, geometrii nebo klimatizaci.</p>
+        </div>
+        <a class="button" href="tel:+420736175118">736 175 118</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <span>© 2026 Autoservis KN - Karel Neplecha</span>
+      <span>Tento nezávazný Webflex náhled lze odstranit zde: <a href="https://webflex.cz/remove/bewua74">odstranit stránku</a>.</span>
+      <span>Fotografie: Pexels</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.290225, 49.804939499999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#A00000' })
+      .setLngLat([18.290225, 49.804939499999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
