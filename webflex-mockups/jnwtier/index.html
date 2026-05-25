@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OC Palác Pardubice | Obchody, gastro a služby</title>
+  <meta name="description" content="OC Palác Pardubice na Masarykově náměstí: obchody, gastro, služby, zábava, parkování, dárkové poukazy, akce a kontakty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #11121a;
+      --muted: #666b78;
+      --soft: #eef0f5;
+      --accent: #000040;
+      --accent-soft: rgba(0,0,64,.08);
+      --line: rgba(0,0,64,.10);
+      --shadow: 0 34px 110px rgba(0,0,64,.10);
+      --shadow-soft: 0 18px 70px rgba(20,24,42,.08);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,0,64,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,64,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 12%, rgba(0,0,64,.05), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,253,.84);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+      color: var(--accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      color: rgba(17,18,26,.74);
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: var(--accent); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(0,0,64,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: transparent; border-color: currentColor; color: var(--ink); }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .hero { padding: 66px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(17,18,26,.74);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 680px;
+    }
+    .meta-tile, .service-card, .event-card, .hours-card, .faq-item, .contact-panel {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(16px);
+    }
+    .meta-tile {
+      border-radius: 20px;
+      padding: 18px;
+      min-height: 108px;
+    }
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 650; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(5,7,20,.48));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 260px;
+      padding: 24px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .service-card p { margin: 16px 0 0; color: var(--muted); font-weight: 600; }
+    .service-card .no {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(420px, .62fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .event-card {
+      border-radius: 30px;
+      padding: 34px;
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .event-card h2 { max-width: 760px; }
+    .event-card p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .event-date {
+      width: fit-content;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 16px;
+    }
+    .photo-card {
+      position: relative;
+      min-height: 207px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #fff;
+      min-height: 170px;
+      box-shadow: 0 34px 90px rgba(0,0,64,.18);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 70px);
+      line-height: .94;
+      overflow-wrap: anywhere;
+    }
+    .stat span { display: block; margin-top: 14px; color: rgba(255,255,255,.78); font-weight: 650; }
+
+    .line-list {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .line-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr) 180px;
+      gap: 22px;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .line-row:last-child { border-bottom: 0; }
+    .line-row .tag { font-family: var(--font-mono); color: var(--accent); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+    .line-row p { margin: 6px 0 0; color: var(--muted); }
+    .line-row a { font-weight: 800; text-decoration: none; }
+    .line-row a:hover { color: var(--accent); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .45fr) minmax(0, .75fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card, .contact-panel {
+      border-radius: 28px;
+      padding: 28px;
+    }
+    .hours-card h3, .contact-panel h3 { margin-bottom: 20px; }
+    .hour-row, .contact-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .hour-row:last-child, .contact-row:last-child { border-bottom: 0; }
+    .hour-row strong, .contact-row strong { font-family: var(--font-mono); color: var(--accent); }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      border-radius: 24px;
+      padding: 24px;
+      min-height: 170px;
+    }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 88px 0 98px;
+    }
+    .final-panel {
+      border-radius: 34px;
+      padding: clamp(30px, 6vw, 58px);
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 40px 120px rgba(0,0,64,.22);
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-panel p { margin: 16px 0 0; color: rgba(255,255,255,.78); font-size: 18px; max-width: 640px; }
+    .final-panel .btn-primary { background: #fff; color: var(--accent); }
+    .final-panel .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(17,18,26,.58);
+      font-size: 13px;
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .disclaimer { max-width: 720px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .split, .contact-grid, .section-head, .final-panel { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .line-row { grid-template-columns: 1fr; gap: 8px; }
+      .final-actions { justify-content: flex-start; }
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding: 42px 0 62px; }
+      section { padding: 58px 0; }
+      .hero-meta, .service-grid, .stats-strip, .faq-grid { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-photo { aspect-ratio: 4 / 3; border-radius: 24px; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+      .event-card { min-height: auto; padding: 26px; }
+      footer .wrap { flex-direction: column; }
+      .wordmark { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="wordmark" href="#">OC Palác Pardubice</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#obchody">Obchody</a>
+        <a href="#akce">Akce</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420469800111">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Masarykovo nám. 2799 · Pardubice I</p>
+          <h1>Palác pro celý den</h1>
+          <p class="lead">Obchody, gastro, služby, zábava a pravidelné akce v centru Pardubic. Přijďte vyřídit nákup, oběd, dárkový poukaz i pohodlné parkování na jedné adrese.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Naplánovat návštěvu</a>
+            <a class="btn btn-secondary" href="#obchody">Projít centrum</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>do 21:00</strong><span>Dnes otevřeno</span></div>
+            <div class="meta-tile"><strong>4,3</strong><span>Hodnocení návštěvníků</span></div>
+            <div class="meta-tile"><strong>11 721</strong><span>Recenzí</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/6969967/pexels-photo-6969967.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two people exchanging a shopping bag in an indoor setting highlighting online shopping and delivery.">
+          <figcaption class="photo-label"><span>Obchody &amp; Gastro</span><span>Pardubice I</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="obchody">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Vše pod jednou střechou</h2>
+          </div>
+          <p>Centrum je postavené pro rychlou každodenní návštěvu i delší odpoledne s rodinou. Vyberte si směr a pokračujte dál podle toho, co právě potřebujete.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="no">01</span>
+            <div><h3>Mapa obchodů</h3><p>Snadná orientace mezi obchody a službami přímo v Paláci.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="no">02</span>
+            <div><h3>Obchody &amp; Gastro</h3><p>Nákupy, kavárna, oběd i zastávka na něco dobrého během dne.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="no">03</span>
+            <div><h3>Služby &amp; Zábava</h3><p>Praktické vyřízení a program pro chvíle, kdy chcete zůstat déle.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="no">04</span>
+            <div><h3>Dárkové poukazy</h3><p>Jednoduchý dárek pro ty, kteří si rádi vyberou sami.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap split">
+        <article class="event-card">
+          <div>
+            <p class="eyebrow">Co se u nás děje?</p>
+            <h2>Dětský den s Mattelem</h2>
+            <p>Pondělní odpoledne ve venkovním traktu za Palácem nabídne pohyb, soutěže, hudbu, tematické zóny Barbie, Hot Wheels a Monster High, maskoty Tlapkové patroly i LEGO zónu před prodejnou Sparkys.</p>
+          </div>
+          <div class="event-date">1. 6. 2026 · 13:00-18:00</div>
+        </article>
+        <div class="photo-stack" aria-label="Atmosféra nákupů">
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats-strip">
+          <div class="stat"><strong>21:00</strong><span>Dnes otevřeno do večera.</span></div>
+          <div class="stat"><strong>4,3</strong><span>Průměrné hodnocení návštěvníků.</span></div>
+          <div class="stat"><strong>11 721</strong><span>Veřejných recenzí k centru.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Před návštěvou</p>
+            <h2>Praktické odkazy</h2>
+          </div>
+          <p>Nejčastější důvody návštěvy jsou po ruce: program, parkování, poukazy, elektromobilita i informace o centru.</p>
+        </div>
+        <div class="line-list">
+          <div class="line-row">
+            <span class="tag">Program</span>
+            <div><h3>Akce a virtuální prohlídka</h3><p>Podívejte se, co se chystá, a projděte si centrum ještě před příchodem.</p></div>
+            <a href="#akce">Zobrazit akce</a>
+          </div>
+          <div class="line-row">
+            <span class="tag">Cesta</span>
+            <div><h3>Parkování a elektromobilita</h3><p>Pohodlný příjezd autem, včetně informací pro řidiče elektromobilů.</p></div>
+            <a href="#kontakt">Najít adresu</a>
+          </div>
+          <div class="line-row">
+            <span class="tag">Centrum</span>
+            <div><h3>O centru a udržitelnost</h3><p>Informace o Paláci, partnerech, kariéře i tiskovém centru.</p></div>
+            <a href="mailto:info@palacpardubice.cz">Napsat</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Masarykovo nám. 2799</h2>
+          </div>
+          <p>Najdete nás na adrese Masarykovo nám. 2799, 530 02 Pardubice I. Pro informace volejte nebo napište na kontaktní e-mail centra.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hour-row"><span>Dnes</span><strong>do 21:00</strong></div>
+            <div class="contact-row"><span>Telefon</span><strong><a href="tel:+420469800111">+420 469 800 111</a></strong></div>
+            <div class="contact-row"><span>E-mail</span><strong><a href="mailto:info@palacpardubice.cz">info@palacpardubice.cz</a></strong></div>
+            <div class="contact-row"><span>Adresa</span><strong>530 02 Pardubice I</strong></div>
+          </div>
+          <div id="map" aria-label="Mapa umístění OC Palác Pardubice"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Rychlé odpovědi</h2>
+          </div>
+          <p>Stručné informace pro návštěvníky, kteří chtějí dorazit bez zbytečného hledání.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Kde centrum najdu?</h3><p>Na Masarykově nám. 2799 v části Pardubice I.</p></article>
+          <article class="faq-item"><h3>Je dnes otevřeno?</h3><p>Ano, podle zveřejněné informace je dnes otevřeno do 21:00.</p></article>
+          <article class="faq-item"><h3>Jsou dostupné poukazy?</h3><p>Centrum uvádí dárkové poukazy mezi službami pro návštěvníky.</p></article>
+          <article class="faq-item"><h3>Kde zjistím program?</h3><p>Akce najdete v přehledu dění v centru, včetně Dětského dne s Mattelem 1. 6. 2026.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <p class="eyebrow" style="color: rgba(255,255,255,.74);">OC Palác Pardubice</p>
+          <h2>Zastavte se dnes</h2>
+          <p>Vyřiďte nákup, oběd, služby i program pro děti v centru Pardubic. Palác je dnes otevřený do 21:00.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420469800111">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@palacpardubice.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>OC Palác Pardubice · Masarykovo nám. 2799, 530 02 Pardubice I</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/jnwtier">webflex.cz/delete/jnwtier</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.768380599999999, 50.0380152],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#000040' })
+      .setLngLat([15.768380599999999, 50.0380152])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
