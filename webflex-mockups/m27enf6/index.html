@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bistro Dukla - káva, dobroty a gelato v Pardubicích</title>
+  <meta name="description" content="Bistro Dukla v Pardubicích: poctivá káva, domácí dobroty, zmrzlina, snídaně, krabičky a sousedské posezení na adrese Josefa Ressla 2277.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f3ec;
+      --surface: #fffaf4;
+      --surface-2: #efe5da;
+      --ink: #1c1613;
+      --muted: #75665d;
+      --line: rgba(96, 64, 64, .16);
+      --accent: #604040;
+      --accent-soft: #dfc8bb;
+      --cream: #fbf7f0;
+      --radius: 18px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Hanken Grotesk", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --font-accent: "Fraunces", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(96, 64, 64, .03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96, 64, 64, .03) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(248, 243, 236, .86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .logo img {
+      width: auto;
+      max-width: min(240px, 52vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(28, 22, 19, .72);
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s cubic-bezier(.2,.8,.2,1), border-color .22s cubic-bezier(.2,.8,.2,1), color .22s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #4e3434; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { background: rgba(96,64,64,.08); }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      hyphens: none;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    h1, h2 {
+      font-family: var(--font-display);
+      line-height: .96;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1.12;
+    }
+
+    p { hyphens: auto; }
+
+    .hero { padding: 62px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: 50px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 630px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(28,22,19,.74);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 660px;
+    }
+
+    .fact {
+      min-height: 104px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      background: rgba(255,250,244,.72);
+      border-radius: var(--radius);
+    }
+
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .fact span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.7);
+      background: var(--surface-2);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 42%, rgba(28,16,10,.52));
+    }
+
+    .photo-note {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .44fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .menu-card {
+      min-height: 236px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,250,244,.75);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), border-color .22s cubic-bezier(.2,.8,.2,1), background .22s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .menu-card:hover { transform: translateY(-2px); border-color: rgba(96,64,64,.34); background: #fffaf4; }
+    .menu-card:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .menu-card p { margin: 14px 0 0; color: var(--muted); }
+    .menu-card .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+
+    .story {
+      background: var(--ink);
+      color: #fff9ef;
+      padding: 0;
+    }
+
+    .story-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(420px, .72fr);
+      gap: 0;
+      align-items: stretch;
+      min-height: 560px;
+    }
+
+    .story-copy {
+      padding: 74px max(36px, calc((100vw - 1160px) / 2)) 74px 36px;
+      align-self: center;
+    }
+
+    .story .eyebrow,
+    .story h2 { color: #fff9ef; }
+    .story p { max-width: 680px; color: rgba(255,249,239,.78); font-size: 19px; }
+    .story-quote {
+      margin-top: 32px;
+      font-family: var(--font-accent);
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 1.08;
+      color: #fff9ef;
+    }
+
+    .story-photo {
+      min-height: 460px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .story-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .story-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(28,22,19,.36), rgba(28,22,19,0));
+    }
+
+    .strip {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 28px 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .stat {
+      min-height: 160px;
+      padding: 26px;
+      background: rgba(255,250,244,.82);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 54px);
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat span { display: block; margin-top: 14px; color: var(--muted); font-weight: 700; }
+
+    .rows {
+      border-top: 1px solid var(--line);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, .56fr) minmax(280px, .44fr);
+      gap: 28px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .row .code {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .row p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .gallery figure {
+      margin: 0;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; }
+    .gallery-side {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, .78fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255,250,244,.78);
+    }
+
+    .contact-list {
+      margin: 24px 0 0;
+      display: grid;
+      gap: 14px;
+    }
+
+    .contact-item {
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-item span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .contact-item a,
+    .contact-item strong {
+      font-size: 19px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .faq {
+      min-height: 190px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,250,244,.75);
+    }
+
+    .faq p { margin: 12px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 78px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .final h2,
+    .final p { color: #fff; }
+    .final p { margin: 16px 0 0; max-width: 640px; color: rgba(255,255,255,.82); font-size: 19px; }
+    .final .btn-primary { background: #fff; color: var(--accent); }
+    .final .btn-secondary { color: #fff; border: 1px solid rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      background: #171211;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .footer-grid a { color: #fff; }
+    .credits { max-width: 760px; }
+    .disclaimer {
+      width: 100%;
+      padding-top: 18px;
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.58);
+    }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .story-grid,
+      .contact-grid,
+      .final-grid,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .menu-grid,
+      .faq-list,
+      .stats { grid-template-columns: 1fr; }
+      .story-copy { padding: 64px 18px; }
+      .row { grid-template-columns: 1fr; gap: 10px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .hero { padding: 42px 0 64px; }
+      section { padding: 64px 0; }
+      .hero-grid { gap: 34px; }
+      .hero-facts { grid-template-columns: 1fr; }
+      .photo-note { flex-direction: column; align-items: flex-start; }
+      .btn { width: 100%; }
+      .final-grid { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Bistro Dukla">
+        <img src="img/logo.png" alt="Bistro Dukla">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420731756525">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Pardubice · Dukla · Josefa Ressla 2277</p>
+          <h1 id="hero-title">Rodinná pohoda na Dukle</h1>
+          <p class="lead">Poctivá káva, domácí dobroty, gelato a něco malého do krabičky. Zastavte se po škole, po práci nebo jen tak na chvíli zpomalit.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420731756525">Zavolat do bistra</a>
+            <a class="btn btn-secondary" href="#nabidka">Prohlédnout nabídku</a>
+          </div>
+          <div class="hero-facts" aria-label="Rychlé informace">
+            <div class="fact"><strong>4,9 / 5</strong><span>hodnocení od hostů</span></div>
+            <div class="fact"><strong>20</strong><span>recenzí na profilu</span></div>
+            <div class="fact"><strong>Online</strong><span>objednání s vyzvednutím</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="photo-note"><span>Káva · dobroty · gelato</span><span>Pardubice V</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" aria-labelledby="nabidka-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Nabídka</p>
+            <h2 id="nabidka-title">Na místě i s sebou</h2>
+          </div>
+          <p>Každý den něco dobrého pro děti, rodiče i sousedy z Dukly. Většina nabídky vzniká přímo v bistru a drží se sezóny.</p>
+        </div>
+        <div class="menu-grid">
+          <article class="menu-card">
+            <div>
+              <span class="num">01</span>
+              <h3>Poctivá káva</h3>
+              <p>Ranní šálek, odpolední zastavení i klidná siesta u stolu.</p>
+            </div>
+          </article>
+          <article class="menu-card">
+            <div>
+              <span class="num">02</span>
+              <h3>Domácí dobroty</h3>
+              <p>Zákusky, snídaně a sladké věci, které potěší i rodiče.</p>
+            </div>
+          </article>
+          <article class="menu-card">
+            <div>
+              <span class="num">03</span>
+              <h3>Gelato</h3>
+              <p>Poctivá zmrzlina jako návrat k dětským vzpomínkám z Dukly.</p>
+            </div>
+          </article>
+          <article class="menu-card">
+            <div>
+              <span class="num">04</span>
+              <h3>Krabičky</h3>
+              <p>Polévky, snídaně a jídlo s sebou s vyzvednutím ve zvoleném čase.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="story" id="pribeh" aria-labelledby="pribeh-title">
+      <div class="story-grid">
+        <div class="story-copy">
+          <p class="eyebrow">Příběh místa</p>
+          <h2 id="pribeh-title">Dukla má svoje tempo</h2>
+          <p>Bistro vyrostlo z osobního vztahu k sídlišti, lesoparku, školním cestám a chuti vytvořit místo, kam se dá zajít na něco poctivého bez spěchu.</p>
+          <div class="story-quote">„Rodinná pohoda v srdci Pardubic.“</div>
+        </div>
+        <div class="story-photo">
+          <img src="https://images.pexels.com/photos/19343312/pexels-photo-19343312.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting café interior with red lamp and wooden table by the window.">
+        </div>
+      </div>
+    </section>
+
+    <section class="strip" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><strong>4,9</strong><span>průměrné hodnocení</span></div>
+          <div class="stat"><strong>20</strong><span>veřejných recenzí</span></div>
+          <div class="stat"><strong>Dukla</strong><span>sousedské bistro v Pardubicích</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="jak-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Jak se stavit</p>
+            <h2 id="jak-title">Bez velkých příprav</h2>
+          </div>
+          <p>Přijďte si sednout, vezměte něco dětem po škole nebo si vyberte vyzvednutí online.</p>
+        </div>
+        <div class="rows">
+          <div class="row">
+            <div class="code">Na chvíli</div>
+            <h3>Posezení u kávy</h3>
+            <p>Stůl, sklenka prosecca nebo Aperolu a pár minut klidu mezi známými tvářemi z okolí.</p>
+          </div>
+          <div class="row">
+            <div class="code">Po škole</div>
+            <h3>Něco dobrého pro děti</h3>
+            <p>Sladká zastávka bez smažených rychlovek, postavená na domácí práci a poctivé zmrzlině.</p>
+          </div>
+          <div class="row">
+            <div class="code">S sebou</div>
+            <h3>Objednání online</h3>
+            <p>Krabičky, polévky a snídaně si můžete objednat dopředu a vyzvednout ve zvoleném čase.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="galerie-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2 id="galerie-title">Teplo, světlo, stůl</h2>
+          </div>
+          <p>Interiér drží měkkou kavárenskou náladu: světlo nad stolem, tichý ruch dne a prostor pro sousedské zastavení.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/3953852/pexels-photo-3953852.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm, inviting restaurant scene with wine glasses and candles on a wooden table creating a cozy atmosphere.">
+          </figure>
+          <div class="gallery-side">
+            <figure>
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/35295671/pexels-photo-35295671.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A warmly lit lamp on a patterned table creates a cozy outdoor ambiance at night.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2 id="kontakt-title">Najdete nás na Dukle</h2>
+          </div>
+          <p>Máte dotaz k nabídce nebo vyzvednutí? Ozvěte se přímo do bistra.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Bistro Dukla</h3>
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Adresa</span>
+                <strong>Josefa Ressla 2277, 530 02 Pardubice V</strong>
+              </div>
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420731756525">+420 731 756 525</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:info@bistrodukla.cz">info@bistrodukla.cz</a>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Bistro Dukla"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prakticky</p>
+            <h2 id="faq-title">Co se hodí vědět</h2>
+          </div>
+          <p>Krátké odpovědi pro první návštěvu i rychlé vyzvednutí.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq">
+            <h3>Dá se objednat předem?</h3>
+            <p>Ano, vybrané věci můžete objednat online a vyzvednout ve zvoleném čase.</p>
+          </article>
+          <article class="faq">
+            <h3>Je nabídka domácí?</h3>
+            <p>Většina nabídky je vlastní práce bistra, od snídaní a zákusků po gelato.</p>
+          </article>
+          <article class="faq">
+            <h3>Pro koho je bistro?</h3>
+            <p>Pro děti po škole, rodiče, sousedy z Dukly i kohokoliv, kdo se chce na chvíli zastavit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-grid">
+        <div>
+          <h2 id="final-title">Stavte se dnes</h2>
+          <p>Na kávu, domácí dobrotu, gelato nebo krabičku s sebou. Bistro najdete na Josefa Ressla 2277.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420731756525">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@bistrodukla.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Bistro Dukla · Josefa Ressla 2277, Pardubice V</div>
+      <div class="credits">Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, Christine Blanchet, Janko Ferlic, Dung Lee / Pexels.</div>
+      <div class="disclaimer">Tuto nezávaznou prezentační stránku připravil Webflex. Pokud si ji nepřejete zobrazovat, smažete ji zde: <a href="https://webflex.cz/delete/m27enf6">https://webflex.cz/delete/m27enf6</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.757561899999999, 50.024195299999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#604040' })
+      .setLngLat([15.757561899999999, 50.024195299999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
