@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoChip České Budějovice | Chiptuning a měření výkonu</title>
+  <meta name="description" content="AutoChip České Budějovice: chiptuning, vypnutí AdBlue, parametry úprav a měření výkonu. Rudolfovská tř. 293/129, České Budějovice.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f6f7f9;
+      --surface-2: #eef1f5;
+      --ink: #080812;
+      --muted: #626977;
+      --line: #d7dce5;
+      --line-strong: #aeb6c5;
+      --accent: #E4003A;
+      --accent-dark: #b9002f;
+      --blue-black: #000020;
+      --ok: #1f7a42;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,0,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,32,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 20% 0%, rgba(228,0,58,.06), transparent 32rem);
+      z-index: -1;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(var(--max), calc(100% - 32px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 180px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .nav-links a {
+      padding: 10px 0;
+      border-bottom: 2px solid transparent;
+      transition: border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); border-color: var(--accent); }
+    .actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 800;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn-secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-secondary:hover { background: var(--blue-black); color: #fff; border-color: var(--blue-black); }
+
+    main { overflow: clip; }
+    .hero {
+      padding: 58px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      align-items: center;
+      gap: 40px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: 0;
+      margin-bottom: 18px;
+    }
+    .kicker::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: var(--accent);
+    }
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #303644;
+    }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(0,0,32,.08);
+      align-self: stretch;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .hours-card header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: baseline;
+    }
+    .label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .hours-row, .data-row {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours-row > span, .data-row > span {
+      padding: 12px 14px;
+      min-width: 0;
+    }
+    .hours-row > span:first-child, .data-row > span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .hours-row.today {
+      background: var(--blue-black);
+      color: #fff;
+    }
+    .hours-row.today > span:first-child { color: #fff; border-color: rgba(255,255,255,.24); }
+    .hours-card footer {
+      padding: 16px 20px;
+      display: grid;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(220px, 360px);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(54px, 8vw, 112px);
+      line-height: .8;
+      font-weight: 900;
+      color: rgba(0,0,32,.12);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: .98;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 16px; }
+
+    .service-table {
+      display: grid;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 92px 1.25fr 1fr 190px;
+      min-height: 96px;
+      border-bottom: 1px solid var(--line);
+      transition: background .2s var(--ease);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: #fafbfc; }
+    .service-row > div {
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+    .service-row > div:last-child { border-right: 0; }
+    .code {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .service-name { font-weight: 900; font-size: 22px; font-family: var(--font-display); text-transform: uppercase; }
+    .small { color: var(--muted); font-size: 14px; }
+    .mono { font-family: var(--font-mono); font-weight: 700; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .stat {
+      min-height: 180px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      align-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1;
+      color: var(--blue-black);
+    }
+    .stat span { color: var(--muted); max-width: 260px; }
+
+    .process {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 150px;
+    }
+    .step:nth-child(odd) { border-right: 1px solid var(--line); }
+    .step:nth-last-child(-n+2) { border-bottom: 0; }
+    .step-no {
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .step-copy { padding: 22px; }
+    .step-copy h3 { margin: 0 0 8px; font-family: var(--font-display); text-transform: uppercase; font-size: 20px; }
+    .step-copy p { margin: 0; color: var(--muted); }
+
+    .matrix-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .matrix {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+    .matrix th {
+      position: sticky;
+      top: 72px;
+      z-index: 2;
+      background: var(--blue-black);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    .matrix th, .matrix td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 16px;
+      vertical-align: top;
+    }
+    .matrix td:first-child { font-weight: 900; font-family: var(--font-display); text-transform: uppercase; }
+    .matrix td:last-child, .matrix th:last-child { border-right: 0; }
+    .matrix tr:last-child td { border-bottom: 0; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      display: grid;
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span, .contact-line a {
+      padding: 16px;
+      min-width: 0;
+    }
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-right: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .contact-line a { font-weight: 800; overflow-wrap: anywhere; }
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    details {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      margin-bottom: 10px;
+    }
+    summary {
+      cursor: pointer;
+      padding: 18px 20px;
+      font-weight: 900;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      transition: color .2s var(--ease), background .2s var(--ease);
+    }
+    summary:hover { color: var(--accent); background: #fafbfc; }
+    details p { margin: 0; padding: 0 20px 20px; color: var(--muted); max-width: 820px; }
+
+    .final {
+      padding: 58px 0;
+      background: var(--blue-black);
+      color: #fff;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { margin: 12px 0 0; color: rgba(255,255,255,.72); }
+    .final .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn-secondary:hover { background: #fff; color: var(--blue-black); border-color: #fff; }
+
+    .site-footer {
+      padding: 26px 0;
+      color: #5d6470;
+      font-size: 12px;
+      background: #fff;
+      border-top: 1px solid var(--line);
+    }
+    .site-footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .site-footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .contact-grid, .final-grid { grid-template-columns: 1fr; }
+      .hours-card { max-width: 520px; }
+      .service-row { grid-template-columns: 72px 1fr; }
+      .service-row > div:nth-child(2) { border-right: 0; }
+      .service-row > div:nth-child(n+3) { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+      .stats, .process { grid-template-columns: 1fr; }
+      .stat, .step:nth-child(odd) { border-right: 0; }
+      .step:nth-last-child(2) { border-bottom: 1px solid var(--line); }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, var(--max)); }
+      .nav { height: auto; padding: 14px 0; align-items: flex-start; }
+      .actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; padding-inline: 12px; }
+      .hero { padding-top: 36px; }
+      .section { padding: 52px 0; }
+      .contact-line { grid-template-columns: 1fr; }
+      .contact-line span { border-right: 0; border-bottom: 1px solid var(--line); }
+      .step { grid-template-columns: 62px 1fr; }
+      .step-no, .step-copy { padding: 16px; }
+      h1 { font-size: clamp(40px, 14vw, 64px); }
+      .final .actions { align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="AutoChip České Budějovice">
+        <img src="https://www.autochip.eu/public/img/icons/logotype.svg" alt="AutoChip - chiptuning (České Budějovice)">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="actions">
+        <a class="btn btn-secondary" href="mailto:vas@email.cz">E-mail</a>
+        <a class="btn btn-primary" href="tel:+420737667422">737 667 422</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">České Budějovice · chiptuning</div>
+          <h1>Výkon pod kontrolou</h1>
+          <p class="lead">Úpravy řídicích jednotek, vypnutí AdBlue, parametry úprav a měření výkonu pro řidiče, kteří chtějí jasný postup před zásahem do vozu.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="tel:+420737667422">Zavolat pobočce</a>
+            <a class="btn btn-secondary" href="#kontakt">Adresa a hodiny</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <header>
+            <span class="label">Otevírací doba</span>
+            <span class="status">Dnes 09:00-15:00</span>
+          </header>
+          <div>
+            <div class="hours-row"><span>Po</span><span class="mono">09:00-15:00</span></div>
+            <div class="hours-row today"><span>Út</span><span class="mono">09:00-15:00</span></div>
+            <div class="hours-row"><span>St</span><span class="mono">09:00-15:00</span></div>
+            <div class="hours-row"><span>Čt</span><span class="mono">09:00-15:00</span></div>
+            <div class="hours-row"><span>Pá</span><span class="mono">09:00-15:00</span></div>
+            <div class="hours-row"><span>So</span><span>Zavřeno</span></div>
+            <div class="hours-row"><span>Ne</span><span>Zavřeno</span></div>
+          </div>
+          <footer>
+            <span>Rudolfovská tř. 293/129</span>
+            <span>370 01 České Budějovice</span>
+          </footer>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Služby pobočky</h2>
+          <p>Stručný přehled oblastí, které AutoChip uvádí pro provozovnu v Českých Budějovicích.</p>
+        </div>
+        <div class="service-table">
+          <div class="service-row">
+            <div><span class="code">AC-01</span></div>
+            <div><span class="service-name">ChipTuning</span><span class="small">Úprava řídicí jednotky podle konkrétní motorizace.</span></div>
+            <div><span class="small">Před objednáním se řeší vůz, stav techniky a očekávaný rozsah úpravy.</span></div>
+            <div><span class="mono">Objednání telefonicky</span></div>
+          </div>
+          <div class="service-row">
+            <div><span class="code">AC-02</span></div>
+            <div><span class="service-name">Vypnutí AdBlue</span><span class="small">Služba uvedená v nabídce AutoChip.</span></div>
+            <div><span class="small">Přesné technické možnosti a dopady potvrzuje vždy konkrétní provozovna.</span></div>
+            <div><span class="mono">Dle vozu</span></div>
+          </div>
+          <div class="service-row">
+            <div><span class="code">AC-03</span></div>
+            <div><span class="service-name">Parametry úprav</span><span class="small">Přehled zamýšlené změny a rozsahu zásahu.</span></div>
+            <div><span class="small">Pro řidiče, kteří chtějí vědět, co se u jejich auta bude měnit.</span></div>
+            <div><span class="mono">Konzultace předem</span></div>
+          </div>
+          <div class="service-row">
+            <div><span class="code">AC-04</span></div>
+            <div><span class="service-name">Měření výkonu</span><span class="small">Ověření výkonových parametrů souvisejících s úpravou.</span></div>
+            <div><span class="small">Výsledek pomáhá porovnat stav před úpravou a po ní.</span></div>
+            <div><span class="mono">Termín po domluvě</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Ověřitelné údaje</h2>
+          <p>Kontakty a hodnocení jsou převzaté z dostupných údajů pobočky.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4.8</strong><span>Hodnocení pobočky podle dostupného firemního profilu.</span></div>
+          <div class="stat"><strong>45</strong><span>Počet recenzí uvedený u provozovny.</span></div>
+          <div class="stat"><strong>09-15</strong><span>Pracovní doba od pondělí do pátku.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="postup">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>Postup zakázky</h2>
+          <p>U technických úprav je důležité nejdřív potvrdit vůz, rozsah a termín.</p>
+        </div>
+        <div class="process">
+          <div class="step"><div class="step-no">01</div><div class="step-copy"><h3>Telefonát</h3><p>Zavoláte na číslo pobočky nebo centrály a uvedete vůz, motorizaci a požadovanou službu.</p></div></div>
+          <div class="step"><div class="step-no">02</div><div class="step-copy"><h3>Kontrola možností</h3><p>Provozovna upřesní, zda je služba pro konkrétní auto vhodná a jaký bude další postup.</p></div></div>
+          <div class="step"><div class="step-no">03</div><div class="step-copy"><h3>Termín</h3><p>Domluvíte návštěvu v provozní době, případně doplníte další informace k vozidlu.</p></div></div>
+          <div class="step"><div class="step-no">04</div><div class="step-copy"><h3>Provedení</h3><p>Úprava nebo měření probíhá podle domluveného rozsahu a technického stavu vozu.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Servisní matice</h2>
+          <p>Přehled pro rychlé rozhodnutí, jakou informaci si připravit před telefonátem.</p>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Služba</th>
+                <th>Připravit</th>
+                <th>Výstup</th>
+                <th>Kontakt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>ChipTuning</td>
+                <td>Značka, model, motor, rok výroby a stav vozidla.</td>
+                <td>Domluvený rozsah úpravy řídicí jednotky.</td>
+                <td class="mono">737 667 422</td>
+              </tr>
+              <tr>
+                <td>Vypnutí AdBlue</td>
+                <td>Popis závady nebo důvod požadavku a údaje o vozu.</td>
+                <td>Potvrzení technických možností provozovnou.</td>
+                <td class="mono">737 667 422</td>
+              </tr>
+              <tr>
+                <td>Parametry úprav</td>
+                <td>Očekávání od úpravy a aktuální konfigurace auta.</td>
+                <td>Vysvětlení parametrů před rozhodnutím.</td>
+                <td class="mono">vas@email.cz</td>
+              </tr>
+              <tr>
+                <td>Měření výkonu</td>
+                <td>Informace o vozu a požadovaný termín.</td>
+                <td>Ověření výkonových hodnot po domluvě.</td>
+                <td class="mono">09:00-15:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Kontakt</h2>
+          <p>Pobočka AutoChip pro České Budějovice. Termín si domluvte předem telefonicky.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line"><span>Adresa</span><a href="https://www.google.com/maps/search/?api=1&query=Rudolfovsk%C3%A1%20t%C5%99.%20293%2F129%2C%20370%2001%20%C4%8Cesk%C3%A9%20Bud%C4%9Bjovice" target="_blank" rel="noopener">Rudolfovská tř. 293/129, 370 01 České Budějovice</a></div>
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420737667422">+420 737 667 422</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:vas@email.cz">vas@email.cz</a></div>
+            <div class="contact-line"><span>GPS</span><a href="https://www.google.com/maps?q=48.9846366,14.5107948" target="_blank" rel="noopener">48.9846366, 14.5107948</a></div>
+            <div class="contact-line"><span>Provoz</span><a href="#top">Po-Pá 09:00-15:00, víkend zavřeno</a></div>
+          </div>
+          <div id="map" aria-label="Mapa provozovny AutoChip České Budějovice"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <h2>Časté dotazy</h2>
+          <p>Krátké odpovědi k objednání a rozsahu služeb.</p>
+        </div>
+        <details>
+          <summary>Je nutné se objednat předem?</summary>
+          <p>Ano. U chiptuningu, měření výkonu i dalších technických služeb je potřeba nejdřív potvrdit vůz a termín s provozovnou.</p>
+        </details>
+        <details>
+          <summary>Které číslo mám použít?</summary>
+          <p>V dostupných údajích je uvedeno číslo +420 737 667 422. Ve výpisu pobočky se objevuje také kontakt 731 203 664.</p>
+        </details>
+        <details>
+          <summary>Co si připravit k chiptuningu?</summary>
+          <p>Základně značku, model, motorizaci, rok výroby a informaci, jakou službu řešíte. Přesný rozsah potvrdí provozovna.</p>
+        </details>
+        <details>
+          <summary>Má pobočka otevřeno o víkendu?</summary>
+          <p>Podle uvedené provozní doby je otevřeno od pondělí do pátku 09:00-15:00. Sobota a neděle jsou zavřené.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <h2>Domluvte vůz, termín a rozsah.</h2>
+          <p>AutoChip České Budějovice · Rudolfovská tř. 293/129 · Po-Pá 09:00-15:00</p>
+        </div>
+        <div class="actions">
+          <a class="btn btn-primary" href="tel:+420737667422">Volat 737 667 422</a>
+          <a class="btn btn-secondary" href="mailto:vas@email.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Neoficiální prezentační stránka připravená službou Webflex pro ověření možné podoby veřejné prezentace.</span>
+      <a href="https://webflex.cz/delete/mkpra7q" rel="nofollow">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.5107948, 48.9846366],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E4003A' })
+      .setLngLat([14.5107948, 48.9846366])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
