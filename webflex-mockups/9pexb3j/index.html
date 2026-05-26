@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autoservis Kolář Ústí nad Labem</title>
+  <meta name="description" content="Autoservis Kolář v Ústí nad Labem na adrese Petrovická 130. Kontakt: +420 603 476 581, autoserviskolar@email.cz.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-2: #f1f2ed;
+      --ink: #111312;
+      --muted: #626961;
+      --line: rgba(17, 19, 18, .16);
+      --line-strong: #111312;
+      --accent: #5B7200;
+      --accent-soft: rgba(91, 114, 0, .14);
+      --shadow: 0 24px 80px rgba(17, 19, 18, .10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Hanken Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(17, 19, 18, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 19, 18, .035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: 12px;
+      z-index: 99;
+      transform: translateY(-160%);
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(251, 251, 250, .92);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+      text-transform: uppercase;
+      text-decoration: none;
+      max-width: 340px;
+      overflow-wrap: anywhere;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(17, 19, 18, .72);
+      transition: color .2s cubic-bezier(.2, .8, .2, 1);
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), background-color .22s, border-color .22s, color .22s, box-shadow .22s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(17, 19, 18, .14); }
+    .btn:active { transform: translateY(1px); box-shadow: none; }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .96;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    h2 { font-size: clamp(34px, 4.6vw, 64px); }
+    h3 { font-size: 22px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .hero { padding: 54px 0 78px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(40%, .78fr);
+      gap: 46px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 630px;
+      margin: 22px 0 0;
+      color: rgba(17, 19, 18, .75);
+      font-size: clamp(19px, 2vw, 23px);
+      font-weight: 600;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .bay-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      margin-top: 36px;
+      background: var(--surface);
+    }
+
+    .bay-strip > div {
+      min-height: 92px;
+      padding: 16px;
+      border-right: 1px solid var(--line-strong);
+    }
+    .bay-strip > div:last-child { border-right: 0; }
+    .bay-strip strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      color: var(--accent);
+    }
+    .bay-strip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: #252525;
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82) contrast(1.08); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 42%, rgba(0,0,0,.55));
+    }
+    .photo-tag {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    section { padding: 78px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(300px, .43fr);
+      gap: 40px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p:last-child {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .service-table {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(210px, .34fr);
+      gap: 24px;
+      padding: 24px;
+      border-bottom: 1px solid var(--line-strong);
+      align-items: center;
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .service-row p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .service-row .note {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: rgba(17, 19, 18, .72);
+    }
+
+    .trust-band {
+      background: var(--ink);
+      color: #f6f6f2;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .78fr repeat(2, minmax(0, .36fr));
+      gap: 1px;
+      background: rgba(255,255,255,.24);
+      border: 1px solid rgba(255,255,255,.28);
+    }
+    .trust-cell {
+      min-height: 190px;
+      padding: 26px;
+      background: var(--ink);
+    }
+    .trust-cell strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: .9;
+      color: #fff;
+    }
+    .trust-cell span {
+      display: block;
+      margin-top: 14px;
+      color: rgba(255,255,255,.72);
+      font-weight: 700;
+    }
+    .trust-copy h2 { color: #fff; }
+    .trust-copy p {
+      max-width: 620px;
+      margin: 18px 0 0;
+      color: rgba(255,255,255,.72);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .bay-plan {
+      display: grid;
+      grid-template-columns: minmax(0, .55fr) minmax(0, .45fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .plan-panel, .price-panel {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 28px;
+    }
+    .plan-list {
+      margin: 28px 0 0;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line-strong);
+    }
+    .plan-step {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr);
+      gap: 18px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .plan-step b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+    .plan-step p { margin: 6px 0 0; color: var(--muted); font-weight: 600; }
+
+    .price-lines {
+      margin-top: 26px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface-2);
+    }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line-strong);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .price-line:last-child { border-bottom: 0; }
+    .price-line span:last-child { color: var(--accent); text-align: right; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      object-fit: cover;
+      filter: saturate(.78) contrast(1.05);
+    }
+    .gallery-small {
+      display: grid;
+      gap: 18px;
+    }
+    .gallery figcaption {
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .42fr) minmax(0, .58fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 28px;
+    }
+    .contact-card p { color: var(--muted); font-size: 17px; font-weight: 600; }
+    .contact-list {
+      display: grid;
+      gap: 1px;
+      margin-top: 24px;
+      border: 1px solid var(--line-strong);
+      background: var(--line-strong);
+    }
+    .contact-list a, .contact-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      background: var(--surface-2);
+      text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      transition: background-color .2s cubic-bezier(.2, .8, .2, 1), color .2s, transform .2s;
+    }
+    .contact-list a:hover { background: var(--accent); color: #fff; transform: translateY(-1px); }
+    .contact-list a:active { transform: translateY(1px); }
+
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 190px;
+      padding: 24px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); font-weight: 600; }
+
+    .final {
+      padding: 78px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final .eyebrow { color: rgba(255,255,255,.82); }
+    .final p { margin: 18px 0 0; max-width: 680px; color: rgba(255,255,255,.82); font-size: 18px; font-weight: 700; }
+    .final .btn-primary { background: #fff; color: var(--ink); border-color: #fff; }
+    .final .btn-secondary { color: #fff; border-color: rgba(255,255,255,.58); }
+
+    footer {
+      padding: 34px 0;
+      background: var(--ink);
+      color: rgba(255,255,255,.72);
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,.18);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .webflex-disclaimer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: rgba(255,255,255,.54);
+    }
+    .webflex-disclaimer a { color: #fff; }
+
+    @media (max-width: 920px) {
+      .nav { align-items: flex-start; padding: 16px 0; flex-direction: column; }
+      .nav-links { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+      .hero-grid, .section-head, .bay-plan, .gallery, .contact-grid, .final-grid { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .bay-strip, .trust-grid, .faq { grid-template-columns: 1fr; }
+      .bay-strip > div { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .bay-strip > div:last-child { border-bottom: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 26px, 1180px); }
+      .wordmark { font-size: 17px; }
+      .nav-links { gap: 16px; }
+      section, .hero, .final { padding: 56px 0; }
+      .hero-actions { width: 100%; }
+      .btn { width: 100%; }
+      .contact-list a, .contact-list div, .footer-main { flex-direction: column; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#obsah">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="wordmark" href="#" aria-label="Autoservis Kolář Ústí nad Labem">Autoservis Kolář Ústí nad Labem</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420603476581">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="obsah">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Petrovická 130 · Ústí nad Labem</p>
+          <h1>Servis pro váš vůz</h1>
+          <p class="lead">Autoservis Kolář přijímá řidiče v Ústí nad Labem. Pro domluvu termínu, rozsahu práce a ceny volejte přímo do servisu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420603476581">+420 603 476 581</a>
+            <a class="btn btn-secondary" href="mailto:autoserviskolar@email.cz">Napsat e-mail</a>
+          </div>
+          <div class="bay-strip" aria-label="Základní informace">
+            <div><strong>4,9</strong><span>Hodnocení na Googlu</span></div>
+            <div><strong>44</strong><span>Veřejných recenzí</span></div>
+            <div><strong>403 40</strong><span>Petrovická 130</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/27665740/pexels-photo-27665740.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up view of a mechanic's hands working on a car engine with a wrench in an industrial setting.">
+          <div class="photo-tag"><span>Autoservis</span><span>Ústí nad Labem</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">01 · Práce v servisu</p>
+            <h2>Služby po domluvě</h2>
+          </div>
+          <p>Oficiální informace autoservisu uvádějí sekce služby a ceník. Konkrétní zakázku je nejlepší upřesnit telefonicky podle vozu a požadovaného rozsahu.</p>
+        </div>
+        <div class="service-table">
+          <article class="service-row">
+            <span class="num">A-01</span>
+            <div>
+              <h3>Příjem vozu</h3>
+              <p>Zavoláte, popíšete stav vozidla a domluvíte se na vhodném postupu.</p>
+            </div>
+            <span class="note">Telefonická domluva</span>
+          </article>
+          <article class="service-row">
+            <span class="num">A-02</span>
+            <div>
+              <h3>Servisní práce</h3>
+              <p>Rozsah prací stanoví autoservis podle konkrétní závady, dostupnosti dílů a dohody se zákazníkem.</p>
+            </div>
+            <span class="note">Dle vozu</span>
+          </article>
+          <article class="service-row">
+            <span class="num">A-03</span>
+            <div>
+              <h3>Ceník</h3>
+              <p>Informace k ceně řešte přímo s provozovnou, aby odpovídala skutečnému zadání.</p>
+            </div>
+            <span class="note">Bez odhadu od stolu</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-band" aria-label="Důvěra zákazníků">
+      <div class="wrap trust-grid">
+        <div class="trust-cell trust-copy">
+          <p class="eyebrow">02 · Důvěra</p>
+          <h2>Řidiči hodnotí přímo.</h2>
+          <p>Veřejný profil autoservisu uvádí vysoké hodnocení a desítky recenzí. Pro aktuální volný termín volejte na uvedené číslo.</p>
+        </div>
+        <div class="trust-cell"><strong>4,9</strong><span>Průměrné veřejné hodnocení</span></div>
+        <div class="trust-cell"><strong>44</strong><span>Veřejně uvedených recenzí</span></div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap bay-plan">
+        <div class="plan-panel">
+          <p class="eyebrow">03 · Postup</p>
+          <h2>Od hovoru k opravě</h2>
+          <div class="plan-list">
+            <div class="plan-step">
+              <b>01</b>
+              <div><h3>Zavoláte do servisu</h3><p>Uveďte značku vozu, stručný popis závady a kdy se vám hodí termín.</p></div>
+            </div>
+            <div class="plan-step">
+              <b>02</b>
+              <div><h3>Domluví se rozsah</h3><p>Autoservis si upřesní, co je potřeba zkontrolovat a jak navázat na ceník.</p></div>
+            </div>
+            <div class="plan-step">
+              <b>03</b>
+              <div><h3>Vůz přijede na Petrovickou</h3><p>Provozovna je na adrese Petrovická 130 v Ústí nad Labem.</p></div>
+            </div>
+          </div>
+        </div>
+        <aside class="price-panel">
+          <p class="eyebrow">Ceník / kontakt</p>
+          <h2>Bez hádání.</h2>
+          <p class="lead">Cena servisní práce závisí na konkrétním vozu a zakázce. Přímý telefonát do provozovny dá nejpřesnější odpověď.</p>
+          <div class="price-lines" aria-label="Kontaktní údaje pro cenu">
+            <div class="price-line"><span>Telefon</span><span>603 476 581</span></div>
+            <div class="price-line"><span>E-mail</span><span>autoserviskolar@email.cz</span></div>
+            <div class="price-line"><span>Adresa</span><span>Petrovická 130</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí servisu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">04 · Dílna</p>
+            <h2>Práce, nářadí, vůz</h2>
+          </div>
+          <p>Servisní práce stojí na klidném postupu, přesném nářadí a jasné domluvě se zákazníkem.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/7564871/pexels-photo-7564871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic using hand tools to fix an engine, showcasing precision and skill.">
+            <figcaption>Detail práce u motoru</figcaption>
+          </figure>
+          <div class="gallery-small">
+            <figure>
+              <img src="https://images.pexels.com/photos/4489761/pexels-photo-4489761.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Mechanic performing repairs in a vintage garage setting, using tools and machinery.">
+              <figcaption>Dílenské zázemí</figcaption>
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/33134951/pexels-photo-33134951.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white image of wrenches spread on asphalt with a hand picking up one.">
+              <figcaption>Nářadí připravené k práci</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <aside class="contact-card">
+          <p class="eyebrow">05 · Kontakt</p>
+          <h2>Petrovická 130</h2>
+          <p>Autoservis Kolář sídlí v Ústí nad Labem. Pro ověření termínu a dostupnosti volejte nebo napište e-mail.</p>
+          <div class="contact-list">
+            <a href="tel:+420603476581"><span>Telefon</span><span>+420 603 476 581</span></a>
+            <a href="mailto:autoserviskolar@email.cz"><span>E-mail</span><span>autoserviskolar@email.cz</span></a>
+            <div><span>Adresa</span><span>Petrovická 130, 403 40 Ústí nad Labem</span></div>
+          </div>
+        </aside>
+        <div id="map" aria-label="Mapa umístění autoservisu"></div>
+      </div>
+    </section>
+
+    <section aria-label="Časté dotazy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">06 · Dotazy</p>
+            <h2>Než vyrazíte</h2>
+          </div>
+          <p>Krátké odpovědi drží jen údaje, které jsou k dispozici v kontaktech autoservisu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Jak se objednat?</h3><p>Nejlépe telefonicky na čísle +420 603 476 581, kde domluvíte termín i další postup.</p></article>
+          <article class="faq-item"><h3>Kde autoservis najdu?</h3><p>Provozovna je na adrese Petrovická 130, 403 40 Ústí nad Labem.</p></article>
+          <article class="faq-item"><h3>Je dostupný ceník?</h3><p>Autoservis uvádí ceník jako samostatnou informaci. Přesnou cenu konkrétní zakázky si ověřte přímo u provozovny.</p></article>
+          <article class="faq-item"><h3>Lze napsat e-mail?</h3><p>Ano, použijte adresu autoserviskolar@email.cz.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <p class="eyebrow">Autoservis Kolář</p>
+          <h2>Domluvte si termín.</h2>
+          <p>Popište závadu, přidejte typ vozu a provozovna vám řekne další postup.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420603476581">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:autoserviskolar@email.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Autoservis Kolář Ústí nad Labem</strong>
+        <span>Petrovická 130 · +420 603 476 581</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/9pexb3j">webflex.cz/delete/9pexb3j</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.019433699999999, 50.69121680000001],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#5B7200' })
+      .setLngLat([14.019433699999999, 50.69121680000001])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
