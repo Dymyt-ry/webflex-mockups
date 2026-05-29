@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Fitko na rohu | Samoobslužná posilovna Hrabůvka</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --ink: #151613;
+      --muted: #67695f;
+      --soft: #f0f0e8;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --line: rgba(21, 22, 19, 0.09);
+      --accent: #c0c0a0;
+      --accent-ink: #242416;
+      --shadow: 0 28px 90px rgba(23, 24, 20, 0.08);
+      --shadow-soft: 0 18px 70px rgba(23, 24, 20, 0.06);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 132px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(21, 22, 19, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21, 22, 19, 0.025) 1px, transparent 1px),
+        radial-gradient(circle at 78% 12%, rgba(192, 192, 160, 0.38), transparent 32%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { color: var(--muted); text-wrap: pretty; }
+    main, header, footer { position: relative; z-index: 1; }
+    .container { max-width: 1360px; margin: 0 auto; padding: 0 var(--gutter); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(22px);
+      background: rgba(251, 251, 248, .78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: var(--bg);
+      box-shadow: 0 14px 34px rgba(21,22,19,.18);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 38px);
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(21, 22, 19, .72);
+    }
+    .navlinks a, .text-link {
+      transition: color .22s var(--ease), transform .22s var(--ease);
+    }
+    .navlinks a:hover, .text-link:hover { color: var(--ink); transform: translateY(-1px); }
+    .navlinks a:focus-visible, .btn:focus-visible, .text-link:focus-visible, .faq summary:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 15px;
+      transition: transform .18s var(--ease), box-shadow .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      box-shadow: 0 16px 46px rgba(192,192,160,.36);
+    }
+    .btn-primary:hover { background: #ceceb1; box-shadow: 0 20px 54px rgba(192,192,160,.48); }
+    .btn-outline {
+      color: var(--ink);
+      border: 1px solid currentColor;
+      background: rgba(255,255,255,.34);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,.72); }
+
+    .hero {
+      padding: clamp(54px, 8vw, 96px) 0 var(--section);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(40%, .78fr);
+      gap: clamp(34px, 6vw, 88px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .kicker::before { content: ""; width: 28px; height: 1px; background: var(--ink); opacity: .34; }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 610px;
+      margin-top: 28px;
+      font-size: clamp(18px, 1.55vw, 23px);
+      color: #4b4d45;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 36px; }
+    .hero-meta {
+      margin-top: 38px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.66);
+      box-shadow: var(--shadow-soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(251,251,248,.82);
+      backdrop-filter: blur(18px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+    .hero-card strong { display: block; font-size: 18px; }
+    .mono { font-family: var(--font-mono); font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .76fr) minmax(280px, .44fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 62px);
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.9vw, 72px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .card {
+      min-height: 100%;
+      padding: clamp(24px, 3vw, 34px);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(12px);
+    }
+    .card h3 {
+      font-size: 24px;
+      line-height: 1.05;
+      margin-bottom: 18px;
+    }
+    .card ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 11px;
+      color: var(--muted);
+    }
+    .card li { display: flex; gap: 10px; align-items: baseline; }
+    .card li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: .72fr 1fr;
+      gap: clamp(34px, 6vw, 82px);
+      align-items: start;
+    }
+    .price-panel {
+      position: sticky;
+      top: 108px;
+      border-radius: 34px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: clamp(28px, 4vw, 48px);
+      box-shadow: 0 28px 90px rgba(21,22,19,.18);
+    }
+    .price-panel p { color: rgba(251,251,248,.72); }
+    .price {
+      margin: 22px 0 18px;
+      font-family: var(--font-mono);
+      font-size: clamp(40px, 5vw, 70px);
+      line-height: 1;
+      letter-spacing: -.06em;
+    }
+    .steps {
+      display: grid;
+      gap: 12px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 20px;
+      align-items: start;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step-num {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .step h3 { font-size: clamp(22px, 2.4vw, 34px); margin-bottom: 8px; }
+
+    .proof {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .stat {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: .92;
+      letter-spacing: -.07em;
+      color: var(--ink);
+    }
+    .split-photo {
+      border-radius: 30px;
+      overflow: hidden;
+      min-height: 398px;
+      box-shadow: var(--shadow-soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--soft);
+      min-height: 310px;
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-strip figure:nth-child(2) { transform: translateY(42px); }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+
+    .faq-list {
+      display: grid;
+      gap: 12px;
+      max-width: 980px;
+      margin-inline: auto;
+    }
+    .faq {
+      border-radius: 24px;
+      background: rgba(255,255,255,.68);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .faq summary {
+      cursor: pointer;
+      padding: 24px 28px;
+      font-weight: 800;
+      list-style: none;
+      transition: background .22s var(--ease);
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary:hover { background: rgba(192,192,160,.18); }
+    .faq p { padding: 0 28px 26px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .88fr 1.12fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: clamp(26px, 4vw, 44px);
+      border-radius: 32px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-list {
+      display: grid;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .contact-list a, .contact-list span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .contact-list b { color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+    .final {
+      padding-bottom: clamp(42px, 7vw, 88px);
+    }
+    .final-box {
+      border-radius: 36px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: clamp(34px, 6vw, 72px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+      box-shadow: 0 34px 110px rgba(21,22,19,.2);
+    }
+    .final-box h2 { max-width: 720px; }
+    .final-box p { color: rgba(251,251,248,.72); margin-top: 16px; max-width: 560px; }
+    .final-box .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; }
+    .final-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 28px var(--gutter) 42px;
+      color: #6b6d64;
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.42);
+    }
+    .footer-inner {
+      max-width: 1360px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .flow, .proof, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { max-width: 720px; }
+      .price-panel { position: relative; top: auto; }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 760px) {
+      .navlinks { display: none; }
+      .service-grid, .stat-row, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { transform: none; }
+      .step { grid-template-columns: 48px 1fr; }
+      .hero-card { position: static; margin: 14px; }
+      .hero-photo { height: auto; display: flex; flex-direction: column; }
+      .hero-photo img { aspect-ratio: 4 / 3; }
+      .contact-list a, .contact-list span { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a href="#" class="brand" aria-label="Fitko na rohu">
+        <span class="brand-mark">FR</span>
+        <span>Fitko na rohu</span>
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#vybaveni">Vybavení</a>
+        <a href="#rezervace">Rezervace</a>
+        <a href="#faq">FAQ</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420774823761">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="kicker">Ostrava-Hrabůvka · samoobslužná posilovna</span>
+          <h1>Fitko jen pro vás</h1>
+          <p class="lead">Rezervujte si vybavenou posilovnu na 75 minut a cvičte v klidu sami, s parťákem, trenérem nebo klientem.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#rezervace">Jak rezervace funguje</a>
+            <a class="btn btn-outline" href="#kontakt">Kontakt a mapa</a>
+          </div>
+          <div class="hero-meta">
+            <span class="pill">od 199 Kč / 75 minut</span>
+            <span class="pill">4.9 · 65 recenzí</span>
+            <span class="pill">bezplatné parkování poblíž</span>
+          </div>
+        </div>
+        <div class="hero-photo" aria-label="Interiér posilovny">
+          <img src="https://images.pexels.com/photos/25596892/pexels-photo-25596892.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright and spacious gym interior featuring modern green exercise machines in Yalova.">
+          <div class="hero-card">
+            <div>
+              <strong>Soukromí pro trénink</strong>
+              <p>Žádné čekání na stroj, hudba podle vás, tempo podle vás.</p>
+            </div>
+            <span class="mono">75 min</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vybaveni">
+      <div class="container">
+        <div class="section-head">
+          <h2>Vše důležité na jednom místě</h2>
+          <p>Prostor je připravený pro silový trénink, kondici i práci trenéra s klientem. Po tréninku prosíme vraťte pomůcky na místo a nechte fitko připravené pro další návštěvníky.</p>
+        </div>
+        <div class="service-grid">
+          <article class="card">
+            <h3>Kardio a kondice</h3>
+            <ul>
+              <li>Běžecký pás</li>
+              <li>AirBike</li>
+              <li>Veslovací trenažér</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Síla a váhy</h3>
+            <ul>
+              <li>Volné váhy</li>
+              <li>Olympijská osa</li>
+              <li>Tricepsová osa</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Pomůcky a kladky</h3>
+            <ul>
+              <li>Hrazda a bradla</li>
+              <li>Horní a spodní kladka</li>
+              <li>Kettlebelly a odporové gumy</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="rezervace">
+      <div class="container flow">
+        <aside class="price-panel">
+          <span class="kicker">Cena</span>
+          <div class="price">od 199 Kč</div>
+          <p>Rezervace platí pro 75 minut. Pokud potřebujete více času, zvolte v kalendáři několik bloků za sebou.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420774823761">Zeptat se na termín</a>
+          </div>
+        </aside>
+        <div>
+          <div class="section-head" style="grid-template-columns:1fr;margin-bottom:18px;">
+            <h2>Rezervujete, přijdete, cvičíte</h2>
+          </div>
+          <div class="steps">
+            <article class="step">
+              <span class="step-num">01</span>
+              <div><h3>Vyberete termín</h3><p>V rezervačním kalendáři zvolíte čas, vyplníte údaje a rezervaci potvrdíte. Rezervace je závazná.</p></div>
+            </article>
+            <article class="step">
+              <span class="step-num">02</span>
+              <div><h3>Dostanete pokyny</h3><p>Po potvrzení vám přijde e-mail s platebními údaji. Hodinu před začátkem dorazí pokyny ke vstupu.</p></div>
+            </article>
+            <article class="step">
+              <span class="step-num">03</span>
+              <div><h3>Odemknete a trénujete</h3><p>Stačí zadat kód do schránky s klíči. Prostor máte pro sebe, parťáka, trenéra nebo klienta.</p></div>
+            </article>
+            <article class="step">
+              <span class="step-num">04</span>
+              <div><h3>Uklidíte a zavřete</h3><p>Po skončení bloku opusťte posilovnu včas, vraťte klíč a nechte vybavení připravené pro další návštěvu.</p></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container proof">
+        <div class="stat-row">
+          <article class="card stat">
+            <p>Hodnocení na Googlu</p>
+            <strong>4.9</strong>
+          </article>
+          <article class="card stat">
+            <p>Počet recenzí</p>
+            <strong>65</strong>
+          </article>
+          <article class="card stat">
+            <p>Délka jednoho bloku</p>
+            <strong>75</strong>
+          </article>
+          <article class="card stat">
+            <p>Další poplatek pro trenéry</p>
+            <strong>0 Kč</strong>
+          </article>
+        </div>
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/11036670/pexels-photo-11036670.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright pilates studio with reformer machines and natural light ambiance.">
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="container">
+        <div class="section-head">
+          <h2>Klid, prostor, vlastní tempo</h2>
+          <p>Soukromý blok je vhodný pro samostatný trénink, společné cvičení ve dvou i lekci s trenérem. Bez zvědavých pohledů a bez fronty na sprchu.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/6739958/pexels-photo-6739958.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern gym with equipment, punching bags, and open space for workouts."></figure>
+          <figure><img src="https://images.pexels.com/photos/8611244/pexels-photo-8611244.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A clean and empty boxing gym with punching bags and a ring, ready for training."></figure>
+          <figure><img src="https://images.pexels.com/photos/11036674/pexels-photo-11036674.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious and well-equipped Pilates studio featuring reformers and other fitness equipment."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="container">
+        <div class="section-head" style="grid-template-columns:1fr;max-width:980px;margin-inline:auto;">
+          <h2>Často kladené otázky</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq">
+            <summary>Můžeme přijít ve více lidech?</summary>
+            <p>Ano, můžete přijít s parťákem, trenérem nebo klientem, kterého trénujete. Zodpovědnost má vždy osoba, která provedla rezervaci.</p>
+          </details>
+          <details class="faq">
+            <summary>Vrátí se peníze při zrušení rezervace?</summary>
+            <p>Ano, rezervaci je ale potřeba zrušit nejpozději 24 hodin předem.</p>
+          </details>
+          <details class="faq">
+            <summary>Platí trenér nebo trenérka další poplatek?</summary>
+            <p>Ne. Trenéři a trenérky neplatí nic navíc, hradí se pouze rezervovaný blok.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Najdete nás v Hrabůvce</h2>
+          <p>Fitko je na adrese mjr. Nováka 1262/37. Bezplatné parkování je k dispozici v těsné blízkosti posilovny.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <span class="kicker">Kontakt</span>
+            <div class="contact-list">
+              <span><b>Adresa</b> mjr. Nováka 1262/37, 700 30 Ostrava-jih-Hrabůvka</span>
+              <a href="tel:+420774823761"><b>Telefon</b> +420 774 823 761</a>
+              <a href="mailto:fitkonarohu@seznam.cz"><b>E-mail</b> fitkonarohu@seznam.cz</a>
+              <a href="https://www.fitkonarohu.cz/"><b>Web</b> fitkonarohu.cz</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Fitko na rohu"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container">
+        <div class="final-box">
+          <div>
+            <h2>Váš blok, váš trénink</h2>
+            <p>Domluvte si čas a přijďte si zacvičit bez čekání. Fitko připravíme, vy si držíte tempo.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn btn-primary" href="tel:+420774823761">+420 774 823 761</a>
+            <a class="btn btn-outline" href="mailto:fitkonarohu@seznam.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Tento nezávazný prezentační materiál připravil Webflex. Není součástí oficiální komunikace provozovatele Fitko na rohu.</span>
+      <a href="https://webflex.cz/remove/zk266gp">Odstranit materiál</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.2658779, 49.7812114],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#c0c0a0' })
+      .setLngLat([18.2658779, 49.7812114])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
