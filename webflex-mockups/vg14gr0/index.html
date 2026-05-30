@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WE CARE Liberec | Klinika zdraví & longevity</title>
+  <meta name="description" content="WE CARE Liberec, klinika zdraví a longevity na adrese Klostermannova 690/15. Preventivní diagnostika, krevní screening, zdravotní supervize a mezioborová péče.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101115;
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(255, 255, 255, 0.12);
+      --ink: #f8f8fb;
+      --muted: rgba(248, 248, 251, 0.68);
+      --soft: rgba(248, 248, 251, 0.42);
+      --accent: #606080;
+      --accent-2: #a5a5c2;
+      --line: rgba(255, 255, 255, 0.12);
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.22);
+      --radius: 18px;
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        radial-gradient(circle at 88% 10%, rgba(96, 96, 128, .38), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { color: var(--muted); margin: 0; hyphens: auto; }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      hyphens: none;
+      letter-spacing: 0;
+    }
+    h1, h2 { font-family: var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+    h1 { font-size: clamp(40px, 6vw, 88px); line-height: .92; max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.3vw, 64px); line-height: .96; }
+    h3 { font-size: 24px; line-height: 1.08; font-weight: 800; }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent-2);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 17, 21, .76);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 24px; color: var(--muted); font-weight: 650; }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--ink); color: #101115; }
+    .btn.primary:hover { background: #ffffff; }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #ffffff; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 70px 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      align-items: center;
+      gap: 58px;
+    }
+    .hero-copy { display: grid; gap: 28px; }
+    .hero-copy .lead { max-width: 650px; font-size: clamp(19px, 2vw, 25px); color: rgba(248,248,251,.78); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-panel {
+      position: relative;
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-panel img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) contrast(1.02); }
+    .hero-card {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(16,17,21,.76);
+      backdrop-filter: blur(18px);
+    }
+    .hero-card strong { font-size: 20px; }
+    .mono { font-family: var(--font-mono); }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(260px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, .75fr) minmax(250px, .55fr);
+      gap: 28px;
+      padding: 30px;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row span { color: var(--accent-2); font-family: var(--font-mono); font-weight: 700; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat, .quote, .soft-card, .price-card, .contact-card, details {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .stat { padding: 28px; min-height: 170px; display: grid; align-content: space-between; }
+    .stat b { font-family: var(--font-display); font-size: clamp(46px, 6vw, 76px); line-height: .9; overflow-wrap: anywhere; }
+    .stat small { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(360px, .7fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .soft-card { padding: 34px; }
+    .checks { display: grid; gap: 14px; margin-top: 26px; }
+    .check {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 12px;
+      color: rgba(248,248,251,.82);
+      font-weight: 650;
+    }
+    .check i {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(165,165,194,.2);
+      position: relative;
+    }
+    .check i:after {
+      content: "";
+      position: absolute;
+      inset: 6px 5px 7px 7px;
+      border-right: 2px solid var(--accent-2);
+      border-bottom: 2px solid var(--accent-2);
+      transform: rotate(42deg);
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .gallery img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .process .soft-card { min-height: 250px; display: grid; align-content: start; gap: 18px; }
+    .step-num { font-family: var(--font-mono); color: var(--accent-2); }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .price-card { padding: 34px; display: grid; gap: 22px; }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      color: rgba(248,248,251,.82);
+    }
+    .price-row:last-child { border-bottom: 0; }
+    .price-row strong { font-family: var(--font-mono); color: var(--ink); text-align: right; }
+
+    .contact {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(420px, .85fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 34px; display: grid; gap: 24px; }
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span { color: var(--muted); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq { display: grid; gap: 12px; }
+    details { padding: 24px 26px; }
+    summary { cursor: pointer; font-weight: 800; font-size: 20px; }
+    details p { margin-top: 14px; max-width: 760px; }
+
+    .final {
+      padding: 86px 0 96px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 42px;
+      border-radius: 30px;
+      background: rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 26px 0;
+      color: var(--soft);
+      font-size: 13px;
+    }
+    footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .pricing, .contact, .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust, .process { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      body { font-size: 16px; }
+      section { padding: 70px 0; }
+      .hero { min-height: auto; padding: 44px 0 70px; }
+      .trust, .process { grid-template-columns: 1fr; }
+      .hero-card { position: static; border-radius: 0; grid-template-columns: 1fr; }
+      .hero-panel { display: grid; aspect-ratio: auto; }
+      .hero-panel img { aspect-ratio: 4 / 3; }
+      .soft-card, .price-card, .contact-card { padding: 26px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="WE CARE Liberec">
+        <img src="https://www.wecareliberec.cz/assets/images/logo.png" alt="WE CARE Liberec">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Přístup</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420775844672">+420 775 844 672</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Klinika zdraví & longevity</div>
+          <h1>Dlouhý život v kvalitě</h1>
+          <p class="lead">Preventivní diagnostika, krevní screening a propojená péče pro lidi, kteří řeší zdravotní potíže i pro ty, kteří chtějí své zdraví aktivně podporovat.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420775844672">Objednat se</a>
+            <a class="btn secondary" href="mailto:info@wecareliberec.cz">Napište nám</a>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+          <div class="hero-card">
+            <div>
+              <strong>Klostermannova 690/15</strong>
+              <p>460 01 Liberec</p>
+            </div>
+            <div class="mono">5,0 / 19</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Naše služby</div>
+            <h2>Péče podle vašich dat</h2>
+          </div>
+          <p>Začíná se konzultací a anamnézou. Následuje diagnostika, vyšetření a plán péče, který dává výsledky do srozumitelných souvislostí.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span>01</span>
+            <h3>Vstupní zdravotní prohlídka</h3>
+            <p>Konzultace zdravotních potíží, životního stylu a celkové anamnézy s využitím moderních diagnostických metod.</p>
+          </article>
+          <article class="service-row">
+            <span>02</span>
+            <h3>Krevní screening Longevity</h3>
+            <p>Rozšířený panel krevního obrazu, hladina krevního cukru, inzulinová rezistence, zánětlivé a nádorové markery, hormony, vitamíny a minerály.</p>
+          </article>
+          <article class="service-row">
+            <span>03</span>
+            <h3>Zdravotní supervize</h3>
+            <p>Průvodce s vámi probírá výsledky vyšetření, dosažené pokroky a koordinuje spolupráci lékařů a terapeutů.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust">
+          <div class="stat">
+            <small>Google hodnocení</small>
+            <b>5,0</b>
+          </div>
+          <div class="stat">
+            <small>Recenzí</small>
+            <b>19</b>
+          </div>
+          <div class="stat">
+            <small>Region</small>
+            <b>Sever Čech</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap split">
+        <div class="soft-card">
+          <div class="eyebrow">Proč právě k nám</div>
+          <h2>Souvislosti místo symptomů</h2>
+          <div class="checks">
+            <div class="check"><i></i><span>Jediná klinika longevity na severu Čech.</span></div>
+            <div class="check"><i></i><span>Kompletní přístrojová a vyšetřovací diagnostika.</span></div>
+            <div class="check"><i></i><span>Mezioborová spolupráce lékařů a terapeutů.</span></div>
+            <div class="check"><i></i><span>Hloubková analýza krve a preventivní screening longevity.</span></div>
+            <div class="check"><i></i><span>Genetické vyšetření a pobytové VIP longevity programy.</span></div>
+            <div class="check"><i></i><span>Expresní termíny u externích speciálních vyšetření.</span></div>
+          </div>
+        </div>
+        <div class="gallery">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <img src="https://images.pexels.com/photos/6969884/pexels-photo-6969884.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person presenting a food delivery package and paper bag at home.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Jak péče probíhá</div>
+            <h2>Od konzultace k plánu</h2>
+          </div>
+          <p>Jednotlivé kroky na sebe navazují tak, aby bylo jasné, co se vyšetřuje, proč se to vyšetřuje a jak s výsledky dál pracovat.</p>
+        </div>
+        <div class="process">
+          <article class="soft-card">
+            <span class="step-num">01</span>
+            <h3>Konzultace</h3>
+            <p>Proberete zdravotní potíže, životní styl a anamnézu.</p>
+          </article>
+          <article class="soft-card">
+            <span class="step-num">02</span>
+            <h3>Diagnostika</h3>
+            <p>Vyšetření a laboratorní data pomohou pojmenovat souvislosti.</p>
+          </article>
+          <article class="soft-card">
+            <span class="step-num">03</span>
+            <h3>Plán péče</h3>
+            <p>Na základě dat vznikne individuální plán na míru.</p>
+          </article>
+          <article class="soft-card">
+            <span class="step-num">04</span>
+            <h3>Supervize</h3>
+            <p>Průvodce sleduje pokroky a koordinuje zapojené odborníky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap pricing">
+        <div>
+          <div class="eyebrow">Ceník</div>
+          <h2>Program vyberete při konzultaci</h2>
+        </div>
+        <div class="price-card">
+          <p>Ceny konkrétních vyšetření a programů se odvíjejí od rozsahu péče. Pro aktuální ceník a vhodný postup kontaktujte recepci.</p>
+          <div>
+            <div class="price-row"><span>Telefon</span><strong>+420 775 844 672</strong></div>
+            <div class="price-row"><span>E-mail</span><strong>info@wecareliberec.cz</strong></div>
+            <div class="price-row"><span>Adresa</span><strong>Klostermannova 690/15</strong></div>
+          </div>
+          <a class="btn primary" href="mailto:info@wecareliberec.cz">Zeptat se na ceník</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">S čím vám pomůžeme</div>
+            <h2>Šest oblastí zdraví</h2>
+          </div>
+          <p>Péče se zaměřuje na prevenci, diagnostiku i podporu tělesné a psychické rovnováhy.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row"><span>A</span><h3>Prevence, diagnostika a longevity</h3><p>Vyšetření, screening a dlouhodobá práce s naměřenými hodnotami.</p></article>
+          <article class="service-row"><span>B</span><h3>Pohyb, regenerace a tělesná rovnováha</h3><p>Podpora výkonu, regenerace a fyzické kondice.</p></article>
+          <article class="service-row"><span>C</span><h3>Psychika a nervový systém</h3><p>Souvislosti mezi stresem, energií a celkovým zdravím.</p></article>
+          <article class="service-row"><span>D</span><h3>Hormony, metabolismus a imunita</h3><p>Hormonální zdraví, reprodukce, výživa, imunita a metabolická rovnováha.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté otázky</div>
+            <h2>Než se objednáte</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Je péče určená jen pro lidi se zdravotními potížemi?</summary>
+            <p>Ne. Služby jsou pro lidi v náročném zdravotním období i pro ty, kteří chtějí zdraví aktivně podporovat a předcházet budoucím obtížím.</p>
+          </details>
+          <details>
+            <summary>Co získám po vstupní prohlídce?</summary>
+            <p>Po konzultaci a diagnostice dostanete individuální plán péče, který vychází z vašich dat, anamnézy a aktuálních potřeb.</p>
+          </details>
+          <details>
+            <summary>Kdo se mnou řeší výsledky vyšetření?</summary>
+            <p>Po dobu individuální péče vás provází průvodce, který srozumitelně probírá výsledky i pokroky a koordinuje spolupráci odborníků.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact">
+        <div class="contact-card">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>WE CARE Liberec</h2>
+          </div>
+          <div class="contact-line">
+            <span>Telefon</span>
+            <a class="mono" href="tel:+420775844672">+420 775 844 672</a>
+          </div>
+          <div class="contact-line">
+            <span>E-mail</span>
+            <a class="mono" href="mailto:info@wecareliberec.cz">info@wecareliberec.cz</a>
+          </div>
+          <div class="contact-line">
+            <span>Adresa</span>
+            <strong>Klostermannova 690/15, 460 01 Liberec</strong>
+          </div>
+          <a class="btn primary" href="tel:+420775844672">Zavolat na recepci</a>
+        </div>
+        <div id="map" aria-label="Mapa WE CARE Liberec"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <div class="eyebrow">Objednání</div>
+          <h2>Začněte vstupní konzultací</h2>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420775844672">Objednat se</a>
+          <a class="btn secondary" href="mailto:info@wecareliberec.cz">Napište nám</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Orientační prezentační stránka vytvořená týmem Webflex pro interní komunikaci s WE CARE Liberec.</span>
+      <a href="https://app.webflex.cz/delete/vg14gr0">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.068013, 50.771514599999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#606080' })
+      .setLngLat([15.068013, 50.771514599999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
