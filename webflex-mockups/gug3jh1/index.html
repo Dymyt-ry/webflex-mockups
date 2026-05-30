@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KidsTherapy Labyrint - Barbora Šolić</title>
+  <meta name="description" content="Ambulance dětské fyzioterapie a intenzivní neurorehabilitace v Liberci.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #202126;
+      --muted: #6f737d;
+      --line: rgba(32,33,38,.09);
+      --accent: #E0C0C0;
+      --accent-strong: #b98589;
+      --blue: #888EAF;
+      --shadow: 0 28px 90px rgba(41, 45, 62, .10);
+      --soft-shadow: 0 18px 70px rgba(136, 142, 175, .13);
+      --radius: 8px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,33,38,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,33,38,.025) 1px, transparent 1px),
+        radial-gradient(circle at 12% 6%, rgba(224,192,192,.38), transparent 34rem),
+        radial-gradient(circle at 86% 12%, rgba(136,142,175,.14), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: #4b4f59;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .btn, .chip-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      border-radius: 999px;
+      padding: 0 19px;
+      font-weight: 700;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:focus-visible, .chip-link:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    .btn:hover, .chip-link:hover { transform: translateY(-1px); }
+    .btn:active, .chip-link:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 0 16px 40px rgba(32,33,38,.16);
+    }
+    .btn-primary:hover { background: #000; }
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: rgba(255,255,255,.42);
+    }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 60px;
+      padding: 72px 0 82px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #555a65;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .hero-panel {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-strong);
+    }
+
+    .hero-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(.96);
+    }
+
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      padding: 18px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.84);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 14px 38px rgba(32,33,38,.10);
+    }
+
+    .hero-note strong { display: block; font-size: 16px; }
+    .hero-note span { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(280px, .45fr);
+      gap: 52px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .card {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      padding: 28px;
+      min-height: 100%;
+      backdrop-filter: blur(16px);
+    }
+
+    .service-card {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .service-card .num {
+      font-family: var(--font-mono);
+      color: var(--accent-strong);
+      font-size: 13px;
+    }
+
+    .service-card h3 { font-size: 24px; line-height: 1.1; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .82fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .photo-tile {
+      border-radius: var(--radius);
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      box-shadow: var(--shadow);
+    }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78); }
+
+    .feature-list {
+      display: grid;
+      gap: 0;
+      background: rgba(255,255,255,.72);
+      border-radius: var(--radius);
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 26px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-row:last-child { border-bottom: 0; }
+    .feature-row b { font-family: var(--font-mono); font-size: 13px; color: var(--blue); text-transform: uppercase; }
+    .feature-row span { color: #4c505a; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .stat-card {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--soft-shadow);
+    }
+    .stat-card .value {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 1;
+      color: var(--accent-strong);
+    }
+    .stat-card p { margin-top: 10px; }
+
+    .process {
+      counter-reset: step;
+      background: rgba(255,255,255,.66);
+      box-shadow: var(--soft-shadow);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 110px 1fr 1.3fr;
+      gap: 28px;
+      padding: 26px 30px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step::before {
+      content: "0" counter(step);
+      font-family: var(--font-mono);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+    .step h3 { font-size: 22px; }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+      background: var(--ink);
+      color: #fff;
+    }
+    .price-card p { color: rgba(255,255,255,.74); }
+    .price-card .label { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+    .price-card .price { font-family: var(--font-display); font-size: clamp(40px, 5vw, 72px); line-height: .95; overflow-wrap: anywhere; }
+    .price-list { display: grid; gap: 12px; }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+      color: #4f535d;
+    }
+    .price-line strong { color: var(--ink); }
+    .price-line span { font-family: var(--font-mono); color: var(--accent-strong); white-space: nowrap; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      box-shadow: var(--soft-shadow);
+      filter: saturate(.82) contrast(.96);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .75fr 1.25fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { background: #fff; }
+    .contact-list { display: grid; gap: 18px; margin-top: 28px; }
+    .contact-item span {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--blue);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .contact-item a, .contact-item strong { font-size: 19px; font-weight: 700; }
+    #map {
+      height: 420px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    details {
+      background: rgba(255,255,255,.76);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--soft-shadow);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 12px; }
+
+    .final {
+      padding: 76px 0;
+      background: #202126;
+      color: #fff;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final p { color: rgba(255,255,255,.72); margin-top: 14px; font-size: 18px; }
+    .final .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 30px 0;
+      color: #7a7e88;
+      font-size: 13px;
+      background: #f4f4f2;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      margin-top: 14px;
+      color: #8a8e96;
+      max-width: 880px;
+    }
+    .disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .split, .pricing, .gallery, .contact-grid, .final .wrap {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 48px; }
+      .hero-panel { max-width: 680px; }
+      .services, .stats, .faq { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 70px 1fr; }
+      .step p { grid-column: 2; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 62px 0; }
+      .hero { gap: 34px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .feature-row { grid-template-columns: 1fr; gap: 8px; }
+      .step { grid-template-columns: 1fr; gap: 10px; }
+      .step p { grid-column: auto; }
+      .price-line { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="KidsTherapy Labyrint - Barbora Šolić">
+        <img src="https://www.kidstherapylabyrint.cz/wp-content/uploads/2021/08/KTL-Logo-Text-3.png" alt="KidsTherapy Labyrint - Barbora Šolić">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#terapie">Terapie</a>
+        <a href="#ambulance">Ambulance</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420722014644">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Liberec · dětská fyzioterapie</div>
+        <h1>Děti v pohybu</h1>
+        <p class="lead">Ambulance dětské fyzioterapie a intenzivní neurorehabilitace Barbory Šolić v přízemí Rezidence Park Masarykova.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420722014644">Objednat telefonicky</a>
+          <a class="btn btn-outline" href="mailto:info@kidstherapylabyrint.cz">Napsat e-mail</a>
+        </div>
+      </div>
+      <div class="hero-panel" aria-label="Klidný interiér ambulance">
+        <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+        <div class="hero-note">
+          <strong>Bezbariérová ambulance</strong>
+          <span>Čekárna s recepcí, dětským koutkem, přebalovacím pultem a dvěma ordinacemi.</span>
+        </div>
+      </div>
+    </div>
+
+    <section id="terapie">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Terapie podle potřeb dítěte</h2>
+          <p>Práce s pohybovým vývojem, handlingem, senzorickou integrací i intenzivní neurorehabilitací probíhá v prostředí připraveném pro děti a rodiče.</p>
+        </div>
+        <div class="services">
+          <article class="card service-card">
+            <span class="num">01</span>
+            <h3>Konzultace psychomotorického vývoje</h3>
+            <p>Pro rodiče, kteří chtějí probrat vývoj, pohybové návyky a vhodnou podporu dítěte.</p>
+          </article>
+          <article class="card service-card">
+            <span class="num">02</span>
+            <h3>Handling a manipulace</h3>
+            <p>Praktické vedení každodenní péče, nošení, polohování a bezpečné manipulace s dítětem.</p>
+          </article>
+          <article class="card service-card">
+            <span class="num">03</span>
+            <h3>Fyzioterapie dětí</h3>
+            <p>Individuální terapie zaměřená na pohyb, koordinaci a potřeby konkrétního dítěte.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="ambulance">
+      <div class="wrap split">
+        <div class="photo-tile">
+          <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+        </div>
+        <div class="feature-list">
+          <div class="feature-row">
+            <b>Prostor</b>
+            <span>Ambulance je v přízemí Rezidence Park Masarykova vedle recepce, u parkové části a parkovací zóny.</span>
+          </div>
+          <div class="feature-row">
+            <b>Vybavení</b>
+            <span>Dvě ordinace jsou připravené pro potřeby dětského fyzioterapeuta včetně systému TheraSuit®Method.</span>
+          </div>
+          <div class="feature-row">
+            <b>Jazyky</b>
+            <span>Terapie může probíhat česky, anglicky i chorvatsky.</span>
+          </div>
+          <div class="feature-row">
+            <b>Přístup</b>
+            <span>Prostor je bezbariérový a splňuje hygienické normy zdravotnického zařízení.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat-card">
+            <div class="value">5,0</div>
+            <p>Google hodnocení podle dostupných údajů.</p>
+          </div>
+          <div class="stat-card">
+            <div class="value">6</div>
+            <p>Recenzí uvedených ve strukturovaných datech.</p>
+          </div>
+          <div class="stat-card">
+            <div class="value">OZ</div>
+            <p>Registrované nestátní zdravotnické zařízení pod č. j. OZ 108/2021/SPO/OP.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak návštěva probíhá</h2>
+          <p>Kontakt je jednoduchý: domluvíte termín, přijdete do ambulance v přízemí a společně projdete potřeby dítěte.</p>
+        </div>
+        <div class="process">
+          <div class="step">
+            <h3>Domluva termínu</h3>
+            <p>Zavolejte nebo napište e-mail. Do zprávy uveďte věk dítěte a důvod konzultace.</p>
+          </div>
+          <div class="step">
+            <h3>Příchod do ambulance</h3>
+            <p>Adresa je Vítězná 1418/12, Liberec. Ambulance je v přízemí a má bezbariérový vstup.</p>
+          </div>
+          <div class="step">
+            <h3>Individuální postup</h3>
+            <p>Podle potřeb dítěte se volí fyzioterapie, handling, senzorická integrace nebo intenzivní neurorehabilitace.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap pricing">
+        <div class="card price-card">
+          <div>
+            <div class="label">Ceník</div>
+            <div class="price">Podle typu péče</div>
+          </div>
+          <p>Konkrétní cenu a délku návštěvy si ověřte při objednání. Strukturovaná data neobsahují částky.</p>
+        </div>
+        <div class="card">
+          <div class="price-list">
+            <div class="price-line"><strong>Konzultace psychomotorického vývoje</strong><span>termín</span></div>
+            <div class="price-line"><strong>Fyzioterapie dětí</strong><span>individuálně</span></div>
+            <div class="price-line"><strong>Senzorická integrace a primitivní reflexy</strong><span>podle potřeb</span></div>
+            <div class="price-line"><strong>Intenzivní neurorehabilitace</strong><span>domluvou</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Klidné zázemí pro děti</h2>
+          <p>Čekárna s recepcí, dětským koutkem a přebalovacím pultem pomáhá zvládnout návštěvu v pohodlném tempu.</p>
+        </div>
+        <div class="gallery">
+          <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+          <img src="https://images.pexels.com/photos/6633444/pexels-photo-6633444.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist bookshelf featuring an open book and elegant candleholders, perfect for modern decor inspiration.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté otázky</h2>
+          <p>Krátké odpovědi k informacím, které rodiče obvykle řeší před první návštěvou.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Kde ambulanci najdu?</summary>
+            <p>Na adrese Vítězná 1418/12, 460 01 Liberec, v přízemí Rezidence Park Masarykova.</p>
+          </details>
+          <details>
+            <summary>Je vstup bezbariérový?</summary>
+            <p>Ano, ambulance je bezbariérová a součástí zázemí je také toaleta vhodná pro handicapované klienty.</p>
+          </details>
+          <details>
+            <summary>Jaké terapie jsou dostupné?</summary>
+            <p>Fyzioterapie dětí, handling, senzorická integrace, integrace primitivních reflexů a intenzivní neurorehabilitace včetně TheraSuit®Method.</p>
+          </details>
+          <details>
+            <summary>Lze terapii vést jiným jazykem?</summary>
+            <p>Ano, podle dostupných informací může terapie probíhat i v anglickém a chorvatském jazyce.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="card contact-card">
+          <div class="eyebrow">Kontakt</div>
+          <h2>Objednání a adresa</h2>
+          <div class="contact-list">
+            <div class="contact-item">
+              <span>Telefon</span>
+              <a href="tel:+420722014644">+420 722 014 644</a>
+            </div>
+            <div class="contact-item">
+              <span>E-mail</span>
+              <a href="mailto:info@kidstherapylabyrint.cz">info@kidstherapylabyrint.cz</a>
+            </div>
+            <div class="contact-item">
+              <span>Adresa</span>
+              <strong>Vítězná 1418/12, 460 01 Liberec</strong>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa umístění ambulance"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div>
+          <h2>Domluvte si návštěvu</h2>
+          <p>Proberte věk dítěte, důvod návštěvy a vhodný termín přímo s ambulancí.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420722014644">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:info@kidstherapylabyrint.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-row">
+        <span>© KidsTherapy Labyrint - Barbora Šolić</span>
+        <span>Vítězná 1418/12, Liberec</span>
+      </div>
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální demonstraci pro provozovatele. Pokud si nepřejete její další dostupnost, můžete ji odstranit zde: <a href="https://webflex.cz/delete/gug3jh1">https://webflex.cz/delete/gug3jh1</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.070276699999999, 50.7735342],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C0C0' })
+      .setLngLat([15.070276699999999, 50.7735342])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
