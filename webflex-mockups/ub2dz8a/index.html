@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nostress Bakery Vězeňská</title>
+  <meta name="description" content="Nostress Bakery Vězeňská v Praze 1: tartine, quiche, zapečené bagety, denní polední menu, polévky a káva.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --surface-warm: #f5f0ea;
+      --ink: #1b1713;
+      --muted: #746a60;
+      --line: rgba(32, 0, 0, .10);
+      --accent: #B66A2B;
+      --brand: #200000;
+      --shadow: 0 34px 100px rgba(32, 0, 0, .10);
+      --shadow-soft: 0 18px 70px rgba(32, 0, 0, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(32,0,0,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,0,0,.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 6%, rgba(182,106,43,.12), transparent 30%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: min(266px, 54vw);
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .nav-links a { text-decoration: none; color: rgba(27,23,19,.72); transition: color .2s ease; }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 900;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(182,106,43,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.08; }
+    p { hyphens: auto; }
+
+    .hero { padding: 66px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: rgba(27,23,19,.76);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+      margin-top: 42px;
+    }
+
+    .meta-tile, .service-card, .menu-panel, .quote-card, .hours-card, .map-card, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+    }
+
+    .meta-tile {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 20px;
+    }
+    .meta-tile strong {
+      display: block;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 18px;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-warm);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(32,0,0,.54));
+    }
+    .photo-label {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 230px;
+      padding: 24px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .service-card p { margin: 18px 0 0; color: var(--muted); }
+    .service-card .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .menu-split {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .menu-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+    }
+    .menu-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .menu-panel {
+      padding: 32px;
+      border-radius: 30px;
+    }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 22px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row b {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .menu-row span { color: var(--muted); font-size: 18px; font-weight: 700; }
+
+    .trust-band {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .trust-item {
+      padding: 32px 28px;
+      border-radius: 28px;
+      background: var(--brand);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .trust-item strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1;
+      color: #f4c49b;
+    }
+    .trust-item span { display: block; margin-top: 12px; color: rgba(255,255,255,.76); font-weight: 700; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 330px;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-warm);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-strip figure:nth-child(2) { transform: translateY(28px); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .46fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .hours-card, .map-card {
+      border-radius: 30px;
+      overflow: hidden;
+    }
+    .hours-card { padding: 30px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .contact-line a, .contact-line span { font-weight: 800; text-decoration: none; }
+    .hours {
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(182,106,43,.09);
+    }
+    #map { height: 420px; min-height: 100%; border-radius: 30px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 24px; border-radius: 24px; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final-cta {
+      margin: 82px auto;
+      padding: clamp(32px, 6vw, 64px);
+      border-radius: 34px;
+      background: var(--brand);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta p { margin: 14px 0 0; color: rgba(255,255,255,.72); font-size: 19px; }
+    .final-cta .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(27,23,19,.58);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .credits { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .credits a { color: inherit; }
+    .disclaimer { margin-top: 18px; font-size: 12px; color: rgba(27,23,19,.48); }
+
+    @media (max-width: 940px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .menu-split, .contact-grid, .final-cta { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-grid, .trust-band, .faq-grid { grid-template-columns: 1fr 1fr; }
+      .section-head { grid-template-columns: 1fr; gap: 16px; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { transform: none; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 42px; }
+      .hero-meta, .service-grid, .trust-band, .faq-grid { grid-template-columns: 1fr; }
+      .menu-row, .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+      section { padding: 58px 0; }
+      .final-cta { margin: 58px auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Nostress Bakery Vězeňská">
+        <img src="https://static.wixstatic.com/media/acb050_804e9548656b426594cab933f64e2e25~mv2.png/v1/fill/w_266,h_82,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/acb050_804e9548656b426594cab933f64e2e25~mv2.png" alt="Nostress Bakery Vězeňská">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#menu">Menu</a>
+        <a href="#atmosfera">Atmosféra</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420602156682">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Vězeňská 8 · Praha 1</p>
+          <h1>Pekárna bez spěchu</h1>
+          <p class="lead">Tartine, slané quiche, zapečené bagety, polední menu a káva v centru Starého Města.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#menu">Dnešní nabídka</a>
+            <a class="btn btn-secondary" href="mailto:pekarna@nostress.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>4.7</strong><span>hodnocení Google</span></div>
+            <div class="meta-tile"><strong>1 262</strong><span>recenzí hostů</span></div>
+            <div class="meta-tile"><strong>po-so 8-19</strong><span>neděle 9-17</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <div class="photo-label"><span>Nostress Bakery</span><span>káva · oběd · pečivo</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Každý den u nás</p>
+            <h2>Chutě na snídani i oběd</h2>
+          </div>
+          <p>V nabídce držíme osvědčené věci z pekárny a k tomu denní polední menu: dvě polévky a jedno hlavní jídlo.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Tartine</h3><p>Venkovské obložené chleby pro chvíli, kdy chcete něco poctivého a rychlého.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Quiche</h3><p>Slané koláče do ruky, ke kávě nebo jako lehký oběd během dne.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Zapečené bagety</h3><p>Křupavá volba, když se zastavíte mezi schůzkami v centru.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>Polední menu</h3><p>Dvě polévky a hlavní jídlo podle denní nabídky ve Vězeňské.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap menu-split">
+        <div class="menu-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="menu-panel">
+          <p class="eyebrow">Z polední nabídky</p>
+          <h2>Dnes ve Vězeňské</h2>
+          <div class="menu-row"><b>Polévka</b><span>Květákový krém</span></div>
+          <div class="menu-row"><b>Polévka</b><span>Kapustová s žampiony</span></div>
+          <div class="menu-row"><b>Hlavní chod</b><span>Brick s mletým hovězím masem a zeleninový salát</span></div>
+          <div class="menu-row"><b>Poznámka</b><span>Nabídka polévek se může během dne změnit.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust-band">
+          <div class="trust-item"><strong>4.7</strong><span>průměrné hodnocení na Google</span></div>
+          <div class="trust-item"><strong>1 262</strong><span>veřejných recenzí hostů</span></div>
+          <div class="trust-item"><strong>Vězeňská 8</strong><span>pár kroků od Pařížské a Staroměstského náměstí</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Křupnout, zlomit, kousnout</p>
+            <h2>Chvíle u stolu</h2>
+          </div>
+          <p>Zastavte se na kávu, snídani, polední menu nebo něco slaného z vitríny.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus."></figure>
+          <figure><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure><img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Najdete nás ve Starém Městě</h2>
+          </div>
+          <p>Pro dotaz k nabídce volejte přímo na pobočku Vězeňská nebo napište na společný e-mail pekárny.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="hours-card">
+            <div class="contact-line"><b>Adresa</b><span>Vězeňská 8, Staré Město, 110 00 Praha 1</span></div>
+            <div class="contact-line"><b>Telefon</b><a href="tel:+420602156682">+420 602 156 682</a></div>
+            <div class="contact-line"><b>E-mail</b><a href="mailto:pekarna@nostress.cz">pekarna@nostress.cz</a></div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><span>pondělí až sobota</span><strong>8:00-19:00</strong></div>
+              <div><span>neděle</span><strong>9:00-17:00</strong></div>
+            </div>
+          </div>
+          <div class="map-card"><div id="map"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Než dorazíte</p>
+            <h2>Prakticky</h2>
+          </div>
+          <p>Krátké odpovědi k denní nabídce a návštěvě pobočky ve Vězeňské.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Máte denní menu?</h3><p>Ano. Denně připravujeme polední menu se dvěma polévkami a jedním hlavním jídlem.</p></article>
+          <article class="faq-item"><h3>Co je ve stálé nabídce?</h3><p>Tartine, slané quiche, zapečené bagety, káva a další položky podle vitríny.</p></article>
+          <article class="faq-item"><h3>Kdy máte otevřeno?</h3><p>Od pondělí do soboty 8:00-19:00, v neděli 9:00-17:00.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap final-cta">
+      <div>
+        <p class="eyebrow">Nostress Bakery Vězeňská</p>
+        <h2>Zastavte se dnes</h2>
+        <p>Vězeňská 8, Praha 1. Káva, slané pečivo a polední menu v centru města.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="tel:+420602156682">+420 602 156 682</a>
+        <a class="btn btn-secondary" href="https://www.nostress.cz/">nostress.cz</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>Nostress Bakery Vězeňská · Vězeňská 8, Praha 1 · <a href="mailto:pekarna@nostress.cz">pekarna@nostress.cz</a></div>
+      <div class="credits">
+        Foto:
+        <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>
+        <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>
+        <a href="https://www.pexels.com/@enginakyurt">Engin Akyurt</a>
+      </div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální ukázku pro provozovatele. Pro odstranění použijte adresu /delete/ub2dz8a.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.421920499999999, 50.090336],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#B66A2B' })
+      .setLngLat([14.421920499999999, 50.090336])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
