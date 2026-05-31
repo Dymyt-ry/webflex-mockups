@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alf &amp; Bet | Pražírna kávy a řemeslná pekárna v Libni</title>
+  <meta name="description" content="Alf & Bet v Libni: výběrová káva, řemeslné pečivo, to-go vybavení a osobní vyzvednutí na pobočkách.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #100d0d;
+      --panel: #181313;
+      --panel-2: #221919;
+      --ink: #fffaf2;
+      --muted: #c9bdb2;
+      --rule: rgba(255, 250, 242, .19);
+      --accent: #FF5A14;
+      --accent-dark: #c43e06;
+      --font-display: "Archivo Black", "Inter Tight", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .7, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .06;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .rule { border-top: 1px solid var(--rule); }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: -80px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 10px 14px;
+      z-index: 20;
+    }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(16, 13, 13, .86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 13px 18px;
+      border-radius: 0;
+      border: 1px solid transparent;
+      font: 800 13px/1 var(--font-body);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #180907; }
+    .btn.primary:hover { background: #ff7a42; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { border-color: var(--ink); background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      gap: 48px;
+      align-items: center;
+      padding: 58px 0 52px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: .14em;
+      margin-bottom: 22px;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .88;
+      max-width: 720px;
+    }
+    .lead {
+      max-width: 640px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 23px);
+      margin: 26px 0 30px;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-media {
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--rule);
+      position: relative;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.18) brightness(.82);
+    }
+    .hero-media::after {
+      content: "LIBEŇ / COFFEE / BAKERY";
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      background: var(--accent);
+      color: #160705;
+      font: 800 12px/1 var(--font-mono);
+      letter-spacing: .08em;
+      padding: 10px 12px;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 118px 1fr minmax(220px, 420px);
+      gap: 26px;
+      align-items: end;
+      margin-bottom: 34px;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 22px;
+    }
+    .num {
+      color: var(--accent);
+      font: 900 clamp(54px, 9vw, 118px)/.8 var(--font-display);
+    }
+    h2 { font-size: clamp(34px, 5vw, 70px); line-height: .92; }
+    .section-head p { color: var(--muted); margin: 0; font-size: 18px; }
+
+    .service-list {
+      border-top: 1px solid var(--rule);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(260px, 420px) 120px;
+      gap: 26px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+    }
+    .service-row h3 { font-size: clamp(25px, 3vw, 42px); line-height: 1; }
+    .service-row p { margin: 0; color: var(--muted); font-size: 17px; }
+    .tag {
+      justify-self: end;
+      font: 700 12px/1 var(--font-mono);
+      color: var(--accent);
+      border: 1px solid var(--rule);
+      padding: 10px;
+      text-transform: uppercase;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--rule);
+      background: rgba(255,255,255,.025);
+    }
+    .stat {
+      min-height: 168px;
+      padding: 24px;
+      border-right: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font: 800 clamp(42px, 7vw, 78px)/.9 var(--font-mono); color: var(--ink); }
+    .stat span { color: var(--muted); text-transform: uppercase; font-size: 13px; letter-spacing: .08em; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .photo-card, .menu-board {
+      border: 1px solid var(--rule);
+      background: var(--panel);
+      min-height: 100%;
+    }
+    .photo-card img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.1);
+    }
+    .caption { padding: 20px; color: var(--muted); }
+    .menu-board { padding: 0; }
+    .menu-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--rule);
+      align-items: baseline;
+    }
+    .menu-row:last-child { border-bottom: 0; }
+    .menu-row span:first-child { font-weight: 800; text-transform: uppercase; }
+    .price { font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      object-fit: cover;
+      filter: grayscale(1) contrast(1.18) brightness(.78);
+      border: 1px solid var(--rule);
+    }
+    .gallery .stack {
+      display: grid;
+      gap: 20px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--rule);
+      background: var(--panel-2);
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+    .contact-line {
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 16px;
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line b {
+      display: block;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .contact-line span, .contact-line a { color: var(--ink); font-size: 20px; font-weight: 700; }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--rule);
+      background: var(--panel);
+    }
+
+    .final {
+      background: var(--accent);
+      color: #170705;
+      padding: 62px 0;
+    }
+    .final .wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+    }
+    .final h2 { color: #170705; max-width: 760px; }
+    .final .btn { border-color: #170705; color: #170705; background: transparent; }
+    .final .btn:hover { background: #170705; color: var(--ink); }
+
+    footer {
+      padding: 32px 0;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--rule);
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .wf-disclaimer {
+      opacity: .72;
+      font-size: 12px;
+      border-top: 1px solid var(--rule);
+      padding-top: 18px;
+    }
+    .wf-disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .service-row, .split, .gallery, .contact-grid, .final .wrap {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        gap: 30px;
+        padding-top: 44px;
+      }
+      .hero-media { min-width: 0; }
+      .section-head { align-items: start; }
+      .service-row { gap: 12px; }
+      .tag { justify-self: start; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .stat:last-child { border-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#obsah">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#" aria-label="Alf & Bet">
+        <img src="https://alfabet.coffee/cdn/shop/files/alfabet_logo_230x.png?v=1779445519" alt="Alf & Bet">
+      </a>
+      <div class="navlinks">
+        <a href="#kava">Káva</a>
+        <a href="#pekaren">Pekárna</a>
+        <a href="#vybaveni">Vybavení</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420739765399">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="obsah">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Pražírna výběrové kávy / Libeň</div>
+        <h1 id="hero-title">Káva, chleba, Libeň</h1>
+        <p class="lead">Alf &amp; Bet spojuje pražení výběrové kávy, řemeslnou pekárnu a každodenní testování v kavárnách. Přijďte pro šálek, čerstvé pečivo nebo vybavení na domácí přípravu.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#kontakt">Najít pobočku</a>
+          <a class="btn secondary" href="mailto:my@alfabet.coffee">Napsat e-mail</a>
+        </div>
+      </div>
+      <figure class="hero-media" aria-label="Atmosféra kavárny">
+        <img src="https://images.pexels.com/photos/16124818/pexels-photo-16124818.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white photo of a cozy urban cafe interior in Jönköping, Sweden.">
+      </figure>
+    </section>
+
+    <section id="kava" class="wrap rule">
+      <div class="section-head">
+        <div class="num">01</div>
+        <h2>Co si odnesete</h2>
+        <p>Výběrová káva, pečivo a praktické vybavení bez velkých řečí. V centru je chuť, čerstvost a ruční práce.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <h3>Pražení kávy</h3>
+          <p>V nabídce najdete 100% arabiku, set tří různých káv i aktuálně pražené loty z Kolumbie, Brazílie a Kostariky.</p>
+          <span class="tag">Coffee</span>
+        </article>
+        <article class="service-row" id="pekaren">
+          <h3>Řemeslná pekárna</h3>
+          <p>V Libni se peče jednoduše a poctivě. Pečivo doplňuje kávu tak, aby dávalo smysl ráno, cestou i u stolu.</p>
+          <span class="tag">Bakery</span>
+        </article>
+        <article class="service-row" id="vybaveni">
+          <h3>To-go a brew gear</h3>
+          <p>Hrnky HUNU, KINTO, KeepCup i FELLOW Carter pro kávu s sebou a domácí přípravu.</p>
+          <span class="tag">Gear</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div class="num">02</div>
+        <h2>Důvěra v číslech</h2>
+        <p>Reálné veřejné údaje a konkrétní nabídka místo prázdných slibů.</p>
+      </div>
+      <div class="stats" aria-label="Důležité údaje">
+        <div class="stat"><strong>4,7</strong><span>Hodnocení na Googlu</span></div>
+        <div class="stat"><strong>888</strong><span>Veřejných recenzí</span></div>
+        <div class="stat"><strong>4</strong><span>Pobočky s osobním vyzvednutím</span></div>
+      </div>
+    </section>
+
+    <section class="wrap rule">
+      <div class="section-head">
+        <div class="num">03</div>
+        <h2>Aktuálně na polici</h2>
+        <p>Výběr z produktů, které Alf &amp; Bet uvádí ve své nabídce. Ceny jsou ponechané v měně zveřejněné u produktů.</p>
+      </div>
+      <div class="split">
+        <figure class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="caption">Káva do ruky, snídaně k posezení a pečivo, které má vlastní příběh.</figcaption>
+        </figure>
+        <div class="menu-board" aria-label="Produktový výběr">
+          <div class="menu-row"><span>Roaster choice / set of 3 coffees</span><span class="price">€41,95</span></div>
+          <div class="menu-row"><span>Colombia Las Delicias washed</span><span class="price">€17,95</span></div>
+          <div class="menu-row"><span>Brasil Boa Vista Summer Solstice natural</span><span class="price">€15,95</span></div>
+          <div class="menu-row"><span>Costa Rica El Alto washed</span><span class="price">€21,95</span></div>
+          <div class="menu-row"><span>Colombia Atunkaa Deca</span><span class="price">€15,95</span></div>
+          <div class="menu-row"><span>HUNU cup 265 ml</span><span class="price">€24,95</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div class="num">04</div>
+        <h2>Uvnitř a po cestě</h2>
+        <p>Prostor pro zastavení u šálku, rychlé vyzvednutí i chvíli nad pečivem, které dává kávě pevný doprovod.</p>
+      </div>
+      <div class="gallery" aria-label="Fotogalerie">
+        <img src="https://images.pexels.com/photos/7869490/pexels-photo-7869490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish black and white photo of a modern bar interior showcasing elegant ceiling lamps and design.">
+        <div class="stack">
+          <img src="https://images.pexels.com/photos/3257659/pexels-photo-3257659.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black and white interior dining room with empty chairs and soft lighting.">
+          <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap rule">
+      <div class="section-head">
+        <div class="num">05</div>
+        <h2>Kde nás najdete</h2>
+        <p>Libeňská adresa, telefon a e-mail pro rychlý kontakt. Otevírací dobu si prosím ověřte před cestou.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="contact-line">
+            <b>Adresa</b>
+            <span>Světova 454/2, 180 00 Praha 8-Libeň</span>
+          </div>
+          <div class="contact-line">
+            <b>Telefon</b>
+            <a href="tel:+420739765399">+420 739 765 399</a>
+          </div>
+          <div class="contact-line">
+            <b>E-mail</b>
+            <a href="mailto:my@alfabet.coffee">my@alfabet.coffee</a>
+          </div>
+          <div class="contact-line">
+            <b>Web</b>
+            <a href="https://alfabet.coffee/en-eu">alfabet.coffee</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa pobočky Alf & Bet"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <h2>Stavte se pro kávu a pečivo</h2>
+        <a class="btn" href="tel:+420739765399">Zavolat na pobočku</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <span>Alf &amp; Bet</span>
+        <span>Světova 454/2, Praha 8-Libeň</span>
+      </div>
+      <div class="wf-disclaimer">
+        Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/329w7hu">webflex.cz/delete/329w7hu</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.473375500000001, 50.1057515],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#FF5A14' })
+      .setLngLat([14.473375500000001, 50.1057515])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
