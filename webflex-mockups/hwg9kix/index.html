@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oh Deer Bakery | Purkyňova 3, Praha 1</title>
+  <meta name="description" content="Oh Deer Bakery v Purkyňově ulici. Sladké položky, káva, objednávky a každý den 08:00-20:00.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --soft: #f3f3f1;
+      --ink: #171717;
+      --muted: #666761;
+      --line: rgba(23, 23, 23, 0.08);
+      --accent: #E080A0;
+      --accent-dark: #a94769;
+      --shadow: 0 28px 90px rgba(18, 18, 18, 0.08);
+      --shadow-soft: 0 18px 70px rgba(224, 128, 160, 0.16);
+      --radius: 18px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23,23,23,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,23,0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, 0.82);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .navlinks { display: flex; align-items: center; gap: 22px; color: var(--muted); font-weight: 700; }
+    .navlinks a { transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .navlinks a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s cubic-bezier(.2,.8,.2,1), border-color .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #171717; box-shadow: var(--shadow-soft); }
+    .btn.primary:hover { background: #ea99b4; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: var(--soft); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(430px, .82fr);
+      gap: 54px;
+      align-items: center;
+      padding: 72px 0 86px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); line-height: .95; letter-spacing: 0; hyphens: none; }
+    h1 {
+      max-width: 700px;
+      margin-top: 18px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 590px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #41423e;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 650px;
+    }
+    .meta-card {
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 18px;
+      min-height: 104px;
+    }
+    .meta-card strong { display: block; font-family: var(--font-mono); font-size: 20px; }
+    .meta-card span { display: block; margin-top: 7px; color: var(--muted); font-weight: 650; font-size: 14px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 42px 120px rgba(18, 18, 18, 0.18);
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.92) contrast(.96); }
+    .hero-photo::after {
+      content: "Denně 08:00-20:00";
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.84);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(280px, .3fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 5vw, 68px); overflow-wrap: anywhere; text-transform: uppercase; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .menu-card {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .menu-card h3 { font-size: 25px; line-height: 1.05; }
+    .price { margin-top: 30px; font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--accent-dark); }
+    .menu-card p { margin: 14px 0 0; color: var(--muted); font-size: 16px; }
+
+    .strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .stat {
+      background: #171717;
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 26px;
+      min-height: 160px;
+    }
+    .stat b { font-family: var(--font-mono); font-size: clamp(32px, 5vw, 58px); line-height: 1; }
+    .stat span { display: block; margin-top: 12px; color: rgba(255,255,255,.72); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--paper);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      padding: 34px;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-stack figure { margin: 0; overflow: hidden; border-radius: 22px; background: var(--soft); }
+    .photo-stack figure:first-child { grid-row: span 2; }
+    .photo-stack img { width: 100%; height: 100%; min-height: 220px; object-fit: cover; }
+    .photo-stack figcaption { padding: 14px; font-weight: 750; color: #4b4c48; background: rgba(255,255,255,.82); }
+    .steps { margin: 0; padding: 0; list-style: none; }
+    .steps li {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 18px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .steps li:last-child { border-bottom: 0; }
+    .steps b { font-family: var(--font-mono); color: var(--accent-dark); }
+    .steps strong { display: block; font-size: 20px; }
+    .steps span { display: block; margin-top: 5px; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .hours { width: 100%; border-collapse: collapse; margin-top: 22px; font-family: var(--font-mono); }
+    .hours td { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .hours td:last-child { text-align: right; font-weight: 700; }
+    .today td { color: var(--accent-dark); }
+    .contact-list { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .contact-list a, .contact-list span { font-weight: 750; color: #333430; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    details {
+      background: var(--paper);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+    details:hover { transform: translateY(-1px); }
+    details:active { transform: translateY(1px); }
+    summary { cursor: pointer; font-weight: 850; font-size: 19px; }
+    details p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 46px;
+      border-radius: 32px;
+      background: #171717;
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 34px 110px rgba(18,18,18,.18);
+    }
+    .final h2 { font-size: clamp(34px, 5vw, 66px); text-transform: uppercase; overflow-wrap: anywhere; }
+    .final p { margin: 14px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .final .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    footer { padding: 36px 0; color: var(--muted); font-size: 13px; }
+    .credit { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 16px; }
+    .disclaimer { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .navlinks a:not(.btn) { display: none; }
+      .hero, .split, .contact-grid, .section-head, .final { grid-template-columns: 1fr; }
+      .hero { padding-top: 44px; min-height: auto; }
+      .hero-photo { min-width: 0; }
+      .menu-grid, .strip, .faq { grid-template-columns: 1fr; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .photo-stack { grid-template-columns: 1fr; }
+      .final { padding: 30px; }
+      section { padding: 62px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Oh Deer</a>
+      <div class="navlinks">
+        <a href="#nabidka">Nabídka</a>
+        <a href="#navsteva">Návštěva</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420737730090">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Purkyňova 3 · Praha 1</div>
+        <h1 id="hero-title">Oh Deer Bakery</h1>
+        <p class="lead">Sladké pečivo, káva a klidné místo v Novém Městě. Zastavte se každý den od rána do večera, nebo si objednejte na telefonu či e-mailu.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420737730090">+420 737 730 090</a>
+          <a class="btn secondary" href="mailto:order@ohdeerbakery.cz">Objednat e-mailem</a>
+        </div>
+        <div class="hero-meta" aria-label="Základní informace">
+          <div class="meta-card"><strong>08-20</strong><span>otevřeno každý den</span></div>
+          <div class="meta-card"><strong>4.5</strong><span>hodnocení na Googlu</span></div>
+          <div class="meta-card"><strong>1404</strong><span>recenzí od hostů</span></div>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+      </div>
+    </section>
+
+    <section id="nabidka" class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Doporučujeme</div>
+          <h2>Tři sladké zastávky</h2>
+        </div>
+        <p>Položky z aktuální nabídky Oh Deer Bakery. Ceny jsou převzaté z veřejných kontaktních údajů podniku.</p>
+      </div>
+      <div class="menu-grid">
+        <article class="menu-card">
+          <div><h3>Lemon Curd</h3><p>Jemná citrusová chuť pro ranní kávu i odpolední šálek.</p></div>
+          <div class="price">99 Kč</div>
+        </article>
+        <article class="menu-card">
+          <div><h3>Salty Caramel</h3><p>Sladko-slaná klasika, když chcete něco výraznějšího.</p></div>
+          <div class="price">99 Kč</div>
+        </article>
+        <article class="menu-card">
+          <div><h3>Pecan Mascarpone</h3><p>Ořechová volba s krémovým mascarpone pro pomalejší chvíli.</p></div>
+          <div class="price">119 Kč</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="duvera">
+      <div class="strip">
+        <div class="stat"><b>4.5</b><span>průměrné hodnocení</span></div>
+        <div class="stat"><b>1404</b><span>veřejných recenzí</span></div>
+        <div class="stat"><b>7/7</b><span>otevřeno po celý týden</span></div>
+      </div>
+    </section>
+
+    <section id="navsteva" class="wrap split">
+      <div class="panel">
+        <div class="eyebrow">Jak k nám</div>
+        <h2 id="duvera" style="font-size:clamp(32px,4vw,56px); margin-top:14px; text-transform:uppercase;">Káva, dezert, chvíle ve městě</h2>
+        <ol class="steps">
+          <li><b>01</b><span><strong>Vyberte si na místě</strong><span>Vitrína a doporučené položky se hodí pro rychlou zastávku i posezení.</span></span></li>
+          <li><b>02</b><span><strong>Zavolejte dopředu</strong><span>Na čísle +420 737 730 090 se domluvíte na objednávce.</span></span></li>
+          <li><b>03</b><span><strong>Najdete nás v centru</strong><span>Adresa je Purkyňova 3, Nové Město, 110 00 Praha-Praha 1.</span></span></li>
+        </ol>
+      </div>
+      <div class="photo-stack" aria-label="Atmosféra podniku">
+        <figure>
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption>Teplé světlo pro pomalejší posezení.</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="kontakt" class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Kontakt</div>
+          <h2>Purkyňova 3</h2>
+        </div>
+        <p>Nové Město, 110 00 Praha-Praha 1. Otevřeno denně od 08:00 do 20:00.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="panel">
+          <h3 style="font-size:28px; line-height:1.1;">Oh Deer Bakery</h3>
+          <ul class="contact-list">
+            <li><a href="tel:+420737730090">+420 737 730 090</a></li>
+            <li><a href="mailto:order@ohdeerbakery.cz">order@ohdeerbakery.cz</a></li>
+            <li><span>Purkyňova 3, Nové Město, 110 00 Praha-Praha 1</span></li>
+          </ul>
+          <table class="hours" aria-label="Otevírací doba">
+            <tr><td>Pondělí</td><td>08:00-20:00</td></tr>
+            <tr><td>Úterý</td><td>08:00-20:00</td></tr>
+            <tr><td>Středa</td><td>08:00-20:00</td></tr>
+            <tr><td>Čtvrtek</td><td>08:00-20:00</td></tr>
+            <tr><td>Pátek</td><td>08:00-20:00</td></tr>
+            <tr><td>Sobota</td><td>08:00-20:00</td></tr>
+            <tr class="today"><td>Neděle</td><td>08:00-20:00</td></tr>
+          </table>
+        </div>
+        <div id="map" aria-label="Mapa Oh Deer Bakery"></div>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Prakticky</div>
+          <h2>Než dorazíte</h2>
+        </div>
+        <p>Krátké odpovědi k návštěvě a objednávce.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Kdy máte otevřeno?</summary>
+          <p>Každý den od 08:00 do 20:00, včetně soboty a neděle.</p>
+        </details>
+        <details>
+          <summary>Kde přesně vás najdu?</summary>
+          <p>Na adrese Purkyňova 3, Nové Město, 110 00 Praha-Praha 1.</p>
+        </details>
+        <details>
+          <summary>Jak zadám objednávku?</summary>
+          <p>Zavolejte na +420 737 730 090 nebo napište na order@ohdeerbakery.cz.</p>
+        </details>
+        <details>
+          <summary>Jaké položky doporučujete?</summary>
+          <p>Lemon Curd za 99 Kč, Salty Caramel za 99 Kč a Pecan Mascarpone za 119 Kč.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="final">
+        <div>
+          <h2>Zastavte se dnes</h2>
+          <p>Oh Deer Bakery je otevřená do 20:00. Dejte si kávu, vyberte dezert nebo si domluvte objednávku.</p>
+        </div>
+        <div class="hero-actions" style="margin:0;">
+          <a class="btn primary" href="tel:+420737730090">Zavolat</a>
+          <a class="btn secondary" href="mailto:order@ohdeerbakery.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div>Fotografie: Pexels · Daniil Kondrashin, Alari Tammsalu, Việt Anh Nguyễn, Valeria Boltneva.</div>
+    <div class="credit">
+      <a href="https://www.pexels.com/@konrads-photo">Daniil Kondrashin</a>
+      <a href="https://www.pexels.com/@alaritammsalu">Alari Tammsalu</a>
+      <a href="https://www.pexels.com/@vi-t-anh-nguy-n-2150409023">Việt Anh Nguyễn</a>
+      <a href="https://www.pexels.com/@valeriya">Valeria Boltneva</a>
+    </div>
+    <div class="disclaimer">
+      Neoficiální prezentační stránka připravená studiem Webflex. Pokud si nepřejete její zveřejnění, můžete ji odstranit na adrese <a href="https://webflex.cz/delete/hwg9kix">webflex.cz/delete/hwg9kix</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.420012100000001, 50.081277199999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E080A0' })
+      .setLngLat([14.420012100000001, 50.081277199999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
