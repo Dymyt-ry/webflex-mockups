@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wellness club Plzeň - odpočinek v Bolevci</title>
+  <meta name="description" content="Wellness club Plzeň v Bolevci: wellness, masáže, ubytování a dárkové poukazy. Rezervace na telefonu +420 723 941 089.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: rgba(255,255,255,.78);
+      --surface-solid: #ffffff;
+      --soft: #eef7fb;
+      --ink: #15171a;
+      --muted: #68737b;
+      --line: rgba(21,23,26,.08);
+      --accent: #80C0E0;
+      --accent-ink: #123748;
+      --rose: #de3092;
+      --shadow: 0 36px 110px rgba(45, 86, 110, .13);
+      --shadow-soft: 0 22px 80px rgba(45, 86, 110, .09);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(128,192,224,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(128,192,224,.04) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(128,192,224,.22), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,252,253,.82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 26px;
+    }
+
+    .logo img {
+      width: min(260px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(21,23,26,.72);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(18,55,72,.13); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #0d2b38; }
+    .btn-secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+    }
+
+    .hero { padding: 62px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(21,23,26,.74);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 42px;
+      max-width: 710px;
+    }
+
+    .meta-tile, .surface, .service-card, .price-card, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+    }
+
+    .meta-tile {
+      min-height: 104px;
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      color: var(--accent-ink);
+    }
+
+    .meta-tile span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(9,31,42,.42));
+    }
+
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .service-card {
+      min-height: 220px;
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .service-card .num { font-family: var(--font-mono); color: var(--rose); font-weight: 700; }
+    .service-card h3 { margin-top: 28px; font-size: 24px; line-height: 1; }
+    .service-card p { margin: 14px 0 0; color: var(--muted); font-size: 16px; hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .82fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .quote-panel {
+      border-radius: 30px;
+      padding: clamp(28px, 5vw, 58px);
+      background: #122b38;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .quote-panel h2 { max-width: 640px; font-size: clamp(34px, 4.8vw, 68px); }
+    .quote-panel p { margin: 24px 0 0; max-width: 620px; color: rgba(255,255,255,.76); font-size: 20px; hyphens: auto; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .stat {
+      border-radius: 26px;
+      padding: 28px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow-soft);
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 54px); color: var(--accent-ink); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .price-card {
+      border-radius: 26px;
+      padding: 28px;
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .price-card .time { font-family: var(--font-mono); font-weight: 700; color: var(--accent-ink); }
+    .price-card .price { font-family: var(--font-display); font-size: clamp(34px, 4vw, 54px); line-height: 1; }
+    .price-card p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .gallery-main, .gallery-stack figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gallery-main { min-height: 520px; }
+    .gallery-stack { display: grid; gap: 18px; }
+    .gallery-stack figure { min-height: 251px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      right: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+    .gallery figure::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(10,24,31,.52));
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      border-radius: 30px;
+      padding: 32px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .contact-list { display: grid; gap: 18px; margin-top: 26px; }
+    .contact-item span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-ink);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 6px;
+    }
+    .contact-item a, .contact-item p {
+      margin: 0;
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: 750;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      border-radius: 24px;
+      padding: 26px;
+      min-height: 180px;
+    }
+    .faq-item h3 { font-family: var(--font-body); font-size: 22px; line-height: 1.12; font-weight: 850; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding-bottom: 96px;
+    }
+
+    .cta-band {
+      border-radius: 34px;
+      padding: clamp(30px, 6vw, 64px);
+      background: linear-gradient(135deg, #eaf7fd, #ffffff 54%, #fce8f4);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .cta-band h2 { max-width: 760px; }
+    .cta-band p { margin: 18px 0 0; max-width: 620px; color: var(--muted); font-size: 19px; }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(21,23,26,.58);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer a { color: inherit; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .gallery, .contact-grid, .cta-band {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .service-grid, .price-row, .faq-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cta-actions { justify-content: flex-start; }
+      .nav-links a:not(.btn) { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .nav { min-height: 68px; }
+      .nav-links { gap: 10px; }
+      .hero { padding: 42px 0 58px; }
+      .hero-grid { gap: 30px; }
+      .hero-meta, .service-grid, .price-row, .faq-list { grid-template-columns: 1fr; }
+      .gallery-main { min-height: 360px; }
+      .gallery-stack figure { min-height: 220px; }
+      section { padding: 58px 0; }
+      .contact-card { padding: 24px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Wellness club Plzeň">
+        <img src="https://www.wellnessclubplzen.cz/wp-content/uploads/2023/11/logo.png" alt="Wellness club Plzeň">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#wellness">Wellness</a>
+        <a href="#ceny">Ceny</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420723941089">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Plzeň-Bolevec · relax · masáže</p>
+          <h1>Odpočinek v Plzni</h1>
+          <p class="lead">Zahoďte starosti každodenního života aspoň na chvíli za hlavu a užijte si klid, soukromí a příjemnou péči ve Wellness clubu Plzeň.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420723941089">Rezervovat termín</a>
+            <a class="btn btn-secondary" href="#ceny">Zobrazit ceny</a>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-tile">
+              <strong>4,8</strong>
+              <span>hodnocení od hostů</span>
+            </div>
+            <div class="meta-tile">
+              <strong>338</strong>
+              <span>recenzí na Googlu</span>
+            </div>
+            <div class="meta-tile">
+              <strong>Bolevec</strong>
+              <span>Kaznějovská 2111/6a</span>
+            </div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <figcaption class="photo-label"><span>Absolutní klid</span><span>Wellness club Plzeň</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="wellness">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Čas jen pro vás.</h2>
+          </div>
+          <p>Wellness, dárkové poukazy, ubytování a masáže na jedné adrese v Plzni. Vyberte si délku pobytu a zavolejte si o volný termín.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <div class="num">01</div>
+            <div>
+              <h3>Wellness</h3>
+              <p>Prostor pro odpočinek, relax a klid po náročném dni nebo týdnu.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div class="num">02</div>
+            <div>
+              <h3>Masáže</h3>
+              <p>Péče pro chvíle, kdy chcete zvolnit tempo a uvolnit tělo.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div class="num">03</div>
+            <div>
+              <h3>Poukazy</h3>
+              <p>Dárkové poukazy pro výročí, oslavu nebo společný čas ve dvou.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div class="num">04</div>
+            <div>
+              <h3>Ubytování</h3>
+              <p>Možnost spojit pobyt v Plzni s pohodlným zázemím na místě.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="quote-panel">
+          <p class="eyebrow">Hosté oceňují</p>
+          <h2>Příjemnější odpočinek v Plzni nenajdete.</h2>
+          <p>Hosté zmiňují krásné prostředí, příjemnou recepci, vstřícnost a vysokou diskrétnost. Místo se hodí pro pravidelný relax i pro romantický balíček k významnému dni.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>4,8</strong>
+            <span>průměrné hodnocení</span>
+          </div>
+          <div class="stat">
+            <strong>338</strong>
+            <span>veřejných recenzí</span>
+          </div>
+          <div class="stat">
+            <strong>+420</strong>
+            <span>723 941 089 pro dotazy a rezervace</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ceny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Ceník pobytu</p>
+            <h2>Vyberte si délku relaxu.</h2>
+          </div>
+          <p>Ceny jsou uvedené podle zveřejněné nabídky. O aktuálních volných termínech vám rádi řekneme po telefonu.</p>
+        </div>
+        <div class="price-row">
+          <article class="price-card">
+            <div class="time">1 hodina</div>
+            <div>
+              <div class="price">1 320 Kč</div>
+              <p>Krátké vypnutí během dne nebo po práci.</p>
+            </div>
+          </article>
+          <article class="price-card">
+            <div class="time">1,5 hodiny</div>
+            <div>
+              <div class="price">1 800 Kč</div>
+              <p>Vyvážený čas na klidnější návštěvu.</p>
+            </div>
+          </article>
+          <article class="price-card">
+            <div class="time">2 hodiny</div>
+            <div>
+              <div class="price">2 390 Kč</div>
+              <p>Delší pobyt pro pomalý odpočinek ve dvou.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Klidné večery bez spěchu.</h2>
+          </div>
+          <p>Teplé světlo, soukromí a jemná atmosféra pro návštěvu, která má být hlavně o vás.</p>
+        </div>
+        <div class="gallery">
+          <figure class="gallery-main">
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>Večer v klidu</figcaption>
+          </figure>
+          <div class="gallery-stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+              <figcaption>Jemné světlo</figcaption>
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+              <figcaption>Soukromá nálada</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Zavolejte si o termín.</h2>
+          </div>
+          <p>Najdete nás v Bolevci na Kaznějovské ulici, naproti Policii ČR. Pokud máte dotaz, ozvěte se telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Wellness club Plzeň</h3>
+            <div class="contact-list">
+              <div class="contact-item">
+                <span>Telefon</span>
+                <a href="tel:+420723941089">+420 723 941 089</a>
+              </div>
+              <div class="contact-item">
+                <span>E-mail</span>
+                <a href="mailto:info@wellnessclubplzen.cz">info@wellnessclubplzen.cz</a>
+              </div>
+              <div class="contact-item">
+                <span>Adresa</span>
+                <p>Kaznějovská 2111/6a, 323 00 Plzeň 1-Bolevec</p>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Wellness club Plzeň"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p>Pro aktuální dostupnost a konkrétní domluvu je nejlepší zavolat přímo na recepci.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Jak zjistím volný termín?</h3>
+            <p>Zavolejte na +420 723 941 089. Recepce vám potvrdí nejbližší možnosti návštěvy.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dají se koupit dárkové poukazy?</h3>
+            <p>Ano, dárkové poukazy patří mezi nabídku Wellness clubu Plzeň.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde přesně vás najdu?</h3>
+            <p>Na adrese Kaznějovská 2111/6a v Plzni-Bolevci, naproti Policii ČR.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Mohu se zeptat e-mailem?</h3>
+            <p>Ano, napište na info@wellnessclubplzen.cz. Pro termíny bývá nejvhodnější zavolat.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta-band">
+        <div>
+          <p class="eyebrow">Rezervace</p>
+          <h2>Najděte si chvíli klidu.</h2>
+          <p>Zavolejte si o volný termín a domluvte si návštěvu podle délky pobytu, která vám vyhovuje.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="tel:+420723941089">+420 723 941 089</a>
+          <a class="btn btn-secondary" href="mailto:info@wellnessclubplzen.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Copyright © 2026 Wellness club Plzeň</span>
+      <span class="disclaimer">Prezentační stránku připravil Webflex. Pokud si nepřejete její zobrazení, můžete ji odstranit zde: <a href="https://webflex.cz/remove/f4xwkcb">odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3742475, 49.775868499999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#80C0E0' })
+      .setLngLat([13.3742475, 49.775868499999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
