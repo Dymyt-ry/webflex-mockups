@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Relax Galerie | Masáže a solária v Plzni</title>
+  <meta name="description" content="Relax Galerie v Plzni na Slovanech: olejová masáž, tradiční thajská masáž, čínská masáž chodidel, solária a dárkové poukazy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101113;
+      --surface: rgba(255,255,255,.075);
+      --surface-strong: rgba(255,255,255,.12);
+      --paper: #f5f2eb;
+      --ink: #f7f4ec;
+      --muted: rgba(247,244,236,.68);
+      --faint: rgba(247,244,236,.13);
+      --accent: #A08040;
+      --accent-dark: #70582b;
+      --shadow: 0 42px 110px rgba(0,0,0,.34);
+      --soft-shadow: 0 24px 90px rgba(0,0,0,.22);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 132px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 72% 10%, rgba(160,128,64,.18), transparent 32rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { hyphens: auto; text-wrap: pretty; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    h1, h2, .display { overflow-wrap: anywhere; }
+
+    .wrap { width: min(100% - (var(--gutter) * 2), 1240px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1420px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 13px 21px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 42px rgba(0,0,0,.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #101113; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { border-color: rgba(255,255,255,.8); background: rgba(255,255,255,.07); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,19,.78);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(300px, 58vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .nav-links { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: #fff; }
+
+    .hero { padding: clamp(46px, 7vw, 96px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(40%, 1.08fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 88px);
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.65vw, 23px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 690px;
+    }
+    .meta-tile {
+      min-height: 106px;
+      padding: 17px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .meta-tile strong { display: block; font-family: var(--font-mono); font-size: 18px; color: var(--accent); }
+    .meta-tile span { display: block; margin-top: 7px; color: var(--muted); font-weight: 600; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 36px;
+      background: #242528;
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.88) contrast(1.02); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(0,0,0,.54));
+    }
+    .photo-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: calc(var(--section) * .68) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .44fr);
+      align-items: end;
+      gap: clamp(32px, 6vw, 76px);
+      margin-bottom: clamp(34px, 5vw, 58px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: .98;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 22px;
+      padding: 24px clamp(20px, 3vw, 34px);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row h3 { font-size: clamp(20px, 2vw, 28px); line-height: 1.08; }
+    .service-row p { margin-top: 6px; color: var(--muted); }
+    .price { font-family: var(--font-mono); font-size: clamp(18px, 2vw, 28px); font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+    .trust-band {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 178px;
+      padding: clamp(22px, 3vw, 34px);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: #171717;
+      box-shadow: 0 34px 90px rgba(0,0,0,.22);
+    }
+    .trust-card strong { display: block; font-family: var(--font-display); font-size: clamp(38px, 5vw, 76px); line-height: .9; color: var(--accent-dark); }
+    .trust-card span { display: block; margin-top: 14px; font-size: 18px; font-weight: 700; }
+    .trust-card p { margin-top: 8px; color: rgba(23,23,23,.68); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(40%, .95fr) minmax(0, 1.05fr);
+      align-items: center;
+      gap: clamp(34px, 6vw, 78px);
+    }
+    .gallery-photo {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 34px;
+      background: #242528;
+      box-shadow: var(--shadow);
+    }
+    .gallery-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .steps { display: grid; gap: 14px; }
+    .step {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 22px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .step b {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(160,128,64,.18);
+      color: var(--accent);
+      font-family: var(--font-mono);
+    }
+    .step h3 { font-size: 22px; }
+    .step p { margin-top: 5px; color: var(--muted); }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .photo-tile {
+      min-height: 270px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: #242528;
+      box-shadow: var(--soft-shadow);
+      transition: transform .22s var(--ease), filter .22s var(--ease);
+    }
+    .photo-tile:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-tile:nth-child(2) { margin-top: 42px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(40%, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+    .contact-card { padding: clamp(24px, 4vw, 40px); }
+    .contact-card h3 { font-size: clamp(28px, 3.2vw, 44px); line-height: 1; }
+    .contact-lines { display: grid; gap: 18px; margin-top: 28px; }
+    .contact-line span { display: block; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .contact-line a, .contact-line b { display: block; margin-top: 4px; font-size: 20px; font-weight: 800; }
+    .hours {
+      margin-top: 30px;
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+    .hours div { display: flex; justify-content: space-between; gap: 16px; padding-top: 10px; border-top: 1px solid var(--faint); }
+    .hours strong { color: var(--ink); }
+    #map { height: 420px; min-height: 100%; border-radius: 30px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq-item {
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .faq-item h3 { font-size: 22px; }
+    .faq-item p { margin-top: 10px; color: var(--muted); }
+
+    .final {
+      padding: clamp(62px, 8vw, 104px) 0;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 28px;
+      padding: clamp(28px, 5vw, 58px);
+      border-radius: 34px;
+      background: var(--paper);
+      color: #171717;
+      box-shadow: var(--shadow);
+    }
+    .final-panel h2 { color: #171717; }
+    .final-panel p { margin-top: 14px; max-width: 650px; color: rgba(23,23,23,.68); font-size: 18px; }
+    .final-panel .btn.secondary { color: #171717; border-color: currentColor; }
+
+    footer {
+      padding: 34px 0 44px;
+      color: rgba(247,244,236,.52);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding-top: 24px;
+      border-top: 1px solid var(--faint);
+    }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { color: rgba(247,244,236,.82); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .split, .section-head, .contact-grid, .final-panel { grid-template-columns: 1fr; }
+      .hero-photo, .gallery-photo { aspect-ratio: 4 / 3; }
+      .hero-meta, .trust-band, .photo-strip, .faq-grid { grid-template-columns: 1fr; }
+      .photo-tile:nth-child(2) { margin-top: 0; }
+      .final-panel { align-items: start; }
+    }
+    @media (max-width: 560px) {
+      .service-row { grid-template-columns: 1fr; }
+      .price { white-space: normal; }
+      .photo-note { flex-direction: column; }
+      .footer-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Relax Galerie">
+        <img src="https://fb40554fb0.clvaw-cdnwnd.com/cc71c0cda073dda4316e4a9a1664e9fa/200000714-5c2d45c2d6/Kreslic%C3%AD%20pl%C3%A1tno%201-58.png?ph=fb40554fb0" alt="Relax Galerie">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#masaze">Masáže</a>
+        <a href="#poukazy">Poukazy</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420722221449">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wide hero-grid">
+        <div>
+          <p class="eyebrow">Plzeň Slovany · Masáže · Solária</p>
+          <h1>Relax Galerie Plzeň</h1>
+          <p class="lead">Přijďte si odpočinout na olejovou, tradiční thajskou nebo čínskou masáž chodidel. Recepce je na náměstí Generála Píky a pomůže Vám s výběrem termínu i dárkového poukazu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420722221449">Rezervovat telefonicky</a>
+            <a class="btn secondary" href="#masaze">Vybrat masáž</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>4,6 / 5</strong><span>hodnocení od klientů</span></div>
+            <div class="meta-tile"><strong>114</strong><span>recenzí na profilu</span></div>
+            <div class="meta-tile"><strong>8:00-21:00</strong><span>Po-Pá na recepci</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+          <figcaption class="photo-note"><span>Klidné prostředí</span><span>nám. Gen. Píky 2703/27</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="masaze">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Oblíbené masáže</p>
+            <h2>Vyberte si péči podle nálady</h2>
+          </div>
+          <p>V nabídce najdete masáže pro uvolnění zad, nohou i celého těla. Uvedené položky vycházejí z aktuálně komunikované nabídky Relax Galerie.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div><h3>Olejová masáž</h3><p>Jemnější práce s tělem pro zklidnění, odpočinek a uvolnění napětí.</p></div>
+            <div class="price">60-120 min · od 1 050 Kč</div>
+          </article>
+          <article class="service-row">
+            <div><h3>Tradiční thajská masáž</h3><p>Intenzivnější terapie pro rozhýbání a protažení zatuhlých partií.</p></div>
+            <div class="price">60-120 min · od 1 050 Kč</div>
+          </article>
+          <article class="service-row">
+            <div><h3>Čínská masáž chodidel</h3><p>Soustředěná péče o chodidla, vhodná po dlouhém dni i jako kratší relaxace.</p></div>
+            <div class="price">60-120 min · od 1 050 Kč</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-band">
+        <article class="trust-card">
+          <strong>16</strong>
+          <span>terapeutek k výběru</span>
+          <p>Recepce Vám doporučí typ masáže i vhodnou délku podle toho, co právě potřebujete.</p>
+        </article>
+        <article class="trust-card">
+          <strong>4,6</strong>
+          <span>průměrné hodnocení</span>
+          <p>Klienti opakovaně zmiňují příjemné prostředí, recepci a masérky, které umí.</p>
+        </article>
+        <article class="trust-card">
+          <strong>114</strong>
+          <span>zveřejněných recenzí</span>
+          <p>Stálí návštěvníci chodí sami i ve dvojici a oceňují olejové masáže.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="poukazy">
+      <div class="wrap split">
+        <figure class="gallery-photo">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+        </figure>
+        <div>
+          <p class="eyebrow">Termín, poukaz, solárium</p>
+          <h2>Jednoduchá cesta k odpočinku</h2>
+          <div class="steps">
+            <article class="step"><b>01</b><div><h3>Zavolejte na recepci</h3><p>Na čísle +420 722 221 449 domluvíte volný čas, délku masáže i případný poukaz.</p></div></article>
+            <article class="step"><b>02</b><div><h3>Vyberte typ péče</h3><p>Olejová masáž, tradiční thajská masáž, čínská masáž chodidel nebo návštěva solária.</p></div></article>
+            <article class="step"><b>03</b><div><h3>Přijďte na Slovany</h3><p>Relax Galerie najdete na adrese nám. Gen. Píky 2703/27, 326 00 Plzeň 2.</p></div></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí salonu">
+      <div class="wide photo-strip">
+        <a class="photo-tile" href="#kontakt" aria-label="Kontakt Relax Galerie"><img src="https://images.pexels.com/photos/13068380/pexels-photo-13068380.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Sleek modern nail salon interior with stylish design and treatment station."></a>
+        <a class="photo-tile" href="#kontakt" aria-label="Adresa Relax Galerie"><img src="https://images.pexels.com/photos/7195808/pexels-photo-7195808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black chairs placed near armchairs at table in stylish beauty salon with bright illumination and shelves with various cosmetology products"></a>
+        <a class="photo-tile" href="#kontakt" aria-label="Otevírací doba Relax Galerie"><img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience."></a>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt a cesta</p>
+            <h2>Najdete nás na Slovanech</h2>
+          </div>
+          <p>Pro termín volejte recepci. Přijít můžete ve všední dny od rána, o víkendu od 9:00.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <h3>Relax Studio Galerie</h3>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420722221449">+420 722 221 449</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:recepce@relaxgalerie.cz">recepce@relaxgalerie.cz</a></div>
+              <div class="contact-line"><span>Adresa</span><b>nám. Gen. Píky 2703/27, 326 00 Plzeň 2-Slovany-Východní Předměstí</b></div>
+            </div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><strong>Po-Pá</strong><span>8:00-21:00</span></div>
+              <div><strong>So-Ne</strong><span>9:00-21:00</span></div>
+            </div>
+          </article>
+          <div class="map-card"><div id="map" aria-label="Mapa Relax Galerie"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Praktické dotazy</p>
+            <h2>Před první návštěvou</h2>
+          </div>
+          <p>Krátké odpovědi k rezervaci, poukazům a výběru masáže.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Jak si rezervuji termín?</h3><p>Nejlepší je zavolat na recepci. Domluvíte si čas, délku procedury a případné doporučení vhodné masáže.</p></article>
+          <article class="faq-item"><h3>Prodáváte dárkové poukazy?</h3><p>Ano, Relax Galerie komunikuje bonusové poukazy. Recepce Vám poradí s hodnotou i typem péče.</p></article>
+          <article class="faq-item"><h3>Mohu přijít i o víkendu?</h3><p>Ano. V sobotu a v neděli je otevřeno od 9:00 do 21:00.</p></article>
+          <article class="faq-item"><h3>Jaké služby nabízíte kromě masáží?</h3><p>V nabídce jsou také solária a akce či novinky, na které se můžete zeptat přímo na recepci.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <p class="eyebrow">Rezervace</p>
+          <h2>Domluvte si svůj termín</h2>
+          <p>Stačí zavolat na recepci Relax Galerie. Pomůžeme Vám vybrat masáž, délku návštěvy i vhodný čas.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420722221449">+420 722 221 449</a>
+          <a class="btn secondary" href="mailto:recepce@relaxgalerie.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div>© Relax Galerie</div>
+      <div class="disclaimer">Administrativní poznámka Webflex: stránka je dostupná provozovateli Relax Galerie. Odstranění je možné zde: <a href="https://webflex.cz/delete/doey6s0">https://webflex.cz/delete/doey6s0</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.4011848, 49.7322596],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A08040' })
+      .setLngLat([13.4011848, 49.7322596])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
