@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Naše Toustárna | Řemeslná pekárna v Holešovicích</title>
+  <meta name="description" content="Naše Toustárna v Holešovicích: řemeslné chleby, toustíky, bagety, sladké pečivo a voňavá káva na adrese V Háji 10.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --surface-soft: #f2f1ee;
+      --ink: #200000;
+      --muted: rgba(32,0,0,.64);
+      --quiet: rgba(32,0,0,.42);
+      --line: rgba(32,0,0,.09);
+      --accent: #200000;
+      --accent-soft: #f0e8df;
+      --warm: #b7895b;
+      --shadow: 0 34px 110px rgba(32,0,0,.10);
+      --shadow-soft: 0 22px 80px rgba(32,0,0,.075);
+      --radius: 24px;
+      --gutter: clamp(20px, 4vw, 64px);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,0,0,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,0,0,.018) 1px, transparent 1px),
+        radial-gradient(circle at 18% 10%, rgba(183,137,91,.16), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+      text-wrap: balance;
+      overflow-wrap: anywhere;
+    }
+
+    .container { max-width: 1240px; margin: 0 auto; padding: 0 var(--gutter); }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251,251,250,.82);
+      backdrop-filter: blur(20px);
+    }
+    .nav { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { display: inline-flex; align-items: center; min-width: 0; }
+    .brand img { width: auto; max-width: min(260px, 54vw); max-height: 44px; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; font-weight: 800; color: rgba(32,0,0,.68); }
+    .nav-links a, .btn, .service-row, .gallery-item, .faq-item, .contact-link {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease), opacity 220ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-1px); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(32,0,0,.13); }
+    .btn:active, .nav-links a:active, .service-row:active, .gallery-item:active, .faq-item:active, .contact-link:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #3a0a0a; border-color: #3a0a0a; }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(32,0,0,.055); }
+
+    .hero { padding: clamp(52px, 7vw, 94px) 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      gap: clamp(34px, 5vw, 68px);
+      align-items: center;
+    }
+    .kicker {
+      margin-bottom: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .hero-lead {
+      max-width: 650px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 720px;
+      margin-top: 42px;
+    }
+    .fact {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .fact strong { font-family: var(--font-mono); font-size: clamp(20px, 2.8vw, 32px); line-height: 1; }
+    .fact span { color: var(--muted); font-weight: 700; font-size: 14px; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.9) contrast(1.02); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(32,0,0,0), rgba(32,0,0,.48));
+    }
+    .photo-badge {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: 46px;
+      align-items: end;
+      margin-bottom: 42px;
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 68px); }
+    .section-head p { color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-list {
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255,255,255,.58);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 180px 1fr auto;
+      gap: 32px;
+      align-items: start;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: rgba(32,0,0,.035); transform: translateY(-1px); }
+    .service-row .code { font-family: var(--font-mono); color: var(--quiet); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .service-row h3 { font-size: clamp(24px, 3vw, 34px); line-height: 1.04; }
+    .service-row p { max-width: 700px; color: var(--muted); font-size: 17px; hyphens: auto; }
+    .service-row .tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+
+    .trust-band {
+      background: #200000;
+      color: #fff;
+      border-radius: 34px;
+      padding: clamp(28px, 5vw, 58px);
+      box-shadow: var(--shadow);
+    }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .trust-card {
+      min-height: 210px;
+      padding: clamp(24px, 4vw, 42px);
+      background: rgba(255,255,255,.055);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .trust-card span { color: rgba(255,255,255,.74); max-width: 280px; font-weight: 600; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1fr;
+      gap: clamp(34px, 5vw, 66px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 420ms var(--ease); }
+    .split-photo:hover img { transform: scale(1.025); }
+    .split-copy p { margin-top: 24px; color: var(--muted); font-size: 18px; max-width: 640px; hyphens: auto; }
+    .feature-lines { margin-top: 34px; border-top: 1px solid var(--line); }
+    .feature-line {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 22px;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-line strong { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+    .feature-line span { color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 340px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-item:nth-child(2) { margin-top: 54px; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 420ms var(--ease), filter 420ms var(--ease); }
+    .gallery-item:hover { transform: translateY(-1px); }
+    .gallery-item:hover img { transform: scale(1.025); filter: saturate(1.05); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .contact-card { padding: clamp(28px, 4vw, 46px); }
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-link:hover { color: var(--accent); transform: translateY(-1px); }
+    .contact-link span:first-child { color: var(--muted); font-weight: 700; }
+    .contact-link span:last-child { font-family: var(--font-mono); font-weight: 700; text-align: right; }
+    .hours {
+      margin-top: 24px;
+      padding-top: 8px;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .hours-row.today {
+      color: #fff;
+      background: var(--accent);
+      margin: 0 -14px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      border-bottom: 0;
+    }
+    #map { height: 420px; width: 100%; border-radius: 28px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 178px;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq-item:hover { transform: translateY(-1px); background: #fff; }
+    .faq-item h3 { font-size: 24px; margin-bottom: 14px; }
+    .faq-item p { color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding: 96px 0;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      border-radius: 34px;
+      padding: clamp(30px, 5vw, 58px);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .final h2 { max-width: 760px; }
+    .final p { margin-top: 18px; color: var(--muted); font-size: 18px; max-width: 640px; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0 46px;
+      color: var(--quiet);
+      font-size: 13px;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .disclaimer {
+      max-width: 760px;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .contact-grid, .final-panel { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .trust-grid, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item:nth-child(2) { margin-top: 0; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 720px) {
+      .nav { min-height: 70px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding-top: 40px; }
+      .hero-facts, .trust-grid, .faq-grid { grid-template-columns: 1fr; }
+      .photo-badge { flex-direction: column; align-items: flex-start; }
+      .feature-line, .contact-link { grid-template-columns: 1fr; }
+      .contact-link { display: grid; }
+      .contact-link span:last-child { text-align: left; }
+      section { padding: 66px 0; }
+      .footer-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Naše Toustárna">
+        <img src="https://www.nasetoustarna.cz/wp-content/themes/nasetoustarna/assets/img/logo.svg" alt="Naše Toustárna">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pecivo">Pečivo</a>
+        <a href="#pribeh">Příběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420775260510">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <p class="kicker">Holešovice · V Háji 10</p>
+          <h1>Hranatý je dobrý</h1>
+          <p class="hero-lead">Malá řemeslná pekárna s voňavou kávou, denním pečením od úsvitu a dobrotami, které stojí na jednoduchých recepturách a poctivé práci rukama.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420775260510">+420 775 260 510</a>
+            <a class="btn btn-outline" href="#kontakt">Najít pekárnu</a>
+          </div>
+          <div class="hero-facts" aria-label="Základní informace">
+            <div class="fact"><strong>4,7</strong><span>hodnocení podle Google</span></div>
+            <div class="fact"><strong>467</strong><span>recenzí od zákazníků</span></div>
+            <div class="fact"><strong>Praha 7</strong><span>Holešovice, V Háji 10</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <figcaption class="photo-badge"><span>káva · pečivo · klid</span><span>Naše Toustárna</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="pecivo">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Co u nás najdete</p>
+            <h2>Od pece rovnou do dne.</h2>
+          </div>
+          <p>Pečeme ručně, denně a z věcí, které dávají smysl: máslo, tvaroh, čokoláda, med, ořechy, kvalitní mouka a další základní suroviny.</p>
+        </div>
+        <div class="service-list">
+          <a class="service-row" href="#kontakt">
+            <span class="code">01 · ráno</span>
+            <h3>Chleby a toustíky</h3>
+            <p>Poctivé hranaté pečivo založené na tradičních technikách a jednoduchých recepturách.</p>
+            <span class="tag">denně</span>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <span class="code">02 · slané</span>
+            <h3>Bulky a bagety</h3>
+            <p>Ručně vyráběné pečivo pro rychlou svačinu, cestu přes Holešovice i klidný oběd s kávou.</p>
+            <span class="tag">ruční práce</span>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <span class="code">03 · sladké</span>
+            <h3>Šuplíky a šneci</h3>
+            <p>Sladké pečení s máslem, tvarohem, čokoládou, medem a ořechy, jakmile se rozvoní pec.</p>
+            <span class="tag">od úsvitu</span>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <span class="code">04 · šálek</span>
+            <h3>Voňavá káva</h3>
+            <p>K pečivu patří šálek kávy a chvíle, ve které může kdokoliv zpomalit.</p>
+            <span class="tag">na místě</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="trust-band">
+          <div class="section-head">
+            <div>
+              <p class="kicker" style="color:rgba(255,255,255,.7)">Důvěra</p>
+              <h2>Malá pekárna, živé ráno.</h2>
+            </div>
+            <p style="color:rgba(255,255,255,.76)">Naše pekárny stojí na týmu pekařů a cukrářů, kteří mají úctu k řemeslu, surovinám i zákazníkům.</p>
+          </div>
+          <div class="trust-grid">
+            <div class="trust-card"><strong>4,7</strong><span>průměrné hodnocení z veřejného profilu</span></div>
+            <div class="trust-card"><strong>467</strong><span>recenzí od lidí, kteří se u nás zastavili</span></div>
+            <div class="trust-card"><strong>2</strong><span>pekárny zmíněné v našem příběhu: Holešovice a Líbeznice</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pribeh">
+      <div class="container split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="split-copy">
+          <p class="kicker">Příběh pece</p>
+          <h2>Lásku k toustíku netřeba vysvětlovat.</h2>
+          <p>Všechno, co pečeme, vyrábíme nebo prodáváme, má nést vášeň pro řemeslné metody, místní produkty, ekologii, skautské zásady a dobré jídlo.</p>
+          <div class="feature-lines">
+            <div class="feature-line"><strong>řemeslo</strong><span>Tradiční techniky, jednoduché receptury a ruční výroba.</span></div>
+            <div class="feature-line"><strong>suroviny</strong><span>Kvalitní mouka, máslo, tvaroh, čokoláda, med a ořechy.</span></div>
+            <div class="feature-line"><strong>nálada</strong><span>Přejeme si, aby dobrá nálada okolo pece voněla i u vás doma.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Atmosféra</p>
+            <h2>Zastavte se pro něco voňavého.</h2>
+          </div>
+          <p>Na cestu, do práce, domů na stůl nebo jen tak ke kávě. Hranatý svět má v Holešovicích svoje místo.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-item"><img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting."></figure>
+          <figure class="gallery-item"><img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus."></figure>
+          <figure class="gallery-item"><img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Kontakt</p>
+            <h2>Najdete nás ve V Háji.</h2>
+          </div>
+          <p>Holešovická pekárna je na adrese V Háji 10, Praha 7. Pro dotaz k pečivu, kávě nebo vyzvednutí nám můžete zavolat nebo napsat.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <a class="contact-link" href="tel:+420775260510"><span>Telefon</span><span>+420 775 260 510</span></a>
+            <a class="contact-link" href="mailto:nase.toustarna@gmail.com"><span>E-mail</span><span>nase.toustarna@gmail.com</span></a>
+            <a class="contact-link" href="https://www.nasetoustarna.cz/kontakty/"><span>Web</span><span>nasetoustarna.cz</span></a>
+            <div class="contact-link"><span>Adresa</span><span>V Háji 10, Praha 7-Holešovice</span></div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="hours-row today"><span>Dnes</span><span>ověřte telefonicky</span></div>
+              <div class="hours-row"><span>Informace</span><span>+420 775 260 510</span></div>
+            </div>
+          </div>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa s polohou Naše Toustárna"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Často se ptáte</p>
+            <h2>Krátce před cestou.</h2>
+          </div>
+          <p>Nejlepší jistota je telefon. Rádi vám řekneme, co právě vyšlo z pece a co se dá vzít s sebou.</p>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-item"><h3>Pečete každý den?</h3><p>V textu pekárny uvádíme denní pečení od úsvitu do odpoledne našimi pekaři a cukráři.</p></div>
+          <div class="faq-item"><h3>Co je hlavní sortiment?</h3><p>Chleby, bulky, bagety, sladké šuplíky, šneci a k tomu voňavá káva.</p></div>
+          <div class="faq-item"><h3>Kde přesně jste?</h3><p>V Háji 10, 170 00 Praha 7-Holešovice. Mapa je vycentrovaná na naši adresu.</p></div>
+          <div class="faq-item"><h3>Dá se napsat e-mail?</h3><p>Ano, použijte nase.toustarna@gmail.com nebo zavolejte na +420 775 260 510.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="container">
+        <div class="final-panel">
+          <div>
+            <p class="kicker">Na cestu i domů</p>
+            <h2>Stavte se pro toustík.</h2>
+            <p>Dobré pečivo má být po ruce, voňavé a bez dlouhého vysvětlování.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn btn-primary" href="tel:+420775260510">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:nase.toustarna@gmail.com">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <div>© 2026 Naše Toustárna</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální ukázku. Pokud si nepřejete její další zobrazování, můžete ji odstranit zde: <a href="https://webflex.cz/remove/k1tmcjk">webflex.cz/remove/k1tmcjk</a>.</div>
+    </div>
+  </footer>
+
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.454435499999999, 50.1026326],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#200000' })
+      .setLngLat([14.454435499999999, 50.1026326])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
