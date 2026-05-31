@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RC-DENT s.r.o. | Stomatologie v Českých Budějovicích</title>
+  <meta name="description" content="RC-DENT s.r.o. v Roudném u Českých Budějovic: stomatologie s osobním přístupem, vstupní prohlídka, RTG snímky a plán ošetření.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-soft: #f3f1ee;
+      --ink: #171615;
+      --muted: #69635d;
+      --line: rgba(80, 68, 56, .10);
+      --accent: #A08060;
+      --accent-deep: #6f5439;
+      --shadow: 0 34px 110px rgba(48, 38, 29, .10);
+      --shadow-soft: 0 18px 70px rgba(48, 38, 29, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(160, 128, 96, .026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(160, 128, 96, .026) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(160, 128, 96, .11), transparent 28%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 250, .84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: min(250px, 52vw);
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav-links a { text-decoration: none; color: rgba(23, 22, 21, .72); transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--accent-deep); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(111, 84, 57, .16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero { padding: 64px 0 84px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(23, 22, 21, .74);
+      hyphens: auto;
+    }
+    .capacity {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 26px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(35, 28, 22, .38));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .44fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-list {
+      display: grid;
+      gap: 14px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, .7fr) minmax(280px, .5fr);
+      gap: 28px;
+      align-items: center;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      min-height: 120px;
+    }
+    .service-row strong {
+      font-family: var(--font-mono);
+      color: var(--accent-deep);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .service-row p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat-panel, .quote-panel, .step-panel, .contact-card, .map-card, .faq-item, .gallery-card {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat-panel { padding: 30px; display: grid; align-content: space-between; min-height: 330px; }
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: clamp(54px, 8vw, 106px);
+      line-height: .9;
+      color: var(--accent-deep);
+      overflow-wrap: anywhere;
+    }
+    .stat-panel p, .quote-panel p { margin: 0; color: var(--muted); font-size: 18px; }
+    .quote-panel { padding: 34px; display: grid; gap: 22px; }
+    .quote-panel blockquote {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 40px);
+      line-height: 1.08;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .quote-meta { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step-panel { padding: 28px; min-height: 280px; display: flex; flex-direction: column; justify-content: space-between; }
+    .step-panel .num { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+    .step-panel p { color: var(--muted); margin: 18px 0 0; font-size: 17px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-card { overflow: hidden; min-height: 360px; }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-copy { padding: 34px; display: grid; align-content: center; gap: 16px; }
+    .gallery-copy p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .faq-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+    .faq-item { padding: 28px; min-height: 190px; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); font-size: 17px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .72fr 1.28fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 32px; }
+    .contact-lines { display: grid; gap: 18px; margin-top: 28px; }
+    .contact-line span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .contact-line a, .contact-line p { margin: 0; font-size: 19px; font-weight: 800; text-decoration: none; }
+    .map-card { padding: 10px; overflow: hidden; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; }
+
+    .final {
+      padding: 48px 0 76px;
+    }
+    .final-box {
+      border-radius: 30px;
+      padding: clamp(32px, 6vw, 68px);
+      background: #171615;
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final-box h2 { max-width: 720px; }
+    .final-box p { margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 18px; max-width: 620px; }
+    .final-box .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .disclaimer {
+      max-width: 780px;
+      font-size: 12px;
+      color: rgba(105,99,93,.86);
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .trust-grid, .gallery, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .process, .faq-list { grid-template-columns: 1fr; }
+      section { padding: 58px 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 38px; }
+      .hero-actions, .final-box > div:last-child { display: grid; }
+      .btn { width: 100%; }
+      .photo-label { display: block; }
+      .stat-panel, .quote-panel, .step-panel, .contact-card, .gallery-copy, .faq-item { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="RC-DENT s.r.o.">
+        <img src="https://rc-dent.cz/wp-content/uploads/2025/02/logo-rcdent-black.svg" alt="RC-DENT s.r.o.">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pece">Péče</a>
+        <a href="#prohlidka">Prohlídka</a>
+        <a href="#reference">Reference</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420702020074">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Stomatologie · Roudné</p>
+          <h1>Osobní stomatologie u Budějovic</h1>
+          <p class="lead">RC-DENT s.r.o. poskytuje stomatologickou péči s důkladným vyšetřením, RTG snímky a srozumitelným plánem ošetření.</p>
+          <div class="capacity"><span class="dot"></span> Z kapacitních důvodů nyní nové pacienty nepřijímáme</div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420702020074">+420 702 020 074</a>
+            <a class="btn btn-secondary" href="mailto:info@rc-dent.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Klidný interiér ordinace">
+          <img src="https://images.pexels.com/photos/20152628/pexels-photo-20152628.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant wooden pendant lights in a stylish modern room interior design.">
+          <figcaption class="photo-label">
+            <span>Plavská 297</span>
+            <span>České Budějovice 7</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Péče v ordinaci</p>
+            <h2>Jasně vedené ošetření</h2>
+          </div>
+          <p>Každá návštěva stojí na osobním přístupu, precizní diagnostice a vysvětlení dalšího postupu tak, abyste věděli, co se bude dít.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <strong>Diagnostika</strong>
+            <h3>RTG snímky a vyšetření dutiny ústní</h3>
+            <p>Součástí vstupní návštěvy je anamnestický dotazník, snímkování a důkladné vyšetření.</p>
+          </article>
+          <article class="service-row">
+            <strong>Plán péče</strong>
+            <h3>Srozumitelný plán ošetření</h3>
+            <p>Po vyšetření s vámi ordinace probere stav chrupu a další postup péče.</p>
+          </article>
+          <article class="service-row">
+            <strong>Přístup</strong>
+            <h3>Klid, vysvětlení a komfort</h3>
+            <p>Pacienti oceňují empatickou komunikaci, jemnost a snahu zachovat zdravý chrup.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="reference">
+      <div class="wrap trust-grid">
+        <article class="stat-panel">
+          <div>
+            <p class="eyebrow">Hodnocení pacientů</p>
+            <div class="stat-number">4,4</div>
+          </div>
+          <p>Průměrné hodnocení z 12 veřejných recenzí. V textu pacienti opakovaně zmiňují lidský přístup a vysvětlení ošetření.</p>
+        </article>
+        <article class="quote-panel">
+          <div class="quote-meta">Petra Filipová · pacientská recenze</div>
+          <blockquote>„Vše vysvětlí, navíc jeho milý přístup vás dokonale uklidní.“</blockquote>
+          <p>Recenze v profilu ordinace popisují zkušenost s panem doktorem Chmelíkem a sestřičkou, jejich vstřícnost a pečlivost při péči.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="prohlidka">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Vstupní prohlídka</p>
+            <h2>Průběh první návštěvy</h2>
+          </div>
+          <p>Postup ordinace je jednoduchý a předvídatelný: zdravotní informace, diagnostika, vyšetření a společná domluva nad plánem péče.</p>
+        </div>
+        <div class="process">
+          <article class="step-panel">
+            <div class="num">01</div>
+            <div>
+              <h3>Anamnestický dotazník</h3>
+              <p>Na začátku vyplníte krátký dotazník ke zdravotnímu stavu.</p>
+            </div>
+          </article>
+          <article class="step-panel">
+            <div class="num">02</div>
+            <div>
+              <h3>RTG a vyšetření</h3>
+              <p>Ordinace zhotoví snímky a důkladně vyšetří dutinu ústní.</p>
+            </div>
+          </article>
+          <article class="step-panel">
+            <div class="num">03</div>
+            <div>
+              <h3>Domluva další péče</h3>
+              <p>Na závěr proberete stav chrupu a plán ošetření.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap gallery">
+        <article class="gallery-card">
+          <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+        </article>
+        <article class="gallery-card gallery-copy">
+          <p class="eyebrow">Ordinace</p>
+          <h2>Klidné prostředí pro péči</h2>
+          <p>Stomatologie v Roudném u Českých Budějovic se zaměřuje na precizní diagnostiku, osobní jednání a komfort při návštěvě.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než zavoláte</h2>
+          </div>
+          <p>Informace vycházejí z veřejně uvedených údajů ordinace a kontaktů RC-DENT s.r.o.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Přijímá ordinace nové pacienty?</h3>
+            <p>Z kapacitních důvodů ordinace nyní nové pacienty nepřijímá.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co zahrnuje vstupní prohlídka?</h3>
+            <p>Dotazník ke zdravotnímu stavu, RTG snímky, vyšetření dutiny ústní a rozhovor nad plánem ošetření.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde ordinaci najdu?</h3>
+            <p>Na adrese Plavská 297, 370 07 Roudné-České Budějovice 7.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak se spojit s ordinací?</h3>
+            <p>Telefonicky na +420 702 020 074 nebo e-mailem na info@rc-dent.cz.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>RC-DENT s.r.o.</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <p>Plavská 297, 370 07 Roudné-České Budějovice 7</p>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420702020074">+420 702 020 074</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@rc-dent.cz">info@rc-dent.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <a href="https://rc-dent.cz/">rc-dent.cz</a>
+            </div>
+          </div>
+        </article>
+        <article class="map-card" aria-label="Mapa ordinace">
+          <div id="map"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Ordinace v Roudném</p>
+          <h2>Potřebujete se spojit s RC-DENT?</h2>
+          <p>Pro aktuální informace o péči, kapacitě ordinace a domluvě návštěvy použijte telefon nebo e-mail.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" href="tel:+420702020074">Zavolat ordinaci</a>
+          <a class="btn btn-secondary" href="mailto:info@rc-dent.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 RC-DENT s.r.o.</div>
+      <div class="disclaimer">Webflex disclaimer: Nejedná se o oficiální web provozovatele. Pro odstranění použijte odkaz: <a href="https://webflex.cz/remove?token=nexbuqw">webflex.cz/remove?token=nexbuqw</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.479464900000002, 48.9426206],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A08060' })
+      .setLngLat([14.479464900000002, 48.9426206])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
