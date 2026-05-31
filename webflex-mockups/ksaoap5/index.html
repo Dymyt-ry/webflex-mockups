@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masáže Plzeň - Václav Kobes</title>
+  <meta name="description" content="Klasické poctivé rekondiční masáže v centru Plzně. Václav Kobes, Rooseveltova 76/4, Plzeň.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --ink: #161715;
+      --muted: #63675f;
+      --soft: #eef0e9;
+      --accent: #C0E000;
+      --accent-ink: #111400;
+      --shadow: 0 28px 90px rgba(22, 23, 21, 0.10);
+      --shadow-soft: 0 20px 70px rgba(22, 23, 21, 0.07);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(22, 23, 21, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22, 23, 21, 0.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 6%, rgba(192, 224, 0, 0.16), transparent 32%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); max-width: 68ch; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, h2 { font-family: var(--font-display); letter-spacing: 0; text-transform: uppercase; }
+    h1 { font-size: clamp(40px, 6vw, 88px); line-height: 0.93; overflow-wrap: anywhere; max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); line-height: 0.98; overflow-wrap: anywhere; }
+    h3 { font-size: 20px; line-height: 1.15; }
+
+    .page { overflow: hidden; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4d5200;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 248, 0.82);
+      border-bottom: 1px solid rgba(22, 23, 21, 0.06);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      max-width: 320px;
+      text-transform: uppercase;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .nav-links a, .btn, .contact-link {
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), background 220ms cubic-bezier(.2,.8,.2,1), border-color 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: #697a00; }
+    .nav-links a:focus-visible, .btn:focus-visible, .contact-link:focus-visible, .footer a:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+    .btn:active, .contact-link:active { transform: translateY(1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 14px 36px rgba(192, 224, 0, 0.30); }
+    .btn-primary:hover { transform: translateY(-1px); background: #d0ed16; }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { transform: translateY(-1px); background: rgba(22, 23, 21, 0.05); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(420px, 0.82fr);
+      align-items: center;
+      gap: 54px;
+      padding: 64px 0;
+    }
+    .hero-copy { display: grid; gap: 28px; }
+    .hero-lead { font-size: clamp(18px, 2vw, 23px); color: #3e413b; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      max-width: 640px;
+    }
+    .meta-card {
+      min-height: 108px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-card strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .meta-card span { color: var(--muted); font-size: 13px; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(140deg, rgba(255,255,255,0.02), rgba(192,224,0,0.13));
+      pointer-events: none;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(260px, 0.6fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 36px;
+    }
+
+    .service-list {
+      display: grid;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(220px, 0.55fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid rgba(22, 23, 21, 0.07);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { font-family: var(--font-mono); font-size: 13px; color: #697a00; }
+    .service-row p { font-size: 15px; }
+    .tag {
+      justify-self: start;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(192, 224, 0, 0.18);
+      color: #3b4500;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .soft-panel {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .trust-panel { display: grid; gap: 24px; align-content: center; }
+    .rating {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+    .rating strong { font-family: var(--font-display); font-size: clamp(58px, 8vw, 112px); line-height: 0.86; }
+    .rating span { font-family: var(--font-mono); color: var(--muted); }
+    .places {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .place {
+      min-height: 160px;
+      border-radius: 20px;
+      padding: 22px;
+      background: #f4f5ef;
+      display: grid;
+      align-content: space-between;
+    }
+    .place small { font-family: var(--font-mono); color: #697a00; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 0.9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+      min-height: 260px;
+      position: relative;
+    }
+    .gallery figure:first-child { grid-row: span 2; min-height: 540px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(12px);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 230px;
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+      padding: 24px;
+      border-radius: 22px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .step b { font-family: var(--font-mono); color: #697a00; }
+    .step p { font-size: 14px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(22, 23, 21, 0.08);
+    }
+    .contact-link:hover { color: #697a00; transform: translateY(-1px); }
+    .contact-link span:first-child { color: var(--muted); }
+    .contact-link span:last-child { font-family: var(--font-mono); text-align: right; }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq article {
+      min-height: 190px;
+      padding: 24px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq h3 { margin-bottom: 12px; }
+
+    .final-cta {
+      padding: 44px;
+      border-radius: 32px;
+      background: #171915;
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final-cta p { color: rgba(255,255,255,0.72); }
+
+    .footer {
+      padding: 34px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer .wrap {
+      display: grid;
+      gap: 14px;
+      border-top: 1px solid rgba(22, 23, 21, 0.08);
+      padding-top: 24px;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+    .credits { font-family: var(--font-mono); font-size: 11px; }
+
+    @media (max-width: 980px) {
+      .nav-links a { display: none; }
+      .hero, .section-head, .split, .contact-grid, .final-cta { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-photo { max-width: 680px; width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .process, .faq, .gallery { grid-template-columns: 1fr 1fr; }
+      .gallery figure:first-child { grid-row: auto; min-height: 320px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .wordmark { font-size: 16px; max-width: 210px; }
+      .nav { height: 68px; }
+      .nav .btn { min-height: 42px; padding: 0 14px; font-size: 13px; }
+      .hero-meta, .places, .process, .faq, .gallery { grid-template-columns: 1fr; }
+      section { padding: 58px 0; }
+      .soft-panel, .final-cta { padding: 24px; border-radius: 24px; }
+      .contact-link { display: grid; }
+      .contact-link span:last-child { text-align: left; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <nav class="wrap nav" aria-label="Hlavní navigace">
+        <a class="wordmark" href="#top">Masáže Plzeň - Václav Kobes</a>
+        <div class="nav-links">
+          <a href="#sluzby">Služby</a>
+          <a href="#kde">Kde masíruji</a>
+          <a href="#kontakt">Kontakt</a>
+          <a class="btn btn-primary" href="tel:+420776766339">Zavolat</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="wrap hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <span class="eyebrow">Plzeň, Rooseveltova 76/4</span>
+          <h1 id="hero-title">Poctivé rekondiční masáže</h1>
+          <p class="hero-lead">Pokud hledáte zdatného maséra, který Vám uleví od bolesti a tělesné únavy, objednejte se k Václavu Kobesovi v centru Plzně.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420776766339">+420 776 766 339</a>
+            <a class="btn btn-outline" href="mailto:vaclav.kobes@seznam.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé údaje">
+            <div class="meta-card"><strong>5,0</strong><span>hodnocení podle Google</span></div>
+            <div class="meta-card"><strong>2</strong><span>veřejné recenze</span></div>
+            <div class="meta-card"><strong>Centrum</strong><span>Rooseveltova 76/4, Plzeň</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+        </figure>
+      </section>
+
+      <section id="sluzby" class="wrap" aria-labelledby="services-title">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Služby</span>
+            <h2 id="services-title">Masáž bez spěchu</h2>
+          </div>
+          <p>Klasická rekondiční masáž je vhodná při tělesné únavě, zatuhlosti i běžné bolesti zad. Průběh a intenzitu masáže domluvíte před ošetřením.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Klasické rekondiční masáže</h3>
+              <p>Poctivá manuální práce zaměřená na uvolnění přetížených svalů a celkovou regeneraci.</p>
+            </div>
+            <span class="tag">úleva od únavy</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Masážní emulze EMSPOMA</h3>
+              <p>K dispozici je neutrální, hřejivá, chladivá i aloe vera emulze s regeneračním a zklidňujícím účinkem.</p>
+            </div>
+            <span class="tag">podle citlivosti pokožky</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Termín po domluvě</h3>
+              <p>Volné termíny si nejrychleji ověříte telefonicky. Pokud se nedovoláte, napište e-mail s požadovaným časem.</p>
+            </div>
+            <span class="tag">telefon nebo e-mail</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="kde" class="wrap split" aria-labelledby="where-title">
+        <div class="soft-panel trust-panel">
+          <span class="eyebrow">Důvěra</span>
+          <h2 id="where-title">V centru i v Doubravce</h2>
+          <p>Václav Kobes poskytuje masáže v salonu Venus v centru Plzně a také v rehabilitačním oddělení IV. polikliniky v Plzni-Doubravce.</p>
+          <div class="rating">
+            <strong>5,0</strong>
+            <span>Google hodnocení<br>2 recenze</span>
+          </div>
+        </div>
+        <div class="soft-panel">
+          <div class="places">
+            <article class="place">
+              <small>Masérna</small>
+              <h3>Rooseveltova 76/4</h3>
+              <p>301 00 Plzeň 3-Vnitřní Město</p>
+            </article>
+            <article class="place">
+              <small>Druhé pracoviště</small>
+              <h3>IV. poliklinika</h3>
+              <p>Rehabilitační oddělení v Plzni-Doubravce.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap" aria-labelledby="gallery-title">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Prostředí</span>
+            <h2 id="gallery-title">Klidné zázemí masáže</h2>
+          </div>
+          <p>Čisté a soustředěné prostředí bez rušivých prvků. Přijdete, domluvíte obtíže a zvolí se vhodná emulze.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+            <figcaption>Klidné interiérové zázemí</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+            <figcaption>Soukromí pro ošetření</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/7195799/pexels-photo-7195799.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black backwash chair with white sink placed in modern stylish beauty salon with various cosmetology products and bright glowing lamps">
+            <figcaption>Prostor pro regeneraci</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap" aria-labelledby="process-title">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Průběh</span>
+            <h2 id="process-title">Jednoduchá domluva</h2>
+          </div>
+          <p>Stačí krátce popsat, co Vás trápí. Podle toho se domluví termín, místo a typ masážní emulze.</p>
+        </div>
+        <div class="process">
+          <article class="step"><b>01</b><h3>Zavoláte</h3><p>Telefonicky ověříte dostupný termín a vhodné pracoviště.</p></article>
+          <article class="step"><b>02</b><h3>Popíšete obtíže</h3><p>Domluvíte oblast zad, šíje nebo jinou přetíženou partii.</p></article>
+          <article class="step"><b>03</b><h3>Zvolí se emulze</h3><p>Neutrální, hřejivá, chladivá nebo aloe vera podle potřeby.</p></article>
+          <article class="step"><b>04</b><h3>Proběhne masáž</h3><p>Poctivá rekondiční práce zaměřená na úlevu a regeneraci.</p></article>
+        </div>
+      </section>
+
+      <section id="kontakt" class="wrap" aria-labelledby="contact-title">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kontakt</span>
+            <h2 id="contact-title">Objednání termínu</h2>
+          </div>
+          <p>Masérna je na Rooseveltově ulici v centru Plzně. Pro přímou domluvu použijte telefon.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="soft-panel contact-card">
+            <a class="contact-link" href="tel:+420776766339"><span>Telefon</span><span>+420 776 766 339</span></a>
+            <a class="contact-link" href="mailto:vaclav.kobes@seznam.cz"><span>E-mail</span><span>vaclav.kobes@seznam.cz</span></a>
+            <a class="contact-link" href="https://www.maserplzen.cz/"><span>Web</span><span>www.maserplzen.cz</span></a>
+            <div class="contact-link"><span>Adresa</span><span>Rooseveltova 76/4, 301 00 Plzeň 3</span></div>
+          </div>
+          <div id="map" aria-label="Mapa: Rooseveltova 76/4, Plzeň"></div>
+        </div>
+      </section>
+
+      <section class="wrap" aria-labelledby="faq-title">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Otázky</span>
+            <h2 id="faq-title">Než dorazíte</h2>
+          </div>
+          <p>Praktické informace k objednání a průběhu masáže.</p>
+        </div>
+        <div class="faq">
+          <article>
+            <h3>Jak si domluvím termín?</h3>
+            <p>Nejlépe telefonicky na čísle +420 776 766 339. Můžete také napsat e-mail.</p>
+          </article>
+          <article>
+            <h3>Kde masáž probíhá?</h3>
+            <p>V masérně na Rooseveltově 76/4 v Plzni, případně na pracovišti v Plzni-Doubravce.</p>
+          </article>
+          <article>
+            <h3>Jaké přípravky používáte?</h3>
+            <p>Základní nealergický olej a emulze EMSPOMA v neutrální, hřejivé, chladivé nebo aloe vera variantě.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="final-cta">
+          <div>
+            <span class="eyebrow" style="color:#c0e000">Rooseveltova 76/4 · Plzeň</span>
+            <h2>Domluvte si masáž</h2>
+            <p>Ozvěte se telefonicky a ověřte si nejbližší volný termín u Václava Kobese.</p>
+          </div>
+          <a class="btn btn-primary" href="tel:+420776766339">Zavolat</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <div class="credits">Fotografie: Max Vakhtbovych / Pexels</div>
+        <div class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/ksaoap5">webflex.cz/delete/ksaoap5</a>.</div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3790447, 49.7483011],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0E000' })
+      .setLngLat([13.3790447, 49.7483011])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
