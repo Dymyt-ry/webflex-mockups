@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Mikodent | Zubní ordinace Pardubice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: rgba(255,255,255,.76);
+      --surface-solid: #ffffff;
+      --ink: #171b20;
+      --muted: #68727d;
+      --soft: #eef4f7;
+      --line: rgba(25, 34, 43, .08);
+      --accent: #60A0C0;
+      --accent-deep: #32718f;
+      --accent-soft: rgba(96,160,192,.14);
+      --shadow: 0 30px 90px rgba(37, 55, 70, .09);
+      --shadow-soft: 0 18px 54px rgba(37, 55, 70, .065);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 132px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(18, 31, 42, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18, 31, 42, .018) 1px, transparent 1px),
+        radial-gradient(circle at 75% 8%, rgba(96,160,192,.18), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 20;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { color: var(--muted); text-wrap: pretty; }
+
+    .container { max-width: 1240px; margin: 0 auto; padding: 0 var(--gutter); }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(251,252,253,.82);
+      backdrop-filter: blur(22px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .wordmark::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; color: #4d5863; font-size: 14px; font-weight: 600; }
+    .nav-links a, .plain-link, .btn, .service-row, .faq-item {
+      transition: transform .22s var(--ease), border-color .22s var(--ease), background .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .nav-links a:hover, .plain-link:hover { color: var(--accent-deep); }
+    a:focus-visible, button:focus-visible, .service-row:focus-visible, .faq-item:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      min-height: 48px;
+      padding: 13px 20px;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+    .btn:active, .service-row:active, .faq-item:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #07151d; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn svg { width: 17px; height: 17px; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: clamp(54px, 7vw, 94px) 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(40%, .82fr);
+      gap: clamp(36px, 5vw, 76px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--accent-deep);
+      margin-bottom: 20px;
+      display: inline-flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .kicker::before { content: ""; width: 28px; height: 1px; background: var(--accent); }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      margin-top: 26px;
+      max-width: 620px;
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.42;
+      color: #4f5a65;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+    }
+    .meta-card, .float-card, .surface {
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      border-radius: 28px;
+    }
+    .meta-card { padding: 18px; min-height: 112px; }
+    .meta-card strong { display: block; font-family: var(--font-mono); font-size: 18px; color: var(--ink); }
+    .meta-card span { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .hero-visual { position: relative; }
+    .photo-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: 0 40px 110px rgba(51, 75, 93, .16);
+      background: var(--soft);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .float-card {
+      position: absolute;
+      left: -28px;
+      bottom: 24px;
+      padding: 18px 20px;
+      max-width: 260px;
+    }
+    .float-card b { display: block; font-size: 18px; }
+    .float-card span { display: block; margin-top: 6px; font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .5fr);
+      gap: clamp(32px, 6vw, 86px);
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: .98;
+      overflow-wrap: anywhere;
+    }
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(220px, .45fr);
+      gap: 24px;
+      align-items: center;
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.68);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row:hover { transform: translateY(-1px); background: #fff; }
+    .num { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 600; }
+    .service-row h3 { font-size: clamp(22px, 3vw, 34px); line-height: 1.05; }
+    .service-row p { max-width: 38ch; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .rating {
+      padding: clamp(28px, 5vw, 54px);
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .rating-number { font-family: var(--font-display); font-size: clamp(72px, 12vw, 136px); line-height: .8; }
+    .rating p { font-size: 18px; }
+    .promise {
+      padding: clamp(28px, 5vw, 54px);
+      display: grid;
+      gap: 22px;
+      align-content: center;
+    }
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1;
+      color: var(--accent-deep);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .price-panel, .hours-panel { padding: clamp(26px, 4vw, 42px); }
+    .price-list, .hours-list { display: grid; gap: 10px; margin-top: 24px; }
+    .price-line, .hours-line {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .price-line span:last-child, .hours-line span:last-child { font-family: var(--font-mono); color: var(--ink); font-weight: 600; text-align: right; }
+    .today { color: var(--accent-deep); font-weight: 800; }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .75fr) minmax(0, 1.25fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: clamp(28px, 4vw, 46px); }
+    .contact-card dl { margin: 28px 0 0; display: grid; gap: 18px; }
+    .contact-card dt { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .contact-card dd { margin: 5px 0 0; font-size: 20px; font-weight: 700; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+    .faq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+    .faq-item { padding: 28px; min-height: 220px; }
+    .faq-item:hover { transform: translateY(-1px); }
+    .faq-item h3 { font-size: 22px; margin-bottom: 14px; }
+    .final-cta {
+      margin: var(--section) auto;
+      padding: clamp(34px, 6vw, 70px);
+      border-radius: 36px;
+      background: #121820;
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 26px;
+      align-items: center;
+      box-shadow: 0 38px 120px rgba(18,24,32,.22);
+    }
+    .final-cta h2 { color: #fff; max-width: 780px; }
+    .final-cta p { color: rgba(255,255,255,.72); margin-top: 14px; max-width: 620px; }
+    .final-cta .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    footer {
+      padding: 34px var(--gutter);
+      color: #6f7881;
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.52);
+    }
+    .footer-inner { max-width: 1240px; margin: 0 auto; display: flex; gap: 18px; justify-content: space-between; flex-wrap: wrap; }
+
+    @media (max-width: 960px) {
+      .hero-grid, .section-head, .trust-grid, .split, .contact-grid, .final-cta { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .service-row { grid-template-columns: 48px 1fr; }
+      .service-row p { grid-column: 2; }
+      .faq-grid { grid-template-columns: 1fr; }
+      .float-card { position: static; margin: 14px 0 0; max-width: none; }
+    }
+    @media (max-width: 700px) {
+      .nav-links { display: none; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .photo-card { border-radius: 26px; }
+      .service-row { grid-template-columns: 1fr; padding: 22px; }
+      .service-row p { grid-column: auto; }
+      .price-line, .hours-line { grid-template-columns: 1fr; gap: 6px; }
+      .price-line span:last-child, .hours-line span:last-child { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="wordmark" href="#">Mikodent</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pece">Péče</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420733724909">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker">Zubní ordinace v Pardubicích</div>
+          <h1>Hlavně to nesmí bolet</h1>
+          <p class="lead">Ambulantní stomatologická péče pro pacienty, kteří chtějí jasný postup, férové ceny a klidné ošetření.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420733724909">Objednat telefonicky
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="btn btn-secondary" href="#cenik">Zobrazit ceny</a>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-card"><strong>7:00-15:00</strong><span>Objednávky po telefonu od pondělí do čtvrtka.</span></div>
+            <div class="meta-card"><strong>8:00-10:00</strong><span>Akutní případy v pracovní dny.</span></div>
+            <div class="meta-card"><strong>4,2 / 10</strong><span>Hodnocení a počet recenzí z firemního profilu.</span></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="photo-card">
+            <img src="https://images.pexels.com/photos/33469928/pexels-photo-33469928.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman elegantly posed in a minimalist, modern architectural setting with soft light.">
+          </div>
+          <div class="float-card">
+            <b>Rezervace výhradně po telefonu</b>
+            <span>+420 733 724 909</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="container">
+        <div class="section-head">
+          <h2>Péče pro běžné i akutní případy</h2>
+          <p>Ordinace poskytuje standardní výkony konzervační a protetické stomatologie i chirurgie. Postup vychází z ověřeného vybavení a zkušeností z praxe.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row" tabindex="0">
+            <span class="num">01</span>
+            <h3>Konzervační stomatologie</h3>
+            <p>Výplně, konzultace a ošetření zubů s důrazem na účinný a bezbolestný průběh.</p>
+          </article>
+          <article class="service-row" tabindex="0">
+            <span class="num">02</span>
+            <h3>Protetická stomatologie</h3>
+            <p>Korunky, inleje a snímatelné náhrady podle individuální potřeby pacienta.</p>
+          </article>
+          <article class="service-row" tabindex="0">
+            <span class="num">03</span>
+            <h3>Chirurgie a endodoncie</h3>
+            <p>Ošetření akutních stavů, kořenových kanálků a chirurgické výkony v ambulantním režimu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container trust-grid">
+        <article class="surface rating">
+          <div>
+            <div class="kicker">Důvěra pacientů</div>
+            <div class="rating-number">4,2</div>
+          </div>
+          <p>Hodnocení z 10 recenzí. Mikodent s.r.o. působí jako zubní ordinace v Pardubicích.</p>
+        </article>
+        <article class="surface promise">
+          <div class="quote">Rychlé, účinné a bezbolestné ošetření.</div>
+          <p>Cílem ordinace je srozumitelná péče bez zbytečného stresu. Akutní případy mají vyhrazené dopolední okno každý pracovní den.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="container split">
+        <article class="surface price-panel">
+          <div class="kicker">Vybrané ceny</div>
+          <h2>Ceník výkonů</h2>
+          <div class="price-list">
+            <div class="price-line"><span>Konzultace</span><span>od 1 635 Kč</span></div>
+            <div class="price-line"><span>Vrstvená fotokompozitní výplň, doplatek pacienta</span><span>2 370 Kč</span></div>
+            <div class="price-line"><span>Endodontické ošetření moláry nad 18 let</span><span>9 810 Kč</span></div>
+            <div class="price-line"><span>Inlej kořenová</span><span>od 3 978 Kč</span></div>
+            <div class="price-line"><span>Metalokeramická korunka</span><span>od 8 630 Kč</span></div>
+            <div class="price-line"><span>Snímatelná náhrada TERMOPLAST</span><span>19 128 Kč</span></div>
+          </div>
+          <p style="margin-top:18px;font-size:14px;">Ceny jsou vypočítány na základě kalkulací daných zákonem o cenách.</p>
+        </article>
+        <article class="surface hours-panel">
+          <div class="kicker">Provozní doba</div>
+          <h2>Ordinační rytmus týdne</h2>
+          <div class="hours-list">
+            <div class="hours-line today"><span>Pondělí</span><span>7:00-15:00</span></div>
+            <div class="hours-line"><span>Úterý</span><span>7:00-15:00</span></div>
+            <div class="hours-line"><span>Středa</span><span>7:00-15:00</span></div>
+            <div class="hours-line"><span>Čtvrtek</span><span>7:00-15:00</span></div>
+            <div class="hours-line"><span>Pátek</span><span>7:00-11:00</span></div>
+          </div>
+          <p style="margin-top:18px;">Akutní případy: pondělí až pátek 8:00-10:00.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra ordinace">
+      <div class="container gallery">
+        <figure><img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window."></figure>
+        <figure><img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows."></figure>
+        <figure><img src="https://images.pexels.com/photos/20152628/pexels-photo-20152628.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant wooden pendant lights in a stylish modern room interior design."></figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>Co pacienti řeší před návštěvou</h2>
+          <p>Nejdůležitější informace k objednání, akutnímu ošetření a návštěvě ordinace.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="surface faq-item" tabindex="0">
+            <h3>Jak se objednat?</h3>
+            <p>Rezervace termínu probíhá výhradně po telefonu na čísle +420 733 724 909.</p>
+          </article>
+          <article class="surface faq-item" tabindex="0">
+            <h3>Kdy přijít s akutním problémem?</h3>
+            <p>Akutní případy jsou vyhrazené v pracovní dny od 8:00 do 10:00.</p>
+          </article>
+          <article class="surface faq-item" tabindex="0">
+            <h3>Kde ordinaci najdu?</h3>
+            <p>Ordinace je v Pardubicích na adrese U Husova sboru 2012, ve 2. patře.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <article class="surface contact-card">
+          <div class="kicker">Kontakt</div>
+          <h2>U Husova sboru</h2>
+          <dl>
+            <div><dt>Telefon</dt><dd><a class="plain-link" href="tel:+420733724909">+420 733 724 909</a></dd></div>
+            <div><dt>E-mail</dt><dd><a class="plain-link" href="mailto:recepce@mikodent.cz">recepce@mikodent.cz</a></dd></div>
+            <div><dt>Adresa</dt><dd>U Husova sboru 2012, 530 02 Pardubice</dd></div>
+          </dl>
+        </article>
+        <div id="map" aria-label="Mapa ordinace Mikodent"></div>
+      </div>
+    </section>
+
+    <div class="container">
+      <section class="final-cta">
+        <div>
+          <h2>Domluvte si termín telefonicky</h2>
+          <p>Recepce přijímá objednávky v provozní době. Pro akutní případy využijte ranní okno 8:00-10:00.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420733724909">+420 733 724 909</a>
+          <a class="btn btn-secondary" href="mailto:recepce@mikodent.cz">Napsat e-mail</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Prezentační stránka připravená službou Webflex. Nejste-li správným příjemcem, můžete ji odstranit.</span>
+      <a class="plain-link" href="https://webflex.cz/delete/dwd7eu7">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.780278699999998, 50.0344231],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#60A0C0' })
+      .setLngLat([15.780278699999998, 50.0344231])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
