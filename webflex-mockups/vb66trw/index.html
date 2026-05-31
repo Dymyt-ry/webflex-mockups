@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masáže Masia | Masérna v Ostravě-Porubě</title>
+  <meta name="description" content="Masáže Masia v Ostravě-Porubě: klasické, sportovní, zdravotní, deluxe, párové a krátké masáže. Rezervace na telefonu +420 604 566 967.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: #fffdf8;
+      --surface-2: #eee6dc;
+      --ink: #201615;
+      --muted: #756762;
+      --line: rgba(64, 32, 32, .16);
+      --accent: #402020;
+      --accent-soft: #d9b894;
+      --ok: #6c7a54;
+      --font-display: "Geist", system-ui, sans-serif;
+      --font-body: "Geist", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --font-accent: "Instrument Serif", Georgia, serif;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(64,32,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,32,32,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 26px 26px, 26px 26px, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 243, 236, .86);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: min(230px, 48vw);
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(32, 22, 21, .72);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .2s var(--ease);
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), color .22s var(--ease);
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #fffaf3; }
+    .btn-primary:hover { background: #2d1515; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { background: rgba(64, 32, 32, .07); }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      font-weight: 800;
+    }
+
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: .98;
+      font-weight: 800;
+    }
+
+    h3 {
+      font-size: 24px;
+      line-height: 1.08;
+      font-weight: 800;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 46px;
+      max-width: 680px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .fact {
+      min-height: 104px;
+      padding: 18px;
+      background: rgba(255, 253, 248, .72);
+    }
+
+    .fact strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent);
+    }
+
+    .fact span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(64, 32, 32, .18);
+      background: var(--surface-2);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(32, 18, 14, .48));
+    }
+
+    .photo-caption {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 20px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(300px, .44fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      hyphens: auto;
+    }
+
+    .service-list {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 253, 248, .46);
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr) minmax(260px, .48fr);
+      gap: 28px;
+      align-items: start;
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .service-row:first-child { border-top: 0; }
+    .duration {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .service-row p { margin: 10px 0 0; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: rgba(32,22,21,.76);
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(255,255,255,.44);
+    }
+
+    .desire-grid {
+      display: grid;
+      grid-template-columns: minmax(350px, .62fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 248, .68);
+      border-radius: 24px;
+      padding: 28px;
+    }
+
+    .quote {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 430px;
+    }
+
+    .quote .script {
+      font-family: var(--font-accent);
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: .98;
+      color: var(--accent);
+    }
+
+    .quote p { margin: 22px 0 0; color: var(--muted); font-size: 18px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      min-height: 172px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.42);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .step {
+      min-height: 250px;
+      padding: 24px;
+      background: rgba(255,253,248,.72);
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 44px;
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+
+    .step p { color: var(--muted); margin: 12px 0 0; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      grid-template-rows: 220px 220px;
+      gap: 14px;
+    }
+
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .48fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,253,248,.76);
+      padding: 28px;
+    }
+
+    .contact-line {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-line:first-of-type { margin-top: 18px; }
+    .contact-line span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .contact-line a { font-weight: 800; text-decoration: none; }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .faq-item {
+      min-height: 156px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      background: rgba(255,253,248,.68);
+    }
+
+    .faq-item p { margin: 12px 0 0; color: var(--muted); }
+
+    .final {
+      padding-bottom: 48px;
+    }
+
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 34px;
+      border-radius: 28px;
+      background: var(--accent);
+      color: #fffaf3;
+    }
+
+    .cta h2 { color: #fffaf3; font-size: clamp(34px, 4vw, 58px); }
+    .cta p { margin: 14px 0 0; color: rgba(255,250,243,.76); font-size: 18px; }
+    .cta .btn-primary { background: #fffaf3; color: var(--accent); }
+    .cta .btn-secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(32,22,21,.64);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-row a { color: inherit; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .desire-grid, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 16px; }
+      .process { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .gallery { grid-template-columns: 1fr; grid-template-rows: repeat(3, 240px); }
+      .gallery figure:first-child { grid-row: span 1; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-grid { gap: 34px; }
+      .hero-facts, .stats, .process, .faq { grid-template-columns: 1fr; }
+      .photo-caption, .cta { align-items: start; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Masáže Masia">
+        <img src="https://masia.cz/wp-content/uploads/2023/09/Masaze.svg" alt="Masáže Masia">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#masaze">Masáže</a>
+        <a href="#o-nas">O nás</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420604566967">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Ostrava-Poruba · Porubská 1013/21</p>
+          <h1>Vaše záda v našich rukou</h1>
+          <p class="lead">Masáže Masia jsou místo pro cílené uvolnění, regeneraci i klidný odpočinek. Vyberete si klasickou, sportovní, zdravotní, deluxe, párovou nebo krátkou masáž podle toho, co vaše tělo právě potřebuje.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420604566967">Rezervovat telefonicky</a>
+            <a class="btn btn-secondary" href="mailto:info@masia.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-facts" aria-label="Základní informace">
+            <div class="fact"><strong>4.7 / 5</strong><span>hodnocení klientů</span></div>
+            <div class="fact"><strong>130</strong><span>recenzí</span></div>
+            <div class="fact"><strong>30-90 min</strong><span>délky masáží</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7195799/pexels-photo-7195799.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black backwash chair with white sink placed in modern stylish beauty salon with various cosmetology products and bright glowing lamps">
+          <figcaption class="photo-caption"><span>Masérna</span><span>Poruba</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="masaze">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Nabídka masáží</p>
+            <h2>Od rychlého uvolnění po dlouhou péči.</h2>
+          </div>
+          <p>Jednotlivé masáže se liší intenzitou, technikou i délkou. Pokud si nejste jistí výběrem, zavolejte a společně zvolíme vhodný typ.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="duration">60 / 90 minut</div>
+            <div>
+              <h3>Masáže Classic</h3>
+              <p>Osvědčené metody pro fyzickou relaxaci, lepší proudění energie a celkovou pohodu těla i mysli.</p>
+            </div>
+            <div class="tags"><span class="tag">Klasická</span><span class="tag">Sportovní</span><span class="tag">Lomi Lomi</span><span class="tag">Lávové kameny</span><span class="tag">Zdravotní</span></div>
+          </article>
+          <article class="service-row">
+            <div class="duration">60 / 90 minut</div>
+            <div>
+              <h3>Masáže Deluxe</h3>
+              <p>Nadstandardní techniky pro hlubší odpočinek, práci s napětím a pocit nového nastartování.</p>
+            </div>
+            <div class="tags"><span class="tag">Protistresová</span><span class="tag">Lymfatická</span><span class="tag">Baňkování</span><span class="tag">Anticelulitidní</span><span class="tag">Moxa</span></div>
+          </article>
+          <article class="service-row">
+            <div class="duration">60 minut</div>
+            <div>
+              <h3>Párová masáž</h3>
+              <p>Společný odpočinek v jedné místnosti. Věnují se vám dva maséři, takže si relaxaci můžete užít ve stejný čas.</p>
+            </div>
+            <div class="tags"><span class="tag">Pro dva</span><span class="tag">Jedna místnost</span><span class="tag">Sdílený zážitek</span></div>
+          </article>
+          <article class="service-row">
+            <div class="duration">30 minut</div>
+            <div>
+              <h3>Krátké masáže</h3>
+              <p>Intenzivní zaměření na jednu tělovou partii, když potřebujete rychle ulevit konkrétnímu místu.</p>
+            </div>
+            <div class="tags"><span class="tag">Záda</span><span class="tag">Nohy</span><span class="tag">Břicho</span><span class="tag">Indická masáž hlavy</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="o-nas">
+      <div class="wrap desire-grid">
+        <article class="panel quote">
+          <div>
+            <p class="eyebrow">O nás</p>
+            <div class="script">Klient je vždy až na prvním místě.</div>
+            <p>Masérna stojí na osobní praxi, studiu sportovních a rekondičních masáží, zkušenostech z lázní a wellness hotelů a průběžném odborném vzdělávání týmu.</p>
+          </div>
+          <a class="btn btn-secondary" href="#kontakt">Domluvit termín</a>
+        </article>
+        <div class="stats" aria-label="Důvěryhodnost">
+          <div class="stat"><strong>12 let</strong><span>osobní zkušenost s masážemi uvedená v příběhu masérny</span></div>
+          <div class="stat"><strong>5 let</strong><span>od otevření masérny pod značkou Tajemství masérny</span></div>
+          <div class="stat"><strong>4.7</strong><span>průměrné hodnocení podle firemního profilu</span></div>
+          <div class="stat"><strong>130</strong><span>veřejných recenzí klientů</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Průběh návštěvy</p>
+            <h2>Jednoduše, klidně, bez spěchu.</h2>
+          </div>
+          <p>Stačí se ozvat, vybrat typ masáže a přijít na adresu v Porubě. Zbytek času patří péči o vaše tělo.</p>
+        </div>
+        <div class="process">
+          <article class="step"><b>01</b><h3>Rezervace</h3><p>Zavoláte nebo napíšete na kontakty masérny a domluvíte vhodný termín.</p></article>
+          <article class="step"><b>02</b><h3>Výběr péče</h3><p>Vyberete délku a techniku podle potíží, regenerace nebo odpočinku.</p></article>
+          <article class="step"><b>03</b><h3>Masáž</h3><p>Masér pracuje s konkrétní partií nebo celým tělem podle domluvy.</p></article>
+          <article class="step"><b>04</b><h3>Doznění</h3><p>Po masáži si necháte chvíli klidu, aby tělo mohlo změnu vstřebat.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Prostor pro vypnutí hlavy.</h2>
+          </div>
+          <p>Teplé světlo, klidný rytmus a prostředí, kde se pozornost soustředí na pohodlí klienta.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/7195812/pexels-photo-7195812.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Backwash chair with sink placed near shelves with cosmetology products and reception desk in stylish beauty salon with decorated walls"></figure>
+          <figure><img src="https://images.pexels.com/photos/7750100/pexels-photo-7750100.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright and airy hair salon with orange sofas and marble floor, ideal for chic interiors."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Masáže Masia v Porubě.</h2>
+          </div>
+          <p>Pro termín volejte nebo napište. Masérnu najdete na Porubské 1013/21 v Ostravě-Porubě.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <h3>Domluva termínu</h3>
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420604566967">+420 604 566 967</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:info@masia.cz">info@masia.cz</a></div>
+            <div class="contact-line"><span>Adresa</span><strong>Porubská 1013/21<br>708 00 Ostrava-Poruba</strong></div>
+            <div class="contact-line"><span>Web</span><a href="https://masia.cz/">masia.cz</a></div>
+          </article>
+          <div id="map" aria-label="Mapa s polohou Masáže Masia"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté otázky</p>
+            <h2>Než se objednáte.</h2>
+          </div>
+          <p>Krátké odpovědi k výběru masáže, délce návštěvy a kontaktu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Jakou délku zvolit?</h3><p>Pro konkrétní partii stačí krátká masáž 30 minut. Pro celkovou péči vybírejte 60 nebo 90 minut.</p></article>
+          <article class="faq-item"><h3>Je možná masáž pro dva?</h3><p>Ano, párová masáž probíhá v jedné místnosti a věnují se vám dva maséři.</p></article>
+          <article class="faq-item"><h3>Co když nevím, co potřebuji?</h3><p>Zavolejte na číslo masérny a podle napětí, únavy nebo cíle regenerace společně vyberete vhodný typ.</p></article>
+          <article class="faq-item"><h3>Kde masérnu najdu?</h3><p>Na adrese Porubská 1013/21, 708 00 Ostrava-Poruba.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow" style="color:rgba(255,250,243,.72)">Rezervace</p>
+          <h2>Dopřejte tělu klid.</h2>
+          <p>Ozvěte se a domluvte si termín masáže v Ostravě-Porubě.</p>
+        </div>
+        <div class="hero-actions" style="margin-top:0">
+          <a class="btn btn-primary" href="tel:+420604566967">+420 604 566 967</a>
+          <a class="btn btn-secondary" href="mailto:info@masia.cz">info@masia.cz</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>Fotografie: Pexels. Logo a kontaktní údaje: Masáže Masia.</span>
+      <span>Prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/vb66trw">Smazat tuto stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.172701, 49.826906699999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([18.172701, 49.826906699999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
