@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masáže Blanka | Plzeň</title>
+  <meta name="description" content="Masáže Blanka v Plzni. Rezervace termínu, kontakt, provozní doba a adresa Hřímalého 805/3.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c1111;
+      --bg-soft: #101818;
+      --surface: rgba(248, 250, 247, 0.07);
+      --surface-strong: rgba(248, 250, 247, 0.11);
+      --ink: #f6f8f3;
+      --muted: rgba(246, 248, 243, 0.68);
+      --quiet: rgba(246, 248, 243, 0.46);
+      --accent: #002020;
+      --accent-bright: #91c8bb;
+      --line: rgba(246, 248, 243, 0.10);
+      --shadow: 0 32px 90px rgba(0, 0, 0, 0.28);
+      --radius: 24px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 72% 6%, rgba(145, 200, 187, 0.16), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(12, 17, 17, 0.78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a { transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .btn-primary {
+      background: var(--ink);
+      color: #071010;
+      box-shadow: 0 18px 50px rgba(246, 248, 243, 0.14);
+    }
+    .btn-primary:hover { background: #ffffff; }
+    .btn-secondary {
+      border-color: rgba(255,255,255,0.45);
+      color: #ffffff;
+      background: transparent;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.72); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 72px 0 64px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 22px;
+      color: var(--accent-bright);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .93;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 640px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.45vw, 22px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.86) contrast(.95); }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 52%, rgba(0,0,0,.46));
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .45fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4vw, 62px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .service-list {
+      display: grid;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) 220px;
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { color: var(--quiet); font-family: var(--font-mono); }
+    .service-row h3 { font-family: var(--font-body); font-size: 24px; line-height: 1.15; font-weight: 800; }
+    .service-row p { margin: 8px 0 0; color: var(--muted); }
+    .service-row .tag { justify-self: end; color: var(--accent-bright); font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      gap: 18px;
+    }
+    .stat {
+      min-height: 190px;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 24px 80px rgba(0,0,0,.18);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span { display: block; margin-top: 18px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1fr);
+      gap: 46px;
+      align-items: center;
+    }
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .photo-strip img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      filter: saturate(.82);
+    }
+    .quiet-panel {
+      padding: 34px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .quiet-panel h2 { font-size: clamp(32px, 4vw, 58px); }
+    .quiet-panel p { color: var(--muted); font-size: 18px; margin: 24px 0 0; }
+    .checklist {
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 14px;
+      color: var(--muted);
+    }
+    .checklist li {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .dot {
+      flex: 0 0 8px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-bright);
+      box-shadow: 0 0 0 6px rgba(145, 200, 187, .10);
+    }
+
+    .hours-card {
+      display: grid;
+      grid-template-columns: minmax(320px, .45fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-panel, .map-panel {
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .contact-panel { padding: 30px; }
+    .contact-panel h2 { font-size: clamp(32px, 4vw, 56px); margin-bottom: 28px; }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .hours tr:last-child td { border-bottom: 0; }
+    .hours td:last-child { text-align: right; color: var(--muted); }
+    .today td { color: var(--accent-bright); }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+      color: var(--muted);
+    }
+    .contact-lines a:hover { color: var(--ink); }
+    #map { height: 420px; width: 100%; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .55fr 1fr;
+      gap: 42px;
+    }
+    .faq h2 { font-size: clamp(34px, 4vw, 60px); }
+    details {
+      border-bottom: 1px solid var(--line);
+      padding: 22px 0;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+      transition: color 180ms var(--ease);
+    }
+    summary:hover { color: var(--accent-bright); }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 64px;
+      border-radius: 34px;
+      background: #f6f8f3;
+      color: #071010;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      box-shadow: 0 36px 90px rgba(0,0,0,.26);
+    }
+    .final-cta h2 { font-size: clamp(34px, 4vw, 64px); }
+    .final-cta p { margin: 18px 0 0; color: rgba(7,16,16,.68); font-size: 18px; }
+    .final-cta .btn-primary { background: #071010; color: #fff; }
+    .final-cta .btn-primary:hover { background: #002020; }
+
+    footer {
+      padding: 40px 0;
+      color: var(--quiet);
+      font-size: 12px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; padding-top: 52px; }
+      .hero-grid, .section-head, .split, .hours-card, .faq, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 36px; }
+      .trust { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .service-row .tag { justify-self: start; }
+      section { padding: 70px 0; }
+      .final-cta { padding: 34px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .photo-strip { grid-template-columns: 1fr; }
+      .hero-card, .photo-strip img { border-radius: 22px; }
+      .hero-note { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Masáže Blanka">Masáže Blanka</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Péče</a>
+        <a href="#hodnoceni">Hodnocení</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="https://local.termino.eu/embed/masaze-blanka">Rezervovat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Plzeň 3 · Hřímalého 805/3</p>
+          <h1>Klid pro vaše tělo</h1>
+          <p class="lead">Masáže Blanka v Plzni přijímají rezervace online i telefonicky. Vyberte si termín, který sedí vašemu dni, a přijďte do klidného salonu v Hřímalého ulici.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://local.termino.eu/embed/masaze-blanka">Vytvořit rezervaci</a>
+            <a class="btn btn-secondary" href="tel:+420735216979">+420 735 216 979</a>
+          </div>
+        </div>
+        <figure class="hero-card" aria-label="Atmosféra salonu">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+          <figcaption class="hero-note">
+            <span>Rezervace online</span>
+            <span>Po-Pá podle provozní doby</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Péče bez spěchu</h2>
+          <p>Pro návštěvu stačí vybrat termín, uložit si kontakt a přijít podle rozpisu. Konkrétní průběh masáže si domluvíte přímo při objednání.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Objednání termínu</h3>
+              <p>Rezervační systém vás provede výběrem dostupného času.</p>
+            </div>
+            <span class="tag">online</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Domluva po telefonu</h3>
+              <p>Pro rychlou otázku nebo změnu termínu volejte na uvedené číslo.</p>
+            </div>
+            <span class="tag">+420 735 216 979</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Návštěva v Plzni</h3>
+              <p>Salon najdete na adrese Hřímalého 805/3, 301 00 Plzeň-Plzeň 3.</p>
+            </div>
+            <span class="tag">Plzeň 3</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="hodnoceni">
+      <div class="wrap trust">
+        <div class="stat">
+          <strong>5,0</strong>
+          <span>Google hodnocení podle poskytnutých údajů.</span>
+        </div>
+        <div class="stat">
+          <strong>9</strong>
+          <span>Recenzí u profilu salonu.</span>
+        </div>
+        <div class="stat">
+          <strong>Po-Pá</strong>
+          <span>Provozní dny s různými časy podle rozpisu.</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="photo-strip">
+          <img src="https://images.pexels.com/photos/13068380/pexels-photo-13068380.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Sleek modern nail salon interior with stylish design and treatment station.">
+          <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+        </div>
+        <div class="quiet-panel">
+          <p class="eyebrow">Rezervace · Kontakt · Adresa</p>
+          <h2>Vše důležité na jednom místě</h2>
+          <p>Naplánujte návštěvu podle provozní doby, ověřte adresu na mapě a pro domluvu použijte telefon nebo e-mail.</p>
+          <ul class="checklist">
+            <li><span class="dot"></span><span>Objednání přes Termino.</span></li>
+            <li><span class="dot"></span><span>E-mail: masazeblanka.plzen@seznam.cz</span></li>
+            <li><span class="dot"></span><span>O svátcích zavřeno.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap hours-card">
+        <div class="contact-panel">
+          <h2>Kdy přijít</h2>
+          <table class="hours" aria-label="Provozní doba">
+            <tbody>
+              <tr><td>Po</td><td>11:00-18:00</td></tr>
+              <tr><td>Út</td><td>09:00-15:00</td></tr>
+              <tr><td>St</td><td>09:00-15:00</td></tr>
+              <tr><td>Čt</td><td>11:00-18:00</td></tr>
+              <tr><td>Pá</td><td>09:00-12:00</td></tr>
+              <tr class="today"><td>So-Ne</td><td>Zavřeno</td></tr>
+            </tbody>
+          </table>
+          <div class="contact-lines">
+            <a href="tel:+420735216979">+420 735 216 979</a>
+            <a href="mailto:masazeblanka.plzen@seznam.cz">masazeblanka.plzen@seznam.cz</a>
+            <span>Hřímalého 805/3, 301 00 Plzeň-Plzeň 3</span>
+          </div>
+        </div>
+        <div class="map-panel">
+          <div id="map" aria-label="Mapa s adresou Masáže Blanka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap faq">
+        <h2>Časté dotazy</h2>
+        <div>
+          <details open>
+            <summary>Jak se objednám?</summary>
+            <p>Použijte online rezervaci přes Termino nebo zavolejte na +420 735 216 979.</p>
+          </details>
+          <details>
+            <summary>Kde salon najdu?</summary>
+            <p>Adresa je Hřímalého 805/3, 301 00 Plzeň-Plzeň 3.</p>
+          </details>
+          <details>
+            <summary>Je otevřeno o víkendu?</summary>
+            <p>V sobotu, v neděli a o státních svátcích je zavřeno.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="final-cta">
+          <div>
+            <h2>Vyberte si termín</h2>
+            <p>Rezervace je dostupná online. Pro domluvu můžete použít také telefon nebo e-mail.</p>
+          </div>
+          <a class="btn btn-primary" href="https://local.termino.eu/embed/masaze-blanka">Rezervovat termín</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>Masáže Blanka · Hřímalého 805/3 · Plzeň</span>
+      <span>Stránku připravil Webflex. <a href="https://webflex.cz/remove?TOKEN=rzahpad">Odstranit zobrazení</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3697678, 49.7396249],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#91c8bb' })
+      .setLngLat([13.3697678, 49.7396249])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
