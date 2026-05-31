@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lunari Spa & Wellness v Liberci</title>
+  <meta name="description" content="Soukromé wellness, thajské masáže a VIP členství Lunari Spa & Wellness v Liberci. Tatranská 912/5, Liberec III-Jeřáb.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --surface: rgba(255, 255, 252, .78);
+      --surface-solid: #fffdfa;
+      --surface-muted: #ece7dc;
+      --ink: #181814;
+      --muted: #676557;
+      --soft: #8a8776;
+      --accent: #A0A080;
+      --accent-dark: #6d6d52;
+      --line: rgba(24, 24, 20, .08);
+      --shadow: 0 34px 100px rgba(64, 60, 42, .10);
+      --shadow-soft: 0 18px 70px rgba(64, 60, 42, .075);
+      --radius: 26px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(160,160,128,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(160,160,128,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .32;
+      background: radial-gradient(circle at 18% 12%, rgba(255,255,255,.9), transparent 28%),
+                  radial-gradient(circle at 82% 38%, rgba(160,160,128,.18), transparent 30%);
+      z-index: -1;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      background: rgba(247, 243, 236, .82);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(248px, 50vw);
+      max-height: 42px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(24,24,20,.72);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .22s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 32px rgba(109,109,82,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-dark);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent-dark); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.2vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    .hero { padding: 70px 0 92px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .74fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 630px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(24,24,20,.72);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--soft);
+      text-transform: uppercase;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--surface-muted);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(24,24,20,.02), rgba(24,24,20,.42));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .76fr) minmax(280px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 286px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card p { margin: 16px 0 0; color: var(--muted); }
+    .service-card .num { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+
+    .quiet-split {
+      display: grid;
+      grid-template-columns: minmax(340px, .7fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .soft-panel {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .soft-panel.large { min-height: 460px; display: flex; flex-direction: column; justify-content: space-between; }
+    .soft-panel p { color: var(--muted); font-size: 18px; margin: 18px 0 0; }
+    .ritual-list { margin-top: 28px; }
+    .ritual-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 22px;
+      padding: 22px 0;
+      border-top: 1px solid var(--line);
+    }
+    .ritual-row strong {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-dark);
+    }
+    .ritual-row span { color: var(--muted); }
+
+    .photo-stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 18px;
+    }
+    .photo-tile {
+      min-height: 220px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-muted);
+    }
+    .photo-tile img { width: 100%; height: 100%; object-fit: cover; }
+
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 28px;
+      min-height: 178px;
+    }
+    .stat b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 1;
+      color: var(--accent-dark);
+    }
+    .stat span { display: block; margin-top: 14px; color: var(--muted); font-weight: 700; }
+
+    .quote {
+      margin-top: 18px;
+      border-radius: 30px;
+      padding: 38px;
+      background: #1d1c18;
+      color: #fffaf0;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 36px;
+      align-items: end;
+    }
+    .quote p { margin: 0; font-size: clamp(22px, 3vw, 36px); line-height: 1.12; hyphens: auto; }
+    .quote small {
+      font-family: var(--font-mono);
+      color: rgba(255,250,240,.62);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .membership {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(300px, .48fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .member-card {
+      border-radius: 30px;
+      padding: 34px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow-soft);
+    }
+    .member-card.dark { background: var(--accent-dark); color: #fff; }
+    .member-card p { color: var(--muted); font-size: 18px; margin: 18px 0 0; }
+    .member-card.dark p { color: rgba(255,255,255,.76); }
+    .benefits { margin: 26px 0 0; padding: 0; list-style: none; }
+    .benefits li {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid rgba(255,255,255,.18);
+      font-weight: 700;
+    }
+    .benefits span { font-family: var(--font-mono); color: rgba(255,255,255,.72); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .48fr) minmax(0, .78fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 30px;
+      padding: 32px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line:first-of-type { border-top: 0; }
+    .contact-line b {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+    .contact-line a { font-weight: 800; text-decoration: none; }
+    .contact-line a:hover { color: var(--accent-dark); }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-muted);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .faq-item {
+      border-radius: 24px;
+      padding: 26px;
+      min-height: 182px;
+      background: var(--surface);
+    }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 92px 0;
+    }
+    .final-box {
+      border-radius: 34px;
+      padding: clamp(34px, 6vw, 64px);
+      background: #1d1c18;
+      color: #fffaf0;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-box p { margin: 18px 0 0; color: rgba(255,250,240,.72); font-size: 19px; max-width: 680px; }
+    .final-box .btn-primary { background: #fffaf0; color: #1d1c18; }
+    .final-box .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 34px 0 42px;
+      color: rgba(24,24,20,.58);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .wf-disclaimer { max-width: 720px; }
+    .wf-disclaimer a { color: var(--accent-dark); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .quiet-split, .membership, .contact-grid, .quote, .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { max-width: 680px; }
+      .photo-stack { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+      .service-grid, .stats-strip { grid-template-columns: 1fr; }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 44px 0 60px; }
+      section { padding: 58px 0; }
+      .hero-grid { gap: 32px; }
+      .hero-photo { aspect-ratio: 4 / 3; border-radius: 24px; }
+      .photo-caption { flex-direction: column; align-items: flex-start; }
+      .photo-stack, .faq-list { grid-template-columns: 1fr; }
+      .soft-panel, .member-card, .contact-card, .quote, .final-box { padding: 26px; border-radius: 24px; }
+      .ritual-row, .contact-line { grid-template-columns: 1fr; gap: 8px; }
+      #map { height: 340px; border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Lunari Spa & Wellness v Liberci">
+        <img src="https://lunarispa.cz/logo/lunari-text.svg" alt="Lunari Spa & Wellness v Liberci">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#clenstvi">Členství</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420775746688">Rezervovat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Tatranská 912/5 · Liberec</p>
+          <h1>Soukromý klid v Lunari</h1>
+          <p class="lead">Vstupte do tichého spa prostoru, kde se thajské masáže, privátní wellness a péče o tělo potkávají v absolutním soukromí.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420775746688">Zavolat +420 775 746 688</a>
+            <a class="btn btn-secondary" href="mailto:info@lunarispa.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note">
+            <span>Privátní wellness</span>
+            <span>Thajské masáže</span>
+            <span>VIP členství</span>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+          <figcaption class="photo-caption">
+            <span>Lunari Spa & Wellness</span>
+            <span>Liberec III-Jeřáb</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Wellness · Masáže · Regenerace</p>
+            <h2>Rituály pro tělo i mysl</h2>
+          </div>
+          <p>Lunari je prostor pro zpomalení. Přicházíte sem vypnout okolní ruch, uvolnit napětí a dopřát si péči, která má nerušený rytmus.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div>
+              <h3>Thai Massages</h3>
+              <p>Rituály vycházející z thajské tradice, doplněné moderní regenerací a důrazem na hluboké uvolnění.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div>
+              <h3>Private Wellness</h3>
+              <p>Soukromý prostor bez vyrušení: vířivka, sauna a odpočinek v tempu, které si určíte Vy.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div>
+              <h3>Body Purification</h3>
+              <p>Péče zaměřená na očištění těla, regeneraci a návrat k lehkosti po náročném dni.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap quiet-split">
+        <article class="soft-panel large">
+          <div>
+            <p class="eyebrow">A Ritual of Calm in Privacy</p>
+            <h2>Místo, kde čas ustoupí</h2>
+            <p>Lunari není typické wellness centrum. Je to privátní zázemí, kde se tradice thajských masáží potkává s klidem, vůněmi a prostředím připraveným pro ničím nerušený odpočinek.</p>
+          </div>
+          <div class="ritual-list">
+            <div class="ritual-row">
+              <strong>Klid</strong>
+              <span>Soukromý prostor bez ruchu okolí a spěchu.</span>
+            </div>
+            <div class="ritual-row">
+              <strong>Péče</strong>
+              <span>Certifikované thajské masérky a cit pro to, co tělo právě potřebuje.</span>
+            </div>
+            <div class="ritual-row">
+              <strong>Smysly</strong>
+              <span>Aromaterapie, teplo a tichá atmosféra pro hlubší regeneraci.</span>
+            </div>
+          </div>
+        </article>
+        <div class="photo-stack" aria-label="Atmosféra salonu">
+          <div class="photo-tile">
+            <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+          </div>
+          <div class="photo-tile">
+            <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats-strip">
+          <div class="stat">
+            <b>5,0</b>
+            <span>Hodnocení podle dostupných údajů</span>
+          </div>
+          <div class="stat">
+            <b>1</b>
+            <span>Veřejně uvedená recenze</span>
+          </div>
+          <div class="stat">
+            <b>100+</b>
+            <span>Spokojení klienti uvedení v profilu Lunari</span>
+          </div>
+        </div>
+        <div class="quote">
+          <p>„Od prvního kroku cítíte, že je o Vás postaráno. Atmosféra je jedinečná a procedury předčily očekávání.“</p>
+          <small>Tereza N. · pravidelná klientka</small>
+        </div>
+      </div>
+    </section>
+
+    <section id="clenstvi">
+      <div class="wrap membership">
+        <article class="member-card">
+          <p class="eyebrow">Exclusive Membership</p>
+          <h2>VIP péče po celý rok</h2>
+          <p>Členství je pro klienty, kteří chtějí mít Lunari jako pravidelné místo návratu. Získáte přístup k vybraným procedurám, přednostním rezervacím a zvýhodněným cenám.</p>
+        </article>
+        <aside class="member-card dark">
+          <h3>Součást členství</h3>
+          <ul class="benefits">
+            <li><span>01</span> Exkluzivní procedury</li>
+            <li><span>02</span> Prioritní rezervace</li>
+            <li><span>03</span> Zvýhodněné ceny</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt a adresa</p>
+            <h2>Rezervace v Liberci</h2>
+          </div>
+          <p>Pro termín privátního wellness, thajské masáže nebo dotaz k VIP členství se ozvěte telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div class="contact-line">
+              <b>Telefon</b>
+              <a href="tel:+420775746688">+420 775 746 688</a>
+            </div>
+            <div class="contact-line">
+              <b>E-mail</b>
+              <a href="mailto:info@lunarispa.cz">info@lunarispa.cz</a>
+            </div>
+            <div class="contact-line">
+              <b>Adresa</b>
+              <span>Tatranská 912/5<br>460 07 Liberec III-Jeřáb</span>
+            </div>
+            <div class="contact-line">
+              <b>Web</b>
+              <a href="https://lunarispa.cz/">lunarispa.cz</a>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Lunari Spa & Wellness v Liberci"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Než dorazíte</p>
+            <h2>Časté otázky</h2>
+          </div>
+          <p>Krátké odpovědi k návštěvě, soukromí a rezervaci termínu.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Je wellness privátní?</h3>
+            <p>Ano. Lunari staví na soukromém prostoru bez vyrušení, s vířivkou, saunou a klidovou zónou.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak si rezervuji termín?</h3>
+            <p>Pro rezervaci zavolejte na +420 775 746 688. Můžete také napsat na info@lunarispa.cz.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co zahrnují masáže?</h3>
+            <p>Masáže vycházejí z thajské tradice a mohou být doplněné o aromaterapii nebo horké kameny podle vybrané péče.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Pro koho je členství?</h3>
+            <p>Pro klienty, kteří se chtějí vracet pravidelně a využívat přednostní rezervace i zvýhodněné ceny po celý rok.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Treat Yourself to a Moment of Peace</p>
+          <h2>Domluvte si svůj čas</h2>
+          <p>Dopřejte si chvíli, kdy se nemusíte přizpůsobovat ničemu kromě vlastního klidu.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420775746688">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@lunarispa.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>Lunari Spa & Wellness v Liberci · Tatranská 912/5</span>
+      <span class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/k4v1hib">webflex.cz/delete/k4v1hib</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.052004700000001, 50.7640261],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A0A080' })
+      .setLngLat([15.052004700000001, 50.7640261])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
