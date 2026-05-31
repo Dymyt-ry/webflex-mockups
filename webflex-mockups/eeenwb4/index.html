@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Masáže Oáza Plzeň</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f14;
+      --surface: rgba(255, 255, 255, 0.065);
+      --surface-strong: rgba(255, 255, 255, 0.105);
+      --ink: #f7f4fb;
+      --muted: rgba(247, 244, 251, 0.68);
+      --soft: rgba(247, 244, 251, 0.46);
+      --line: rgba(255, 255, 255, 0.11);
+      --accent: #7A2BBF;
+      --accent-2: #b67cff;
+      --shadow: 0 36px 120px rgba(0, 0, 0, 0.34);
+      --font-display: 'Archivo Black', 'Inter Tight', system-ui, sans-serif;
+      --font-body: 'Inter Tight', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(72px, 10vw, 136px);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 80% 0%, rgba(122, 43, 191, 0.24), transparent 34rem),
+        radial-gradient(circle at 12% 38%, rgba(182, 124, 255, 0.12), transparent 30rem),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.045;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { color: var(--muted); text-wrap: pretty; }
+    .container { width: min(1320px, 100%); margin: 0 auto; padding: 0 var(--gutter); }
+    .eyebrow {
+      font: 600 12px/1 var(--font-mono);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(15, 15, 20, 0.78);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; align-items: center; gap: 30px; color: var(--soft); font-size: 15px; }
+    .nav-links a { transition: color 200ms cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 180ms cubic-bezier(.2,.8,.2,1), border-color 180ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 18px 54px rgba(122, 43, 191, 0.32); }
+    .btn-primary:hover { background: #8d3bd1; box-shadow: 0 22px 70px rgba(122, 43, 191, 0.42); }
+    .btn-outline { color: #fff; border-color: rgba(255,255,255,0.45); background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.68); }
+
+    .hero { padding: clamp(72px, 9vw, 126px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.78fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 84px);
+    }
+    .hero-copy { max-width: 720px; }
+    h1 {
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      max-width: 10ch;
+    }
+    .lead { margin-top: 24px; max-width: 58ch; font-size: clamp(18px, 1.55vw, 22px); color: rgba(247,244,251,0.75); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 44px;
+      max-width: 680px;
+    }
+    .meta-card {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .meta-card strong { display: block; font: 600 18px/1.2 var(--font-mono); color: var(--ink); }
+    .meta-card span { display: block; margin-top: 8px; color: var(--soft); font-size: 14px; }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      min-width: 0;
+      border-radius: 38px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: 0 46px 140px rgba(0,0,0,0.38);
+      position: relative;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.92) contrast(1.02); }
+    .photo-tag {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15,15,20,0.76);
+      backdrop-filter: blur(18px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #fff;
+    }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 6vw, 80px);
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .services-list { border-radius: 32px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(180px, 0.34fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-top: 1px solid var(--line);
+    }
+    .service-row:first-child { border-top: 0; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-2); }
+    .service-row h3 { font-size: clamp(22px, 2.2vw, 34px); line-height: 1.05; }
+    .service-row p { font-size: 16px; }
+    .price-note { font: 600 13px/1.2 var(--font-mono); color: var(--ink); text-align: right; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: clamp(24px, 4vw, 56px);
+      align-items: stretch;
+    }
+    .rating-card, .quote-card, .contact-card, .map-wrap, .gallery-card, .faq-item {
+      border-radius: 32px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .rating-card { padding: clamp(28px, 5vw, 56px); display: flex; flex-direction: column; justify-content: space-between; min-height: 380px; }
+    .rating-number { font: 600 clamp(70px, 12vw, 142px)/0.9 var(--font-mono); color: var(--ink); }
+    .rating-card p { margin-top: 22px; max-width: 34ch; }
+    .quote-card { padding: clamp(28px, 5vw, 56px); display: grid; align-content: center; }
+    .quote-card h2 { max-width: 13ch; }
+
+    .process { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .step {
+      min-height: 260px;
+      padding: 28px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.052);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 28px 90px rgba(0,0,0,0.2);
+    }
+    .step b { font-family: var(--font-mono); color: var(--accent-2); }
+    .step h3 { margin-top: 36px; font-size: 26px; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr 0.92fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .gallery-card { min-height: 360px; overflow: hidden; }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-text { padding: 32px; display: flex; flex-direction: column; justify-content: space-between; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(420px, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: clamp(28px, 4vw, 44px); }
+    .contact-lines { display: grid; gap: 18px; margin-top: 30px; }
+    .contact-lines a, .contact-lines div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      transition: color 180ms cubic-bezier(.2,.8,.2,1);
+    }
+    .contact-lines a:hover { color: var(--accent-2); }
+    .contact-lines span:first-child { color: var(--soft); }
+    .contact-lines span:last-child { text-align: right; font-family: var(--font-mono); }
+    #map { height: 420px; border-radius: 32px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .faq-item { padding: 28px; min-height: 220px; }
+    .faq-item h3 { font-size: 21px; margin-bottom: 16px; }
+
+    .final {
+      padding: clamp(54px, 8vw, 96px);
+      border-radius: 42px;
+      background:
+        radial-gradient(circle at 82% 8%, rgba(182,124,255,0.28), transparent 28rem),
+        rgba(255,255,255,0.08);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { max-width: 12ch; }
+
+    footer { padding: 48px var(--gutter); color: rgba(247,244,251,0.56); font-size: 13px; }
+    .footer-inner { max-width: 1320px; margin: 0 auto; display: flex; gap: 24px; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 24px; }
+    .footer-inner a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .trust, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero-photo, #map { min-width: 0; }
+      .process, .faq, .gallery-strip { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .price-note { text-align: left; }
+    }
+    @media (max-width: 640px) {
+      .hero-meta { grid-template-columns: 1fr; }
+      .wordmark { white-space: normal; font-size: 18px; }
+      .nav-inner { min-height: 68px; }
+      .hero-photo, .rating-card, .quote-card, .services-list, .contact-card, #map, .gallery-card, .faq-item, .final { border-radius: 24px; }
+      .final { padding: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="wordmark" href="#top">Masáže Oáza Plzeň</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#masaze">Masáže</a>
+        <a href="#rezervace">Rezervace</a>
+        <a href="#recenze">Recenze</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420775390847">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Domažlická 74 · Plzeň</span>
+          <h1>Masáže pro klid těla</h1>
+          <p class="lead">Domluvte si termín v Masážích Oáza Plzeň. Přehledně najdete ceník, rezervaci, recenze, fotogalerii i kontakt na jednom místě.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420775390847">+420 775 390 847</a>
+            <a class="btn btn-outline" href="mailto:davidhora999@gmail.com">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-card"><strong>5,0</strong><span>Hodnocení Google</span></div>
+            <div class="meta-card"><strong>14</strong><span>Recenzí zákazníků</span></div>
+            <div class="meta-card"><strong>318 00</strong><span>Plzeň 3</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+          <figcaption class="photo-tag">Oáza klidu v Plzni</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="masaze">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Masáže</span>
+            <h2>Vyberte si péči podle domluvy</h2>
+          </div>
+          <p>Pro konkrétní délku, cenu a nejbližší volný termín je nejlepší zavolat nebo napsat. Ceník a rezervace jsou součástí běžné nabídky salonu.</p>
+        </div>
+        <div class="services-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <h3>Masáže</h3>
+            <p>Individuální péče pro uvolnění zad, šíje a celého těla podle aktuální potřeby.</p>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <h3>Ceník</h3>
+            <p>Přehled cen řeší salon přímo při výběru služby a termínu.</p>
+            <span class="price-note">na dotaz</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <h3>Rezervace</h3>
+            <p>Termín si ověříte telefonicky nebo e-mailem bez zbytečného čekání.</p>
+            <span class="price-note">telefon · e-mail</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="recenze">
+      <div class="container trust">
+        <article class="rating-card">
+          <div>
+            <span class="eyebrow">Recenze</span>
+            <div class="rating-number">5,0</div>
+          </div>
+          <p>Hodnocení Google z 14 recenzí je jasný signál pro návštěvníky, kteří si vybírají maséra v Plzni.</p>
+        </article>
+        <article class="quote-card">
+          <span class="eyebrow">Fotogalerie</span>
+          <h2>Prostor, kam přijdete zvolnit</h2>
+          <p class="lead">Klidná atmosféra, čistý kontakt a jednoduchá domluva termínu. Přesně to lidé od masáží hledají dřív, než zvednou telefon.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="rezervace">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Postup</span>
+            <h2>Rezervace ve třech krocích</h2>
+          </div>
+          <p>Vše podstatné vyřídíte přímo s Masážemi Oáza Plzeň. Bez formulářů, které neřeknou, jestli se termín opravdu hodí.</p>
+        </div>
+        <div class="process">
+          <article class="step"><b>01</b><div><h3>Zvolíte masáž</h3><p>Řeknete, co Vás trápí a jaký typ péče hledáte.</p></div></article>
+          <article class="step"><b>02</b><div><h3>Domluvíte termín</h3><p>Telefonicky nebo e-mailem si potvrdíte čas návštěvy.</p></div></article>
+          <article class="step"><b>03</b><div><h3>Přijdete na adresu</h3><p>Salon najdete na Domažlické 74 v části Plzeň 3.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra salonu">
+      <div class="container gallery-strip">
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+        </figure>
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+        </figure>
+        <article class="gallery-card gallery-text">
+          <span class="eyebrow">Plzeň</span>
+          <div>
+            <h3>Adresa v dobrém dosahu</h3>
+            <p>Domažlická 74, 318 00 Plzeň-Plzeň 3. Před návštěvou si prosím potvrďte termín.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <article class="contact-card">
+          <span class="eyebrow">Kontakt</span>
+          <h2>Kdy se Vám hodí termín?</h2>
+          <div class="contact-lines">
+            <a href="tel:+420775390847"><span>Telefon</span><span>+420 775 390 847</span></a>
+            <a href="mailto:davidhora999@gmail.com"><span>E-mail</span><span>davidhora999@gmail.com</span></a>
+            <div><span>Adresa</span><span>Domažlická 74, Plzeň 3</span></div>
+          </div>
+        </article>
+        <div class="map-wrap">
+          <div id="map" aria-label="Mapa s polohou Masáže Oáza Plzeň"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Časté otázky</span>
+            <h2>Než zavoláte</h2>
+          </div>
+          <p>Praktické informace bez zbytečných slibů. Podrobnosti k ceně a času návštěvy si vždy ověřte přímo při rezervaci.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Kde salon najdu?</h3><p>Na adrese Domažlická 74, 318 00 Plzeň-Plzeň 3.</p></article>
+          <article class="faq-item"><h3>Jak se objednám?</h3><p>Nejpřímější je telefon na čísle +420 775 390 847. Můžete také napsat e-mail.</p></article>
+          <article class="faq-item"><h3>Kde najdu ceník?</h3><p>Ceník je součástí informací salonu. Konkrétní cenu si potvrďte při domluvě termínu.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="final">
+          <div>
+            <span class="eyebrow">Masáže Oáza Plzeň</span>
+            <h2>Domluvte si návštěvu</h2>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420775390847">Zavolat</a>
+            <a class="btn btn-outline" href="mailto:davidhora999@gmail.com">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Neoficiální prezentační stránka vytvořená službou Webflex pro majitele provozovny.</span>
+      <a href="https://webflex.cz/remove/eeenwb4">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3453792, 49.7418566],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#7A2BBF' })
+      .setLngLat([13.3453792, 49.7418566])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
