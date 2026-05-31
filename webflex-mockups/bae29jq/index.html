@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eska Karlín | Pekárna s kuchyní</title>
+  <meta name="description" content="Eska Karlín v Pernerově ulici: pekárna, kuchyně, obchod a káva po celý den.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;650;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f1ea;
+      --paper: #fffaf2;
+      --ink: #171412;
+      --muted: #6e665e;
+      --rule: rgba(23, 20, 18, .18);
+      --rule-strong: rgba(23, 20, 18, .72);
+      --accent: #E94B43;
+      --accent-dark: #b72922;
+      --dark: #11100f;
+      --light: #fffaf4;
+      --font-display: "Archivo Black", "Inter Tight", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(23,20,18,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,20,18,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      z-index: 20;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .skip { position: absolute; left: -999px; top: 12px; background: var(--ink); color: var(--light); padding: 10px 14px; z-index: 50; }
+    .skip:focus { left: 12px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 241, 234, .92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--rule-strong);
+    }
+    .nav {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .nav-links a, .plain-link {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover, .plain-link:hover { border-color: currentColor; background: rgba(255,255,255,.45); transform: translateY(-1px); }
+    .nav-links a:active, .plain-link:active, .btn:active { transform: translateY(1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      transition: transform .2s var(--ease), background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease);
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn-outline:hover { background: var(--ink); color: var(--light); transform: translateY(-1px); }
+
+    .hero {
+      border-bottom: 2px solid var(--ink);
+      padding: 58px 0 42px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, 1fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding: 8px 0;
+    }
+    .dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .92;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      hyphens: none;
+    }
+    h1 {
+      margin-top: 28px;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: #322d28;
+      font-size: clamp(20px, 2.2vw, 30px);
+      line-height: 1.12;
+      font-weight: 650;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hero-photo {
+      aspect-ratio: 16 / 10;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+      position: relative;
+      background: var(--dark);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.1); }
+    .hero-stamp {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px 1fr minmax(220px, 420px);
+      gap: 30px;
+      align-items: end;
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 22px;
+    }
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(54px, 8vw, 118px);
+      line-height: .78;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .section-head h2 { font-size: clamp(32px, 4.8vw, 68px); overflow-wrap: anywhere; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list { border-top: 1px solid var(--rule-strong); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 170px 1fr minmax(180px, 260px);
+      gap: 28px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--rule-strong);
+      align-items: start;
+    }
+    .service-row strong { font-family: var(--font-display); font-size: 26px; text-transform: uppercase; line-height: 1; }
+    .service-row p { margin: 0; max-width: 650px; }
+    .tag {
+      justify-self: start;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid var(--ink);
+      padding: 8px 10px;
+    }
+
+    .trust {
+      background: var(--dark);
+      color: var(--light);
+      border-block: 2px solid var(--ink);
+    }
+    .trust .section-head { border-color: rgba(255,255,255,.65); }
+    .trust .section-head p, .trust .muted { color: rgba(255,255,255,.7); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid rgba(255,255,255,.32);
+    }
+    .stat {
+      min-height: 210px;
+      padding: 24px;
+      border-right: 1px solid rgba(255,255,255,.32);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat b {
+      font-family: var(--font-display);
+      font-size: clamp(46px, 6vw, 86px);
+      line-height: .88;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .stat span { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-stack figure {
+      margin: 0;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+    }
+    .photo-stack figure:first-child { grid-column: span 2; }
+    .photo-stack img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; filter: grayscale(100%) contrast(1.05); }
+    .photo-stack figcaption {
+      min-height: 54px;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .copy-panel {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: clamp(24px, 4vw, 48px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 34px;
+    }
+    .copy-panel h2 { font-size: clamp(32px, 4.5vw, 64px); overflow-wrap: anywhere; }
+    .copy-panel p { margin: 0; font-size: 20px; color: #342f2a; }
+    .rules {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--rule-strong);
+    }
+    .rule-line {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+    }
+    .rule-line code { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+
+    .hours-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+      gap: 28px;
+      align-items: start;
+    }
+    .contact-card, .hours-card {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: 28px;
+    }
+    .contact-card h3, .hours-card h3 { font-size: 34px; margin-bottom: 20px; }
+    .contact-lines { display: grid; gap: 14px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--rule);
+      font-size: 20px;
+      font-weight: 650;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today {
+      background: var(--accent);
+      color: #fff;
+      margin-inline: -12px;
+      padding-inline: 12px;
+      border-bottom-color: var(--accent);
+    }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      margin-top: 28px;
+    }
+
+    .cta {
+      background: var(--accent);
+      color: #fff;
+      border-block: 2px solid var(--ink);
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .cta h2 { font-size: clamp(34px, 5.4vw, 76px); overflow-wrap: anywhere; }
+    .cta p { max-width: 620px; margin: 18px 0 0; font-size: 20px; }
+    .cta .btn { border-color: #fff; color: #fff; }
+    .cta .btn:hover { background: #fff; color: var(--accent-dark); }
+
+    .site-footer {
+      padding: 34px 0;
+      background: var(--dark);
+      color: rgba(255,255,255,.72);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .site-footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .site-footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .service-row, .split, .hours-grid, .cta-box { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 4 / 3; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.32); min-height: 170px; }
+      .stat:last-child { border-bottom: 0; }
+      section { padding: 64px 0; }
+      .section-head { gap: 14px; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 34px; }
+      .hero-actions, .cta-box .btn { width: 100%; }
+      .btn { width: 100%; }
+      .photo-stack { grid-template-columns: 1fr; }
+      .photo-stack figure:first-child { grid-column: auto; }
+      .contact-card, .hours-card { padding: 20px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#" aria-label="Eska Karlín">
+        <img src="https://data.eu.cntmbr.com/ambiente/ambiente-prod/f79173e5-2bbb-48be-8c87-93cf5220688a.svg" alt="Eska Karlín">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pekarna">Pekárna</a>
+        <a href="#atmosfera">Kuchyně</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420731140884">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker"><span class="dot"></span>Pernerova 49 · Karlín</div>
+          <h1 id="hero-title">Pekárna s kuchyní</h1>
+          <p class="lead">Místo, kde to žije celý den: chléb z pece, snídaně, káva, polední jídlo i obchod na cestu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Otevírací doba</a>
+            <a class="btn btn-outline" href="mailto:institutpivo@ambi.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+          <div class="hero-stamp">Po-Pá 08:00-18:00</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pekarna">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Přijďte podle chuti</h2>
+          <p>Rezervace v pekárně nepřijímáme. Zastavte se, až půjdete kolem Karlína.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <strong>Pekárna</strong>
+            <p>Čerstvé pečivo z Eska pece, chleba na doma a vůně, kvůli které se vyplatí udělat zastávku.</p>
+            <span class="tag">Ráno i odpoledne</span>
+          </article>
+          <article class="service-row">
+            <strong>Kuchyně</strong>
+            <p>Snídaně, oběd a jídlo po celý den v živé pekárně s otevřenou atmosférou.</p>
+            <span class="tag">Bez rezervace</span>
+          </article>
+          <article class="service-row">
+            <strong>Obchod</strong>
+            <p>Vezměte s sebou pečivo, kávu nebo něco dobrého z Ambiente, když nemáte čas sednout si ke stolu.</p>
+            <span class="tag">Na cestu</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust" aria-labelledby="duvera-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2 id="duvera-title">Karlín ví, kam chodí</h2>
+          <p>Za Eskou stojí lidé z Ambiente a tým, který dává jídlu dobré jméno každý den.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span>Hodnocení hostů</span>
+            <b>4.5</b>
+            <p class="muted">Google rating z veřejného profilu.</p>
+          </div>
+          <div class="stat">
+            <span>Počet recenzí</span>
+            <b>5029</b>
+            <p class="muted">Ohlasy hostů na místě v Pernerově ulici.</p>
+          </div>
+          <div class="stat">
+            <span>Adresa</span>
+            <b>49</b>
+            <p class="muted">Pernerova 49, Praha 8-Karlín.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atmosfera">
+      <div class="wrap split">
+        <div class="photo-stack" aria-label="Atmosféra podniku">
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Večer, sklo, měkké světlo</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            <figcaption>Barová linka</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/24354953/pexels-photo-24354953.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy bar setting with a focus on a glass bottle on a wooden table, perfect for nightlife themes.">
+            <figcaption>Stůl pro chvíli navíc</figcaption>
+          </figure>
+        </div>
+        <div class="copy-panel">
+          <div>
+            <div class="kicker"><span class="dot"></span>03 · Pod pokličku</div>
+            <h2>Živý dům pro hlad i kávu</h2>
+          </div>
+          <p>Eska je pekárna, restaurace a obchod v jednom rytmu. Přijďte na šálek kávy, posaďte se k jídlu, nebo si odneste pečivo domů.</p>
+          <div class="rules">
+            <div class="rule-line"><code>01</code><span>Pejsky prosím nechejte doma, dovnitř nesmí.</span></div>
+            <div class="rule-line"><code>02</code><span>Odpovědný vedoucí je David Marek.</span></div>
+            <div class="rule-line"><code>03</code><span>Šéfpekařem je Jaroslav Kozdělka.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Kontakt a cesta</h2>
+          <p>Najdete nás v Karlíně. Nejjednodušší je přijít rovnou, pro dotazy volejte nebo napište.</p>
+        </div>
+        <div class="hours-grid">
+          <div class="contact-card">
+            <h3>Eska Karlín</h3>
+            <div class="contact-lines">
+              <span>Pernerova 49, 186 00 Praha 8-Karlín</span>
+              <a href="tel:+420731140884">+420 731 140 884</a>
+              <a href="mailto:institutpivo@ambi.cz">institutpivo@ambi.cz</a>
+            </div>
+          </div>
+          <div class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-row"><span>Po-Pá</span><span>08:00-18:00</span></div>
+            <div class="hours-row today"><span>So-Ne</span><span>09:00-18:00</span></div>
+            <p>V pekárně Eska rezervace nepřijímáme.</p>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa Eska Karlín"></div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Zastavte se v Karlíně.</h2>
+          <p>Na snídani, chleba, kávu i něco dobrého na cestu. Eska je otevřená každý den.</p>
+        </div>
+        <a class="btn btn-outline" href="https://eska.karlin.ambi.cz/">Oficiální stránka</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Prezentační stránka vytvořená službou Webflex pro vlastníka podniku.</span>
+      <a href="https://webflex.cz/remove?token=bae29jq">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.454573900000002, 50.0913817],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#E94B43' })
+      .setLngLat([14.454573900000002, 50.0913817])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
