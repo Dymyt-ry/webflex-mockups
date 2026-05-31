@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nevidomý masér Liberec • Miroslav Franců</title>
+  <meta name="description" content="Masáže v centru Liberce. Úleva, klid, regenerace a soukromá péče nevidomého maséra Miroslava Franců.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101316;
+      --surface: rgba(247, 250, 252, .075);
+      --surface-strong: rgba(247, 250, 252, .12);
+      --ink: #f4f7f8;
+      --muted: rgba(244, 247, 248, .68);
+      --soft: rgba(244, 247, 248, .12);
+      --accent: #005B7F;
+      --accent-bright: #2c9bc0;
+      --cream: #f7f2ea;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .28);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 8%, rgba(44,155,192,.22), transparent 32rem),
+        radial-gradient(circle at 10% 35%, rgba(255,255,255,.08), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .skip { position: absolute; left: 16px; top: -80px; padding: 12px 16px; background: var(--ink); color: #111; z-index: 10; }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 19, 22, .76);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .nav-links a {
+      padding: 10px 12px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background .2s var(--ease), color .2s var(--ease);
+    }
+    .nav-links a:hover { background: rgba(255,255,255,.08); color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent-bright); color: #061014; box-shadow: 0 16px 45px rgba(44,155,192,.28); }
+    .btn-primary:hover { background: #51b5d4; }
+    .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,.08); }
+
+    .hero {
+      padding: 64px 0 86px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      gap: clamp(34px, 5vw, 72px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-bright);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      margin: 0;
+      line-height: .95;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.55;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+      position: relative;
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.78) contrast(.96);
+    }
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(16,19,22,.76);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    }
+    .hero-card strong { display: block; font-size: 18px; }
+    .hero-card span { display: block; margin-top: 4px; color: var(--muted); }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 1fr minmax(260px, 440px);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 68px); text-transform: uppercase; }
+    .section-head p, .body-copy { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 88px 1fr minmax(180px, 260px);
+      gap: 28px;
+      padding: 28px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 13px;
+    }
+    .service-row h3 { font-family: var(--font-body); font-size: 25px; line-height: 1.15; }
+    .service-row p { margin: 8px 0 0; color: var(--muted); font-size: 17px; }
+    .service-note {
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+      justify-self: end;
+      text-align: right;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(0, 1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .soft-panel {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(28px, 4vw, 48px);
+    }
+    .about h2 { margin-bottom: 22px; }
+    .about p { color: var(--muted); font-size: 19px; margin: 0 0 18px; }
+    .quote {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      font-size: clamp(24px, 3vw, 38px);
+      line-height: 1.12;
+      font-weight: 800;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .gallery figure { margin: 0; }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      object-fit: cover;
+      border-radius: 24px;
+      filter: saturate(.72);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      border-radius: var(--radius);
+      padding: 28px;
+      background: rgba(247,250,252,.09);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--accent-bright);
+    }
+    .stat span { color: var(--muted); font-size: 17px; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      counter-reset: step;
+    }
+    .step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 22px;
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(247,250,252,.07);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .step:hover { transform: translateY(-1px); background: rgba(247,250,252,.1); }
+    .step:before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+    }
+    .step h3 { font-family: var(--font-body); font-size: 22px; margin-bottom: 6px; }
+    .step p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .price-card {
+      display: grid;
+      grid-template-columns: 1fr minmax(250px, 360px);
+      gap: 26px;
+      align-items: center;
+      border-radius: 34px;
+      padding: clamp(28px, 5vw, 54px);
+      background: linear-gradient(135deg, rgba(247,250,252,.14), rgba(247,250,252,.06));
+      box-shadow: var(--shadow);
+    }
+    .price-card h2 { margin-bottom: 18px; }
+    .price-card p { margin: 0; color: var(--muted); font-size: 19px; }
+    .price-action {
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(0,91,127,.38);
+    }
+    .price-action span { display: block; color: rgba(255,255,255,.72); margin-bottom: 14px; }
+    .price-action a { width: 100%; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    details {
+      border-radius: 22px;
+      background: var(--surface);
+      padding: 22px 24px;
+      box-shadow: 0 18px 70px rgba(0,0,0,.15);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    details p { margin: 14px 0 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .contact-item {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(247,250,252,.07);
+    }
+    .contact-item span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-bright);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .contact-item a { text-decoration: none; font-size: 20px; font-weight: 800; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+
+    .final {
+      padding: 70px 0 92px;
+    }
+    .final-box {
+      border-radius: 36px;
+      padding: clamp(34px, 6vw, 64px);
+      background: var(--cream);
+      color: #101316;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 34px 110px rgba(0,0,0,.28);
+    }
+    .final-box h2 { color: #101316; }
+    .final-box p { color: rgba(16,19,22,.72); margin: 14px 0 0; font-size: 19px; max-width: 620px; }
+    .final-box .btn-outline { color: #101316; border-color: currentColor; }
+
+    footer {
+      padding: 32px 0;
+      color: rgba(244,247,248,.58);
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .credits a, .wf-note a { color: rgba(244,247,248,.82); }
+    .wf-note { max-width: 700px; text-align: right; }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .price-card, .contact-grid, .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-top: 38px; }
+      .hero-photo { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .service-note { justify-self: start; text-align: left; }
+      .trust, .faq { grid-template-columns: 1fr; }
+      .foot { flex-direction: column; }
+      .wf-note { text-align: left; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .brand img { max-height: 38px; }
+      .nav { min-height: 68px; }
+      .nav-links .btn { min-height: 42px; padding: 0 14px; font-size: 14px; }
+      section { padding: 62px 0; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .step { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Nevidomý masér Liberec">
+        <img src="https://www.nevidomymaserliberec.cz/wp-content/uploads/2026/02/nevidomy_maser_liberec-logo.png" alt="Nevidomý masér Liberec • Miroslav Franců">
+      </a>
+      <div class="nav-links">
+        <a href="#pece">Péče</a>
+        <a href="#omne">O mně</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420735584903">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="kicker">Liberec centrum · 1. máje 97/25</p>
+          <h1>Úleva v tichu Liberce</h1>
+          <p class="lead">Masáže pro tělo i mysl v prostoru, kde vizuální svět nehraje roli. Citlivá péče, naprosté soukromí a klidná atmosféra pro chvíli skutečné regenerace.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420735584903">Rezervovat telefonicky</a>
+            <a class="btn btn-outline" href="#kontakt">Adresa a mapa</a>
+          </div>
+        </div>
+        <div class="hero-photo" aria-label="Klidný interiér pro péči a odpočinek">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+          <div class="hero-card">
+            <strong>Soukromá masérna v centru</strong>
+            <span>Vše potřebné je připraveno přímo na místě.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Péče, která zpomalí den</h2>
+          <p>Masáž pomáhá uvolnit napětí, podpořit regeneraci a načerpat novou energii. Před začátkem stačí říct, co Vás trápí a jaký tlak je Vám příjemný.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Uvolnění ztuhlosti a únavy</h3>
+              <p>Pro chvíle, kdy se tělo ozývá po práci, dlouhém sezení nebo náročném týdnu.</p>
+            </div>
+            <span class="service-note">napětí · regenerace</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Hluboký odpočinek pro tělo i mysl</h3>
+              <p>Klidné prostředí, soukromí a pozornost věnovaná průběhu celé masáže.</p>
+            </div>
+            <span class="service-note">klid · soukromí</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Přírodní masážní oleje Saloos</h3>
+              <p>K dispozici jsou neparfémované oleje i varianty s vůní podle Vaší preference.</p>
+            </div>
+            <span class="service-note">přírodní oleje</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="about" id="omne">
+      <div class="wrap split">
+        <div class="soft-panel">
+          <p class="kicker">Miroslav Franců</p>
+          <h2>Hmat, klid a plná pozornost</h2>
+          <p>Jmenuji se Míra a jsem Váš nevidomý masér v Liberci. Masáž pro mě není jen práce, ale způsob, jak pomáhat lidem cítit se lépe.</p>
+          <p>Vzhledem ke zrakovému handicapu vnímám tělo především hmatem. Každému klientovi věnuji čas, péči a naprosté soukromí.</p>
+          <div class="quote">„Přijďte si odpočinout. Těším se na Vás.“</div>
+        </div>
+        <div class="gallery" aria-label="Atmosféra masérny">
+          <figure><img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance."></figure>
+          <figure><img src="https://images.pexels.com/photos/7195808/pexels-photo-7195808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black chairs placed near armchairs at table in stylish beauty salon with bright illumination and shelves with various cosmetology products"></figure>
+          <figure><img src="https://images.pexels.com/photos/7195799/pexels-photo-7195799.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black backwash chair with white sink placed in modern stylish beauty salon with various cosmetology products and bright glowing lamps"></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust">
+          <div class="stat">
+            <strong>5,0</strong>
+            <span>Hodnocení na Google podle dostupných údajů.</span>
+          </div>
+          <div class="stat">
+            <strong>3</strong>
+            <span>Veřejná hodnocení od klientů.</span>
+          </div>
+          <div class="stat">
+            <strong>1</strong>
+            <span>Soukromá masérna na adrese 1. máje 97/25 v centru Liberce.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div>
+          <p class="kicker">Jak to probíhá</p>
+          <h2>Jednoduše a v klidu</h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <div>
+              <h3>Domluvíte si termín</h3>
+              <p>Pro domluvu termínu zavolejte na číslo +420 735 584 903.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div>
+              <h3>Před masáží řeknete omezení</h3>
+              <p>Pokud máte zdravotní obtíže nebo si nejste jistí, konzultujte vhodnost masáže s lékařem a informujte maséra předem.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div>
+              <h3>Vyberete si pohodlí</h3>
+              <p>Na místě je připravené vše potřebné včetně přírodních olejů Saloos.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap price-card">
+        <div>
+          <p class="kicker">Ceník</p>
+          <h2>Ceny ověřte při rezervaci</h2>
+          <p>Strukturovaná data neobsahují konkrétní částky. Pro aktuální délku masáže, cenu a volný termín prosím zavolejte nebo napište e-mail.</p>
+        </div>
+        <div class="price-action">
+          <span>Rezervace a ceník</span>
+          <a class="btn btn-primary" href="tel:+420735584903">+420 735 584 903</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Často se ptáte</h2>
+          <p>Krátké odpovědi k věcem, které je dobré vědět před návštěvou.</p>
+        </div>
+        <div class="faq">
+          <details open>
+            <summary>Kdy masáž není vhodná?</summary>
+            <p>Pokud máte zdravotní obtíže nebo si nejste jistí, zda je pro Vás masáž vhodná, doporučuje se nejdřív konzultace s lékařem.</p>
+          </details>
+          <details>
+            <summary>Co mám přinést s sebou?</summary>
+            <p>Nemusíte si nic nosit. Vše potřebné je připraveno přímo v masérně.</p>
+          </details>
+          <details>
+            <summary>Jaké oleje se používají?</summary>
+            <p>Používají se přírodní masážní oleje značky Saloos, neparfémované i s různými vůněmi.</p>
+          </details>
+          <details>
+            <summary>Jak mohu zaplatit?</summary>
+            <p>Z uvedených informací vyplývá preference platby přes QR kód, možné jsou také hotovost a karta.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="soft-panel">
+          <p class="kicker">Kontakt</p>
+          <h2>Masérna v centru Liberce</h2>
+          <div class="contact-list">
+            <div class="contact-item">
+              <span>Telefon</span>
+              <a href="tel:+420735584903">+420 735 584 903</a>
+            </div>
+            <div class="contact-item">
+              <span>E-mail</span>
+              <a href="mailto:nevidomymaser@seznam.cz">nevidomymaser@seznam.cz</a>
+            </div>
+            <div class="contact-item">
+              <span>Adresa</span>
+              <a href="https://www.google.com/maps/search/?api=1&query=1.%20m%C3%A1je%2097%2F25%2C%20460%2001%20Liberec">1. máje 97/25, 460 01 Liberec</a>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa polohy masérny"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Dopřejte si klid</h2>
+          <p>Domluvte si termín masáže v centru Liberce a nechte tělo na chvíli vypnout.</p>
+        </div>
+        <a class="btn btn-outline" href="tel:+420735584903">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <div class="credits">Foto: <a href="https://www.pexels.com/@artbovich">Max Vakhtbovych</a> / Pexels</div>
+      <div class="wf-note">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad v rámci obchodní komunikace. Pokud si nepřejete její zobrazení, můžete ji odstranit zde: <a href="https://webflex.cz/delete/t2q51n9">webflex.cz/delete/t2q51n9</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.0512643, 50.7643572],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#005B7F' })
+      .setLngLat([15.0512643, 50.7643572])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
