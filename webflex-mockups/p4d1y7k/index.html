@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KRAFIN Café & Bakery | Rostlinná pekárna a kavárna ve Vršovicích</title>
+  <meta name="description" content="KRAFIN Café & Bakery ve Vršovicích: rostlinné pečivo, výběrová káva, dezerty, dorty, catering a víkendové brunche.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111114;
+      --surface: rgba(255,255,255,0.075);
+      --surface-strong: rgba(255,255,255,0.115);
+      --ink: #f8f5ef;
+      --muted: rgba(248,245,239,0.68);
+      --soft: rgba(248,245,239,0.12);
+      --accent: #C0A0A0;
+      --accent-dark: #8f6d6d;
+      --shadow: 0 34px 100px rgba(0,0,0,0.24);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 70% 8%, rgba(192,160,160,0.18), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, .display {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(17,17,20,0.72);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--accent); color: #151111; }
+    .btn.primary:hover { background: #d0b4b4; }
+    .btn.secondary {
+      border: 1px solid rgba(255,255,255,0.45);
+      color: #fff;
+      background: transparent;
+    }
+    .btn.secondary:hover { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.06); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 58px;
+      padding: 74px 0 86px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(248,245,239,0.78);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(248,245,239,0.7);
+    }
+    .chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+    }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(.95);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(145deg, rgba(17,17,20,0.2), rgba(192,160,160,0.18));
+      pointer-events: none;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .38fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 62px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .card {
+      min-height: 230px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 28px 90px rgba(0,0,0,0.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 220ms var(--ease), background 220ms var(--ease);
+    }
+    .card:hover { transform: translateY(-2px); background: var(--surface-strong); }
+    .card .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+    .card h3 {
+      font-size: 24px;
+      line-height: 1.04;
+      margin-bottom: 12px;
+    }
+    .card p { font-size: 16px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(340px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 34px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel.pad { padding: 34px; }
+    .panel img { width: 100%; height: 100%; object-fit: cover; min-height: 430px; }
+    .rows { margin-top: 28px; }
+    .row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 22px;
+      padding: 18px 0;
+      border-top: 1px solid rgba(255,255,255,0.09);
+    }
+    .row span:first-child {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .row span:last-child { color: rgba(248,245,239,0.82); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .stat {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.075);
+      min-height: 174px;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    .stat span { color: var(--muted); font-size: 16px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--surface);
+      min-height: 300px;
+      position: relative;
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; }
+    .gallery figcaption {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      right: 16px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(17,17,20,0.62);
+      backdrop-filter: blur(12px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.84);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, .9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours {
+      display: grid;
+      gap: 10px;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0;
+      border-top: 1px solid rgba(255,255,255,0.09);
+      color: rgba(248,245,239,0.78);
+    }
+    .hours .today { color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .final {
+      padding: 54px;
+      border-radius: 38px;
+      background: linear-gradient(135deg, rgba(192,160,160,0.24), rgba(255,255,255,0.08));
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(34px, 4.4vw, 64px); }
+
+    footer {
+      padding: 44px 0 32px;
+      color: rgba(248,245,239,0.54);
+      font-size: 14px;
+    }
+    .foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(255,255,255,0.09);
+      padding-top: 24px;
+    }
+    .disclaimer {
+      max-width: 760px;
+      color: rgba(248,245,239,0.48);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .contact-grid, .final {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 54px; }
+      .hero-photo { min-width: 0; }
+      .services, .stats, .gallery { grid-template-columns: 1fr 1fr; }
+      .final { padding: 34px; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 56px 0; }
+      .hero { gap: 34px; }
+      .services, .stats, .gallery { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; gap: 6px; }
+      .hours div { flex-direction: column; gap: 4px; }
+      .panel.pad, .card, .stat { padding: 22px; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="KRAFIN Café & Bakery">
+        <img src="https://static.wixstatic.com/media/a381f5_8523ebe33d6a43b58fb703567ddba7ed~mv2.png/v1/crop/x_0,y_1569,w_3375,h_1081/fill/w_281,h_90,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/logoweb2.png" alt="KRAFIN Café & Bakery">
+      </a>
+      <div class="navlinks">
+        <a href="#sortiment">Sortiment</a>
+        <a href="#brunch">Brunch</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="mailto:objednavky@krafin.cz">Objednávky</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="kicker">Praha 10, Voroněžská 19</div>
+        <h1>Rostlinná pekárna ve Vršovicích</h1>
+        <p class="lead">Krafiny, danishe, čokorolky, výběrová káva a víkendové brunche. Pečeme čistě rostlinně, o máslovou chuť ale nepřijdete.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="mailto:objednavky@krafin.cz">Napsat objednávku</a>
+          <a class="btn secondary" href="#kontakt">Otevírací doba</a>
+        </div>
+        <div class="hero-meta">
+          <span class="chip">Po-Pá 8:00-18:00</span>
+          <span class="chip">So-Ne 9:00-18:00</span>
+          <span class="chip">4,8 z 435 recenzí</span>
+        </div>
+      </div>
+      <div class="hero-photo" aria-label="Atmosféra kavárny">
+        <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+      </div>
+    </div>
+
+    <section id="sortiment">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co u nás najdete</h2>
+          <p>Každý den pečivo z croissantového těsta, káva z lokálních pražíren a sladké věci pro chvíle u stolu i na cestu.</p>
+        </div>
+        <div class="services">
+          <article class="card">
+            <div>
+              <div class="num">01</div>
+              <h3>Pečivo</h3>
+            </div>
+            <p>Nadýchané krafiny, danishe, čokorolky a další dobroty z rostlinné pekárny.</p>
+          </article>
+          <article class="card">
+            <div>
+              <div class="num">02</div>
+              <h3>Výběrová káva</h3>
+            </div>
+            <p>Šálek kávy z lokálních pražíren a místo, kde můžete pekařům nahlédnout pod ruce.</p>
+          </article>
+          <article class="card">
+            <div>
+              <div class="num">03</div>
+              <h3>Dezerty a dorty</h3>
+            </div>
+            <p>Veganské dezerty do kavárny i velké dorty na oslavu na objednávku.</p>
+          </article>
+          <article class="card">
+            <div>
+              <div class="num">04</div>
+              <h3>Catering</h3>
+            </div>
+            <p>Krafiny a pečivo do práce, na oslavu nebo svatbu po domluvě přes e-mail.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="brunch">
+      <div class="wrap split">
+        <div class="panel">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div class="panel pad">
+          <div class="kicker">Víkend v kavárně</div>
+          <h2>Brunch od 9:00 do 15:00</h2>
+          <p class="lead">V sobotu a v neděli vás čeká nabídka veganských brunchů, pečivo z pekárny a káva k pomalému dopoledni.</p>
+          <div class="rows">
+            <div class="row"><span>Kavárna</span><span>Posezení u kávy, čerstvé novinky z pekárny a klidný stůl ve Vršovicích.</span></div>
+            <div class="row"><span>Pekárna</span><span>Pečivo s sebou, do kanceláře i na společné chvíle mimo kavárnu.</span></div>
+            <div class="row"><span>Objednávky</span><span>Dorty a větší objednávky řešíme na objednavky@krafin.cz.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap stats">
+        <div class="stat">
+          <strong>4,8</strong>
+          <span>hodnocení od návštěvníků podle dostupných údajů</span>
+        </div>
+        <div class="stat">
+          <strong>435</strong>
+          <span>recenzí spojených s KRAFIN Café & Bakery</span>
+        </div>
+        <div class="stat">
+          <strong>7</strong>
+          <span>dní v týdnu otevřeno na Voroněžské 19</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotogalerie">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Atmosféra u stolu</h2>
+          <p>Teplé světlo, sklenice, pečivo a káva. Kavárna pro návštěvu ve dvou i rychlé vyzvednutí objednávky.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>Kavárna</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            <figcaption>Večerní světlo</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            <figcaption>Detail prostoru</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="panel pad">
+          <div class="kicker">Navštivte nás</div>
+          <h2>Voroněžská 19</h2>
+          <p>Voroněžská 19, 101 00 Praha 10-Vršovice</p>
+          <div class="hours" aria-label="Otevírací doba">
+            <div><span>Pondělí-pátek</span><strong>8:00-18:00</strong></div>
+            <div class="today"><span>Sobota-neděle</span><strong>9:00-18:00</strong></div>
+            <div><span>E-mail</span><strong>objednavky@krafin.cz</strong></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou KRAFIN Café & Bakery"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final">
+        <div>
+          <div class="kicker">Dorty, pečivo, catering</div>
+          <h2>Napište nám, co chystáte.</h2>
+        </div>
+        <a class="btn primary" href="mailto:objednavky@krafin.cz">objednavky@krafin.cz</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <div>© KRAFIN Café & Bakery</div>
+      <div class="disclaimer">
+        Webflex disclaimer: Tato prezentační stránka je nezávazný kreativní materiál připravený pro vlastníka značky. Pokud si nepřejete její zobrazení, odstraňte ji zde:
+        <a href="https://webflex.cz/remove/p4d1y7k">https://webflex.cz/remove/p4d1y7k</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4458657, 50.0716938],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A0A0' })
+      .setLngLat([14.4458657, 50.0716938])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
