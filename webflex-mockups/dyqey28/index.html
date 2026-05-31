@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masáže a regenerace - Bc. Radek Polnický</title>
+  <meta name="description" content="Sportovní a relaxační masáže v centru Liberce. Londýnská 588/8, Liberec.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f7f8fa;
+      --panel-2: #eef3fb;
+      --ink: #111318;
+      --muted: #5f6673;
+      --line: #d9dee8;
+      --line-strong: #111318;
+      --accent: #0060E0;
+      --accent-dark: #004cb3;
+      --ok: #0f7a3b;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(17,19,24,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,19,24,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+      max-width: 420px;
+      overflow-wrap: anywhere;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .nav-links a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover { border-color: var(--line); background: var(--panel); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+    }
+    .btn:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); }
+    .btn.secondary { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn.secondary:hover { background: var(--panel-2); border-color: var(--accent); color: var(--accent); }
+
+    .hero {
+      padding: 76px 0 44px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .75fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: var(--muted);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      box-shadow: 10px 10px 0 var(--panel-2);
+    }
+    .hours-card header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--ink);
+      color: #fff;
+      font-weight: 800;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-row.today {
+      background: var(--panel-2);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      color: var(--accent);
+      font-size: clamp(46px, 6vw, 76px);
+      line-height: .85;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+      letter-spacing: 0;
+      max-width: 860px;
+      hyphens: none;
+    }
+    .section-head p { margin: 10px 0 0; color: var(--muted); max-width: 660px; font-size: 17px; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line-strong);
+    }
+    .data-table th, .data-table td {
+      border: 1px solid var(--line);
+      padding: 18px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      position: sticky;
+      top: 72px;
+      z-index: 5;
+      background: var(--ink);
+      color: #fff;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .data-table td:nth-child(2), .data-table td:nth-child(3) { font-family: var(--font-mono); }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .trust-item {
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      min-height: 150px;
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-item strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 5vw, 56px);
+      line-height: 1;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .trust-item span { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      padding: 24px;
+    }
+    .panel h3 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+    .timeline {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 18px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 20px;
+    }
+    .step h3 { margin: 0 0 6px; font-size: 20px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .photo {
+      min-height: 310px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .3s var(--ease);
+    }
+    .photo:hover img { transform: scale(1.025); }
+    .photo.small { min-height: 230px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-list {
+      display: grid;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 145px 1fr;
+      gap: 18px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child { border-bottom: 0; }
+    .contact-row span:first-child {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .faq {
+      border-top: 1px solid var(--line-strong);
+    }
+    details {
+      border-bottom: 1px solid var(--line);
+      padding: 20px 0;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 18px;
+      transition: color .2s var(--ease);
+    }
+    summary:hover { color: var(--accent); }
+    details p { color: var(--muted); max-width: 760px; }
+
+    .final {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--ink);
+      color: #fff;
+    }
+    .final h2 { color: #fff; max-width: 760px; }
+    .final p { color: rgba(255,255,255,.72); }
+    .final .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.08); color: #fff; border-color: #fff; }
+
+    footer {
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 12px;
+      background: #fff;
+    }
+    .disclaimer {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+    .disclaimer a { color: var(--accent); text-decoration: underline; }
+
+    @media (max-width: 860px) {
+      .nav { align-items: flex-start; flex-direction: column; padding: 16px 0; }
+      .nav-links { flex-wrap: wrap; }
+      .hero-grid, .split, .gallery, .contact-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 46px; }
+      .section-head { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .data-table { display: block; overflow-x: auto; }
+      .data-table th, .data-table td { min-width: 170px; }
+      .contact-row { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#">Masáže a regenerace - Bc. Radek Polnický</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="mailto:radekpolnicky@gmail.com">Objednat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Liberec centrum · Londýnská 588/8</div>
+          <h1>Sportovní a relaxační masáže.</h1>
+          <p class="lead">Regenerace v centru Liberce pro návštěvníky, kteří chtějí jasný termín, klidný průběh a přímý kontakt na maséra.</p>
+          <div class="hero-actions">
+            <a class="btn" href="tel:+420737457269">+420 737 457 269</a>
+            <a class="btn secondary" href="mailto:radekpolnicky@gmail.com">radekpolnicky@gmail.com</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <header><span>Otevírací režim</span><span class="mono">STÁLE OTEVŘENO</span></header>
+          <div class="hours-row"><span>Pondělí</span><span>dle objednání</span></div>
+          <div class="hours-row"><span>Úterý</span><span>dle objednání</span></div>
+          <div class="hours-row"><span>Středa</span><span>dle objednání</span></div>
+          <div class="hours-row"><span>Čtvrtek</span><span>dle objednání</span></div>
+          <div class="hours-row"><span>Pátek</span><span>dle objednání</span></div>
+          <div class="hours-row"><span>Sobota</span><span>dle objednání</span></div>
+          <div class="hours-row today"><span>Neděle</span><span>dle objednání</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <h2>Přehled služeb</h2>
+            <p>Veřejně uvedené služby jsou sportovní a relaxační masáže. Konkrétní termín i délku návštěvy si potvrdíte přímo při objednání.</p>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Služba</th>
+              <th>Termín</th>
+              <th>Cenová informace</th>
+              <th>Kontakt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sportovní masáž</strong><br><span class="tag">regenerace</span></td>
+              <td>dle objednání</td>
+              <td>cenová kategorie $$</td>
+              <td><a href="tel:+420737457269">telefon</a> · <a href="mailto:radekpolnicky@gmail.com">e-mail</a></td>
+            </tr>
+            <tr>
+              <td><strong>Relaxační masáž</strong><br><span class="tag">uvolnění</span></td>
+              <td>dle objednání</td>
+              <td>cenová kategorie $$</td>
+              <td><a href="tel:+420737457269">telefon</a> · <a href="mailto:radekpolnicky@gmail.com">e-mail</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <h2>Důvěra z veřejných profilů</h2>
+            <p>Krátký souhrn ověřitelných údajů, které jsou dostupné u firmy a na jejím profilu.</p>
+          </div>
+        </div>
+        <div class="trust-strip">
+          <div class="trust-item"><strong>4.5</strong><span>Google hodnocení uvedené u firmy.</span></div>
+          <div class="trust-item"><strong>2</strong><span>Počet Google recenzí v dostupných datech.</span></div>
+          <div class="trust-item"><strong>100%</strong><span>Doporučení uvedené na profilu u 16 recenzí.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap split">
+        <div class="panel">
+          <div class="eyebrow">03 · objednání</div>
+          <h2>Jednoduchý průběh návštěvy</h2>
+          <p>Objednání probíhá přímo přes telefon nebo e-mail. Adresa je v centru Liberce, v ulici Londýnská.</p>
+        </div>
+        <div class="timeline">
+          <div class="step"><b>01</b><div><h3>Vyberete kontakt</h3><p>Zavoláte na číslo z profilu nebo napíšete e-mail.</p></div></div>
+          <div class="step"><b>02</b><div><h3>Potvrdíte termín</h3><p>Čas návštěvy se potvrzuje individuálně podle domluvy.</p></div></div>
+          <div class="step"><b>03</b><div><h3>Přijdete na adresu</h3><p>Londýnská 588/8, 460 01 Liberec.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <h2>Prostor pro klidnou regeneraci</h2>
+            <p>Vizuální atmosféra drží salonní, čistý a soustředěný charakter návštěvy.</p>
+          </div>
+        </div>
+        <div class="gallery">
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/13068380/pexels-photo-13068380.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Sleek modern nail salon interior with stylish design and treatment station.">
+          </figure>
+          <figure class="photo small">
+            <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <div>
+            <h2>Kontakt a adresa</h2>
+            <p>Masáže a regenerace - Bc. Radek Polnický najdete na adrese Londýnská 588/8 v Liberci.</p>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-list">
+            <div class="contact-row"><span>Adresa</span><strong>Londýnská 588/8, 460 01 Liberec</strong></div>
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420737457269">+420 737 457 269</a></div>
+            <div class="contact-row"><span>E-mail</span><a href="mailto:radekpolnicky@gmail.com">radekpolnicky@gmail.com</a></div>
+            <div class="contact-row"><span>Web</span><a href="https://www.facebook.com/bc.radekpolnicky.masaze.regenerace/">Facebook profil</a></div>
+            <div class="contact-row"><span>Režim</span><span class="mono">stále otevřeno · dle objednání</span></div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou provozovny"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <div>
+            <h2>Časté dotazy</h2>
+            <p>Odpověď na termín získáte přímým kontaktem.</p>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak se objednám?</summary>
+            <p>Telefonicky na +420 737 457 269 nebo e-mailem na radekpolnicky@gmail.com.</p>
+          </details>
+          <details>
+            <summary>Kde masáže probíhají?</summary>
+            <p>Na adrese Londýnská 588/8, 460 01 Liberec.</p>
+          </details>
+          <details>
+            <summary>Jaké služby jsou veřejně uvedené?</summary>
+            <p>Sportovní a relaxační masáže v centru Liberce.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">07</div>
+          <div>
+            <h2>Domluvte si termín regenerace.</h2>
+            <p>Stačí zavolat nebo poslat e-mail s preferovaným časem návštěvy.</p>
+            <div class="hero-actions">
+              <a class="btn" href="tel:+420737457269">Zavolat</a>
+              <a class="btn secondary" href="mailto:radekpolnicky@gmail.com">Napsat e-mail</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      Toto je prezentační stránka připravená službou Webflex. Pokud si nepřejete stránku zobrazovat, můžete ji odstranit zde:
+      <a href="https://webflex.cz/delete/dyqey28">https://webflex.cz/delete/dyqey28</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.043109500000002, 50.774373999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#0060E0' })
+      .setLngLat([15.043109500000002, 50.774373999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
