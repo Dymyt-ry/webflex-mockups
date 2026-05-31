@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Studio MUNAI - masáže v Brně-Bystrci</title>
+  <meta name="description" content="Studio MUNAI v Brně-Bystrci nabízí relaxační a regenerační masáže, dárkové poukazy a péči pro dospělé i děti. Rezervace na telefonu +420 735 909 161.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfb;
+      --surface: rgba(255,255,255,.78);
+      --surface-solid: #ffffff;
+      --soft: #eef4f1;
+      --ink: #171918;
+      --muted: #69716d;
+      --line: rgba(23,25,24,.09);
+      --accent: #AFC7BB;
+      --accent-deep: #607d70;
+      --shadow: 0 34px 110px rgba(45, 61, 54, .12);
+      --shadow-soft: 0 18px 70px rgba(45, 61, 54, .08);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(96,125,112,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96,125,112,.025) 1px, transparent 1px),
+        radial-gradient(circle at 80% 8%, rgba(175,199,187,.42), transparent 31rem),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(251,251,251,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+    .nav { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .logo img { max-height: 46px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; font-weight: 800; }
+    .nav-links a { text-decoration: none; color: rgba(23,25,24,.72); transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--accent-deep); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(96,125,112,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #13201a; }
+    .btn-secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .hero { padding: 66px 0 84px; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, .94fr) minmax(420px, .78fr); gap: 54px; align-items: center; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { max-width: 720px; font-size: clamp(40px, 6vw, 88px); text-transform: uppercase; }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); text-transform: uppercase; }
+    h3 { font-size: 23px; line-height: 1.08; }
+    .lead { max-width: 640px; margin: 24px 0 0; font-size: clamp(19px, 2vw, 24px); color: rgba(23,25,24,.72); hyphens: auto; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 38px; max-width: 690px; }
+    .tile, .service-card, .quote, .voucher, .contact-panel, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
+    }
+    .tile { border-radius: 18px; padding: 18px; min-height: 106px; }
+    .tile strong { display: block; font-family: var(--font-mono); color: var(--accent-deep); font-size: 18px; }
+    .tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 650; }
+    .hero-photo { position: relative; aspect-ratio: 4 / 3; border-radius: 30px; overflow: hidden; background: var(--soft); box-shadow: var(--shadow); }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(18,24,21,.42)); }
+    .photo-label { position: absolute; left: 22px; right: 22px; bottom: 22px; z-index: 1; display: flex; justify-content: space-between; gap: 16px; color: #fff; font: 700 12px/1.3 var(--font-mono); text-transform: uppercase; }
+    section { padding: 82px 0; }
+    .section-head { display: grid; grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr); gap: 42px; align-items: end; margin-bottom: 34px; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+    .services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+    .service-card { border-radius: var(--radius); padding: 26px; min-height: 238px; display: flex; flex-direction: column; justify-content: space-between; transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s; }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card p { margin: 18px 0 0; color: var(--muted); hyphens: auto; }
+    .service-card .tag { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .split { display: grid; grid-template-columns: minmax(0, .74fr) minmax(360px, .52fr); gap: 24px; align-items: stretch; }
+    .quote { border-radius: 30px; padding: clamp(28px, 5vw, 58px); display: flex; flex-direction: column; justify-content: space-between; min-height: 430px; }
+    .quote blockquote { margin: 0; font-family: var(--font-display); font-size: clamp(32px, 4vw, 58px); line-height: 1.02; text-transform: uppercase; hyphens: none; overflow-wrap: anywhere; }
+    .quote p { max-width: 660px; margin: 24px 0 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+    .stats { display: grid; gap: 16px; }
+    .stat { min-height: 132px; border-radius: 24px; padding: 24px; background: #eef4f1; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(32px, 4vw, 54px); color: var(--accent-deep); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 700; }
+    .process { display: grid; gap: 0; background: var(--surface-solid); border-radius: 30px; box-shadow: var(--shadow-soft); overflow: hidden; }
+    .step { display: grid; grid-template-columns: 110px 1fr 1.1fr; gap: 28px; padding: 28px; align-items: center; border-bottom: 1px solid var(--line); }
+    .step:last-child { border-bottom: 0; }
+    .step .num { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+    .step p { margin: 0; color: var(--muted); hyphens: auto; }
+    .voucher { display: grid; grid-template-columns: minmax(0, .56fr) minmax(360px, .44fr); gap: 28px; align-items: center; border-radius: 30px; padding: 28px; }
+    .voucher img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 22px; }
+    .voucher p { color: var(--muted); font-size: 18px; hyphens: auto; }
+    .gallery { display: grid; grid-template-columns: 1.1fr .9fr 1fr; gap: 16px; align-items: stretch; }
+    .gallery img { width: 100%; height: 100%; min-height: 250px; object-fit: cover; border-radius: 26px; box-shadow: var(--shadow-soft); }
+    .gallery img:nth-child(2) { margin-top: 44px; }
+    .contact-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(380px, .58fr); gap: 24px; align-items: stretch; }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-soft); }
+    .contact-panel { border-radius: 30px; padding: 30px; display: grid; gap: 20px; }
+    .contact-row { display: grid; grid-template-columns: 118px 1fr; gap: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .contact-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-row span { font-family: var(--font-mono); color: var(--accent-deep); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .contact-row strong, .contact-row a { font-weight: 800; text-decoration: none; }
+    .faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+    .faq-item { border-radius: 22px; padding: 24px; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); hyphens: auto; }
+    .final { padding: 72px 0 92px; }
+    .final-box { border-radius: 34px; padding: clamp(32px, 6vw, 70px); background: #eef4f1; box-shadow: var(--shadow); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; }
+    .final-box p { margin: 18px 0 0; color: var(--muted); font-size: 18px; }
+    footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 22px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { color: var(--accent-deep); font-weight: 800; }
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid, .split, .voucher, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { max-width: 640px; }
+      .section-head, .services, .faq, .gallery { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 1fr; gap: 10px; }
+      .gallery img:nth-child(2) { margin-top: 0; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 26px, 1180px); }
+      .hero { padding-top: 38px; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+      section { padding: 58px 0; }
+      .contact-row { grid-template-columns: 1fr; gap: 6px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Studio MUNAI">
+        <img src="https://static.wixstatic.com/media/edc79c_c7aeb024995b4ec68885897570244987~mv2.png/v1/fill/w_94,h_86,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/e9a259_c41d8807fa4e43258cf4cb6055c6c107~mv2_edited_edited.png" alt="Studio MUNAI">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Péče</a>
+        <a href="#poukaz">Dárkový poukaz</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420735909161">Rezervovat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Brno-Bystrc · Říčanská 17</p>
+          <h1>Dokonalá relaxace</h1>
+          <p class="lead">Dopřejte si úlevu, klid a novou energii díky pečující masáži v harmonickém prostředí Studia MUNAI.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420735909161">Zavolat Karolíně</a>
+            <a class="btn btn-secondary" href="mailto:masaze@studiomunai.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta">
+            <div class="tile"><strong>4,9</strong><span>Hodnocení od klientů</span></div>
+            <div class="tile"><strong>88</strong><span>Google recenzí</span></div>
+            <div class="tile"><strong>Po-Ne</strong><span>10:00-22:00 dle objednávek</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+          <figcaption class="photo-label"><span>Relaxace · regenerace</span><span>Studio MUNAI</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Služby</p>
+            <h2>Masáže pro tělo i mysl</h2>
+          </div>
+          <p>Každá návštěva má prostor pro zpomalení, uvolnění a péči podle toho, co vaše tělo právě potřebuje.</p>
+        </div>
+        <div class="services">
+          <article class="service-card">
+            <span class="tag">01 · Klid</span>
+            <div><h3>Relaxační masáže</h3><p>Jemná péče pro odpočinek, ztišení a návrat k vlastnímu tempu.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="tag">02 · Úleva</span>
+            <div><h3>Regenerační masáže</h3><p>Masáž zaměřená na uvolnění napětí a pocit lehkosti po náročných dnech.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="tag">03 · Rodina</span>
+            <div><h3>Péče pro dospělé i děti</h3><p>Laskavý individuální přístup v bezpečném a čistém prostředí.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap split">
+        <article class="quote">
+          <div>
+            <p class="eyebrow">Zkušenost klientů</p>
+            <blockquote>To nebyla masáž, to byl obřad!</blockquote>
+            <p>Klienti oceňují příjemný a profesionální přístup, čisté a voňavé prostředí i relaxační hudbu.</p>
+          </div>
+          <p class="eyebrow">Radka · recenze</p>
+        </article>
+        <div class="stats">
+          <div class="stat"><strong>4,9</strong><span>Průměrné hodnocení na Googlu</span></div>
+          <div class="stat"><strong>88</strong><span>Veřejných recenzí</span></div>
+          <div class="stat"><strong>2</strong><span>Kontakty pro objednání: Karolína a Petr</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Průběh návštěvy</p>
+            <h2>Prostor bez spěchu</h2>
+          </div>
+          <p>Studio stojí na jednoduché péči: domluvit termín, přijít do klidu a nechat tělo uvolnit.</p>
+        </div>
+        <div class="process">
+          <div class="step"><span class="num">01</span><h3>Objednáte si termín</h3><p>Provozní doba je dle objednávek každý den od 10:00 do 22:00.</p></div>
+          <div class="step"><span class="num">02</span><h3>Přijdete na Říčanskou 17</h3><p>Studio najdete v Brně-Bystrci na adrese Říčanská 17, 635 00 Brno.</p></div>
+          <div class="step"><span class="num">03</span><h3>Odcházíte lehčí</h3><p>Masáž pomáhá zpomalit, uvolnit se a načerpat novou energii.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="poukaz">
+      <div class="wrap voucher">
+        <div>
+          <p class="eyebrow">Dárkový poukaz</p>
+          <h2>Smysluplný dárek</h2>
+          <p>Čas věnovaný péči o tělo i mysl může být krásným darem pro ty, na kterých vám záleží.</p>
+          <a class="btn btn-primary" href="mailto:masaze@studiomunai.cz">Objednat poukaz</a>
+        </div>
+        <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra studia">
+      <div class="wrap gallery">
+        <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+        <img src="https://images.pexels.com/photos/7195808/pexels-photo-7195808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black chairs placed near armchairs at table in stylish beauty salon with bright illumination and shelves with various cosmetology products">
+        <img src="https://images.pexels.com/photos/7750137/pexels-photo-7750137.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon with black leather chairs and large glass windows for natural light.">
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Rezervace v Bystrci</h2>
+          </div>
+          <p>Ozvěte se telefonicky nebo e-mailem. Platba je možná hotově, kartou, QR kódem i online.</p>
+        </div>
+        <div class="contact-grid">
+          <div id="map" aria-label="Mapa Studia MUNAI"></div>
+          <aside class="contact-panel">
+            <div class="contact-row"><span>Adresa</span><strong>Říčanská 17, 635 00 Brno-Brno-Bystrc</strong></div>
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420735909161">Karolína: +420 735 909 161</a></div>
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420777466774">Petr: +420 777 466 774</a></div>
+            <div class="contact-row"><span>E-mail</span><a href="mailto:masaze@studiomunai.cz">masaze@studiomunai.cz</a></div>
+            <div class="contact-row"><span>Provoz</span><strong>Po-Ne 10:00-22:00 dle objednávek</strong></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Praktické informace vycházejí z kontaktních údajů a služeb Studia MUNAI.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Jak se objednat?</h3><p>Zavolejte Karolíně na +420 735 909 161, Petrovi na +420 777 466 774 nebo napište na masaze@studiomunai.cz.</p></article>
+          <article class="faq-item"><h3>Kdy je otevřeno?</h3><p>Studio přijímá klienty dle objednávek od pondělí do neděle mezi 10:00 a 22:00.</p></article>
+          <article class="faq-item"><h3>Je možné koupit poukaz?</h3><p>Ano, dárkový poukaz je vhodný pro blízké, kterým chcete dopřát čas na regeneraci.</p></article>
+          <article class="faq-item"><h3>Jak lze platit?</h3><p>Studio uvádí platbu hotově, kartou, QR kódem i online.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Studio MUNAI</p>
+          <h2>Dopřejte si klid</h2>
+          <p>Rezervujte si čas pro tělo i mysl v harmonickém prostředí na Říčanské 17.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420735909161">Rezervovat termín</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 Studio MUNAI · Fotografie: Max Vakhtbovych / Pexels</div>
+      <div class="disclaimer">Tento nezávazný návrh vytvořil Webflex. Pokud si jej nepřejete zobrazovat, můžete jej odstranit zde: <a href="https://webflex.cz/delete/exii374">webflex.cz/delete/exii374</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.4989611, 49.2171683],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#AFC7BB' })
+      .setLngLat([16.4989611, 49.2171683])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
