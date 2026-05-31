@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TAWAN Thajské masáže - Grand Palace Brno</title>
+  <meta name="description" content="Thajské masáže TAWAN v Grand Palace Brno na Šilingrově náměstí. Denně 9:00-21:00, rezervace na telefonu +420 720 202 232.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface-soft: #f3f2ef;
+      --ink: #17171d;
+      --muted: #686970;
+      --accent: #B9956A;
+      --accent-dark: #8d6d47;
+      --brand: #202040;
+      --line: rgba(32, 32, 64, .09);
+      --shadow: 0 34px 100px rgba(32, 32, 64, .10);
+      --shadow-soft: 0 22px 70px rgba(32, 32, 64, .075);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.22, .61, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,32,64,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,32,64,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.84);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: min(280px, 54vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .button.primary { color: #fff; background: var(--accent); box-shadow: 0 16px 38px rgba(185,149,106,.26); }
+    .button.primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .button.outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .button.outline:hover { background: rgba(185,149,106,.10); transform: translateY(-1px); }
+    .button:active, .service-row:active, .gallery-card:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .maplibregl-ctrl button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 56px;
+      padding: 70px 0 84px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      margin-top: 18px;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 640px;
+      margin: 26px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.55vw, 22px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 38px;
+      max-width: 680px;
+    }
+    .meta {
+      min-height: 102px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--brand);
+      font-size: 18px;
+    }
+    .meta span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(13,13,18,.46));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(260px, .82fr) minmax(280px, .64fr);
+      align-items: end;
+      gap: 56px;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.6vw, 68px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-list {
+      overflow: hidden;
+      border-radius: 30px;
+      background: rgba(255,255,255,.80);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) minmax(220px, .52fr);
+      gap: 28px;
+      align-items: center;
+      padding: 30px;
+      border-top: 1px solid var(--line);
+      transition: transform .22s var(--ease), background .22s var(--ease);
+    }
+    .service-row:first-child { border-top: 0; }
+    .service-row:hover { background: rgba(185,149,106,.075); transform: translateY(-1px); }
+    .num { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+    .service-row h3 { font-size: clamp(24px, 2.4vw, 38px); }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 184px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .trust-card b {
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: 1;
+      color: var(--brand);
+    }
+    .trust-card span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 30px;
+      padding: 34px;
+      background: rgba(255,255,255,.80);
+      box-shadow: var(--shadow-soft);
+    }
+    .panel h2 { font-size: clamp(32px, 4vw, 58px); }
+    .feature-lines { margin-top: 26px; }
+    .feature-line {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 22px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .feature-line:first-child { border-top: 0; }
+    .feature-line b { font-family: var(--font-mono); color: var(--accent-dark); font-size: 13px; text-transform: uppercase; }
+    .feature-line span { color: var(--muted); }
+    .gallery-card {
+      position: relative;
+      min-height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+      transition: transform .22s var(--ease);
+    }
+    .gallery-card:hover { transform: translateY(-1px); }
+    .gallery-card img { width: 100%; height: 100%; min-height: 460px; object-fit: cover; }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(260px, .42fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-copy, .gift-card {
+      border-radius: 30px;
+      padding: 34px;
+      background: var(--brand);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .price-copy p { max-width: 680px; color: rgba(255,255,255,.74); font-size: 20px; margin: 18px 0 0; }
+    .gift-card {
+      background: var(--accent);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .gift-card b { font-family: var(--font-display); font-size: clamp(28px, 3vw, 44px); line-height: 1; }
+    .gift-card span { font-family: var(--font-mono); font-weight: 700; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .62fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 30px;
+      padding: 32px;
+      background: rgba(255,255,255,.84);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-row:first-of-type { border-top: 0; margin-top: 12px; }
+    .contact-row b { font-family: var(--font-mono); color: var(--accent-dark); font-size: 13px; text-transform: uppercase; }
+    .contact-row span, .contact-row a { color: var(--muted); font-weight: 700; }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      min-height: 166px;
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+    }
+    .faq-item h3 { font-family: var(--font-body); font-size: 20px; line-height: 1.2; font-weight: 800; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 84px 0 92px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+      border-radius: 34px;
+      padding: 42px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .final-box h2 { font-size: clamp(34px, 4.8vw, 72px); }
+    .final-box p { max-width: 640px; margin: 16px 0 0; color: var(--muted); font-size: 18px; }
+
+    footer {
+      padding: 30px 0 38px;
+      color: rgba(23,23,29,.62);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-flex { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .footer-flex a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.button) { display: none; }
+      .hero, .section-head, .split, .price-band, .contact-grid, .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .hero-photo { max-width: 720px; }
+      .trust-grid, .faq { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero-meta { grid-template-columns: 1fr; }
+      .service-row, .feature-line, .contact-row { grid-template-columns: 1fr; gap: 10px; }
+      .service-row, .panel, .price-copy, .gift-card, .contact-card, .final-box { padding: 24px; }
+      section { padding: 62px 0; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="TAWAN Thajské masáže - Grand Palace Brno">
+        <img src="https://www.tawan.cz/themes/custom/awesome/src/img/logo.svg" alt="TAWAN Thajské masáže - Grand Palace Brno">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#salon">Salon</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="button primary" href="tel:+420720202232">Rezervovat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="kicker">Grand Palace Brno · Šilingrovo náměstí</div>
+        <h1>Thajský klid v centru Brna</h1>
+        <p class="lead">Samostatným vchodem z ulice vstoupíte do salonu TAWAN, kde se nespěchá. Masáže jsou připravené pro hotelové hosty i všechny příchozí.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="tel:+420720202232">Zavolat +420 720 202 232</a>
+          <a class="button outline" href="#kontakt">Adresa a hodiny</a>
+        </div>
+        <div class="hero-meta">
+          <div class="meta"><strong>9:00-21:00</strong><span>otevřeno denně</span></div>
+          <div class="meta"><strong>4.8</strong><span>hodnocení z 341 recenzí</span></div>
+          <div class="meta"><strong>Brno-střed</strong><span>Šilingrovo nám. 2</span></div>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+        <figcaption class="photo-label"><span>TAWAN Grand Palace</span><span>Brno-střed</span></figcaption>
+      </figure>
+    </div>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Masáže a péče</h2>
+          <p>Vyberete si samostatnou masáž, péči pro dva, balíček nebo konzultaci výběru masáže. Salon nabízí i dárkové poukazy a kredity na masáže.</p>
+        </div>
+        <div class="service-list">
+          <a class="service-row" href="tel:+420720202232">
+            <span class="num">01</span>
+            <h3>Thajské masáže</h3>
+            <p>Klasická péče TAWAN pro uvolnění těla, zklidnění hlavy a návrat ztracené energie.</p>
+          </a>
+          <a class="service-row" href="tel:+420720202232">
+            <span class="num">02</span>
+            <h3>Masáže pro dva</h3>
+            <p>Společný čas v salonu pro pár, přátele nebo jako dárek pro blízkého člověka.</p>
+          </a>
+          <a class="service-row" href="mailto:brno@tawan.cz">
+            <span class="num">03</span>
+            <h3>Balíčky a poukazy</h3>
+            <p>Dárkové poukazy, kredity na masáže, firemní členství a zaměstnanecké benefity.</p>
+          </a>
+          <a class="service-row" href="tel:+420720202232">
+            <span class="num">04</span>
+            <h3>Sauna a pohodlí</h3>
+            <p>Odhlučněné místnosti, sauna, stojan na kolo a parkování po předchozí domluvě.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-grid">
+        <div class="trust-card"><b>4.8</b><span>průměrné hodnocení salonu</span></div>
+        <div class="trust-card"><b>341</b><span>veřejných recenzí od hostů</span></div>
+        <div class="trust-card"><b>12-21</b><span>čas pro domluvené parkování</span></div>
+      </div>
+    </section>
+
+    <section id="salon">
+      <div class="wrap split">
+        <div class="panel">
+          <div class="kicker">Proč Grand Palace Brno</div>
+          <h2>Centrum, a přesto klid</h2>
+          <div class="feature-lines">
+            <div class="feature-line"><b>Vchod</b><span>Samostatný vstup z ulice Šilingrovo náměstí, nedaleko tramvajové zastávky.</span></div>
+            <div class="feature-line"><b>Atmosféra</b><span>Hudba, světla, vůně a klidný rytmus salonu pomáhají nechat město za dveřmi.</span></div>
+            <div class="feature-line"><b>Příjezd</b><span>V centru Brna je parkování omezené, proto je vhodné počítat s časovou rezervou.</span></div>
+          </div>
+        </div>
+        <figure class="gallery-card">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+        </figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap price-band">
+        <div class="price-copy">
+          <div class="kicker">Rezervace a dárky</div>
+          <h2>Poukaz potěší i bez termínu</h2>
+          <p>Dárkové poukazy, kredity a balíčky TAWAN se hodí, když chcete darovat odpočinek a nechat výběr masáže na obdarovaném.</p>
+        </div>
+        <div class="gift-card">
+          <b>Bonus Club TAWAN</b>
+          <span>brno@tawan.cz</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kudy k nám</h2>
+          <p>Salon najdete v historické budově Grand Palace Brno na Šilingrově náměstí. Vchod je z ulice, ne přes hotelovou recepci.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="kicker">Kontakt</div>
+            <div class="contact-row"><b>Telefon</b><a href="tel:+420720202232">+420 720 202 232</a></div>
+            <div class="contact-row"><b>E-mail</b><a href="mailto:brno@tawan.cz">brno@tawan.cz</a></div>
+            <div class="contact-row"><b>Adresa</b><span>Grand Palace Brno, Šilingrovo nám. 265/2, 602 00 Brno-střed</span></div>
+            <div class="contact-row"><b>Otevřeno</b><span>Denně: 9:00-21:00</span></div>
+            <div class="contact-row"><b>Parkování</b><span>Jedno místo mezi 12:00 a 21:00 pouze po předchozí domluvě při rezervaci.</span></div>
+          </div>
+          <div id="map" aria-label="Mapa salonu TAWAN Grand Palace Brno"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prakticky před návštěvou</h2>
+          <p>Krátké odpovědi na věci, které je dobré vyřešit ještě před rezervací termínu.</p>
+        </div>
+        <div class="faq">
+          <div class="faq-item"><h3>Je salon jen pro hotelové hosty?</h3><p>Ne. Masáže jsou určené hotelovým hostům i všem příchozím.</p></div>
+          <div class="faq-item"><h3>Kde přesně je vstup?</h3><p>Samostatný vchod je z ulice Šilingrovo náměstí, nedaleko tramvajové zastávky.</p></div>
+          <div class="faq-item"><h3>Dá se přijet autem?</h3><p>Parkování v centru je omezené. Salon má jedno místo pouze po předchozí domluvě.</p></div>
+          <div class="faq-item"><h3>Umíte poradit s výběrem?</h3><p>Ano, při rezervaci můžete požádat o konzultaci výběru masáže.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <div class="kicker">TAWAN Grand Palace Brno</div>
+          <h2>Domluvte si svůj čas</h2>
+          <p>Zavolejte do salonu, napište e-mail nebo si vyberte dárkový poukaz pro někoho, kdo potřebuje zpomalit.</p>
+        </div>
+        <a class="button primary" href="tel:+420720202232">Rezervovat telefonicky</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-flex">
+      <span>Neoficiální prezentační stránka připravená pro TAWAN Thajské masáže - Grand Palace Brno.</span>
+      <span>Vytvořilo Webflex. <a href="https://webflex.cz/remove/oub00ak">Smazat stránku</a></span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.605376, 49.1922332],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#B9956A' })
+      .setLngLat([16.605376, 49.1922332])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
