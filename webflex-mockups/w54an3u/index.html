@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Cukrář Skála | Cukrárna v centru Prahy</title>
+  <meta name="description" content="Cukrář Skála ve Šporkovském paláci: zákusky podle receptur Lukáše Skály, dorty, kremrole, pralinky, snídaně, káva a objednávky na zakázku.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <style>
+    :root {
+      --bg: #141312;
+      --ink: #f8f4ee;
+      --muted: rgba(248, 244, 238, .68);
+      --quiet: rgba(248, 244, 238, .48);
+      --line: rgba(248, 244, 238, .14);
+      --panel: #1c1a18;
+      --panel-2: #25211d;
+      --paper: #f8f4ee;
+      --paper-ink: #171412;
+      --paper-muted: #655d55;
+      --accent: #604020;
+      --accent-bright: #9b7046;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 16px;
+      --s4: 24px;
+      --s5: 48px;
+      --s6: 64px;
+      --s7: 96px;
+      --s8: 128px;
+      --gutter: clamp(20px, 4vw, 64px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      text-wrap: balance;
+    }
+    p { text-wrap: pretty; }
+    .container { max-width: 1320px; margin: 0 auto; padding: 0 var(--gutter); }
+    .mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .label { margin-bottom: var(--s3); color: var(--accent-bright); font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      color: #fff;
+      background: linear-gradient(to bottom, rgba(0,0,0,.76), rgba(0,0,0,0));
+    }
+    .nav { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+    .brand { display: inline-flex; align-items: center; min-width: 0; }
+    .brand img { width: auto; max-width: min(230px, 52vw); max-height: 44px; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: var(--s4); color: rgba(255,255,255,.78); font-size: 13px; font-weight: 600; }
+    .nav-links a, .btn, .service-row, .gallery-card, .contact-link, .order-link {
+      transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease), opacity 200ms var(--ease);
+    }
+    .nav-links a:hover { color: #fff; transform: translateY(-1px); }
+    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active, .nav-links a:active, .service-row:active, .gallery-card:active, .contact-link:active, .order-link:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #76512d; border-color: #76512d; }
+    .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; }
+    .btn-outline:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.74); }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      background: #090807;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.84), rgba(0,0,0,.42) 50%, rgba(0,0,0,.22)),
+        linear-gradient(0deg, rgba(20,19,18,.98), rgba(20,19,18,.18) 50%, rgba(0,0,0,.42));
+    }
+    .hero-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.1) brightness(.74);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 156px var(--gutter) var(--s7);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .98;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .hero-lead {
+      max-width: 620px;
+      margin-top: var(--s4);
+      color: rgba(255,255,255,.82);
+      font-size: clamp(18px, 2vw, 23px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+    .hero-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      width: min(900px, 100%);
+      margin-top: var(--s7);
+      border: 1px solid rgba(255,255,255,.17);
+      background: rgba(255,255,255,.17);
+    }
+    .hero-stat { min-height: 132px; padding: var(--s4); background: rgba(0,0,0,.34); backdrop-filter: blur(14px); display: flex; flex-direction: column; justify-content: space-between; }
+    .hero-stat strong { font-family: var(--font-mono); font-size: clamp(24px, 3.2vw, 42px); line-height: 1; color: #fff; }
+    .hero-stat span { color: rgba(255,255,255,.68); font-size: 13px; }
+
+    section { padding: var(--s8) 0; }
+    .section-head { display: grid; grid-template-columns: .72fr 1fr; gap: var(--s6); align-items: end; margin-bottom: var(--s6); }
+    .section-head h2, .split-copy h2, .final h2 { font-size: clamp(34px, 4.8vw, 68px); line-height: 1; font-weight: 600; overflow-wrap: anywhere; }
+    .section-head p { max-width: 650px; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-list { border-top: 1px solid var(--line); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 230px 1fr auto;
+      gap: var(--s5);
+      align-items: start;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:hover { background: rgba(255,255,255,.035); transform: translateY(-1px); }
+    .service-row h3 { font-size: clamp(24px, 2.4vw, 34px); line-height: 1.08; font-weight: 650; }
+    .service-row p { max-width: 740px; color: var(--muted); hyphens: auto; }
+    .service-row .mono { color: var(--accent-bright); white-space: nowrap; }
+
+    .paper-band { background: var(--paper); color: var(--paper-ink); }
+    .paper-band .label { color: var(--accent); }
+    .paper-band .section-head p, .paper-band .muted { color: var(--paper-muted); }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid rgba(0,0,0,.12);
+      background: rgba(0,0,0,.12);
+      align-items: stretch;
+    }
+    .trust-card { min-height: 220px; padding: var(--s5); background: #fff; display: flex; flex-direction: column; justify-content: space-between; }
+    .trust-card strong { font-family: var(--font-mono); font-size: clamp(30px, 5vw, 62px); line-height: 1; }
+    .trust-card span { max-width: 310px; color: var(--paper-muted); }
+
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s6); align-items: center; }
+    .split-photo { aspect-ratio: 16 / 10; overflow: hidden; background: var(--panel-2); }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 360ms var(--ease); }
+    .split-photo:hover img { transform: scale(1.025); }
+    .split-copy p { max-width: 620px; margin-top: var(--s4); color: var(--muted); font-size: 18px; hyphens: auto; }
+    .feature-lines { margin-top: var(--s5); border-top: 1px solid var(--line); }
+    .feature-line { display: grid; grid-template-columns: 120px 1fr; gap: var(--s4); padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+    .feature-line strong { color: var(--accent-bright); font-family: var(--font-mono); font-size: 13px; }
+    .feature-line span { color: var(--muted); }
+
+    .orders { background: #090807; }
+    .order-list { border-top: 1px solid var(--line); }
+    .order-link {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr) minmax(220px, .36fr);
+      gap: var(--s4);
+      align-items: center;
+      padding: var(--s4) 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .order-link:hover { color: #fff; background: rgba(255,255,255,.035); transform: translateY(-1px); }
+    .order-link h3 { font-size: clamp(24px, 3vw, 42px); line-height: 1.04; font-weight: 600; }
+    .order-link p { color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: .9fr 1.2fr .9fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .gallery-card { position: relative; min-height: 360px; overflow: hidden; background: var(--panel); }
+    .gallery-card:nth-child(2) { min-height: 520px; }
+    .gallery-card:hover { transform: translateY(-1px); }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.86) contrast(1.06); transition: transform 360ms var(--ease); }
+    .gallery-card:hover img { transform: scale(1.025); }
+    .gallery-caption { position: absolute; left: var(--s4); right: var(--s4); bottom: var(--s4); color: #fff; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 2px 18px rgba(0,0,0,.72); }
+
+    .contact-grid { display: grid; grid-template-columns: .78fr 1.22fr; gap: var(--s6); align-items: start; }
+    .contact-card { padding: var(--s5); border: 1px solid var(--line); background: rgba(255,255,255,.045); }
+    .contact-card h2 { margin-bottom: var(--s5); font-size: clamp(34px, 4.5vw, 64px); line-height: 1; font-weight: 600; overflow-wrap: anywhere; }
+    .contact-list { display: grid; gap: var(--s3); }
+    .contact-link { display: grid; gap: var(--s1); padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+    .contact-link:hover { color: var(--accent-bright); transform: translateY(-1px); }
+    .contact-link span { color: var(--muted); font-size: 14px; }
+    .hours { margin-top: var(--s5); border-top: 1px solid var(--line); }
+    .hour-row { display: grid; grid-template-columns: 1fr auto; gap: var(--s4); padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+    .hour-row strong { color: var(--ink); font-weight: 600; }
+    .hour-row.today { color: #fff; }
+    .hour-row.today strong, .hour-row.today span { color: #fff; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; background: var(--panel); }
+
+    .final { padding: var(--s8) 0; background: var(--accent); color: #fff; }
+    .final-grid { display: grid; grid-template-columns: 1fr auto; gap: var(--s6); align-items: center; }
+    .final p { max-width: 720px; margin-top: var(--s4); color: rgba(255,255,255,.78); font-size: 18px; }
+    .final .btn-primary { background: #fff; border-color: #fff; color: var(--accent); }
+    .final .btn-outline { border-color: rgba(255,255,255,.5); }
+
+    footer { padding: var(--s5) 0; color: var(--quiet); border-top: 1px solid var(--line); font-size: 13px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
+    .footer-grid a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-content { padding-top: 128px; padding-bottom: var(--s6); }
+      .hero-strip, .section-head, .split, .contact-grid, .final-grid { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: var(--s3); }
+      .trust-grid, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card:nth-child(2) { min-height: 320px; }
+      .order-link { grid-template-columns: 1fr; }
+      section { padding: var(--s7) 0; }
+    }
+
+    @media (max-width: 560px) {
+      .container { padding: 0 18px; }
+      .hero-strip { margin-top: var(--s5); }
+      .hero-stat { min-height: 112px; }
+      .contact-card, .trust-card { padding: var(--s4); }
+      .feature-line, .hour-row { grid-template-columns: 1fr; gap: var(--s2); }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Cukrář Skála">
+        <img src="https://cdn.myshoptet.com/usr/www.cukrarskala.cz/user/logos/cukrar_logo.svg" alt="Cukrář Skála">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sortiment">Sortiment</a>
+        <a href="#objednavky">Objednávky</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420220199381">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Cukrář Skála">
+      <img class="hero-photo" src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+      <div class="hero-content">
+        <p class="label">Šporkovský palác · Praha 1</p>
+        <h1>Řemeslná cukrárna Lukáše Skály</h1>
+        <p class="hero-lead">Zákusky, dorty, pralinky, pečivo ke snídani, sladké sendviče, domácí marmelády, limonáda a káva připravované od základních surovin.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420220199381">+420 220 199 381</a>
+          <a class="btn btn-outline" href="#kontakt">Otevírací doba</a>
+        </div>
+        <div class="hero-strip" aria-label="Rychlé údaje">
+          <div class="hero-stat">
+            <strong>4,8</strong>
+            <span>Hodnocení zákazníků</span>
+          </div>
+          <div class="hero-stat">
+            <strong>1370</strong>
+            <span>Recenzí na Googlu</span>
+          </div>
+          <div class="hero-stat">
+            <strong>5 dní</strong>
+            <span>Minimálně pro speciální dorty</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sortiment">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="label">Denní vitrína</p>
+            <h2>Klasika, autorské chutě a sladké drobnosti.</h2>
+          </div>
+          <p>V cukrárně si vyberete přímo na místě z vitríny, nebo můžete sáhnout po on-line katalogu. Vedle stálé nabídky se pravidelně objevují sezónní položky, netradiční chutě a tvary.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="mono">01 / vitrína</span>
+            <h3>Zákusky a dorty</h3>
+            <p>Klasické i zmrzlinové dorty, zákusky tradičních receptur i inovativních chutí podle Lukáše Skály.</p>
+          </article>
+          <article class="service-row">
+            <span class="mono">02 / Dlouhá</span>
+            <h3>Originální kremrole</h3>
+            <p>Od klasiky s bílým sněhem až po kremrole s čokoládou, jahodami nebo pistáciemi na pobočce v Dlouhé.</p>
+          </article>
+          <article class="service-row">
+            <span class="mono">03 / ráno</span>
+            <h3>Pečivo, káva a snídaně</h3>
+            <p>Pečivo ke snídani, káva, domácí limonáda, marmelády a sladké sendviče na odpoledne.</p>
+          </article>
+          <article class="service-row">
+            <span class="mono">04 / dárky</span>
+            <h3>Pralinky a vouchery</h3>
+            <p>Pralinky, dárkové vouchery a menší sladkosti pro návštěvu, oslavu nebo pozornost do ruky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="paper-band" aria-label="Důvěra">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="label">O cukrárně</p>
+            <h2>Otevřená výroba a receptury z rodiny i cest.</h2>
+          </div>
+          <p>Cukrářská továrna ve Šporkovském paláci přibližuje nejsladší řemeslo na světě a ukazuje výrobní proces cukrárny přímo zákazníkům.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <strong>2017</strong>
+            <span>Otevření cukrářské výroby ve Šporkovském paláci.</span>
+          </article>
+          <article class="trust-card">
+            <strong>4,8</strong>
+            <span>Průměrné hodnocení z veřejných recenzí.</span>
+          </article>
+          <article class="trust-card">
+            <strong>1370</strong>
+            <span>Zákaznických recenzí uvedených v profilu firmy.</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+        </div>
+        <div class="split-copy">
+          <p class="label">Od základních surovin</p>
+          <h2>Poctivé receptury bez zkratky v chuti.</h2>
+          <p>Chuť vychází z klasických receptů, které Lukáš Skála získal od svého otce, u kterého se vyučil, a z inspirace ze zahraničních cest. Výsledek může mít netradiční vzhled, ale stojí na řemesle.</p>
+          <div class="feature-lines">
+            <div class="feature-line">
+              <strong>Řemeslo</strong>
+              <span>Výroba zákusků podle receptur Lukáše Skály.</span>
+            </div>
+            <div class="feature-line">
+              <strong>Zakázka</strong>
+              <span>Sortiment na zakázku řeší personál přímo s vámi.</span>
+            </div>
+            <div class="feature-line">
+              <strong>Katalog</strong>
+              <span>Stálá nabídka se průběžně obměňuje sezónními položkami.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="objednavky" class="orders">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="label">Objednávky</p>
+            <h2>Dorty z vitríny i sladkosti na příležitost.</h2>
+          </div>
+          <p>Větší objednávky vám pomůže domluvit personál. Speciální dorty na zakázku přijímá výrobna ve Šporkovském paláci po konzultaci s cukrářem minimálně pět dní předem.</p>
+        </div>
+        <div class="order-list">
+          <a class="order-link" href="mailto:info@cukrarskala.cz">
+            <span class="mono">01</span>
+            <h3>Speciální dorty</h3>
+            <p>Po konzultaci s cukrářem, alespoň 5 dní předem.</p>
+          </a>
+          <a class="order-link" href="#kontakt">
+            <span class="mono">02</span>
+            <h3>Standardní dorty</h3>
+            <p>K zakoupení v obou provozovnách podle vitríny.</p>
+          </a>
+          <a class="order-link" href="mailto:info@cukrarskala.cz">
+            <span class="mono">03</span>
+            <h3>Větší objednávky</h3>
+            <p>Domluva přes personál na místě, telefonicky nebo e-mailem.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="label">Atmosféra</p>
+            <h2>Centrum Prahy, sklo, světlo a sladká výroba.</h2>
+          </div>
+          <p>Šporkovský palác na adrese V Celnici 1034/6 je hlavní místo pro výrobu, výběr z vitríny i domluvu zakázkových dortů.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/30691575/pexels-photo-30691575.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A cozy urban bar in England with warm, cinematic ambiance and vintage decor.">
+            <figcaption class="gallery-caption">Večerní tón interiéru</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+            <figcaption class="gallery-caption">Posezení v centru</figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <img src="https://images.pexels.com/photos/5377154/pexels-photo-5377154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Upside down wine glasses hanging decoratively at a bar setting for an elegant atmosphere.">
+            <figcaption class="gallery-caption">Detail za vitrínou</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <aside class="contact-card">
+          <p class="label">Kontakt</p>
+          <h2>Cukrář Skála ve Šporkovském paláci</h2>
+          <div class="contact-list">
+            <a class="contact-link" href="tel:+420220199381">
+              <strong>+420 220 199 381</strong>
+              <span>Telefon pro provozovnu V Celnici</span>
+            </a>
+            <a class="contact-link" href="mailto:info@cukrarskala.cz">
+              <strong>info@cukrarskala.cz</strong>
+              <span>E-mail pro dotazy a objednávky</span>
+            </a>
+            <a class="contact-link" href="https://www.google.com/maps/search/?api=1&query=V%20Celnici%201034%2F6%2C%20Praha%201">
+              <strong>V Celnici 1034/6, Praha 1</strong>
+              <span>Nové Město, 110 00 Praha-Praha 1</span>
+            </a>
+          </div>
+          <div class="hours" aria-label="Otevírací doba">
+            <div class="hour-row today">
+              <strong>Pondělí-pátek</strong>
+              <span class="mono">7:30-20:00</span>
+            </div>
+            <div class="hour-row">
+              <strong>Sobota-neděle</strong>
+              <span class="mono">9:00-20:00</span>
+            </div>
+          </div>
+        </aside>
+        <div id="map" aria-label="Mapa provozovny V Celnici 1034/6"></div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Závěrečná akce">
+      <div class="container final-grid">
+        <div>
+          <p class="label">Dnes ve vitríně</p>
+          <h2>Zastavte se pro zákusek, dort nebo kávu.</h2>
+          <p>Jsme ve Šporkovském paláci v ulici V Celnici. Pro větší objednávky a dorty na zakázku se ozvěte předem.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420220199381">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:info@cukrarskala.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <span>Fotografie: Pexels · Jennifer Cher, Valeria Boltneva, Daniil Kondrashin, Nathan J Hilton, Engin Akyurt, Alari Tammsalu.</span>
+      <span>Prezentační stránku připravil Webflex. <a href="https://app.webflex.cz/delete/w54an3u">Smazat stránku</a></span>
+    </div>
+  </footer>
+
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4307971, 50.0879214],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#604020' })
+      .setLngLat([14.4307971, 50.0879214])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
