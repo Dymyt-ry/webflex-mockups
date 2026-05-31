@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>artic Bakehouse | Sourdough pekárna v Praze</title>
+  <meta name="description" content="artic Bakehouse na Újezdě v Malé Straně. Sourdough chleby, čerstvé pečivo, káva a snídaně každý den od 7:00 do 19:30.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101113;
+      --surface: rgba(255, 255, 255, .075);
+      --surface-strong: rgba(255, 255, 255, .12);
+      --surface-warm: rgba(160, 128, 96, .16);
+      --ink: #f7f4ee;
+      --muted: rgba(247, 244, 238, .68);
+      --soft: rgba(247, 244, 238, .48);
+      --line: rgba(255, 255, 255, .12);
+      --accent: #A08060;
+      --accent-dark: #6f5239;
+      --shadow: 0 38px 100px rgba(0, 0, 0, .34);
+      --shadow-soft: 0 26px 80px rgba(0, 0, 0, .18);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(160,128,96,.20), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 17, 19, .78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(135px, 42vw);
+      max-height: 48px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(160,128,96,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #111113; }
+    .btn-secondary { border-color: rgba(255,255,255,.45); color: #ffffff; background: transparent; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.5vw, 66px); }
+    h3 { font-size: 24px; }
+    p { hyphens: auto; }
+
+    .hero { padding: 66px 0 92px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      gap: 50px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: var(--muted);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 690px;
+    }
+
+    .meta-tile, .service-card, .feature-panel, .hours-card, .faq-item, .quote-card {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+    }
+
+    .meta-tile {
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 108px;
+    }
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--ink);
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #18191b;
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16,17,19,.06), rgba(16,17,19,.54));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 230px;
+      border-radius: var(--radius);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); background: var(--surface-strong); }
+    .service-card p { margin: 18px 0 0; color: var(--muted); }
+    .service-card .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(360px, .58fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .feature-panel {
+      border-radius: 30px;
+      padding: clamp(28px, 4vw, 52px);
+    }
+    .feature-panel p { color: var(--muted); font-size: 18px; margin: 22px 0 0; max-width: 680px; }
+    .bread-list {
+      margin-top: 34px;
+      display: grid;
+      gap: 0;
+    }
+    .bread-row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 22px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .bread-row:last-child { border-bottom: 1px solid var(--line); }
+    .bread-row strong { font-family: var(--font-mono); color: var(--accent); }
+    .bread-row span { color: var(--muted); }
+
+    .side-photo {
+      border-radius: 30px;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      box-shadow: var(--shadow);
+      align-self: center;
+    }
+    .side-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 168px;
+      border-radius: 24px;
+      background: rgba(160,128,96,.13);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .locations {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 24px;
+      margin-top: 28px;
+    }
+    .location-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .location-row strong { font-size: 18px; }
+    .location-row span { font-family: var(--font-mono); color: var(--soft); font-size: 13px; text-align: right; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+      background: #18191b;
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      right: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 2px 18px rgba(0,0,0,.5);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .48fr) minmax(0, .72fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card {
+      border-radius: 28px;
+      padding: 30px;
+    }
+    .hours-card h3 { margin-bottom: 22px; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-line.today { color: var(--accent); }
+    .contact-links {
+      margin-top: 28px;
+      display: grid;
+      gap: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .contact-links a { text-decoration: none; }
+    .contact-links a:hover { color: var(--ink); }
+
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #18191b;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      border-radius: 22px;
+      padding: 24px;
+    }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 96px 0 104px;
+    }
+    .cta-box {
+      border-radius: 34px;
+      padding: clamp(32px, 5vw, 64px);
+      background: linear-gradient(135deg, rgba(160,128,96,.26), rgba(255,255,255,.07));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) auto;
+      gap: 34px;
+      align-items: center;
+    }
+    .cta-box p { margin: 18px 0 0; color: var(--muted); font-size: 19px; max-width: 680px; }
+
+    footer {
+      padding: 34px 0 42px;
+      border-top: 1px solid var(--line);
+      color: rgba(247,244,238,.52);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .wf-disclaimer { max-width: 760px; }
+    .wf-disclaimer a { color: var(--ink); }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .contact-grid, .cta-box { grid-template-columns: 1fr; }
+      .hero-photo, .side-photo { width: 100%; }
+      .section-head { grid-template-columns: 1fr; gap: 18px; }
+      .service-grid, .stats-strip, .gallery, .faq-grid, .locations { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding: 46px 0 64px; }
+      section { padding: 62px 0; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .bread-row { grid-template-columns: 1fr; gap: 8px; }
+      .location-row { display: grid; }
+      .location-row span { text-align: left; }
+      .footer-grid { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="artic Bakehouse">
+        <img src="https://static.wixstatic.com/media/675320_c02f0752920147e6a0b9d3d64f0ef70d~mv2.png/v1/fill/w_135,h_53,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/logo-artic-02.png" alt="artic Bakehouse">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pecivo">Pečivo</a>
+        <a href="#pobocky">Pobočky</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420771140048">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Újezd 11 · Malá Strana</p>
+          <h1>Islandský sourdough v Praze</h1>
+          <p class="lead">Každé ráno čerstvý chléb, pečivo, káva a snídaně s vůní pekárny, která od roku 2019 otevírá dveře svému sousedství.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Najít pekárnu</a>
+            <a class="btn btn-secondary" href="tel:+420771140048">+420 771 140 048</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>7:00-19:30</strong><span>otevřeno každý den</span></div>
+            <div class="meta-tile"><strong>4.7 / 5</strong><span>hodnocení hostů</span></div>
+            <div class="meta-tile"><strong>1 946</strong><span>veřejných recenzí</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/34386522/pexels-photo-34386522.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and cozy cafe interior featuring soft focus lighting and decorative twigs.">
+          <div class="photo-label"><span>artic Bakehouse</span><span>sourdough · káva · snídaně</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pecivo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás najdete</p>
+            <h2>Chléb, pečivo a šálek kávy.</h2>
+          </div>
+          <p>artic se soustředí na kvalitu, čerstvost a přirozené kvašení. Zastavte se pro snídani, kávu cestou přes Újezd nebo bochník domů.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div>
+              <h3>Sourdough chleby</h3>
+              <p>Kvásek, čas a poctivá fermentace těsta pro výraznější chuť i lepší trvanlivost.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div>
+              <h3>Čerstvé pečivo</h3>
+              <p>Ranní pečení pro sousedy, kanceláře i kdokoliv, kdo chce začít den vůní pekárny.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div>
+              <h3>Káva a snídaně</h3>
+              <p>Klidná zastávka na Malé Straně s pečivem, kávou a drobnostmi ke stolu i s sebou.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <article class="feature-panel">
+          <p class="eyebrow">Kvásek jako základ</p>
+          <h2>Pomalé těsto, čistá chuť.</h2>
+          <p>Sourdough vzniká fermentací těsta pomocí přirozených laktobacilů a kvasinek. Právě kyselina mléčná mu dává jemně nakyslou chuť a pomáhá chlebu zůstat dobrý déle.</p>
+          <div class="bread-list">
+            <div class="bread-row"><strong>RÁNO</strong><span>čerstvě upečené pečivo a káva na cestu</span></div>
+            <div class="bread-row"><strong>PŘES DEN</strong><span>snídaně, sladké pečivo a posezení v pekárně</span></div>
+            <div class="bread-row"><strong>DOMŮ</strong><span>sourdough chléb a objednávky přes Wolt nebo Rohlík</span></div>
+          </div>
+        </article>
+        <div class="side-photo">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats-strip" aria-label="Důvěryhodnost">
+          <div class="stat"><strong>2019</strong><span>rok, kdy artic otevřel dveře sousedství</span></div>
+          <div class="stat"><strong>4.7</strong><span>hodnocení podle veřejného profilu</span></div>
+          <div class="stat"><strong>1 946</strong><span>recenzí od hostů a zákazníků</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pobocky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Pražské pobočky</p>
+            <h2>Stejná otevírací doba každý den.</h2>
+          </div>
+          <p>Vyberte si nejbližší zastávku. Újezd, Na Poříčí, Myslíkova, Tylovo náměstí, Štefánikova i Vodičkova mají otevřeno od rána do večera.</p>
+        </div>
+        <div class="feature-panel">
+          <div class="locations">
+            <div class="location-row"><strong>Újezd</strong><span>Újezd 11 · 7:00-19:30</span></div>
+            <div class="location-row"><strong>Na Poříčí</strong><span>Na Poříčí 31 · 7:00-19:30</span></div>
+            <div class="location-row"><strong>Myslíkova</strong><span>Myslíkova 13 · 7:00-19:30</span></div>
+            <div class="location-row"><strong>Tylovo náměstí</strong><span>Tylovo náměstí 1 · 7:00-19:30</span></div>
+            <div class="location-row"><strong>Štefánikova</strong><span>Štefánikova 31 · 7:00-19:30</span></div>
+            <div class="location-row"><strong>Vodičkova</strong><span>Vodičkova 36 · 7:00-19:30</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Atmosféra</p>
+            <h2>Teplo pekárny uprostřed města.</h2>
+          </div>
+          <p>Malá Strana ráno, pečivo na stůl, káva do ruky a chvíle klidu mezi tramvajemi na Újezdě.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>posezení</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1123262/pexels-photo-1123262.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern and ambient urban setting with glowing, hanging light bulbs in focus.">
+            <figcaption>ráno</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+            <figcaption>stůl</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Újezd 11, Malá Strana.</h2>
+          </div>
+          <p>Zavolejte, napište nebo se zastavte přímo v pekárně. Objednávky jsou dostupné také přes Wolt a Rohlík.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-line today"><span>Dnes</span><span>7:00-19:30</span></div>
+            <div class="hours-line"><span>Po-Ne</span><span>7:00-19:30</span></div>
+            <div class="contact-links">
+              <a href="tel:+420771140048">+420 771 140 048</a>
+              <a href="mailto:articbakehouse@gmail.com">articbakehouse@gmail.com</a>
+              <span>Újezd 11, Malá Strana, 150 00 Praha-Praha 5</span>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa pobočky Újezd"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Pečete každý den?</h3>
+            <p>Ano. Pobočky uvedené na stránce mají otevřeno pondělí až neděle od 7:00 do 19:30.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dá se objednat domů?</h3>
+            <p>Objednávky jsou dostupné online přes partnery Wolt a Rohlík.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co je artic specialita?</h3>
+            <p>Hlavní důraz patří sourdough chlebům, kvalitě a čerstvosti pečiva.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde vás najdu na Újezdě?</h3>
+            <p>Pobočka je na adrese Újezd 11, Malá Strana, 150 00 Praha-Praha 5.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="cta-box">
+          <div>
+            <p class="eyebrow">Snídaně, káva, chleba domů</p>
+            <h2>Zastavte se na Újezdě.</h2>
+            <p>Otevřeno každý den od 7:00 do 19:30. Když spěcháte, zavolejte předem nebo objednejte přes Wolt a Rohlík.</p>
+          </div>
+          <a class="btn btn-primary" href="tel:+420771140048">Zavolat do pekárny</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>artic Bakehouse · Újezd 11 · Malá Strana</div>
+      <div class="wf-disclaimer">Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/0k9dbz6">webflex.cz/delete/0k9dbz6</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4044684, 50.080373599999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#A08060' })
+      .setLngLat([14.4044684, 50.080373599999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
