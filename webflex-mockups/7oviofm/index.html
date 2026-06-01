@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Poliklinika Dobrovského</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --ink: #111418;
+      --muted: #5c6470;
+      --line: #d9dde3;
+      --line-strong: #aeb6c2;
+      --accent: #002040;
+      --accent-soft: #e9eef5;
+      --ok: #0f6b43;
+      --warn: #9c2c1c;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(18px, 4vw, 56px);
+      --section: clamp(64px, 9vw, 124px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,32,64,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,32,64,0.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); hyphens: none; text-wrap: balance; }
+    h1 { overflow-wrap: anywhere; }
+    p { color: var(--muted); text-wrap: pretty; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .container { max-width: 1320px; margin-inline: auto; padding-inline: var(--gutter); }
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(251,251,250,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 12px;
+    }
+    .brand::before {
+      content: "";
+      width: 28px; height: 28px;
+      background: var(--accent);
+      clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 72%, 72% 100%, 0 100%);
+    }
+    .navlinks { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 14px; }
+    .navlinks a { transition: color .2s cubic-bezier(.16,1,.3,1); }
+    .navlinks a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      min-height: 44px; padding: 11px 17px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .18s cubic-bezier(.16,1,.3,1), background .18s cubic-bezier(.16,1,.3,1), border-color .18s cubic-bezier(.16,1,.3,1);
+    }
+    .btn:hover { background: #07335f; transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary { background: transparent; color: var(--ink); border: 1px solid currentColor; }
+    .btn.secondary:hover { color: var(--accent); background: var(--accent-soft); }
+
+    .hero { padding: clamp(58px, 8vw, 112px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+      gap: clamp(36px, 6vw, 88px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .13em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      max-width: 720px;
+      margin-top: 18px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+    .lead { margin-top: 24px; max-width: 680px; font-size: clamp(18px, 2vw, 23px); color: #303842; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+    .hours-card, .table-card, .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 18px 50px rgba(0,32,64,.08);
+    }
+    .card-head {
+      display: flex; justify-content: space-between; gap: 16px; align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .status { color: var(--ok); }
+    .hours-row, .dept-row, .route-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .hours-row:last-child, .dept-row:last-child, .route-row:last-child { border-bottom: 0; }
+    .hours-row.today { background: var(--accent); color: #fff; }
+    .hours-row.today span { color: #fff; }
+    .day, .dept-name, .route-name { font-weight: 700; }
+    .time, .floor, .route-note { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: right; }
+
+    section { padding: var(--section) 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(280px, 440px);
+      gap: 32px;
+      align-items: start;
+      margin-bottom: 34px;
+    }
+    .sec-no {
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: .8;
+      color: rgba(0,32,64,.14);
+      font-weight: 700;
+    }
+    h2 { font-size: clamp(30px, 4vw, 58px); line-height: 1; overflow-wrap: anywhere; }
+    .section-head p { font-size: 18px; }
+
+    .dept-table {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .dept-row {
+      min-height: 86px;
+      border-right: 1px solid var(--line);
+      align-items: start;
+    }
+    .dept-row:nth-child(3n) { border-right: 0; }
+    .dept-row:hover { background: var(--accent-soft); }
+    .dept-name small { display: block; margin-top: 5px; color: var(--muted); font-weight: 500; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .stat { padding: clamp(22px, 4vw, 38px); border-right: 1px solid var(--line); min-height: 170px; }
+    .stat:last-child { border-right: 0; }
+    .stat strong { display: block; font-family: var(--font-mono); color: var(--accent); font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .stat span { display: block; margin-top: 14px; font-weight: 700; }
+    .stat p { margin-top: 8px; font-size: 15px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .info-panel {
+      background: var(--accent);
+      color: #fff;
+      padding: clamp(28px, 5vw, 48px);
+      display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
+      min-height: 420px;
+    }
+    .info-panel p { color: rgba(255,255,255,.78); font-size: 18px; }
+    .info-panel h2 { color: #fff; }
+    .route-table { border: 1px solid var(--line-strong); background: var(--paper); }
+    .route-row { grid-template-columns: minmax(140px,.6fr) 1fr; min-height: 82px; }
+    .route-note { text-align: left; line-height: 1.45; }
+
+    .matrix {
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 16px 18px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th {
+      position: sticky; top: 72px; z-index: 2;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    td:last-child { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+
+    .contact-grid { display: grid; grid-template-columns: minmax(320px, .85fr) 1.15fr; gap: 24px; align-items: stretch; }
+    .contact-card { padding: 0; }
+    .contact-block { padding: 22px; border-bottom: 1px solid var(--line); }
+    .contact-block:last-child { border-bottom: 0; }
+    .contact-block b { display: block; font-family: var(--font-mono); color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .contact-block a, .contact-block span { font-size: 22px; font-weight: 800; line-height: 1.2; }
+    #map { height: 420px; border: 1px solid var(--line-strong); overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      border: 1px solid var(--line-strong);
+      background: var(--line);
+    }
+    .qa { background: var(--paper); padding: 26px; min-height: 160px; }
+    .qa h3 { font-size: 20px; margin-bottom: 10px; }
+
+    .final {
+      background: var(--accent);
+      color: #fff;
+      padding: clamp(44px, 7vw, 76px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 26px;
+    }
+    .final h2 { color: #fff; font-size: clamp(32px, 5vw, 64px); }
+    .final p { color: rgba(255,255,255,.76); margin-top: 10px; }
+    .final .btn { background: #fff; color: var(--accent); border-color: #fff; }
+    .final .btn:hover { background: #edf3f8; }
+
+    footer { padding: 34px var(--gutter); color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); background: #fff; }
+    .footer-inner { max-width: 1320px; margin: 0 auto; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final { grid-template-columns: 1fr; }
+      .dept-table, .stats, .faq { grid-template-columns: 1fr; }
+      .dept-row, .stat { border-right: 0; }
+      th { top: 72px; }
+    }
+    @media (max-width: 560px) {
+      .brand { font-size: 17px; }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .hours-row { grid-template-columns: 1fr; }
+      .time { text-align: left; }
+      .route-row { grid-template-columns: 1fr; }
+      .contact-block a, .contact-block span { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Poliklinika Dobrovského">Poliklinika Dobrovského</a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#pracoviste">Pracoviště</a>
+        <a href="#cesta">Kudy k nám</a>
+        <a href="#kontakt">Kontakty</a>
+      </nav>
+      <a class="btn" href="tel:+420541425211">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker">Brno-Královo Pole · Dobrovského 2199</div>
+          <h1>Péče pod jednou střechou</h1>
+          <p class="lead">Komplexní zdravotnické zařízení s praktickými a odbornými lékaři, laboratoří, radiodiagnostikou, rehabilitací, lékárnou a zubní péčí.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#pracoviste">Vybrat pracoviště</a>
+            <a class="btn secondary" href="mailto:info@polido.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Orientační ordinační přehled">
+          <div class="card-head"><span>Provoz budovy</span><span class="status">Dnes</span></div>
+          <div class="hours-row today"><span class="day">Pondělí</span><span class="time">dle ambulancí</span></div>
+          <div class="hours-row"><span class="day">Úterý</span><span class="time">dle ambulancí</span></div>
+          <div class="hours-row"><span class="day">Středa</span><span class="time">dle ambulancí</span></div>
+          <div class="hours-row"><span class="day">Čtvrtek</span><span class="time">dle ambulancí</span></div>
+          <div class="hours-row"><span class="day">Pátek</span><span class="time">dle ambulancí</span></div>
+          <div class="card-head"><span>Informace</span><span>+420 541 425 211</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="pracoviste">
+      <div class="container">
+        <div class="section-head">
+          <div class="sec-no">01</div>
+          <h2>Pracoviště polikliniky</h2>
+          <p>V budově najdete široké spektrum zdravotnických služeb. Jednotlivé ambulance jsou provozovány odbornými lékaři v soukromých praxích.</p>
+        </div>
+        <div class="dept-table">
+          <div class="dept-row"><div class="dept-name">Biochemická laboratoř<small>komplement v přízemním podlaží</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">Radiodiagnostika<small>vyšetření v budově polikliniky</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">Lékárna<small>součást služeb pro pacienty</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">Chirurgie<small>odborná ambulance</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">Ortopedie<small>odborná ambulance</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">ORL<small>ušní, nosní, krční</small></div><div class="floor">PŘÍZEMÍ</div></div>
+          <div class="dept-row"><div class="dept-name">Interna - cévní<small>ambulantní specialista</small></div><div class="floor">1. PATRO</div></div>
+          <div class="dept-row"><div class="dept-name">Kardiologie<small>ambulantní specialista</small></div><div class="floor">1. PATRO</div></div>
+          <div class="dept-row"><div class="dept-name">Neurologie<small>ambulantní specialista</small></div><div class="floor">1. PATRO</div></div>
+          <div class="dept-row"><div class="dept-name">Dermatovenerologie<small>kožní ambulance</small></div><div class="floor">1. PATRO</div></div>
+          <div class="dept-row"><div class="dept-name">Rehabilitace a fyzioterapie<small>navazující péče</small></div><div class="floor">1. PATRO</div></div>
+          <div class="dept-row"><div class="dept-name">Zubní lékaři a laboratoř<small>stomatologická péče</small></div><div class="floor">V BUDOVĚ</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div class="sec-no">02</div>
+          <h2>Dlouhodobá péče v Králově Poli</h2>
+          <p>Poliklinika na Dobrovského ulici poskytuje služby obyvatelům Králova Pole, přilehlých městských částí i dalším obyvatelům Brna.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>1935</strong><span>otevření budovy</span><p>Slavnostní otevření proběhlo 7. března 1935.</p></div>
+          <div class="stat"><strong>3.8</strong><span>hodnocení na Googlu</span><p>Průměr z veřejného profilu společnosti.</p></div>
+          <div class="stat"><strong>85</strong><span>recenzí</span><p>Zkušenosti pacientů napříč pracovišti v budově.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cesta">
+      <div class="container split">
+        <div class="info-panel">
+          <div>
+            <div class="kicker" style="color:#fff;">03 · Kudy k nám</div>
+            <h2>Dostupnost bez hledání</h2>
+          </div>
+          <p>Poliklinika stojí na adrese Dobrovského 2199 v Brně-Králově Poli. Přijet můžete MHD a zaparkovat lze na hrazeném parkovišti před budovou nebo v přilehlých ulicích.</p>
+        </div>
+        <div class="route-table">
+          <div class="route-row"><div class="route-name">Tramvaj 1, 6, 7</div><div class="route-note">zastávka Jungmanova</div></div>
+          <div class="route-row"><div class="route-name">Tramvaj 12, 13</div><div class="route-note">zastávka Dobrovského</div></div>
+          <div class="route-row"><div class="route-name">Trolejbus 32</div><div class="route-note">zastávka Charvátská</div></div>
+          <div class="route-row"><div class="route-name">Autobus 67</div><div class="route-note">zastávka Charvátská</div></div>
+          <div class="route-row"><div class="route-name">Parkování</div><div class="route-note">hrazené parkoviště před budovou nebo přilehlé ulice</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div class="sec-no">04</div>
+          <h2>Jak se objednat</h2>
+          <p>Ambulance v poliklinice mají vlastní režim. Pro aktuální ordinační dobu a objednání kontaktujte konkrétní pracoviště nebo informační telefon.</p>
+        </div>
+        <div class="matrix">
+          <table>
+            <thead><tr><th>Krok</th><th>Co udělat</th><th>Kontakt / místo</th></tr></thead>
+            <tbody>
+              <tr><td>01</td><td>Vyberte příslušnou odbornost podle potíží nebo doporučení lékaře.</td><td>Pracoviště v budově</td></tr>
+              <tr><td>02</td><td>Ověřte si ordinační dobu konkrétní ambulance před návštěvou.</td><td>+420 541 425 211</td></tr>
+              <tr><td>03</td><td>Na vyšetření si vezměte kartičku pojištěnce a dostupnou zdravotní dokumentaci.</td><td>Dobrovského 2199</td></tr>
+              <tr><td>04</td><td>Využijte lékárnu, laboratoř nebo radiodiagnostiku přímo v budově podle doporučení.</td><td>Přízemní podlaží</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div class="sec-no">05</div>
+          <h2>Kontakt a mapa</h2>
+          <p>Adresa, telefon a e-mail pro rychlou orientaci před návštěvou polikliniky.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-block"><b>Adresa</b><span>23, Dobrovského 2199, 612 00 Brno-Brno-Královo Pole</span></div>
+            <div class="contact-block"><b>Telefon</b><a href="tel:+420541425211">+420 541 425 211</a></div>
+            <div class="contact-block"><b>E-mail</b><a href="mailto:info@polido.cz">info@polido.cz</a></div>
+            <div class="contact-block"><b>Web</b><a href="http://www.polido.cz/">www.polido.cz</a></div>
+          </div>
+          <div id="map" aria-label="Mapa polohy Polikliniky Dobrovského"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div class="sec-no">06</div>
+          <h2>Časté dotazy</h2>
+          <p>Praktické informace pro první návštěvu i opakovanou péči.</p>
+        </div>
+        <div class="faq">
+          <div class="qa"><h3>Kde zaparkuji?</h3><p>Před budovou je hrazené parkoviště. Další možností jsou přilehlé ulice v okolí polikliniky.</p></div>
+          <div class="qa"><h3>Je v budově lékárna?</h3><p>Ano, lékárna je součástí nabídky služeb přímo v poliklinice.</p></div>
+          <div class="qa"><h3>Které odbornosti zde najdu?</h3><p>Například chirurgii, ortopedii, ORL, kardiologii, neurologii, kožní, internu-cévní, rehabilitaci a zubní péči.</p></div>
+          <div class="qa"><h3>Jak zjistím ordinační dobu?</h3><p>Ordinační dobu si ověřte u konkrétní ambulance nebo přes informační kontakt polikliniky.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="final">
+          <div>
+            <h2>Potřebujete najít pracoviště?</h2>
+            <p>Zavolejte na informační číslo nebo napište e-mail před návštěvou.</p>
+          </div>
+          <a class="btn" href="tel:+420541425211">+420 541 425 211</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>Poliklinika Dobrovského · Dobrovského 2199 · Brno-Královo Pole</div>
+      <div class="disclaimer">Toto je nezávazná vizuální ukázka od Webflexu pro interní posouzení. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde: <a href="https://webflex.cz/delete/7oviofm">odstranit stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5930698, 49.2193227],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002040' })
+      .setLngLat([16.5930698, 49.2193227])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
