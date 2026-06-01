@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iva Jíchová DiS. - AngelDent | Dentální hygiena Praha Anděl</title>
+  <meta name="description" content="Dentální hygiena a konzultace onemocnění čelistního kloubu na Praze 5 - Smíchov. Iva Jíchová DiS., AngelDent, Ostrovského 253/3.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --ink: #181814;
+      --muted: #6c695f;
+      --soft: #ece9de;
+      --accent: #D6A728;
+      --accent-deep: #9b7415;
+      --line: rgba(24, 24, 20, .09);
+      --shadow: 0 28px 90px rgba(44, 39, 23, .10);
+      --shadow-soft: 0 18px 70px rgba(44, 39, 23, .07);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(214, 167, 40, .11), transparent 30%),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 42%, #f7f4ec 100%);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .42;
+      background-image:
+        linear-gradient(rgba(24, 24, 20, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24, 24, 20, .018) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, #000, transparent 78%);
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 248, .78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .nav-links a, .button, .maplibregl-ctrl button {
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    .nav-links a {
+      padding: 10px 12px;
+      border-radius: 999px;
+    }
+
+    .nav-links a:hover { background: rgba(214, 167, 40, .12); color: var(--ink); }
+    .nav-links a:active, .button:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: #16130a;
+      box-shadow: 0 18px 42px rgba(214, 167, 40, .22);
+    }
+
+    .button.primary:hover { transform: translateY(-1px); box-shadow: 0 22px 54px rgba(214, 167, 40, .28); }
+    .button.secondary {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: rgba(255,255,255,.25);
+    }
+
+    .button.secondary:hover { transform: translateY(-1px); background: #fff; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 74px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: clamp(36px, 5vw, 72px);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .95;
+      letter-spacing: 0;
+      hyphens: none;
+      color: var(--ink);
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+      margin-top: 18px;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 23px);
+      line-height: 1.35;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hero-media {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .hero-media img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 55px rgba(27, 24, 17, .13);
+    }
+
+    .hero-card strong { display: block; font-size: 18px; }
+    .mono { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+    section { padding: 96px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(280px, .3fr);
+      align-items: end;
+      gap: 48px;
+      margin-bottom: 38px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(34px, 4.7vw, 70px);
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+    .services-list {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(260px, .42fr);
+      gap: 26px;
+      align-items: center;
+      padding: 30px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+    .service-row h3 { font-family: var(--font-body); font-size: clamp(24px, 3vw, 36px); line-height: 1.05; font-weight: 800; }
+    .service-row p { margin: 0; color: var(--muted); }
+
+    .trust-band {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .trust-item {
+      min-height: 178px;
+      padding: 26px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .trust-item .big {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 6vw, 82px);
+      line-height: .9;
+      overflow-wrap: anywhere;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(390px, .78fr) minmax(0, 1fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .split-media {
+      aspect-ratio: 16 / 10;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .split-media img { width: 100%; height: 100%; object-fit: cover; }
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.62);
+      box-shadow: 0 14px 46px rgba(44, 39, 23, .06);
+    }
+
+    .step b {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+
+    .step h3 { font-family: var(--font-body); font-size: 22px; font-weight: 800; line-height: 1.1; }
+    .step p { margin: 8px 0 0; color: var(--muted); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      grid-template-rows: 210px 210px;
+      gap: 18px;
+    }
+
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .42fr) minmax(0, .58fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .contact-card, .hours-card {
+      padding: 28px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .contact-card h2 { font-size: clamp(34px, 4.5vw, 64px); overflow-wrap: anywhere; }
+    .contact-lines { display: grid; gap: 16px; margin-top: 26px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .hours td {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .hours td:last-child { text-align: right; color: var(--muted); }
+    #map {
+      grid-column: 1 / -1;
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      min-height: 420px;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    details {
+      border-radius: 24px;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 14px 44px rgba(44, 39, 23, .055);
+      padding: 22px 24px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+      transition: color 180ms var(--ease);
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { color: var(--accent-deep); }
+    details p { color: var(--muted); margin: 12px 0 0; }
+
+    .final-cta {
+      margin: 40px auto 0;
+      padding: clamp(32px, 6vw, 74px);
+      border-radius: 36px;
+      background: #181814;
+      color: #fff;
+      box-shadow: 0 32px 100px rgba(24, 24, 20, .22);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .final-cta h2 { color: #fff; font-size: clamp(34px, 5vw, 72px); overflow-wrap: anywhere; }
+    .final-cta p { color: rgba(255,255,255,.72); margin: 16px 0 0; max-width: 620px; }
+    .final-cta .button.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+      background: transparent;
+    }
+
+    footer {
+      padding: 40px 0 52px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .disclaimer {
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      justify-content: space-between;
+    }
+
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-media { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust-band, .faq { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .gallery figure, .gallery figure:first-child { aspect-ratio: 16 / 10; grid-row: auto; }
+      .final-cta { text-align: left; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: 70px 0; }
+      .hero-card { position: static; margin: 12px; grid-template-columns: 1fr; }
+      .hero-media { display: flex; flex-direction: column; aspect-ratio: auto; }
+      .hero-media img { aspect-ratio: 4 / 3; }
+      .button { width: 100%; }
+      .contact-card, .hours-card { padding: 22px; border-radius: 24px; }
+      #map { border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Iva Jíchová DiS. - AngelDent">
+        <img src="http://www.angeldent.cz/wp-content/uploads/2019/05/Angel-dentalni-hygiena.png" alt="Iva Jíchová DiS. - AngelDent">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pece">Péče</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="button primary" href="tel:+420603311143">Zavolat Ivě</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Praha Anděl · Ostrovského 253/3</div>
+          <h1>Dentální hygiena na Andělu</h1>
+          <p class="lead">Individuální péče pro čistý, klidný úsměv a konzultace potíží s čelistním kloubem po domluvě s Ivou Jíchovou, DiS.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="tel:+420603311143">Objednat termín</a>
+            <a class="button secondary" href="mailto:iva@angeldent.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note">
+            <span>PO-PÁ 7-21 dle domluvy</span>
+            <span>SO 9-13 dle domluvy</span>
+          </div>
+        </div>
+        <div class="hero-media" aria-label="Klidný interiér ordinace">
+          <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+          <div class="hero-card">
+            <div>
+              <strong>Iva Jíchová, DiS.</strong>
+              <span class="mono">Dentální hygiena · Praha 5</span>
+            </div>
+            <div class="mono">5,0 / 14 recenzí</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Péče v AngelDent</div>
+            <h2>Jasně, citlivě, po domluvě.</h2>
+          </div>
+          <p>Dentální hygiena je výkon na indikaci lékaře. Termín a rozsah péče si domluvíte přímo s ordinací.</p>
+        </div>
+        <div class="services-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Dentální hygiena</h3>
+            <p>Profesionální odstranění zubního plaku a péče zaměřená na dlouhodobé zdraví dásní a zubů.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Čelistní kloub</h3>
+            <p>Pro konzultaci ohledně onemocnění čelistního kloubu kontaktujte přímo Ivu Jíchovou.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Rezervace vhodného času</h3>
+            <p>Napište nebo zavolejte. Ordinace poradí s dalším postupem a najde vhodný termín vyšetření.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-band">
+        <article class="trust-item">
+          <span class="eyebrow">Hodnocení</span>
+          <span class="big">5,0</span>
+          <span class="mono">Google rating</span>
+        </article>
+        <article class="trust-item">
+          <span class="eyebrow">Zkušenosti pacientů</span>
+          <span class="big">14</span>
+          <span class="mono">recenzí</span>
+        </article>
+        <article class="trust-item">
+          <span class="eyebrow">Dostupnost</span>
+          <span class="big">4.</span>
+          <span class="mono">patro · dveře 4008</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap split">
+        <div class="split-media">
+          <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+        </div>
+        <div>
+          <div class="eyebrow">Průběh domluvy</div>
+          <div class="timeline" style="margin-top: 22px;">
+            <article class="step">
+              <b>1</b>
+              <div>
+                <h3>Zavoláte nebo napíšete</h3>
+                <p>Pro objednání využijte telefon +420 603 311 143 nebo e-mail iva@angeldent.cz.</p>
+              </div>
+            </article>
+            <article class="step">
+              <b>2</b>
+              <div>
+                <h3>Domluvíte vhodný čas</h3>
+                <p>Ordinační doba je v pracovní dny 7-21 a v sobotu 9-13, vždy dle předchozí domluvy.</p>
+              </div>
+            </article>
+            <article class="step">
+              <b>3</b>
+              <div>
+                <h3>Přijdete na Smíchov</h3>
+                <p>Ordinaci najdete na adrese Ostrovského 253/3, Praha 5 - Smíchov, 4. patro, dveře 4008.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Prostor a klid</div>
+            <h2>Soukromá péče bez spěchu.</h2>
+          </div>
+          <p>Termíny jsou vedené po domluvě, aby byl prostor na vyšetření, otázky i doporučení domácí péče.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through."></figure>
+          <figure><img src="https://images.pexels.com/photos/6633444/pexels-photo-6633444.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist bookshelf featuring an open book and elegant candleholders, perfect for modern decor inspiration."></figure>
+          <figure><img src="https://images.pexels.com/photos/8407574/pexels-photo-8407574.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist pendant light against a soft focus background with window blinds."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Objednání a adresa.</h2>
+          </div>
+          <p>Pro konzultaci ohledně onemocnění čelistního kloubu kontaktujte Ivu Jíchovou.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h2>Iva Jíchová, DiS.</h2>
+            <div class="contact-lines">
+              <a href="tel:+420603311143">+420 603 311 143</a>
+              <a href="mailto:iva@angeldent.cz">iva@angeldent.cz</a>
+              <span>Ostrovského 253/3, 4. patro, dveře 4008<br>Smíchov, 150 00 Praha 5</span>
+            </div>
+          </div>
+          <div class="hours-card">
+            <div class="eyebrow">Ordinační doba</div>
+            <table class="hours" aria-label="Ordinační doba">
+              <tr><td>Pondělí-pátek</td><td>7-21 dle domluvy</td></tr>
+              <tr><td>Sobota</td><td>9-13 dle domluvy</td></tr>
+            </table>
+          </div>
+          <div id="map" aria-label="Mapa ordinace AngelDent"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než se objednáte.</h2>
+          </div>
+          <p>Krátké odpovědi k domluvě termínu, adrese a zaměření ordinace.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak se objednám?</summary>
+            <p>Zavolejte na +420 603 311 143 nebo napište na iva@angeldent.cz. Ordinace Vám poradí a domluví vhodný čas.</p>
+          </details>
+          <details>
+            <summary>Kde přesně ordinaci najdu?</summary>
+            <p>Adresa je Ostrovského 253/3, Praha 5 - Smíchov. Ordinace je ve 4. patře, číslo dveří 4008.</p>
+          </details>
+          <details>
+            <summary>Řešíte také čelistní kloub?</summary>
+            <p>Ano, pro konzultaci ohledně onemocnění čelistního kloubu kontaktujte Ivu Jíchovou.</p>
+          </details>
+          <details>
+            <summary>Je dentální hygiena samostatný výkon?</summary>
+            <p>Dentální hygiena je výkon na indikaci lékaře. Podrobnosti si ověříte při objednání.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final-cta">
+        <div>
+          <div class="eyebrow" style="color: #e7c860;">AngelDent · Praha 5</div>
+          <h2>Domluvte si čas péče.</h2>
+          <p>Telefonicky nebo e-mailem. V pracovní dny i v sobotu podle předchozí dohody.</p>
+        </div>
+        <div class="hero-actions" style="margin: 0;">
+          <a class="button primary" href="tel:+420603311143">+420 603 311 143</a>
+          <a class="button secondary" href="mailto:iva@angeldent.cz">iva@angeldent.cz</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      <span>Prezentační stránka připravená službou Webflex. Nejste-li oprávněným příjemcem, můžete ji odstranit.</span>
+      <a href="https://webflex.cz/remove/r7klh85">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.402766699999997, 50.068548799999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#D6A728' })
+      .setLngLat([14.402766699999997, 50.068548799999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
