@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ImageDent - dentální hygiena a bělení zubů</title>
+  <meta name="description" content="Dentální hygiena, Airflow, fluoridace, ochranné dlahy a bělení zubů v ordinaci ImageDent na adrese Zborovská 27, Praha 5.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfc;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #111516;
+      --muted: #687173;
+      --line: rgba(17,21,22,.08);
+      --accent: #C0E0E0;
+      --accent-deep: #6faeae;
+      --accent-ink: #163535;
+      --shadow: 0 38px 110px rgba(31, 54, 58, .11);
+      --shadow-soft: 0 24px 80px rgba(31, 54, 58, .08);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(17,21,22,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,21,22,.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 9%, rgba(192,224,224,.55), transparent 28rem),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    header {
+      position: sticky; top: 0; z-index: 30;
+      background: rgba(251,252,252,.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .logo img { max-height: 42px; width: min(220px, 52vw); object-fit: contain; }
+    .links { display: flex; align-items: center; gap: 24px; font-weight: 800; font-size: 14px; }
+    .links a { text-decoration: none; color: rgba(17,21,22,.68); transition: color .2s ease; }
+    .links a:hover { color: var(--accent-ink); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 48px; padding: 0 21px; border-radius: 999px;
+      border: 1px solid transparent; text-decoration: none; font-weight: 800;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(31,54,58,.12); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-secondary { background: transparent; border-color: currentColor; color: var(--ink); }
+    .hero { padding: 58px 0 92px; }
+    .hero-grid {
+      display: grid; grid-template-columns: minmax(0, .94fr) minmax(420px, .8fr);
+      gap: 54px; align-items: center;
+    }
+    .eyebrow {
+      margin: 0 0 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--accent-ink);
+    }
+    h1, h2, h3 {
+      margin: 0; font-family: var(--font-display); line-height: .96; letter-spacing: 0;
+      hyphens: none; overflow-wrap: anywhere;
+    }
+    h1 { max-width: 720px; font-size: clamp(40px, 6vw, 88px); text-transform: uppercase; }
+    h2 { font-size: clamp(34px, 4.2vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.02; }
+    .lead { max-width: 650px; margin: 24px 0 0; color: rgba(17,21,22,.72); font-size: clamp(19px, 2vw, 24px); hyphens: auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 42px; max-width: 680px; }
+    .metric, .card, .price-panel, .quote, .faq-item, .contact-card, .map-wrap {
+      background: var(--surface); box-shadow: var(--shadow-soft); border-radius: var(--radius);
+    }
+    .metric { min-height: 110px; padding: 20px; }
+    .metric strong { display: block; font-family: var(--font-mono); font-size: 20px; color: var(--accent-ink); }
+    .metric span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+    .hero-photo { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 34px; box-shadow: var(--shadow); background: #e8eeee; }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo:after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 38%, rgba(9,25,27,.36)); }
+    .photo-note {
+      position: absolute; left: 22px; right: 22px; bottom: 22px; z-index: 1;
+      display: flex; justify-content: space-between; gap: 18px; color: white;
+      font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-transform: uppercase;
+    }
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid; grid-template-columns: minmax(0,.75fr) minmax(280px,.42fr);
+      gap: 42px; align-items: end; margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+    .services { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: stretch; }
+    .card { min-height: 270px; padding: 28px; display: flex; flex-direction: column; justify-content: space-between; transition: transform .22s, box-shadow .22s; }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .card p { margin: 18px 0 0; color: var(--muted); hyphens: auto; }
+    .tag { align-self: flex-start; margin-top: 26px; padding: 8px 10px; border-radius: 999px; background: rgba(192,224,224,.56); font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-ink); }
+    .trust { display: grid; grid-template-columns: .7fr 1fr; gap: 18px; align-items: stretch; }
+    .big-rating { padding: 34px; display: grid; align-content: space-between; min-height: 360px; }
+    .big-rating .num { font-family: var(--font-display); font-size: clamp(72px, 10vw, 150px); line-height: .85; color: var(--accent-ink); }
+    .quote { padding: 38px; display: grid; align-content: center; }
+    blockquote { margin: 0; font-size: clamp(24px, 3vw, 42px); line-height: 1.08; font-weight: 800; letter-spacing: 0; }
+    cite { display: block; margin-top: 24px; font-style: normal; font-family: var(--font-mono); color: var(--muted); }
+    .process { display: grid; gap: 0; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-soft); overflow: hidden; }
+    .step { display: grid; grid-template-columns: 120px 1fr 240px; gap: 28px; padding: 28px; align-items: center; }
+    .step + .step { border-top: 1px solid var(--line); }
+    .step b { font-family: var(--font-mono); color: var(--accent-ink); }
+    .step p { margin: 0; color: var(--muted); }
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .price-panel { padding: 30px; }
+    .price-panel h3 { margin-bottom: 18px; }
+    .price-row { display: grid; grid-template-columns: 1fr auto; gap: 18px; padding: 15px 0; border-top: 1px solid var(--line); align-items: baseline; }
+    .price-row span { color: var(--muted); }
+    .price-row strong { font-family: var(--font-mono); white-space: nowrap; color: var(--accent-ink); }
+    .gallery { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); box-shadow: var(--shadow-soft); }
+    .gallery-main { aspect-ratio: 16 / 10; }
+    .gallery-side { display: grid; gap: 18px; }
+    .gallery-side img { aspect-ratio: 4 / 3; }
+    .contact { display: grid; grid-template-columns: .78fr 1fr; gap: 18px; align-items: stretch; }
+    .contact-card { padding: 32px; }
+    .contact-list { display: grid; gap: 16px; margin-top: 28px; }
+    .contact-list a, .contact-list div { padding: 17px 0; border-top: 1px solid var(--line); text-decoration: none; font-weight: 800; }
+    .hours { margin-top: 22px; display: grid; gap: 8px; font-family: var(--font-mono); font-size: 14px; }
+    .hours div { display: flex; justify-content: space-between; gap: 18px; padding: 10px 12px; border-radius: 14px; background: rgba(192,224,224,.28); }
+    .map-wrap { overflow: hidden; padding: 10px; min-height: 440px; }
+    #map { height: 420px; border-radius: 20px; overflow: hidden; }
+    .faq { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+    .faq-item { padding: 26px; min-height: 190px; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+    .final { padding: 90px 0 96px; }
+    .final-box {
+      border-radius: 36px; padding: clamp(34px, 6vw, 70px); background: #101617; color: white;
+      box-shadow: 0 42px 120px rgba(17,21,22,.20); display: grid; grid-template-columns: 1fr auto; gap: 34px; align-items: end;
+    }
+    .final-box p { color: rgba(255,255,255,.72); font-size: 19px; margin: 18px 0 0; max-width: 660px; }
+    .final-box .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    footer { padding: 34px 0; color: var(--muted); font-size: 13px; }
+    .wf-disclaimer { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .wf-disclaimer a { color: inherit; }
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .trust, .price-grid, .gallery, .contact, .final-box { grid-template-columns: 1fr; }
+      .hero-photo { order: -1; }
+      .services, .faq { grid-template-columns: 1fr 1fr; }
+      .step { grid-template-columns: 72px 1fr; }
+      .step p { grid-column: 2; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 28px; }
+      .hero-grid { gap: 28px; }
+      .hero-metrics, .services, .faq { grid-template-columns: 1fr; }
+      .hero-photo { border-radius: 24px; }
+      section { padding: 58px 0; }
+      .card { min-height: auto; }
+      .photo-note { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="ImageDent">
+        <img src="./img/ico/menu.svg" alt="imagedent.cz - Marcel Dostál, DiS. - dentální hygiena a bělení zubů">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420775656970">775 656 970</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420775656970">Objednat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 5 · Zborovská 27</p>
+          <h1>Radost z úsměvu</h1>
+          <p class="lead">Dentální hygiena, bělení zubů, Airflow, fluoridace a ochranné dlahy v klidné ordinaci na Smíchově.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="tel:+420775656970">Zavolat 775 656 970</a>
+            <a class="btn btn-secondary" href="#cenik">Zobrazit ceník</a>
+          </div>
+          <div class="hero-metrics" aria-label="Základní informace">
+            <div class="metric"><strong>4,8 / 5</strong><span>hodnocení od 22 klientů</span></div>
+            <div class="metric"><strong>Po-Čt</strong><span>vybrané dny do 20:00</span></div>
+            <div class="metric"><strong>60 min</strong><span>vstupní dentální hygiena</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/33469928/pexels-photo-33469928.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman elegantly posed in a minimalist, modern architectural setting with soft light.">
+          <figcaption class="photo-note"><span>ImageDent</span><span>dentální hygiena · bělení</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Péče bez zbytečných okolků</h2>
+          <p>Ošetření řeší krvácení z dásní, zubní kámen, povlak, zápach z úst i citlivé krčky. U bělení společně volíte postup podle cíle a pohodlí.</p>
+        </div>
+        <div class="services">
+          <article class="card"><div><h3>Dentální hygiena</h3><p>Vstupní návštěva, kontrolní ošetření, péče pro děti a odstranění zubního kamene i povlaku.</p></div><span class="tag">od 1 160 Kč</span></article>
+          <article class="card"><div><h3>Bělení zubů</h3><p>Ordinační bělení technologií POLUS nebo domácí bělení OPALESCENCE včetně gelů a nosičů.</p></div><span class="tag">od 4 590 Kč</span></article>
+          <article class="card"><div><h3>Airflow a fluoridace</h3><p>Pískování odstraňuje povrchové usazeniny a zbarvení, fluoridace pomáhá chránit zubní sklovinu.</p></div><span class="tag">30 min / 10 min</span></article>
+          <article class="card"><div><h3>Dlahy a šperk</h3><p>Dlaha proti bruxismu, aplikace šperku na zub a ošetření krčků podle potřeby.</p></div><span class="tag">od 350 Kč</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust">
+        <div class="card big-rating">
+          <div><p class="eyebrow">Hodnocení</p><div class="num">4,8</div></div>
+          <p>Průměrné hodnocení podle 22 recenzí.</p>
+        </div>
+        <div class="quote">
+          <blockquote>„Vždy odcházím spokojená a s úsměvem, oceňuji vřelý a profesionální přístup.“</blockquote>
+          <cite>Anička Skleničková · 5/5</cite>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak návštěva probíhá</h2>
+          <p>Termín si domluvíte telefonicky. V ordinaci se řeší aktuální stav, doporučený postup a konkrétní domácí péče.</p>
+        </div>
+        <div class="process">
+          <div class="step"><b>01</b><h3>Objednání</h3><p>Zavoláte na 775 656 970 a vyberete termín podle ordinačních hodin.</p></div>
+          <div class="step"><b>02</b><h3>Ošetření</h3><p>Dentální hygiena, Airflow, fluoridace nebo bělení podle domluvené služby.</p></div>
+          <div class="step"><b>03</b><h3>Doporučení</h3><p>Odcházíte s praktickým postupem pro domácí péči a případnou kontrolou.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Ceník vybraných služeb</h2>
+          <p>Ceny vycházejí z uvedeného ceníku ordinace. Zrušení méně než 2 pracovní dny předem nebo nedostavení se je zpoplatněno 500 Kč za termín.</p>
+        </div>
+        <div class="price-grid">
+          <div class="price-panel">
+            <h3>Dentální hygiena</h3>
+            <div class="price-row"><span>Vstupní, 60 min</span><strong>1 960 Kč</strong></div>
+            <div class="price-row"><span>Kontrolní návštěva + Airflow, 60 min</span><strong>1 760 Kč</strong></div>
+            <div class="price-row"><span>Kontrolní návštěva, 30 min</span><strong>1 160 Kč</strong></div>
+            <div class="price-row"><span>Děti do 12 let, 45 min</span><strong>1 400 Kč</strong></div>
+            <div class="price-row"><span>Děti do 16 let, 45 min</span><strong>1 640 Kč</strong></div>
+          </div>
+          <div class="price-panel">
+            <h3>Bělení a doplňky</h3>
+            <div class="price-row"><span>Ordinační bělení POLUS, 120 min</span><strong>6 800 Kč</strong></div>
+            <div class="price-row"><span>Domácí bělení OPALESCENCE</span><strong>4 590 Kč</strong></div>
+            <div class="price-row"><span>Airflow, 30 min</span><strong>1 090 Kč</strong></div>
+            <div class="price-row"><span>Fluoridace zubů, 10 min</span><strong>350 Kč</strong></div>
+            <div class="price-row"><span>Dlaha proti bruxismu</span><strong>1 400 Kč</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap gallery">
+        <img class="gallery-main" src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+        <div class="gallery-side">
+          <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+          <img src="https://images.pexels.com/photos/8407574/pexels-photo-8407574.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist pendant light against a soft focus background with window blinds.">
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Najdete nás na Smíchově</h2>
+          <div class="contact-list">
+            <a href="tel:+420775656970">+420 775 656 970</a>
+            <a href="mailto:info@imagedent.cz">info@imagedent.cz</a>
+            <div>Zborovská 27, Smíchov, 150 00 Praha 5</div>
+          </div>
+          <div class="hours" aria-label="Ordinační hodiny">
+            <div><span>Po</span><strong>8:00-20:00</strong></div>
+            <div><span>Út</span><strong>8:00-20:00</strong></div>
+            <div><span>St</span><strong>8:00-16:30</strong></div>
+            <div><span>Čt</span><strong>8:00-20:00</strong></div>
+            <div><span>Pá</span><strong>9:00-13:00</strong></div>
+          </div>
+        </div>
+        <div class="map-wrap"><div id="map"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté otázky</h2>
+          <p>Krátké odpovědi k objednání, bělení a pravidlům rušení termínu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Jak se objednat?</h3><p>Termín si domluvíte telefonicky na čísle 775 656 970.</p></article>
+          <article class="faq-item"><h3>Je možné domácí bělení?</h3><p>Ano, v ceníku je domácí bělení OPALESCENCE včetně gelů a nosičů.</p></article>
+          <article class="faq-item"><h3>Jak zrušit termín?</h3><p>Bez poplatku nejméně 2 pracovní dny před návštěvou.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Objednání</p>
+          <h2>Domluvte si termín</h2>
+          <p>Dentální hygiena, bělení zubů nebo kontrolní návštěva v ordinaci ImageDent na Praze 5.</p>
+        </div>
+        <div class="actions">
+          <a class="btn btn-primary" href="tel:+420775656970">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@imagedent.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap wf-disclaimer">
+      <span>Toto je nezávazná ukázka vytvořená službou Webflex pro majitele firmy. Obsah lze kdykoliv odstranit.</span>
+      <a href="https://webflex.cz/delete?token=m3iuoeg" rel="nofollow">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.407082299999999, 50.077183000000005],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0E0E0' })
+      .setLngLat([14.407082299999999, 50.077183000000005])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
