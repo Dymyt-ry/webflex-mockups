@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vojenská nemocnice Brno</title>
+  <meta name="description" content="Vojenská nemocnice Brno: informace pro pacienty, pracoviště, lékárna, prodejna zdravotnických potřeb a kontakty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcff;
+      --surface: #ffffff;
+      --surface-soft: #f1f5fb;
+      --ink: #111827;
+      --muted: #5f6b7a;
+      --quiet: #8a95a3;
+      --line: #d8e0ea;
+      --line-strong: #9eb0c6;
+      --accent: #0040A0;
+      --accent-dark: #082d68;
+      --accent-soft: #e7f0ff;
+      --ok: #1d7a46;
+      --warn: #9b5c00;
+      --shadow: 0 26px 70px rgba(10, 39, 84, .11);
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0, 64, 160, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 64, 160, .035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1220px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 255, .92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 220px;
+      text-decoration: none;
+    }
+
+    .brand img {
+      width: min(306px, 54vw);
+      max-height: 46px;
+      object-fit: contain;
+      object-position: left center;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .72);
+    }
+
+    .nav-links a {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 14px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      color: #28384c;
+      transition: background .2s cubic-bezier(.2,.8,.2,1), color .2s;
+    }
+
+    .nav-links a:hover { background: var(--accent-soft); color: var(--accent); }
+
+    .btn {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 15px;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), border-color .22s, background .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(0, 64, 160, .14); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: #fff; }
+
+    .hero { padding: 70px 0 54px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(380px, .66fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 22px 0 0;
+      color: #405165;
+      font-size: clamp(19px, 2vw, 24px);
+      font-weight: 550;
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+
+    .status-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .status-top {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-date {
+      min-height: 96px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .status-date strong { display: block; font-size: 32px; }
+    .status-copy { padding: 20px 22px; }
+    .status-copy p { margin: 0; color: var(--muted); font-weight: 650; }
+    .status-copy strong {
+      display: block;
+      margin-bottom: 4px;
+      font-family: var(--font-display);
+      font-size: 21px;
+      color: var(--ink);
+    }
+
+    .status-rows { display: grid; }
+    .status-row {
+      display: grid;
+      grid-template-columns: 138px minmax(0, 1fr);
+      gap: 14px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .status-row:last-child { border-bottom: 0; }
+    .status-row span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--quiet);
+      text-transform: uppercase;
+    }
+    .status-row strong { font-size: 18px; overflow-wrap: anywhere; }
+
+    section { padding: 72px 0; }
+    .section-title {
+      display: grid;
+      grid-template-columns: 110px minmax(0, .78fr) minmax(280px, .44fr);
+      gap: 26px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .section-no {
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 7vw, 98px);
+      line-height: .8;
+      color: rgba(0, 64, 160, .16);
+      font-weight: 700;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); font-weight: 900; }
+    .section-title p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .matrix {
+      display: grid;
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .matrix.four { grid-template-columns: 1.05fr .85fr .8fr .9fr; }
+    .matrix.three { grid-template-columns: 1fr 1fr 1fr; }
+
+    .cell {
+      min-height: 86px;
+      padding: 18px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      background: #fff;
+    }
+
+    .cell.head {
+      position: sticky;
+      top: 78px;
+      z-index: 3;
+      min-height: 56px;
+      padding-block: 12px;
+      background: var(--accent-dark);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .cell strong { font-size: 20px; line-height: 1.15; }
+    .cell p { margin: 0; color: var(--muted); font-size: 15px; }
+    .mono { font-family: var(--font-mono); font-weight: 700; }
+    .tag {
+      width: fit-content;
+      padding: 5px 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .trust-item {
+      min-height: 176px;
+      padding: 22px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .trust-item b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+    }
+    .trust-item span { color: var(--muted); font-weight: 650; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(320px, .45fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .timeline-list {
+      border-top: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .timeline-row time {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .timeline-row h3 { font-size: 24px; line-height: 1.05; }
+    .timeline-row p { margin: 8px 0 0; color: var(--muted); hyphens: auto; }
+
+    .notice {
+      padding: 28px;
+      border: 1px solid var(--line-strong);
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+    }
+    .notice h3 { font-size: clamp(30px, 4vw, 52px); }
+    .notice p { margin: 18px 0 0; color: rgba(255,255,255,.82); font-size: 18px; }
+    .notice .btn { margin-top: 28px; border-color: rgba(255,255,255,.55); color: #fff; width: fit-content; }
+    .notice .btn:hover { background: rgba(255,255,255,.12); box-shadow: none; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, .42fr) minmax(0, .68fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      padding: 26px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--quiet);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .contact-line strong, .contact-line a {
+      font-size: 19px;
+      font-weight: 800;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+    .contact-line a:hover { color: var(--accent); }
+
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--surface-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+    }
+    .faq-item {
+      min-height: 176px;
+      padding: 22px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .faq-item h3 { font-size: 24px; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding: 42px;
+      border: 1px solid var(--accent);
+      background: var(--accent-dark);
+      color: #fff;
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(34px, 5vw, 70px); }
+    .final p { margin: 14px 0 0; max-width: 680px; color: rgba(255,255,255,.78); font-size: 18px; }
+    .final .btn-primary { background: #fff; color: var(--accent-dark); }
+    .final .btn-secondary { border-color: rgba(255,255,255,.5); color: #fff; background: transparent; }
+    .final .btn-secondary:hover { background: rgba(255,255,255,.1); box-shadow: none; }
+
+    footer {
+      margin-top: 80px;
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      background: #fff;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .42fr);
+      gap: 30px;
+      align-items: start;
+    }
+    .footer-brand { font-weight: 900; color: var(--ink); }
+    .disclaimer {
+      font-size: 13px;
+      color: #697586;
+    }
+    .disclaimer a { color: var(--accent); text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav { flex-wrap: wrap; padding: 14px 0; }
+      .nav-links { width: 100%; overflow-x: auto; justify-content: flex-start; }
+      .hero-grid, .timeline, .contact-grid, .final { grid-template-columns: 1fr; }
+      .section-title { grid-template-columns: 80px minmax(0, 1fr); }
+      .section-title p { grid-column: 2; }
+      .matrix.four { grid-template-columns: 1fr 1fr; }
+      .matrix.three, .trust-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cell.head { position: static; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1220px); }
+      .hero { padding-top: 38px; }
+      section { padding: 52px 0; }
+      .status-top, .status-row, .timeline-row, .footer-grid { grid-template-columns: 1fr; }
+      .status-date { min-height: 74px; }
+      .section-title { grid-template-columns: 1fr; gap: 12px; }
+      .section-title p { grid-column: auto; }
+      .matrix.four, .matrix.three, .trust-strip, .faq { grid-template-columns: 1fr; }
+      .final { padding: 28px; }
+      .hero-actions, .final-actions { display: grid; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Vojenská nemocnice Brno">
+        <img src="https://www.vnbrno.cz/img/logo-vnb.svg" alt="Vojenská nemocnice Brno">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pacienti">Pacienti</a>
+        <a href="#pracoviste">Pracoviště</a>
+        <a href="#novinky">Novinky</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420973445508">+420 973 445 508</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Zábrdovice · Vojenské zdravotnictví</p>
+          <h1>Péče pro Brno</h1>
+          <p class="lead">Informace pro pacienty, přehled pracovišť, lékárna, prodejna zdravotnických potřeb a důležité zprávy z Vojenské nemocnice Brno.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#pacienti">Vyřídit jako pacient</a>
+            <a class="btn btn-secondary" href="#kontakt">Kontakt na nemocnici</a>
+          </div>
+        </div>
+
+        <aside class="status-card" aria-label="Aktuální kontakt">
+          <div class="status-top">
+            <div class="status-date"><span>Po</span><strong>01</strong><span>06</span></div>
+            <div class="status-copy">
+              <strong>Dnešní informační karta</strong>
+              <p>Pro obecné informace volejte podatelnu nebo informační čísla uvedená nemocnicí.</p>
+            </div>
+          </div>
+          <div class="status-rows">
+            <div class="status-row"><span>Podatelna</span><strong><a href="tel:+420973445508">+420 973 445 508</a></strong></div>
+            <div class="status-row"><span>Informace</span><strong>+420 973 445 517 · 973 445 510</strong></div>
+            <div class="status-row"><span>E-mail</span><strong><a href="mailto:podatelna@vnbrno.cz">podatelna@vnbrno.cz</a></strong></div>
+            <div class="status-row"><span>Adresa</span><strong>Zábrdovická 3/3, Brno</strong></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="pacienti">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">01</div>
+          <h2>Pro pacienty</h2>
+          <p>Vstupní rozcestník pro běžné potřeby návštěvníků nemocnice: kontakty, pracoviště, lékárna, zdravotnické potřeby a program Zelená cesta.</p>
+        </div>
+        <div class="matrix four" role="table" aria-label="Pacientský rozcestník">
+          <div class="cell head" role="columnheader">Agenda</div>
+          <div class="cell head" role="columnheader">Kam směřovat</div>
+          <div class="cell head" role="columnheader">Kontakt</div>
+          <div class="cell head" role="columnheader">Poznámka</div>
+
+          <div class="cell"><strong>Pacienti</strong><p>Základní informace před návštěvou nemocnice.</p></div>
+          <div class="cell"><span class="tag">Informace</span><p>Centrální kontaktní linky nemocnice.</p></div>
+          <div class="cell"><strong class="mono">973 445 517</strong><p class="mono">973 445 510</p></div>
+          <div class="cell"><p>Pro dotazy k provozu a orientaci v areálu.</p></div>
+
+          <div class="cell"><strong>Pracoviště</strong><p>Přehled oddělení a odborných ambulancí.</p></div>
+          <div class="cell"><span class="tag">Oddělení</span><p>Chirurgie, vnitřní lékařství, ORL a další pracoviště.</p></div>
+          <div class="cell"><strong class="mono">podatelna</strong><p>podatelna@vnbrno.cz</p></div>
+          <div class="cell"><p>Konkrétní pokyny řešte s příslušným pracovištěm.</p></div>
+
+          <div class="cell"><strong>Lékárna a Prodejna ZP</strong><p>Historická lékárna svaté Kunhuty a zdravotnické potřeby.</p></div>
+          <div class="cell"><span class="tag">Areál</span><p>Akční nabídky z lékárny a prodejny zdravotnických potřeb.</p></div>
+          <div class="cell"><strong class="mono">vnbrno.cz</strong><p>Aktuální nabídky online</p></div>
+          <div class="cell"><p>V excerpci je uvedena znovuotevřená historická lékárna.</p></div>
+
+          <div class="cell"><strong>Zelená cesta</strong><p>Program Ministerstva obrany České republiky a VN Brno.</p></div>
+          <div class="cell"><span class="tag">Program</span><p>Poskytování zdravotních služeb určeným skupinám osob.</p></div>
+          <div class="cell"><strong class="mono">MO ČR</strong><p>VN Brno</p></div>
+          <div class="cell"><p>Informace podle aktuálních pravidel programu.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pracoviste">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">02</div>
+          <h2>Pracoviště a služby</h2>
+          <p>Nemocnice komunikuje k pacientům, odborné veřejnosti i zájemcům o práci. Přehled je vedený jako pracovní plán, ne jako obecný katalog.</p>
+        </div>
+        <div class="matrix three" role="table" aria-label="Pracoviště">
+          <div class="cell head">Oblast</div>
+          <div class="cell head">Co řeší</div>
+          <div class="cell head">Aktuální souvislost</div>
+          <div class="cell"><strong>ORL</strong><p>Otorinolaryngologické lůžkové oddělení.</p></div>
+          <div class="cell"><p>Revitalizace historických prostorů v dílčí části oddělení.</p></div>
+          <div class="cell"><strong class="mono">27. 7. až 9. 8. 2026</strong><p>Rekonstrukce stropů podle zveřejněné zprávy.</p></div>
+          <div class="cell"><strong>Chirurgie</strong><p>Odborná nemocniční péče a tým oddělení chirurgie.</p></div>
+          <div class="cell"><p>V oznámeních je uvedené hledání lékaře nebo lékařky se specializací.</p></div>
+          <div class="cell"><span class="tag">Kariéra</span><p>Lékař/ka se specializací v oboru chirurgie.</p></div>
+          <div class="cell"><strong>Vnitřní lékařství</strong><p>Interní oddělení a péče v oboru vnitřní lékařství.</p></div>
+          <div class="cell"><p>Nemocnice uvádí nábor do týmu interního oddělení.</p></div>
+          <div class="cell"><span class="tag">Kariéra</span><p>Lékař/ka se specializací v oboru vnitřní lékařství.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">03</div>
+          <h2>Důvěra a provoz</h2>
+          <p>Veřejné signály z dostupných údajů: hodnocení, recenze, historie nemocnice a odpovědnost vůči prostředí.</p>
+        </div>
+        <div class="trust-strip">
+          <div class="trust-item"><b>3.8</b><span>Google hodnocení uvedené v datech.</span></div>
+          <div class="trust-item"><b>233</b><span>Veřejných recenzí uvedených v datech.</span></div>
+          <div class="trust-item"><b>1784</b><span>Rok založení uvedený ve výpisu nemocnice.</span></div>
+          <div class="trust-item"><b>2025</b><span>Rok výsledků odpovědného přístupu k životnímu prostředí.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="novinky">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">04</div>
+          <h2>Aktuální zprávy</h2>
+          <p>Výběr zveřejněných témat pro pacienty, návštěvníky, odbornou veřejnost a zájemce o práci v nemocnici.</p>
+        </div>
+        <div class="timeline">
+          <div class="timeline-list">
+            <article class="timeline-row">
+              <time datetime="2026-05-18">18. 05. 2026</time>
+              <div>
+                <h3>Rekonstrukce stropů na lůžkovém oddělení ORL</h3>
+                <p>Práce proběhnou ve dnech 27. 7. až 9. 8. 2026 v dílčí části oddělení ORL.</p>
+              </div>
+            </article>
+            <article class="timeline-row">
+              <time datetime="2026-05-16">16. 05. 2026</time>
+              <div>
+                <h3>Historická lékárna svaté Kunhuty</h3>
+                <p>Lékárna znovu otevřela své dveře v souvislosti s festivalem Open House Brno 2026.</p>
+              </div>
+            </article>
+            <article class="timeline-row">
+              <time datetime="2026-05-13">13. 05. 2026</time>
+              <div>
+                <h3>Odpovědný přístup k životnímu prostředí</h3>
+                <p>Nemocnice zveřejnila výsledky za rok 2025 ve spolupráci se systémem REMA Systém a.s.</p>
+              </div>
+            </article>
+            <article class="timeline-row">
+              <time datetime="2026-05-04">04. 05. 2026</time>
+              <div>
+                <h3>Implementace nemocničního informačního systému</h3>
+                <p>Centrální prostředí pro informace o pacientech, léčbě a využívání lůžkového fondu.</p>
+              </div>
+            </article>
+          </div>
+          <aside class="notice">
+            <div>
+              <p class="eyebrow" style="color: rgba(255,255,255,.72)">Bezpečnost a spokojenost</p>
+              <h3>Nejlepší nemocnice roku 2026</h3>
+              <p>Nemocnice uvádí průzkum bezpečnosti a spokojenosti pacientů s hlasováním od 1. 2. 2026 do 31. 7. 2026.</p>
+            </div>
+            <a class="btn" href="https://www.vnbrno.cz/">Více na vnbrno.cz</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">05</div>
+          <h2>Časté směry</h2>
+          <p>Krátké odpovědi bez přidávání údajů, které nejsou v dostupném výpisu. Pro přesné instrukce použijte kontakty nemocnice.</p>
+        </div>
+        <div class="faq">
+          <div class="faq-item">
+            <h3>Kam volat pro obecné informace?</h3>
+            <p>V dostupném výpisu jsou uvedena informační čísla +420 973 445 517 a 973 445 510. Podatelna je na čísle +420 973 445 508.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Má nemocnice lékárnu?</h3>
+            <p>Ano. Výpis uvádí Lékárnu a Prodejnu ZP a samostatnou zprávu o historické lékárně svaté Kunhuty.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Kde najdu kariéru?</h3>
+            <p>V oznámeních jsou uvedené pozice pro lékaře nebo lékařku se specializací v chirurgii a vnitřním lékařství.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Co je Zelená cesta?</h3>
+            <p>Program Zelená cesta je uvedený jako společný projekt Ministerstva obrany České republiky a VN Brno.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="section-no">06</div>
+          <h2>Kontakt a poloha</h2>
+          <p>Areál je v Brně-Zábrdovicích na adrese Zábrdovická 3/3. Mapa je centrovaná podle souřadnic uvedených v datech.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Zábrdovická 3/3, Zábrdovice, 615 00 Brno-Brno-Židenice</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420973445508">+420 973 445 508</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:podatelna@vnbrno.cz">podatelna@vnbrno.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <a href="https://www.vnbrno.cz/">www.vnbrno.cz</a>
+            </div>
+            <a class="btn btn-primary" href="tel:+420973445508">Zavolat podatelnu</a>
+          </div>
+          <div id="map" aria-label="Mapa polohy Vojenské nemocnice Brno"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap final">
+        <div>
+          <h2>Potřebujete informace?</h2>
+          <p>Pro orientaci v nemocnici, dotazy k pracovištím a obecný kontakt použijte podatelnu nebo informační čísla nemocnice.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420973445508">Volat +420 973 445 508</a>
+          <a class="btn btn-secondary" href="mailto:podatelna@vnbrno.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <div class="footer-brand">Vojenská nemocnice Brno</div>
+        <div>Zábrdovická 3/3, Zábrdovice, 615 00 Brno-Brno-Židenice</div>
+      </div>
+      <div class="disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele organizace. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/8ccfeo8">webflex.cz/delete/8ccfeo8</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6301429, 49.2024281],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#0040A0' })
+      .setLngLat([16.6301429, 49.2024281])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
