@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>MiniSmile s.r.o. | Ordinace a obchod v Plzni</title>
+  <meta name="description" content="MiniSmile s.r.o. v Plzni: ordinace, recepce a obchod. Kontaktujte recepci na telefonu 371 585 578 nebo e-mailem recepce@minismile.cz.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --surface: rgba(255,255,255,.088);
+      --surface-strong: rgba(255,255,255,.14);
+      --surface-soft: rgba(255,255,255,.055);
+      --ink: #f8f7f6;
+      --muted: rgba(248,247,246,.68);
+      --quiet: rgba(248,247,246,.46);
+      --line: rgba(255,255,255,.13);
+      --accent: #E0C0C0;
+      --accent-ink: #161114;
+      --shadow: 0 44px 120px rgba(0,0,0,.34);
+      --shadow-soft: 0 26px 90px rgba(0,0,0,.22);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --gutter: clamp(20px, 4vw, 66px);
+      --section: clamp(78px, 10vw, 136px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.52;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(224,192,192,.18), transparent 32%),
+        linear-gradient(rgba(255,255,255,.014) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 30px 30px, 30px 30px, auto;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .028;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { hyphens: auto; text-wrap: pretty; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; overflow-wrap: anywhere; }
+    button, input, textarea { font: inherit; }
+
+    .wrap { width: min(100% - (var(--gutter) * 2), 1220px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1400px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 46px rgba(0,0,0,.28); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible, .photo-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,20,.78);
+      backdrop-filter: blur(20px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(220px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links { display: flex; align-items: center; gap: 26px; color: var(--muted); font-weight: 700; font-size: 14px; }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .hero { padding: clamp(48px, 7vw, 96px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(40%, 1.06fr);
+      gap: clamp(36px, 6vw, 86px);
+      align-items: center;
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .lead {
+      margin-top: 26px;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.65vw, 23px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 34px;
+      max-width: 690px;
+    }
+    .meta-tile {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-tile strong { display: block; font-family: var(--font-mono); font-size: 16px; color: var(--accent); }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16,17,20,.08), rgba(16,17,20,.52));
+    }
+    .photo-note {
+      position: absolute;
+      z-index: 2;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: rgba(16,17,20,.68);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.24);
+      font-weight: 800;
+    }
+    .photo-note span { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    section { padding: calc(var(--section) * .68) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .48fr);
+      gap: clamp(32px, 6vw, 76px);
+      align-items: end;
+      margin-bottom: clamp(32px, 5vw, 58px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.7vw, 66px);
+      line-height: .98;
+      text-transform: uppercase;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: clamp(22px, 3vw, 34px);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row h3 { font-size: clamp(22px, 2.5vw, 34px); line-height: 1.04; font-family: var(--font-display); text-transform: uppercase; }
+    .service-row p { margin-top: 8px; max-width: 780px; color: var(--muted); }
+    .tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 190px;
+      padding: clamp(24px, 3vw, 34px);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card strong { font-family: var(--font-mono); font-size: clamp(30px, 4vw, 54px); color: var(--accent); line-height: 1; }
+    .trust-card span { color: var(--muted); font-weight: 650; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(40%, 1.14fr);
+      gap: clamp(28px, 5vw, 64px);
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(28px, 4vw, 52px);
+    }
+    .panel h2 { font-size: clamp(32px, 4vw, 56px); }
+    .panel p { margin-top: 18px; color: var(--muted); font-size: 18px; }
+    .notice {
+      margin-top: 28px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(224,192,192,.13);
+      color: rgba(255,255,255,.86);
+      font-weight: 700;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 14px;
+      min-height: 100%;
+    }
+    .photo-card {
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .photo-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .photo-card img { width: 100%; height: 100%; min-height: 310px; object-fit: cover; }
+    .photo-card.small img { min-height: 210px; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 230px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .step h3 { margin-top: 24px; font-family: var(--font-display); font-size: 24px; line-height: 1.02; text-transform: uppercase; }
+    .step p { margin-top: 12px; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .78fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card, .faq-item {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card { padding: clamp(26px, 4vw, 46px); }
+    .contact-lines { display: grid; gap: 14px; margin-top: 28px; }
+    .line-item {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .line-item span:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--quiet); text-transform: uppercase; letter-spacing: .08em; }
+    .line-item span:last-child, .line-item a { font-weight: 750; }
+    .hours {
+      margin-top: 30px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .hours div { display: flex; justify-content: space-between; gap: 18px; padding: 10px 0; border-top: 1px solid var(--line); }
+    .hours .today { color: var(--ink); }
+    .map-card { overflow: hidden; min-height: 420px; }
+    #map { height: 420px; width: 100%; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 26px; min-height: 190px; }
+    .faq-item h3 { font-size: 22px; line-height: 1.1; }
+    .faq-item p { margin-top: 14px; color: var(--muted); }
+
+    .final {
+      padding: calc(var(--section) * .62) 0 var(--section);
+    }
+    .final-card {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 62px);
+      border-radius: 38px;
+      background: linear-gradient(135deg, rgba(224,192,192,.2), rgba(255,255,255,.08));
+      box-shadow: var(--shadow);
+    }
+    .final-card h2 { font-size: clamp(34px, 5vw, 70px); }
+    .final-card p { margin-top: 14px; max-width: 680px; color: var(--muted); font-size: 18px; }
+
+    footer {
+      padding: 32px 0;
+      color: rgba(255,255,255,.56);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    footer a { color: rgba(255,255,255,.78); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-card { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 4 / 3; }
+      .trust-strip, .steps, .faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .photo-grid { grid-template-columns: 1fr; }
+      .final-card { align-items: start; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap, .wide { width: min(100% - 32px, 1220px); }
+      .hero { padding-top: 34px; }
+      .hero-meta, .trust-strip, .steps, .faq-grid { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; }
+      .tag { white-space: normal; }
+      .line-item { grid-template-columns: 1fr; gap: 4px; }
+      .photo-note { left: 16px; right: 16px; bottom: 16px; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .map-card, #map { min-height: 360px; height: 360px; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="MiniSmile s.r.o.">
+        <img src="https://www.minismile.cz/wp-content/themes/minismile/img/tooth.png" alt="MiniSmile s.r.o.">
+      </a>
+      <div class="nav-links">
+        <a href="#ordinace">Ordinace</a>
+        <a href="#obchod">Obchod</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420371585578">Zavolat recepci</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wide">
+        <div>
+          <p class="eyebrow">Plzeň, Sladová 2825</p>
+          <h1>MiniSmile ordinace a obchod</h1>
+          <p class="lead">Recepce, ordinace a nákupní košík na jednom místě. Pro dotazy k návštěvě nebo objednávce volejte recepci, případně napište e-mail.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420371585578">371 585 578</a>
+            <a class="btn secondary" href="mailto:recepce@minismile.cz">recepce@minismile.cz</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile"><strong>5,0 / 5</strong><span>Hodnocení Google</span></div>
+            <div class="meta-tile"><strong>11</strong><span>Veřejných recenzí</span></div>
+            <div class="meta-tile"><strong>IČO 17126690</strong><span>MiniSmile s.r.o.</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <div class="photo-note">Obchod MiniSmile <span>Nákupní košík a objednávky online</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ordinace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Ordinace</p>
+            <h2>Informace pro pacienty</h2>
+          </div>
+          <p>MiniSmile komunikuje přes recepci na telefonu a e-mailu. Adresa ordinace je Sladová 2825/11, Plzeň, 326 00.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div>
+              <h3>Recepce</h3>
+              <p>Pro domluvu a praktické dotazy využijte telefonní číslo 371 585 578 nebo e-mail recepce@minismile.cz.</p>
+            </div>
+            <span class="tag">Kontakt</span>
+          </article>
+          <article class="service-row">
+            <div>
+              <h3>Ordinace</h3>
+              <p>Ordinace sídlí v Plzni na Slovanech. V současné chvíli bohužel nemůže přijímat nové pacienty.</p>
+            </div>
+            <span class="tag">Sladová 2825/11</span>
+          </article>
+          <article class="service-row">
+            <div>
+              <h3>Ochrana údajů</h3>
+              <p>Součástí provozu jsou zásady ochrany osobních údajů a firemní identifikace MiniSmile s.r.o.</p>
+            </div>
+            <span class="tag">IČO 17126690</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust-strip">
+          <div class="trust-card">
+            <strong>5,0</strong>
+            <span>Aktuální veřejné hodnocení podle poskytnutých dat.</span>
+          </div>
+          <div class="trust-card">
+            <strong>11</strong>
+            <span>Recenzí u profilu společnosti.</span>
+          </div>
+          <div class="trust-card">
+            <strong>C 42236</strong>
+            <span>Spisová značka u Krajského soudu v Plzni.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="obchod">
+      <div class="split wide">
+        <div class="panel">
+          <p class="eyebrow">Obchod</p>
+          <h2>Nákupní košík MiniSmile</h2>
+          <p>Obchodová část pracuje s nákupním košíkem a objednávkami. Pokud je košík prázdný, můžete přejít do obchodu a vybrat z dostupné nabídky.</p>
+          <div class="notice">Pro dotazy k objednávce použijte stejný kontakt jako pro recepci: recepce@minismile.cz.</div>
+        </div>
+        <div class="photo-grid">
+          <a class="photo-card" href="https://www.minismile.cz/" aria-label="Navštívit obchod MiniSmile">
+            <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+          </a>
+          <a class="photo-card small" href="https://www.minismile.cz/" aria-label="Objednávky MiniSmile">
+            <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Postup</p>
+            <h2>Jak se spojit</h2>
+          </div>
+          <p>Krátká cesta pro návštěvníky, kteří potřebují recepci, adresu ordinace nebo obchod.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><span class="num">01</span><div><h3>Zavolejte</h3><p>Recepce je dostupná na čísle 371 585 578.</p></div></article>
+          <article class="step"><span class="num">02</span><div><h3>Napište</h3><p>Dotazy můžete poslat na recepce@minismile.cz.</p></div></article>
+          <article class="step"><span class="num">03</span><div><h3>Přijďte</h3><p>Ordinaci najdete na adrese Sladová 2825/11 v Plzni.</p></div></article>
+          <article class="step"><span class="num">04</span><div><h3>Obchod</h3><p>Pro nákup přejděte do obchodové části webu.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Recepce a adresa</h2>
+          </div>
+          <p>MiniSmile s.r.o. sídlí v Plzni 2-Slovany. Navigace je připravená přímo na adresu provozovny.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-lines">
+              <div class="line-item"><span>Telefon</span><a href="tel:+420371585578">+420 371 585 578</a></div>
+              <div class="line-item"><span>E-mail</span><a href="mailto:recepce@minismile.cz">recepce@minismile.cz</a></div>
+              <div class="line-item"><span>Adresa</span><span>Sladová 2825, 326 00 Plzeň 2-Slovany</span></div>
+              <div class="line-item"><span>Instagram</span><span>@minismile_s.r.o</span></div>
+            </div>
+            <div class="hours" aria-label="Dostupné informace">
+              <div class="today"><span>Dnes, pondělí</span><span>kontakt přes recepci</span></div>
+              <div><span>Ordinace</span><span>Sladová 2825/11</span></div>
+              <div><span>Obchod</span><span>nákupní košík online</span></div>
+            </div>
+          </div>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa MiniSmile s.r.o."></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Otázky</p>
+            <h2>Rychlé odpovědi</h2>
+          </div>
+          <p>Nejčastější informace z veřejně dostupných podkladů MiniSmile s.r.o.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Přijímáte nové pacienty?</h3>
+            <p>V současné chvíli bohužel MiniSmile nemůže přijímat nové pacienty.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde ordinaci najdu?</h3>
+            <p>Na adrese Sladová 2825/11, Plzeň, 326 00.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak se zeptám na obchod?</h3>
+            <p>Použijte recepční e-mail recepce@minismile.cz nebo telefon 371 585 578.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="final-card">
+          <div>
+            <p class="eyebrow">MiniSmile s.r.o.</p>
+            <h2>Ozvěte se recepci</h2>
+            <p>Telefonicky, e-mailem nebo přes návštěvu obchodu. Všechny podstatné kontakty jsou na jednom místě.</p>
+          </div>
+          <a class="btn primary" href="tel:+420371585578">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Informační patičku připravilo Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/dxu2wl1">tento odkaz</a>.</span>
+      <span>Fotografie: Pexels</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.4071803, 49.7291824],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C0C0' })
+      .setLngLat([13.4071803, 49.7291824])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
