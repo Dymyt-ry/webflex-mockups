@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Genesys Medical | Densyn, S.r.o.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f3eb;
+      --bg-soft: #fffaf3;
+      --surface: rgba(255, 252, 247, 0.84);
+      --surface-strong: #ffffff;
+      --ink: #191713;
+      --muted: #6e685f;
+      --soft: #a29a8d;
+      --accent: #DDA62B;
+      --accent-dark: #9c6f00;
+      --line: rgba(25, 23, 19, 0.08);
+      --shadow: 0 28px 90px rgba(66, 48, 16, 0.10);
+      --shadow-soft: 0 18px 70px rgba(66, 48, 16, 0.075);
+      --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+      --font-body: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 140px);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(25, 23, 19, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25, 23, 19, 0.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      z-index: 0;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; }
+    p { text-wrap: pretty; }
+    main, header, footer { position: relative; z-index: 1; }
+    .container { max-width: 1240px; margin-inline: auto; padding-inline: var(--gutter); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(248, 243, 235, 0.78);
+      backdrop-filter: blur(22px);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 36px);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-links a,
+    .text-link {
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .nav-links a:hover,
+    .text-link:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .btn:focus-visible,
+    .service-row:focus-visible,
+    .text-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      letter-spacing: 0;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: #16120a;
+      box-shadow: 0 18px 38px rgba(221, 166, 43, 0.28);
+    }
+    .btn-primary:hover { background: #e8b646; box-shadow: 0 22px 48px rgba(221, 166, 43, 0.34); }
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(25, 23, 19, 0.04); }
+
+    .hero {
+      min-height: calc(100svh - 78px);
+      display: grid;
+      align-items: center;
+      padding-block: clamp(44px, 7vw, 94px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.82fr);
+      gap: clamp(38px, 6vw, 84px);
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .kicker::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+    }
+    h1 {
+      margin-top: 24px;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    .hero-copy {
+      margin-top: 24px;
+      max-width: 610px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.5vw, 22px);
+      line-height: 1.42;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-note {
+      margin-top: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero-photo {
+      position: relative;
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.92) contrast(1.02);
+    }
+    .float-card {
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      width: min(78%, 330px);
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 252, 247, 0.82);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+    .float-card strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .float-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    section { padding-block: var(--section); }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+      gap: clamp(32px, 6vw, 86px);
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.6vw, 64px);
+      line-height: 1;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .services-list {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 0.7fr) minmax(260px, 0.8fr) auto;
+      gap: 26px;
+      align-items: center;
+      padding: 30px;
+      border-bottom: 1px solid var(--line);
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: rgba(221, 166, 43, 0.06); transform: translateY(-1px); }
+    .service-row:active { transform: translateY(1px); }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    .service-row h3 {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 42px);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .service-row p { color: var(--muted); }
+    .arrow {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #16120a;
+      font-weight: 800;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .trust-card,
+    .hours-card,
+    .map-panel,
+    .cta-strip {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+    }
+    .trust-card {
+      min-height: 180px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card .value {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .trust-card p { color: var(--muted); margin-top: 20px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(360px, 0.68fr);
+      gap: clamp(26px, 5vw, 70px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .timeline {
+      display: grid;
+      gap: 16px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 18px;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 252, 247, 0.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .step b {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+    }
+    .step h3 {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .step p { color: var(--muted); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1fr 1.18fr 0.82fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-item {
+      min-height: 330px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface);
+    }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .hours-card { padding: 30px; }
+    .hours-card h2 {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .info-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .info-line span:first-child { color: var(--muted); }
+    .info-line span:last-child,
+    .info-line a {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .today {
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(221, 166, 43, 0.12);
+      color: #4a3300;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .map-panel { padding: 12px; min-height: 444px; }
+    #map { height: 420px; border-radius: 22px; overflow: hidden; }
+
+    .cta-strip {
+      padding: clamp(32px, 6vw, 72px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 26px;
+      align-items: center;
+      background:
+        radial-gradient(circle at 92% 18%, rgba(221, 166, 43, 0.22), transparent 32%),
+        rgba(255, 252, 247, 0.88);
+    }
+    .cta-strip h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 70px);
+      line-height: 0.98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .cta-strip p { color: var(--muted); margin-top: 14px; max-width: 620px; }
+
+    .site-footer {
+      padding: 44px var(--gutter);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .webflex-disclaimer a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .cta-strip { grid-template-columns: 1fr; }
+      .hero-photo { max-width: 680px; }
+      .service-row { grid-template-columns: 64px 1fr; }
+      .service-row p { grid-column: 2; }
+      .service-row .arrow { grid-column: 2; }
+      .trust-grid,
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-item { min-height: 260px; }
+      .nav-links a:not(.btn) { display: none; }
+    }
+    @media (max-width: 620px) {
+      .nav { min-height: 70px; }
+      .logo img { max-height: 34px; }
+      .hero { min-height: auto; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-photo { border-radius: 22px; }
+      .float-card { position: static; width: auto; border-radius: 0; }
+      .service-row { padding: 22px; gap: 14px; grid-template-columns: 44px 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .info-line { flex-direction: column; gap: 4px; }
+      .info-line span:last-child,
+      .info-line a { text-align: left; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#" aria-label="Genesys Medical">
+        <img src="https://www.genesysmedical.cz/themes/genesys_medical/logo.svg" alt="Densyn, S.r.o.">
+      </a>
+      <div class="nav-links">
+        <a href="#zakroky">Zákroky</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="#kontakt">Objednat se</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="kicker">Genesys Medical · Plzeň-Slovany</span>
+          <h1>Péče v jednom místě</h1>
+          <p class="hero-copy">Recepce, stomatologie, zákroky, ceník i vouchery přehledně pro pacienty, kteří chtějí rychle najít kontakt a domluvit si termín.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420739934334">Volat recepci</a>
+            <a class="btn btn-outline" href="mailto:recepce@genesysmedical.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note">
+            <span>Po-Pá 07:30-21:00</span>
+            <span>Houškova 507/26</span>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Balení voucheru">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <figcaption class="float-card">
+            <strong>07:30-21:00</strong>
+            <span>Recepce je k dispozici ve všední dny. Termín si domluvíte telefonicky nebo e-mailem.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="zakroky">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Co vyřídíte</span>
+            <h2>Pacientské cesty bez hledání</h2>
+          </div>
+          <p>Obsah vychází z aktuálních kontaktních informací Genesys Medical: zákroky, akce, vouchery, ceník, kontakt a stomatologie.</p>
+        </div>
+        <div class="services-list">
+          <a class="service-row" href="#kontakt">
+            <span class="num">01</span>
+            <h3>Zákroky</h3>
+            <p>Rychlá orientace v nabídce péče a jasný krok k recepci pro objednání.</p>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <span class="num">02</span>
+            <h3>Stomatologie</h3>
+            <p>Samostatný kontakt na stomatologii pro pacienty, kteří řeší konkrétní termín.</p>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <span class="num">03</span>
+            <h3>Ceník a vouchery</h3>
+            <p>Praktické informace před návštěvou, včetně akcí a dárkových voucherů.</p>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důležité údaje">
+      <div class="container trust-grid">
+        <article class="trust-card">
+          <span class="value">3.3</span>
+          <p>Hodnocení na základě 4 recenzí.</p>
+        </article>
+        <article class="trust-card">
+          <span class="value">2</span>
+          <p>Telefonní linky: recepce a stomatologie.</p>
+        </article>
+        <article class="trust-card">
+          <span class="value">Po-Pá</span>
+          <p>Recepce je otevřená od 07:30 do 21:00.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="container split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+        </div>
+        <div class="timeline">
+          <div class="step">
+            <b>01</b>
+            <div>
+              <h3>Vyberete oblast péče</h3>
+              <p>Zákroky, stomatologie, akce nebo voucher najdete podle toho, co právě řešíte.</p>
+            </div>
+          </div>
+          <div class="step">
+            <b>02</b>
+            <div>
+              <h3>Kontaktujete recepci</h3>
+              <p>Recepce přijímá telefonáty na čísle +420 739 934 334 a e-maily na recepce@genesysmedical.cz.</p>
+            </div>
+          </div>
+          <div class="step">
+            <b>03</b>
+            <div>
+              <h3>Potvrdíte termín</h3>
+              <p>Adresa pro návštěvu je Houškova 507/26, Plzeň 2-Slovany.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="container gallery-strip">
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/6969967/pexels-photo-6969967.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two people exchanging a shopping bag in an indoor setting highlighting online shopping and delivery.">
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+        </figure>
+        <figure class="gallery-item">
+          <img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container contact-grid">
+        <article class="hours-card">
+          <span class="kicker">Kontakt</span>
+          <h2>Objednání a recepce</h2>
+          <div class="info-line">
+            <span>Recepce</span>
+            <a href="tel:+420739934334">+420 739 934 334</a>
+          </div>
+          <div class="info-line">
+            <span>Stomatologie</span>
+            <a href="tel:+420608657927">+420 608 657 927</a>
+          </div>
+          <div class="info-line">
+            <span>E-mail</span>
+            <a href="mailto:recepce@genesysmedical.cz">recepce@genesysmedical.cz</a>
+          </div>
+          <div class="info-line">
+            <span>Adresa</span>
+            <span>Houškova 507/26, 326 00 Plzeň 2-Slovany</span>
+          </div>
+          <div class="today">Otevírací doba recepce: Po-Pá 07:30-21:00</div>
+        </article>
+        <div class="map-panel" aria-label="Mapa s adresou Genesys Medical">
+          <div id="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta-strip">
+          <div>
+            <span class="kicker">Další krok</span>
+            <h2>Domluvte si termín</h2>
+            <p>Pro objednání volejte recepci ve všední dny, případně pošlete zprávu s kontaktem a požadovanou oblastí péče.</p>
+          </div>
+          <a class="btn btn-primary" href="tel:+420739934334">+420 739 934 334</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>Densyn, S.r.o. · Genesys Medical · Houškova 507/26, Plzeň 2-Slovany</span>
+      <span class="webflex-disclaimer">Připravil Webflex. <a href="https://app.webflex.cz/delete/3g7dyfy">Odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.390552099999999, 49.7378639],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/bright'
+    });
+    new maplibregl.Marker({ color: '#DDA62B' })
+      .setLngLat([13.390552099999999, 49.7378639])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
