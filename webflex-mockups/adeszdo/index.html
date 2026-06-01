@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EUC Klinika Ostrava</title>
+  <meta name="description" content="EUC Klinika Ostrava v Ostravě-Porubě. Recepce, objednání k lékaři, aktuální volné kapacity ambulancí a kontakty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfc;
+      --surface: #ffffff;
+      --surface-soft: #f2f3f6;
+      --ink: #15151b;
+      --muted: #686b76;
+      --line: rgba(21, 21, 27, .09);
+      --accent: #E00080;
+      --accent-dark: #b80068;
+      --ok: #197b55;
+      --shadow: 0 28px 90px rgba(20, 22, 32, .09);
+      --shadow-soft: 0 18px 70px rgba(20, 22, 32, .07);
+      --radius: 24px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(21,21,27,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,21,27,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(224, 0, 128, .12), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; line-height: 1.65; color: var(--muted); font-size: 18px; hyphens: auto; }
+    h1, h2, h3 { margin: 0; hyphens: none; overflow-wrap: anywhere; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 251, 252, .82);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .navlinks { display: flex; align-items: center; gap: 26px; color: var(--muted); font-weight: 700; }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 18px 40px rgba(224,0,128,.22); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { background: rgba(21,21,27,.05); }
+
+    .hero {
+      min-height: 760px;
+      display: grid;
+      align-items: center;
+      padding: 88px 0 66px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: .04em;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+    }
+    .lead { max-width: 620px; margin-top: 26px; font-size: 21px; color: #444752; }
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-panel {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 68% 24%, rgba(224,0,128,.22), transparent 28%),
+        linear-gradient(145deg, #ffffff, #eef0f5);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 30px;
+      display: grid;
+      align-content: space-between;
+    }
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 26px;
+      border-radius: 28px;
+      background:
+        linear-gradient(90deg, rgba(224,0,128,.22) 0 18%, transparent 18% 100%),
+        repeating-linear-gradient(0deg, rgba(21,21,27,.06) 0 1px, transparent 1px 38px);
+      opacity: .65;
+    }
+    .panel-card {
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(16px);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 16px 60px rgba(20,22,32,.08);
+    }
+    .panel-card strong { display: block; font-size: 24px; margin-bottom: 8px; }
+    .panel-card span, .panel-row span { color: var(--muted); line-height: 1.45; }
+    .panel-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .45fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.3vw, 66px);
+      line-height: 1;
+      max-width: 780px;
+    }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 180px 1fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 28px 32px;
+      border-top: 1px solid var(--line);
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .service-row:first-child { border-top: 0; }
+    .service-row:hover { background: #faf2f7; transform: translateY(-1px); }
+    .mono { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-weight: 700; }
+    .service-row h3 { font-size: 28px; font-weight: 800; letter-spacing: 0; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 210px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat b { font-family: var(--font-display); font-size: clamp(44px, 5vw, 76px); line-height: .9; overflow-wrap: anywhere; }
+    .stat small { color: var(--muted); font-size: 16px; line-height: 1.45; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .86fr 1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .soft-card {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .notice {
+      background: #15151b;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .notice::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -80px;
+      bottom: -100px;
+      border-radius: 999px;
+      background: rgba(224,0,128,.4);
+      filter: blur(24px);
+    }
+    .notice p, .notice .mono { color: rgba(255,255,255,.75); position: relative; z-index: 1; }
+    .notice h2 { color: #fff; font-size: clamp(32px, 4vw, 58px); position: relative; z-index: 1; }
+    .capacity-list { display: grid; gap: 12px; margin-top: 26px; position: relative; z-index: 1; }
+    .chip {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .timeline { display: grid; gap: 14px; }
+    .time-item {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .time-item h3 { font-size: 20px; }
+    .time-item p { font-size: 16px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .74fr 1fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .hours { display: grid; gap: 10px; margin-top: 22px; }
+    .hour {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hour.today {
+      margin: 0 -14px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      background: #f7e6f1;
+      color: #8f0051;
+      border-bottom: 0;
+    }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+    details {
+      background: var(--surface);
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      padding: 22px 24px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); background: #fff7fb; }
+    summary { cursor: pointer; font-weight: 800; font-size: 20px; }
+    details p { margin-top: 14px; font-size: 16px; }
+
+    .final {
+      padding: 74px 0 96px;
+    }
+    .final-box {
+      border-radius: 32px;
+      background: var(--accent);
+      color: #fff;
+      padding: 48px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 28px 80px rgba(224,0,128,.22);
+    }
+    .final-box h2 { color: #fff; font-size: clamp(32px, 4vw, 62px); }
+    .final-box p { color: rgba(255,255,255,.84); margin-top: 12px; }
+    .final-box .btn { background: #fff; color: var(--accent); }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { max-width: 780px; line-height: 1.55; }
+    .disclaimer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero { min-height: auto; padding-top: 56px; }
+      .hero-grid, .section-head, .split, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hero-panel { min-height: 420px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust, .faq { grid-template-columns: 1fr; }
+      section { padding: 68px 0; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .brand { white-space: normal; font-size: 18px; }
+      .hero-panel, .soft-card, .final-box { border-radius: 22px; padding: 24px; }
+      .panel-row { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="EUC Klinika Ostrava">EUC Klinika Ostrava</a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#ambulance">Ambulance</a>
+        <a href="#aktuality">Aktuality</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420597437777">Zavolat recepci</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Ostrava-Poruba · Opavská 962/39</div>
+          <h1>Péče v Ostravě-Porubě</h1>
+          <p class="lead">Objednejte se na recepci EUC Kliniky Ostrava. Najdete nás na Opavské ulici, s dostupným call centrem ve všední dny a aktuálními volnými kapacitami ve vybraných ambulancích.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="tel:+420597437777">+420 597 437 777</a>
+            <a class="btn btn-secondary" href="mailto:recepce.ostrava@euc.cz">Napsat recepci</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Rychlé informace">
+          <div class="panel-card">
+            <strong>Recepce dnes</strong>
+            <span>Po 6:45-15:00 · call centrum 7:00-15:00</span>
+          </div>
+          <div class="panel-row">
+            <div class="panel-card">
+              <strong>4,1</strong>
+              <span>hodnocení z 858 recenzí</span>
+            </div>
+            <div class="panel-card">
+              <strong>Poruba</strong>
+              <span>Opavská 962/39, 708 68 Ostrava</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="ambulance">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Ambulance s volnou kapacitou</h2>
+          <p>Pro objednání a bližší informace volejte recepci nebo call centrum. Kapacity se týkají ambulancí uvedených klinikou.</p>
+        </div>
+        <div class="service-list">
+          <a class="service-row" href="tel:+420597437777">
+            <span class="mono">01 / ORL</span>
+            <h3>ORL ambulance</h3>
+            <span class="mono">MUDr. Švancárová · MUDr. Klementová</span>
+          </a>
+          <a class="service-row" href="tel:+420597437777">
+            <span class="mono">02 / PÉČE</span>
+            <h3>Plicní ambulance a spánková laboratoř</h3>
+            <span class="mono">objednání telefonicky</span>
+          </a>
+          <a class="service-row" href="tel:+420597437777">
+            <span class="mono">03 / METABOLISMUS</span>
+            <h3>Diabetologie a endokrinologie</h3>
+            <span class="mono">včetně gestačního diabetu</span>
+          </a>
+          <a class="service-row" href="tel:+420597437777">
+            <span class="mono">04 / DALŠÍ</span>
+            <h3>Interní ambulance a nutriční terapie</h3>
+            <span class="mono">informace na recepci</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust">
+        <div class="stat">
+          <span class="mono">Hodnocení</span>
+          <b>4,1</b>
+          <small>Průměrné veřejné hodnocení kliniky.</small>
+        </div>
+        <div class="stat">
+          <span class="mono">Recenze</span>
+          <b>858</b>
+          <small>Počet veřejně evidovaných recenzí.</small>
+        </div>
+        <div class="stat">
+          <span class="mono">Kontakt</span>
+          <b>777</b>
+          <small>Koncové číslo recepce a call centra: 597 437 777.</small>
+        </div>
+      </div>
+    </section>
+
+    <section id="aktuality">
+      <div class="wrap split">
+        <article class="soft-card notice">
+          <p class="mono">Volné kapacity</p>
+          <h2>Přijímáme nové pacienty ve vybraných ambulancích</h2>
+          <div class="capacity-list" aria-label="Seznam ambulancí">
+            <span class="chip">ORL</span>
+            <span class="chip">Plicní ambulance</span>
+            <span class="chip">Diabetologie</span>
+            <span class="chip">Endokrinologie</span>
+            <span class="chip">Spánková laboratoř</span>
+            <span class="chip">Interní ambulance</span>
+            <span class="chip">Nutriční terapie</span>
+          </div>
+        </article>
+        <article class="soft-card">
+          <div class="eyebrow">Aktuality kliniky</div>
+          <div class="timeline">
+            <div class="time-item">
+              <span class="mono">1. 1. 2026</span>
+              <div>
+                <h3>Ukončení provozu diabetologie MUDr. Malé</h3>
+                <p>Pro další informace kontaktujte recepci nebo call centrum.</p>
+              </div>
+            </div>
+            <div class="time-item">
+              <span class="mono">1. 7. 2025</span>
+              <div>
+                <h3>Ukončení ambulance MUDr. Bencúrové</h3>
+                <p>Pacienty do péče přebírají praktičtí lékaři na klinice.</p>
+              </div>
+            </div>
+            <div class="time-item">
+              <span class="mono">23. 6. 2025</span>
+              <div>
+                <h3>Ambulance praktického lékaře</h3>
+                <p>MUDr. Jařabáč převzal pacienty po MUDr. Minichové.</p>
+              </div>
+            </div>
+            <div class="time-item">
+              <span class="mono">1. 5. 2025</span>
+              <div>
+                <h3>Alergologie MUDr.</h3>
+                <p>Podrobnosti k návazné péči Vám sdělí recepce.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kontakt a otevírací doba</h2>
+          <p>Recepce a call centrum jsou dostupné od pondělí do pátku. Mimo uvedené časy sledujte důležité informace k otevírací době.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="soft-card">
+            <div class="eyebrow">Recepce</div>
+            <h3>Opavská 962/39, 708 68 Ostrava-Poruba</h3>
+            <p style="margin-top:14px">recepce.ostrava@euc.cz<br>+420 597 437 777</p>
+            <div class="hours">
+              <div class="hour today"><span>Po</span><span>6:45-15:00 · call centrum 7:00-15:00</span></div>
+              <div class="hour"><span>Út</span><span>6:45-15:00 · call centrum 7:00-15:00</span></div>
+              <div class="hour"><span>St</span><span>6:45-15:00 · call centrum 7:00-15:00</span></div>
+              <div class="hour"><span>Čt</span><span>6:45-15:00 · call centrum 7:00-15:00</span></div>
+              <div class="hour"><span>Pá</span><span>6:45-14:00 · call centrum 7:00-14:00</span></div>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa EUC Klinika Ostrava"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté dotazy před návštěvou</h2>
+          <p>Krátké odpovědi pro objednání, aplikaci mojeEUC a kontakt s klinikou.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak se objednám k lékaři?</summary>
+            <p>Zavolejte na +420 597 437 777. Recepce a call centrum Vám sdělí nejbližší dostupný postup podle ambulance.</p>
+          </details>
+          <details>
+            <summary>Kam mám napsat e-mail?</summary>
+            <p>Pro dotazy použijte adresu recepce.ostrava@euc.cz a uveďte, ke které ambulanci se Váš dotaz vztahuje.</p>
+          </details>
+          <details>
+            <summary>Kde najdu lékařské zprávy?</summary>
+            <p>Klinika uvádí aplikaci mojeEUC, kde můžete mít lékařské zprávy, službu Můj praktik online, upozornění i výhody v EUC Lékárnách.</p>
+          </details>
+          <details>
+            <summary>Přijímáte nové pacienty?</summary>
+            <p>Volné kapacity jsou uvedené pro ORL, plicní ambulanci, diabetologii, endokrinologii, spánkovou laboratoř, interní ambulanci a nutriční terapii.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Potřebujete termín nebo informaci?</h2>
+          <p>Recepce EUC Kliniky Ostrava Vám pomůže s objednáním i s návaznou péčí.</p>
+        </div>
+        <a class="btn" href="tel:+420597437777">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© EUC Klinika Ostrava · Opavská 962/39</div>
+      <div class="disclaimer">
+        Tento prezentační náhled vytvořil Webflex jako neveřejný podklad pro oslovení. Pokud si nepřejete být kontaktováni, můžete stránku odstranit zde:
+        <a href="https://webflex.cz/remove/adeszdo">https://webflex.cz/remove/adeszdo</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.1785793, 49.831346599999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E00080' })
+      .setLngLat([18.1785793, 49.831346599999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
