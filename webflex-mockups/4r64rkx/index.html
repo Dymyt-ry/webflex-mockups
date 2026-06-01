@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>FyziDo | Podiatrie a fyzioterapie v Praze</title>
+  <meta name="description" content="FyziDo v Praze 8 nabízí podiatrii, fyzioterapii, péči pro děti, dospělé, sportovce a individuální aktivní stélky. Rezervace na telefonu +420 608 092 202.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-soft: #eef4f2;
+      --ink: #202000;
+      --muted: rgba(32, 32, 0, .62);
+      --line: rgba(32, 32, 0, .08);
+      --accent: #18A995;
+      --accent-dark: #0f7568;
+      --accent-soft: rgba(24, 169, 149, .12);
+      --shadow: 0 34px 100px rgba(19, 65, 57, .11);
+      --shadow-soft: 0 22px 70px rgba(19, 65, 57, .075);
+      --radius: 24px;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 132px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(24,169,149,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,169,149,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 30px 30px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.56;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { hyphens: auto; text-wrap: pretty; }
+    h1, h2, h3 { hyphens: none; text-wrap: balance; overflow-wrap: anywhere; }
+    button, input, textarea { font: inherit; }
+
+    .container { width: min(100% - (var(--gutter) * 2), 1220px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1420px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .18s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(24,169,149,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible, .gallery-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #062b27; }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .arrow { font-family: var(--font-mono); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.84);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(250px, 58vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .links { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 14px; font-weight: 800; }
+    .links a { transition: color .2s var(--ease); }
+    .links a:hover { color: var(--accent-dark); }
+
+    .hero { padding: clamp(48px, 7vw, 96px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, 1.05fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 88px);
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .hero-copy { margin-top: 28px; max-width: 640px; color: var(--muted); font-size: clamp(17px, 1.45vw, 21px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 650px;
+    }
+    .meta-chip {
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      min-height: 96px;
+    }
+    .meta-chip strong { display: block; font-family: var(--font-mono); font-size: 13px; color: var(--accent-dark); }
+    .meta-chip span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(11,50,46,.38));
+    }
+    .floating-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 2;
+      max-width: 360px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(10,40,36,.16);
+      font-weight: 800;
+    }
+    .floating-note span { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    section { padding: calc(var(--section) * .72) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .5fr);
+      gap: clamp(32px, 6vw, 76px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 60px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: .98;
+      text-transform: uppercase;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 86px 1fr auto;
+      gap: 24px;
+      align-items: center;
+      padding: 24px clamp(20px, 3vw, 34px);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+    .service-row h3 { font-family: var(--font-body); font-size: clamp(19px, 2vw, 27px); line-height: 1.15; font-weight: 800; }
+    .service-row p { margin-top: 6px; color: var(--muted); max-width: 760px; }
+    .service-row .tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent-dark); white-space: nowrap; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .rating-card, .quote-card {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+      padding: clamp(24px, 4vw, 44px);
+    }
+    .rating-card strong { display: block; font-family: var(--font-mono); font-size: clamp(42px, 7vw, 92px); line-height: 1; color: var(--accent-dark); }
+    .rating-card span { display: block; margin-top: 12px; color: var(--muted); font-weight: 700; }
+    .quote-card blockquote { margin: 0; font-size: clamp(24px, 3vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -.01em; }
+    .quote-card p { margin-top: 24px; color: var(--muted); max-width: 760px; }
+
+    .process {
+      display: grid;
+      grid-template-columns: minmax(280px, .42fr) 1fr;
+      gap: clamp(32px, 6vw, 76px);
+      align-items: start;
+    }
+    .process-card {
+      position: sticky;
+      top: 110px;
+      padding: 28px;
+      border-radius: 30px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .process-card p { margin-top: 16px; color: rgba(255,255,255,.72); }
+    .timeline { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 22px;
+      padding: 26px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .step b { font-family: var(--font-mono); color: var(--accent-dark); }
+    .step h3 { font-family: var(--font-body); font-size: 22px; font-weight: 800; }
+    .step p { margin-top: 7px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(40%, 1fr) minmax(0, .9fr);
+      gap: clamp(28px, 5vw, 66px);
+      align-items: center;
+    }
+    .split-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-list { display: grid; gap: 14px; margin-top: 28px; }
+    .feature {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 14px;
+      align-items: start;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .dot { width: 14px; height: 14px; margin-top: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 8px var(--accent-soft); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-card {
+      display: block;
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .gallery-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-card.tall { min-height: 390px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .72fr 1.28fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card, .faq-item {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card { padding: clamp(24px, 4vw, 40px); }
+    .contact-lines { display: grid; gap: 18px; margin-top: 26px; }
+    .contact-line span { display: block; color: var(--muted); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .contact-line a, .contact-line strong { display: block; margin-top: 4px; font-size: 20px; font-weight: 800; }
+    .map-card { overflow: hidden; padding: 10px; }
+    #map { height: 420px; border-radius: 22px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 26px; min-height: 178px; }
+    .faq-item h3 { font-family: var(--font-body); font-size: 20px; font-weight: 800; }
+    .faq-item p { margin-top: 10px; color: var(--muted); }
+
+    .final {
+      padding: clamp(44px, 7vw, 74px);
+      border-radius: 36px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; margin: 0; max-width: 760px; }
+    .final p { margin-top: 16px; color: rgba(255,255,255,.72); max-width: 640px; }
+    .final .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 38px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .trust-grid, .process, .split, .contact-grid, .final {
+        grid-template-columns: 1fr;
+      }
+      .process-card { position: relative; top: auto; }
+      .final-actions { justify-content: flex-start; }
+      .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-card, .gallery-card.tall { min-height: 260px; }
+    }
+    @media (max-width: 700px) {
+      .container, .wide { width: min(100% - 36px, 1220px); }
+      .hero-meta, .faq-grid { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .service-row .tag { white-space: normal; }
+      .step { grid-template-columns: 1fr; }
+      .floating-note { position: static; margin: -48px 16px 16px; }
+      .hero-photo::after { opacity: .4; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="FyziDo">
+        <img src="http://fyzido.cz/wp-content/uploads/2022/07/logo-fyzido.png" alt="Podiatrie a fyzioterapie FyziDo - Hana Doležalová">
+      </a>
+      <div class="links">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Vyšetření</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420608092202">Rezervovat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wide">
+        <div>
+          <p class="eyebrow">Praha 8 · Bulovka Business Centre</p>
+          <h1>Podiatrie pro celé tělo</h1>
+          <p class="hero-copy">Terapeutické centrum FyziDo propojuje diagnostiku chodidel, fyzioterapii a individuální aktivní stélky pro děti, dospělé i sportovce.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420608092202">Zavolat +420 608 092 202</a>
+            <a class="btn secondary" href="#kontakt">Adresa a mapa <span class="arrow">→</span></a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-chip"><strong>4.7 / 5</strong><span>hodnocení podle 68 recenzí</span></div>
+            <div class="meta-chip"><strong>Praha 8</strong><span>Chlumčanského 497/5</span></div>
+            <div class="meta-chip"><strong>info@fyzido.cz</strong><span>e-mail pro dotazy</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+          <figcaption class="floating-note">„Chodidla jsou zrcadlem celého těla.“<span>Komplexní pohled na pohybový aparát</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Služby centra</p>
+            <h2>Od diagnostiky nohy po terapii</h2>
+          </div>
+          <p>Každá noha potřebuje individuální posouzení. FyziDo kombinuje kineziopodiatrické vyšetření, diagnostiku chůze a běhu i návaznou péči pohybového aparátu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div><h3>Podiatrie pro děti</h3><p>Správná funkce nohy vytváří základnu pro růst a zdravý vývoj pohybového aparátu dítěte.</p></div>
+            <span class="tag">děti</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div><h3>Podiatrie pro dospělé</h3><p>Komplexní diagnostika chodidel, chůze a běhu s využitím technologií Podoscop, 3D dvoukroková deska a Podosmart.</p></div>
+            <span class="tag">dospělí</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div><h3>Podiatrie pro sportovce</h3><p>Nastavení pevné základny nohy pomáhá rozložit zátěž kloubů, svalů a celého pohybového aparátu.</p></div>
+            <span class="tag">sport</span>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <div><h3>Fyzioterapie a aktivní stélky</h3><p>Fyzioterapie pro děti, dospělé, sportovce a ženy s možností individuální modulace aktivních stélek VASYLI Medical a FootWave.</p></div>
+            <span class="tag">stélky</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container trust-grid">
+        <div class="rating-card">
+          <p class="eyebrow">Důvěra klientů</p>
+          <strong>4.7</strong>
+          <span>průměrné hodnocení z 68 recenzí</span>
+        </div>
+        <div class="quote-card">
+          <blockquote>Fyzioterapeut neposuzuje pouze bolestivé místo.</blockquote>
+          <p>Péče vychází z komplexního pohledu: noha ovlivňuje postavení těla, chůzi, sportovní zatížení i běžný pohyb. Cílem je najít souvislosti a navázat vhodnou terapii.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="container process">
+        <aside class="process-card">
+          <p class="eyebrow">Průběh péče</p>
+          <h2>Vyšetření v souvislostech</h2>
+          <p>FyziDo staví podiatrii a fyzioterapii vedle sebe, aby se řešila příčina obtíží, ne pouze místo bolesti.</p>
+        </aside>
+        <div class="timeline">
+          <article class="step"><b>01</b><div><h3>Individuální rozhovor</h3><p>Nejprve se probírá zatížení, sport, práce, obuv a potíže, které Vás přivádějí.</p></div></article>
+          <article class="step"><b>02</b><div><h3>Diagnostika chodidel</h3><p>Vyšetření může zahrnovat Podoscop, 3D dvoukrokovou desku, Podosmart a sledování chůze nebo běhu.</p></div></article>
+          <article class="step"><b>03</b><div><h3>Fyzioterapeutická návaznost</h3><p>Terapeut posuzuje vztah chodidla, kloubů, svalů a držení těla a navrhuje další postup.</p></div></article>
+          <article class="step"><b>04</b><div><h3>Stélky podle potřeby</h3><p>U vhodných případů navazuje tvorba nebo úprava aktivních individuálních stélek do obuvi.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container split">
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/6633444/pexels-photo-6633444.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist bookshelf featuring an open book and elegant candleholders, perfect for modern decor inspiration.">
+        </figure>
+        <div>
+          <p class="eyebrow">Pro koho</p>
+          <h2>Péče pro běžný pohyb i výkon</h2>
+          <p class="hero-copy">Obtíže chodidel se týkají dětí, dospělých, seniorů, aktivních sportovců i lidí se sedavým zaměstnáním. FyziDo pracuje s nohou jako se základnou pro celé tělo.</p>
+          <div class="feature-list">
+            <div class="feature"><span class="dot"></span><span>Pro děti při růstu a vývoji pohybového aparátu.</span></div>
+            <div class="feature"><span class="dot"></span><span>Pro dospělé při bolestech, přetížení nebo změně stereotypu chůze.</span></div>
+            <div class="feature"><span class="dot"></span><span>Pro sportovce, kteří nohu opakovaně zatěžují a potřebují stabilní oporu.</span></div>
+            <div class="feature"><span class="dot"></span><span>Pro ženy v rámci specializované fyzioterapeutické péče.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Klidné prostředí</p>
+            <h2>Soukromí pro terapii</h2>
+          </div>
+          <p>Vyšetření vyžaduje čas, soustředění a prostředí, ve kterém lze v klidu probrat příčiny obtíží i další postup.</p>
+        </div>
+        <div class="gallery-strip">
+          <a class="gallery-card tall" href="#kontakt" aria-label="Přejít na kontakt"><img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window."></a>
+          <a class="gallery-card" href="#kontakt" aria-label="Přejít na kontakt"><img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through."></a>
+          <a class="gallery-card tall" href="#kontakt" aria-label="Přejít na kontakt"><img src="https://images.pexels.com/photos/31287148/pexels-photo-31287148.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A stylish ceramic vase on a wooden shelf in a warmly lit interior setting."></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>FyziDo Praha 8</h2>
+          </div>
+          <p>Objednání a dotazy směřujte telefonicky nebo e-mailem. Centrum najdete v Bulovka Business Centre v Praze 8.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <p class="eyebrow">Rezervace</p>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420608092202">+420 608 092 202</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:info@fyzido.cz">info@fyzido.cz</a></div>
+              <div class="contact-line"><span>Adresa</span><strong>Chlumčanského 497/5<br>Bulovka Business Centre<br>180 00 Praha 8</strong></div>
+              <div class="contact-line"><span>Web</span><a href="https://fyzido.cz/">fyzido.cz</a></div>
+            </div>
+          </aside>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa umístění FyziDo"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté otázky</p>
+            <h2>Před první návštěvou</h2>
+          </div>
+          <p>Krátké odpovědi k péči, která propojuje podiatrii, fyzioterapii a práci s aktivními stélkami.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Je péče vhodná pro děti?</h3><p>Ano. FyziDo se věnuje dětské podiatrii, protože funkce nohy je důležitá pro růst a vývoj pohybového aparátu.</p></article>
+          <article class="faq-item"><h3>Řešíte i běžce a sportovce?</h3><p>Ano. U sportovců se sleduje zatížení nohy, jeho dopad na klouby, svaly a výkon.</p></article>
+          <article class="faq-item"><h3>Vyrábíte individuální stélky?</h3><p>Centrum se specializuje na aktivní individuální stélky a pracuje se systémy VASYLI Medical a FootWave.</p></article>
+          <article class="faq-item"><h3>Stačí přijít s bolestí jednoho místa?</h3><p>Ano. Terapeut ale posuzuje tělo komplexně, protože bolestivé místo nemusí být jedinou příčinou obtíží.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="final">
+          <div>
+            <p class="eyebrow">Objednání</p>
+            <h2>Začněte diagnostikou chodidel</h2>
+            <p>Domluvte si termín v centru FyziDo a proberte, jak spolu souvisí chodidla, chůze, držení těla a Vaše aktuální obtíže.</p>
+          </div>
+          <div class="final-actions">
+            <a class="btn primary" href="tel:+420608092202">Zavolat</a>
+            <a class="btn secondary" href="mailto:info@fyzido.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div><strong>FyziDo</strong><br>Podiatrie a fyzioterapie · Praha 8</div>
+      <div class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele centra. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/4r64rkx">webflex.cz/delete/4r64rkx</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.467651, 50.114671099999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#18A995' })
+      .setLngLat([14.467651, 50.114671099999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
