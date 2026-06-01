@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FYZIOMED s.r.o. | Fyzioterapie Olomouc</title>
+  <meta name="description" content="FYZIOMED s.r.o. v Olomouci: fyzioterapie, fyzikální terapie, vysokovýkonový laser HIL, IMoove a péče pro dospělé i děti. Telefon +420 606 900 080.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101417;
+      --surface: rgba(255, 255, 255, .08);
+      --surface-strong: rgba(255, 255, 255, .13);
+      --surface-soft: rgba(255, 255, 255, .055);
+      --ink: #f6f8f7;
+      --muted: rgba(246, 248, 247, .68);
+      --line: rgba(215, 229, 234, .13);
+      --accent: #406060;
+      --accent-light: #d7e5ea;
+      --shadow: 0 42px 120px rgba(0, 0, 0, .30);
+      --shadow-soft: 0 26px 88px rgba(0, 0, 0, .20);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        radial-gradient(circle at 78% 12%, rgba(64, 96, 96, .20), transparent 34%),
+        linear-gradient(rgba(215, 229, 234, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(215, 229, 234, .018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-light);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 20, 23, .78);
+      backdrop-filter: blur(20px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(250px, 54vw);
+      max-height: 46px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+      color: rgba(246, 248, 247, .78);
+    }
+    .nav-links a { text-decoration: none; transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: #fff; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 38px rgba(0, 0, 0, .22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 3px; }
+    .btn-primary { background: var(--accent-light); color: #101417; }
+    .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; }
+    .btn-secondary:hover { border-color: rgba(255,255,255,.82); background: rgba(255,255,255,.08); }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.06; }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: 50px;
+      align-items: center;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 680px;
+    }
+    .meta-tile, .service-card, .panel, .hours-card, .map-card, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+    }
+    .meta-tile {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 20px;
+    }
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-light);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 34px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) contrast(.94); }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(16, 20, 23, .64));
+    }
+    .photo-label {
+      position: absolute;
+      z-index: 1;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 268px;
+      padding: 26px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); background: var(--surface-strong); box-shadow: var(--shadow); }
+    .service-card:active { transform: translateY(1px); }
+    .service-card .num { color: var(--accent-light); font-family: var(--font-mono); font-weight: 700; }
+    .service-card p { margin: 16px 0 0; color: var(--muted); }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .trust-item {
+      min-height: 160px;
+      padding: 28px;
+      border-radius: 26px;
+      background: var(--surface-soft);
+    }
+    .trust-item strong {
+      display: block;
+      color: var(--accent-light);
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .trust-item span { display: block; margin-top: 10px; color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(340px, .72fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 32px;
+      padding: 34px;
+    }
+    .panel.strong {
+      background: linear-gradient(145deg, rgba(64, 96, 96, .72), rgba(64, 96, 96, .36));
+    }
+    .panel p { color: var(--muted); margin: 18px 0 0; font-size: 18px; }
+    .method-list {
+      display: grid;
+      gap: 0;
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .method-list li {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 22px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .method-list b { color: var(--accent-light); font-family: var(--font-mono); }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(300px, .46fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .rows {
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row b { color: var(--accent-light); font-family: var(--font-mono); }
+    .row p { margin: 0; color: var(--muted); }
+    .note-card {
+      border-radius: 30px;
+      padding: 32px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .note-card strong { display: block; font-family: var(--font-display); font-size: clamp(30px, 3.2vw, 48px); line-height: 1; }
+    .note-card p { color: var(--muted); margin: 18px 0 0; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1.18fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+    .gallery img { width: 100%; height: 310px; object-fit: cover; filter: saturate(.82) contrast(.96); }
+    .gallery figcaption {
+      padding: 16px 18px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card, .map-card {
+      border-radius: 32px;
+      padding: 30px;
+    }
+    .hours-card h2 { font-size: clamp(32px, 4vw, 56px); margin-bottom: 22px; }
+    .hours-table { display: grid; gap: 10px; margin: 24px 0; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours-line.today { color: var(--accent-light); font-weight: 700; }
+    .contact-links { display: grid; gap: 10px; margin-top: 22px; }
+    .contact-links a {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--surface-soft);
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s;
+    }
+    .contact-links a:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .contact-links a:active { transform: translateY(1px); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      padding: 26px;
+      border-radius: 24px;
+    }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final { padding-bottom: 38px; }
+    .cta {
+      min-height: 360px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 34px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 64px);
+      border-radius: 36px;
+      background: linear-gradient(145deg, rgba(215,229,234,.95), rgba(215,229,234,.74));
+      color: #101417;
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { max-width: 780px; font-size: clamp(38px, 5vw, 76px); }
+    .cta p { max-width: 610px; color: rgba(16,20,23,.68); font-size: 19px; }
+    .cta .btn-primary { background: #101417; color: #fff; }
+    .cta .btn-secondary { color: #101417; border-color: currentColor; }
+
+    footer {
+      padding: 34px 0 44px;
+      color: rgba(246, 248, 247, .60);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding-bottom: 22px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .webflex-disclaimer {
+      max-width: 880px;
+      color: rgba(246, 248, 247, .54);
+      font-size: 12px;
+    }
+    .webflex-disclaimer a { text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .pricing, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .service-grid, .trust-strip, .faq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:nth-child(2) { transform: none; }
+      .row { grid-template-columns: 1fr; gap: 8px; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1160px); }
+      .hero { padding: 38px 0 56px; }
+      section { padding: 56px 0; }
+      .hero-meta, .service-grid, .trust-strip, .faq { grid-template-columns: 1fr; }
+      .hero-actions, .cta-actions { display: grid; }
+      .btn { width: 100%; }
+      .panel, .hours-card, .map-card { padding: 24px; }
+      .method-list li { grid-template-columns: 1fr; gap: 8px; }
+      .footer-main { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="FYZIOMED s.r.o.">
+        <img src="http://www.fyziomed.cz/images/LOGO_CMYKa.jpg" alt="FYZIOMED s.r.o.">
+      </a>
+      <div class="nav-links">
+        <a href="#sluzby">Služby</a>
+        <a href="#metody">Metody</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420606900080">606 900 080</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Olomouc · Horní lán 445/1</p>
+          <h1>Fyzioterapie ve Slavoníně</h1>
+          <p class="lead">Registrovaný poskytovatel zdravotních služeb pro poruchy pohybového aparátu dospělých i dětí. Péče staví na fyzioterapii, fyzikální terapii a přístrojovém zázemí.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420606900080">Objednat telefonicky</a>
+            <a class="btn btn-secondary" href="mailto:fyziomed@fyziomed.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile"><strong>5,0</strong><span>hodnocení na Googlu</span></div>
+            <div class="meta-tile"><strong>10</strong><span>recenzí pacientů</span></div>
+            <div class="meta-tile"><strong>7:00-20:00</strong><span>po-pá dle domluvy</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/33469928/pexels-photo-33469928.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman elegantly posed in a minimalist, modern architectural setting with soft light.">
+          <div class="photo-label"><span>Fyzioterapie</span><span>Fyzikální terapie</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Poskytované služby</p>
+            <h2>Péče pro pohybový aparát.</h2>
+          </div>
+          <p>FYZIOMED se věnuje úrazům, chronickým potížím, sportovním obtížím, skoliózám, pohybovým i dýchacím problémům dětí a regeneraci těla.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Fyzioterapie</h3><p>Vyšetření a terapie potíží pohybového aparátu u dospělých i dětí.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Fyzikální terapie</h3><p>Techniky, které pracoviště dlouhodobě rozvíjí v klinické praxi.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Vysokovýkonový laser HIL</h3><p>Přístrojová terapie uváděná mezi dostupnými metodami ordinace.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>IMoove</h3><p>Součást léčebných metod pro aktivní práci s pohybem a stabilitou.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Důvěra</p>
+            <h2 id="duvera">Zdravotní služby a výuka.</h2>
+          </div>
+          <p>Odborným garantem zařízení je Mgr. Eliška Drábková. FYZIOMED je také výukovým pracovištěm Fakulty tělesné kultury UP v Olomouci.</p>
+        </div>
+        <div class="trust-strip">
+          <div class="trust-item"><strong>5,0</strong><span>hodnocení na Googlu</span></div>
+          <div class="trust-item"><strong>10</strong><span>veřejných recenzí</span></div>
+          <div class="trust-item"><strong>UP</strong><span>výukové pracoviště FTK v Olomouci</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metody">
+      <div class="wrap split">
+        <article class="panel strong">
+          <p class="eyebrow">Léčebné metody</p>
+          <h2>Tradice fyzikální terapie.</h2>
+          <p>Zakladatel společnosti Mgr. Josef Urban dlouhodobě rozvíjel využití fyzikální terapie ve fyzioterapii. Pracoviště pokračuje také v péči o nemocné s periferními parézami.</p>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">Ordinace</p>
+          <h2>Přístroje v praxi.</h2>
+          <ul class="method-list">
+            <li><b>HIL</b><span>vysokovýkonový laser dostupný v ordinaci</span></li>
+            <li><b>MAG</b><span>vysokofrekvenční magnet uvedený v přístrojovém vybavení</span></li>
+            <li><b>FTK</b><span>výukové pracoviště Fakulty tělesné kultury UP</span></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="pojistovny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Ceny a pojišťovny</p>
+            <h2>Smluvní zdravotní pojišťovny.</h2>
+          </div>
+          <p>Konkrétní termín, rozsah péče a cenu je nejlepší potvrdit přímo telefonicky podle Vašich obtíží a doporučení.</p>
+        </div>
+        <div class="pricing">
+          <div class="rows">
+            <div class="row"><b>ZP 201</b><p>VoZP</p><span>péče pro pojištěnce</span></div>
+            <div class="row"><b>ZP 211</b><p>Zdravotní pojišťovna ministerstva vnitra</p><span>péče pro pojištěnce</span></div>
+            <div class="row"><b>ZP 213</b><p>RBP</p><span>péče pro pojištěnce</span></div>
+          </div>
+          <aside class="note-card">
+            <strong>Termín dle domluvy.</strong>
+            <p>Ordinační doba je pondělí až pátek od 7:00 do 20:00 podle telefonické domluvy.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="ordinace">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Naše ordinace</p>
+            <h2 id="ordinace">Klidné zázemí pro terapii.</h2>
+          </div>
+          <p>Ordinace poskytuje zázemí pro fyzioterapii, fyzikální terapii a přístrojové léčebné metody podle domluveného postupu péče.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+            <figcaption>Ordinace · světlo a soustředění</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+            <figcaption>Domluva · individuální režim</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/8407574/pexels-photo-8407574.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist pendant light against a soft focus background with window blinds.">
+            <figcaption>Péče · dospělí i děti</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="hours-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Objednejte se telefonicky.</h2>
+          <div class="hours-table" aria-label="Ordinační doba">
+            <div class="hours-line today"><span>Pondělí</span><span>7:00-20:00 dle domluvy</span></div>
+            <div class="hours-line"><span>Úterý</span><span>7:00-20:00 dle domluvy</span></div>
+            <div class="hours-line"><span>Středa</span><span>7:00-20:00 dle domluvy</span></div>
+            <div class="hours-line"><span>Čtvrtek</span><span>7:00-20:00 dle domluvy</span></div>
+            <div class="hours-line"><span>Pátek</span><span>7:00-20:00 dle domluvy</span></div>
+          </div>
+          <p>Horní lán 445/1, Slavonín, 779 00 Olomouc-Olomouc 18</p>
+          <div class="contact-links">
+            <a href="tel:+420606900080">+420 606 900 080</a>
+            <a href="mailto:fyziomed@fyziomed.cz">fyziomed@fyziomed.cz</a>
+          </div>
+        </article>
+        <article class="map-card" aria-label="Mapa ordinace">
+          <div id="map"></div>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté otázky</p>
+            <h2 id="faq">Než zavoláte.</h2>
+          </div>
+          <p>Pro sjednání termínu zavolejte do ordinace. Uveďte potíže, doporučení a případnou zdravotní pojišťovnu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Pečujete i o děti?</h3><p>Ano, excerpt uvádí péči při skolióze, pohybových a dýchacích problémech dětí.</p></article>
+          <article class="faq-item"><h3>Řešíte sportovní potíže?</h3><p>Ano, pracoviště se věnuje problémům při sportu i regeneraci těla.</p></article>
+          <article class="faq-item"><h3>Kde ordinaci najdu?</h3><p>FYZIOMED poskytuje péči na adrese Horní lán 445/1 v Olomouci-Slavoníně.</p></article>
+          <article class="faq-item"><h3>Jak fungují termíny?</h3><p>Ordinační doba je pondělí až pátek 7:00-20:00 podle telefonické domluvy.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow">FYZIOMED s.r.o.</p>
+          <h2>Domluvte si vhodný termín.</h2>
+          <p>Zavolejte do ordinace a popište své obtíže. Tým Vám potvrdí další postup podle dostupných termínů a typu péče.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="tel:+420606900080">Volat 606 900 080</a>
+          <a class="btn btn-secondary" href="mailto:fyziomed@fyziomed.cz">Poslat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>FYZIOMED s.r.o.</strong>
+        <span>Horní lán 445/1, Slavonín</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele společnosti. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/ewocr51">webflex.cz/delete/ewocr51</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.2334501, 49.574295799999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#406060' })
+      .setLngLat([17.2334501, 49.574295799999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
