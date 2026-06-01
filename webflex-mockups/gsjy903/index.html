@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rehafyz | Kontakt a provozovny</title>
+  <meta name="description" content="Rehafyz v Olomouci a dalších provozovnách. Kontakty, adresa sídla a objednání péče.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --ink: #17191d;
+      --muted: #646b73;
+      --soft: #eef1f4;
+      --accent: #0077BE;
+      --accent-dark: #005f98;
+      --line: rgba(20, 27, 34, .09);
+      --shadow: 0 34px 90px rgba(31, 42, 55, .09);
+      --shadow-soft: 0 18px 54px rgba(31, 42, 55, .07);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --wrap: min(1180px, calc(100vw - 40px));
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,25,29,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,25,29,.026) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .wrap { width: var(--wrap); margin: 0 auto; }
+
+    .skip {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: white;
+      border-radius: 999px;
+      transform: translateY(-140%);
+      z-index: 20;
+    }
+    .skip:focus-visible { transform: translateY(0); outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.76);
+      border-bottom: 1px solid rgba(255,255,255,.6);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      color: #373d44;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .nav-links a {
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+    .nav-links a:focus-visible,
+    .button:focus-visible,
+    .plain-link:focus-visible,
+    .contact-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 10px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .button.primary { background: var(--accent); color: #fff; box-shadow: 0 14px 30px rgba(0,119,190,.22); }
+    .button.primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .button.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .button.secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+    .button:active { transform: translateY(1px); }
+
+    .hero {
+      padding: 78px 0 84px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .75fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      color: var(--ink);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: 21px;
+      color: #4d555e;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-panel {
+      position: relative;
+      min-height: 500px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 28px;
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .quick-card {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: end;
+      padding: 22px;
+      border-radius: 22px;
+      background: #f5f8fb;
+    }
+    .quick-card strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    .quick-card span,
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .rating {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--accent);
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .48fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      overflow-wrap: anywhere;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(230px, .45fr);
+      gap: 28px;
+      align-items: center;
+      min-height: 112px;
+      padding: 24px 28px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .service-row h3 {
+      font-family: var(--font-body);
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+
+    .locations {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .location-card {
+      min-height: 170px;
+      padding: 24px;
+      border-radius: 22px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .location-card h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1.12;
+      font-weight: 700;
+    }
+    .location-card p { font-size: 16px; }
+    .location-card.feature {
+      background: var(--ink);
+      color: #fff;
+    }
+    .location-card.feature h3,
+    .location-card.feature p,
+    .location-card.feature .mono { color: #fff; }
+
+    .trust-band {
+      border-radius: 30px;
+      background: #f2f6f9;
+      box-shadow: var(--shadow);
+      padding: 34px;
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .stat {
+      padding: 24px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: 42px;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-stack figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 24px;
+      min-height: 100%;
+      background: white;
+    }
+    .photo-stack img {
+      width: 100%;
+      height: 100%;
+      min-height: 330px;
+      object-fit: cover;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(420px, 1.14fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      padding: 30px;
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 56px); }
+    .contact-methods {
+      margin-top: 28px;
+      display: grid;
+      gap: 12px;
+    }
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .contact-link:hover { color: var(--accent); transform: translateY(-1px); }
+    .contact-link:active { transform: translateY(1px); }
+    .contact-link span:first-child { color: var(--muted); }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .final-cta {
+      padding: 64px 0 72px;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 34px;
+      border-radius: 30px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .cta-box h2 {
+      color: #fff;
+      font-size: clamp(32px, 4.2vw, 60px);
+    }
+    .cta-box p { color: rgba(255,255,255,.74); margin-top: 12px; }
+    .cta-box .button.secondary {
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .cta-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 28px 0 36px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .footer-grid a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .trust-band,
+      .contact-grid,
+      .cta-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { min-height: auto; }
+      .locations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .service-row { grid-template-columns: 64px 1fr; }
+      .service-row p { grid-column: 2; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+      :root { --wrap: min(100vw - 28px, 1180px); }
+      .hero { padding: 48px 0 56px; }
+      section { padding: 58px 0; }
+      .hero-grid { gap: 28px; }
+      .hero-panel, .contact-card, .cta-box, .trust-band { border-radius: 22px; padding: 20px; }
+      .quick-card, .service-row { grid-template-columns: 1fr; }
+      .locations, .stats, .photo-stack { grid-template-columns: 1fr; }
+      .contact-link { flex-direction: column; gap: 4px; }
+      .button { width: 100%; }
+      #map { height: 360px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Rehafyz">
+        <img src="https://www.rehafyz.cz/coDF323df2/uploads/2015/10/logo-rehafyz.png" alt="Rehafyz">
+      </a>
+      <div class="nav-links">
+        <a href="#pece">Péče</a>
+        <a href="#provozovny">Provozovny</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="button primary" href="tel:+420605575255">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Olomouc · Tomkova 420/48</div>
+          <h1>Rehafyz pro Vaši péči</h1>
+          <p class="lead">Kontaktujte olomouckou provozovnu nebo si vyberte jednu z dalších poboček. Rehafyz najdete v Olomouci, Tovačově, Tršicích, Němčicích nad Hanou, Konici a Zlatých Horách.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="tel:+420605575255">+420 605 575 255</a>
+            <a class="button secondary" href="mailto:rehafyz@atlas.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Rychlý kontakt">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          </div>
+          <div class="quick-card">
+            <div>
+              <strong>Hodnocení Google</strong>
+              <span>2 recenze · ověřený údaj</span>
+            </div>
+            <div class="rating">5,0</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Péče začíná kontaktem</h2>
+          <p>Pro objednání nebo všeobecný dotaz využijte telefon, e-mail nebo nejbližší provozovnu. Adresa sídla společnosti je v Olomouci na Tomkově ulici.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Objednání návštěvy</h3>
+            <p>Zavolejte na hlavní telefonní kontakt nebo napište e-mail s vybranou provozovnou a zprávou.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Výběr provozovny</h3>
+            <p>K dispozici jsou kontakty pro Olomouc, Tovačov, Tršice, Němčice nad Hanou, Konici a Zlaté Hory.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Všeobecný dotaz</h3>
+            <p>Pro dotazy ke společnosti Rehafyz můžete kontaktovat jednatelku Moniku Machytkovou na firemní e-mail.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="provozovny">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Šest provozoven</h2>
+          <p>Přehled míst a telefonních čísel převzatý z kontaktních údajů společnosti.</p>
+        </div>
+        <div class="locations">
+          <article class="location-card feature">
+            <div>
+              <h3>Olomouc</h3>
+              <p>Tomkova 420/48, 779 00 Olomouc</p>
+            </div>
+            <div class="mono">tel: 775 755 013</div>
+          </article>
+          <article class="location-card">
+            <div>
+              <h3>Tovačov</h3>
+              <p>Nádražní 94, 750 01 Tovačov</p>
+            </div>
+            <div class="mono">tel: 775 755 019</div>
+          </article>
+          <article class="location-card">
+            <div>
+              <h3>Tršice</h3>
+              <p>Tršice 28, 783 57 Tršice</p>
+            </div>
+            <div class="mono">tel: 775 755 018</div>
+          </article>
+          <article class="location-card">
+            <div>
+              <h3>Němčice nad Hanou</h3>
+              <p>Sokolská 522, 798 27 Němčice nad Hanou</p>
+            </div>
+            <div class="mono">tel: 775 755 017</div>
+          </article>
+          <article class="location-card">
+            <div>
+              <h3>Konice</h3>
+              <p>Tyršova 392, 798 52 Konice</p>
+            </div>
+            <div class="mono">tel: 775 755 016</div>
+          </article>
+          <article class="location-card">
+            <div>
+              <h3>Zlaté Hory</h3>
+              <p>Wolkerova 533, 793 76 Zlaté Hory</p>
+            </div>
+            <div class="mono">tel: 775 755 014</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap trust-band">
+        <div>
+          <div class="kicker">Rehafyz v číslech</div>
+          <h2>Jasné kontakty, blízké pobočky</h2>
+          <p class="lead">Vše důležité najdete na jednom místě: sídlo, hlavní telefon, e-mail a kontakty na jednotlivé provozovny.</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong>6</strong>
+            <p>uvedených provozoven v kontaktních údajích</p>
+          </div>
+          <div class="stat">
+            <strong>5,0</strong>
+            <p>hodnocení Google podle dodaných dat</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Klidný prostor pro domluvu</h2>
+          <p>Kontaktní údaje jsou uspořádané tak, aby bylo snadné zvolit správné místo a spojit se bez hledání.</p>
+        </div>
+        <div class="photo-stack">
+          <figure>
+            <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div class="kicker">Kontakt</div>
+          <h2>Olomouc</h2>
+          <p class="lead">Tomkova 420/48, 779 00 Olomouc 9</p>
+          <div class="contact-methods">
+            <a class="contact-link" href="tel:+420605575255">
+              <span>Telefon</span>
+              <strong>+420 605 575 255</strong>
+            </a>
+            <a class="contact-link" href="mailto:rehafyz@atlas.cz">
+              <span>E-mail</span>
+              <strong>rehafyz@atlas.cz</strong>
+            </a>
+            <div class="contact-link">
+              <span>IČ</span>
+              <strong>278 545 74</strong>
+            </div>
+            <div class="contact-link">
+              <span>Číslo účtu</span>
+              <strong>2300100889/2010</strong>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa sídla Rehafyz"></div>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-label="Objednání">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Domluvte si termín</h2>
+          <p>Zavolejte na hlavní kontakt nebo pošlete e-mail s vybranou provozovnou.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="button primary" href="tel:+420605575255">Zavolat</a>
+          <a class="button secondary" href="mailto:rehafyz@atlas.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© Rehafyz · Tomkova 420/48, 779 00 Olomouc</div>
+      <div>Tento nezávazný vizuální koncept připravil Webflex. <a href="https://webflex.cz/remove/gsjy903">Odstranit ukázku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.2373773, 49.6032337],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#0077BE' })
+      .setLngLat([17.2373773, 49.6032337])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
