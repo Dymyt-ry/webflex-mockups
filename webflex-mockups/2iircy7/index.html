@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SanaDent - dentální hygiena Barrandov</title>
+  <meta name="description" content="Dentální hygiena SanaDent na Barrandově. Šetrné odborné čištění, Airflow, bělení zubů, fluoridace a individuální instruktáž domácí péče.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcff;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #111827;
+      --muted: #647084;
+      --line: rgba(17,24,39,.08);
+      --soft: #edf4fb;
+      --accent: #2060A0;
+      --accent-deep: #174a7d;
+      --shadow: 0 34px 110px rgba(20, 64, 112, .12);
+      --shadow-soft: 0 20px 70px rgba(18, 45, 74, .08);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32,96,160,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,96,160,.022) 1px, transparent 1px),
+        radial-gradient(circle at 86% 8%, rgba(32,96,160,.10), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .skip { position: absolute; left: 16px; top: -64px; z-index: 30; padding: 10px 14px; border-radius: 999px; background: var(--ink); color: #fff; }
+    .skip:focus { top: 16px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(22px);
+      background: rgba(251,252,255,.82);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      width: min(270px, 52vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+    .navlinks { display: flex; align-items: center; gap: 22px; color: var(--muted); font-weight: 700; font-size: 14px; }
+    .navlinks a { transition: color .2s var(--ease); }
+    .navlinks a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: transform .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 45px rgba(32,96,160,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-deep); }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { background: rgba(32,96,160,.06); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 70px 0 56px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .eyebrow {
+      margin: 0 0 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .94;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 26px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: #3d4b60;
+      line-height: 1.34;
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 42px;
+      max-width: 690px;
+    }
+    .fact {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .fact strong { display: block; font-family: var(--font-mono); font-size: 21px; color: var(--accent); }
+    .fact span { display: block; margin-top: 7px; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .photo-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-note {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      width: min(335px, calc(100% - 44px));
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(17,24,39,.12);
+      font-weight: 800;
+    }
+    .floating-note small { display: block; margin-bottom: 6px; font-family: var(--font-mono); color: var(--accent); }
+
+    section { padding: 90px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .52fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-list {
+      display: grid;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr) 190px;
+      gap: 28px;
+      align-items: center;
+      padding: 30px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .service-row h3 { font-size: clamp(24px, 3vw, 38px); }
+    .service-row p { margin: 8px 0 0; color: var(--muted); font-size: 17px; hyphens: auto; }
+    .tag {
+      justify-self: end;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(32,96,160,.10);
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .score, .care-card, .price-card, .contact-card, .faq-item {
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .score { padding: 34px; display: grid; align-content: space-between; min-height: 360px; }
+    .score strong { font-family: var(--font-display); font-size: clamp(72px, 12vw, 148px); line-height: .82; color: var(--accent); }
+    .score span { color: var(--muted); font-weight: 800; }
+    .care-card { padding: 34px; }
+    .care-card h3 { font-size: clamp(30px, 4vw, 52px); }
+    .steps { display: grid; gap: 14px; margin-top: 28px; }
+    .step { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 16px; align-items: start; padding: 16px 0; border-top: 1px solid var(--line); }
+    .step b { font-family: var(--font-mono); color: var(--accent); }
+    .step p { margin: 0; color: var(--muted); }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-card { padding: 30px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+    .price-card h3 { font-size: clamp(26px, 3vw, 42px); }
+    .price-card p { color: var(--muted); hyphens: auto; }
+    .price-card .mono { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 32px; }
+    .contact-card h3 { font-size: clamp(28px, 3.4vw, 46px); }
+    .contact-list { display: grid; gap: 16px; margin-top: 26px; }
+    .contact-line { display: grid; gap: 5px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .contact-line span { color: var(--muted); font-size: 14px; font-weight: 800; }
+    .contact-line a, .contact-line strong { font-family: var(--font-mono); font-weight: 700; overflow-wrap: anywhere; }
+    #map { height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { font-family: var(--font-body); font-size: 18px; line-height: 1.2; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final {
+      margin: 60px 0 0;
+      padding: 48px;
+      border-radius: 32px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 0 38px 120px rgba(17,24,39,.20);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { color: #fff; font-size: clamp(34px, 5vw, 70px); }
+    .final p { margin: 14px 0 0; color: rgba(255,255,255,.74); max-width: 680px; }
+    .final .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer { padding: 38px 0; color: var(--muted); font-size: 13px; }
+    .disclaimer {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: #7b8493;
+    }
+    .disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 940px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .trust, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .photo-card { width: 100%; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .tag { justify-self: start; }
+      .price-grid, .faq-grid, .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .hero-facts { grid-template-columns: 1fr; }
+      .final { padding: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#" aria-label="SanaDent - dentální hygiena Barrandov">
+        <img src="img/sanadent.png" alt="SanaDent - dentální hygiena Barrandov">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420777948593">777 948 593</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Barrandov · Werichova 1145/23</p>
+          <h1>Dentální hygiena Barrandov</h1>
+          <p class="lead">Odborné vyčištění ústní dutiny dentální hygienistkou, šetrný přístup a praktická instruktáž domácí péče pro zdravější dásně i čistý chrup.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420777948593">Zavolat a objednat se</a>
+            <a class="btn btn-secondary" href="mailto:info@dhbarrandov.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-facts" aria-label="Základní informace">
+            <div class="fact"><strong>4.9</strong><span>hodnocení pacientů</span></div>
+            <div class="fact"><strong>29</strong><span>veřejných recenzí</span></div>
+            <div class="fact"><strong>6 měsíců</strong><span>doporučená frekvence návštěv</span></div>
+          </div>
+        </div>
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          <div class="floating-note"><small>SanaDent</small>Prevence zubního kamene, zánětu dásní a nepříjemného zápachu z úst.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Péče v ordinaci</p>
+            <h2>Čištění, prevence, motivace.</h2>
+          </div>
+          <p>Každá návštěva se přizpůsobuje stavu ústní dutiny. Cílem je čistý chrup, klidnější dásně a domácí postup, který dává smysl i mimo ordinaci.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div><h3>Dentální hygiena</h3><p>Odborné odstranění povlaků, zubního kamene a nečistot pomocí moderních přístrojů i ručních nástrojů.</p></div>
+            <span class="tag">prevence</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div><h3>Airflow</h3><p>Leštění chrupu formou pískování, které pomáhá odstranit zbylé nečistoty a pigmentace.</p></div>
+            <span class="tag">šetrné leštění</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div><h3>Depurace a fluoridace</h3><p>Čištění speciální pastou, vyleštění rotačním kartáčkem a závěrečná péče pro podporu skloviny.</p></div>
+            <span class="tag">závěr návštěvy</span>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <div><h3>Bělení zubů</h3><p>Estetická péče navazující na čistý chrup a konzultaci vhodného postupu přímo v ordinaci.</p></div>
+            <span class="tag">zářivý úsměv</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap trust">
+        <div class="score">
+          <div>
+            <p class="eyebrow">Důvěra</p>
+            <strong>4.9</strong>
+          </div>
+          <span>Hodnocení podle veřejného profilu. SanaDent má 29 recenzí a ordinaci na adrese Werichova 1145/23, Praha 5-Barrandov.</span>
+        </div>
+        <article class="care-card">
+          <p class="eyebrow">Jak návštěva probíhá</p>
+          <h3>Šetrně a krok za krokem.</h3>
+          <div class="steps">
+            <div class="step"><b>01</b><p>Nejprve se odstraní největší nánosy pomocí ultrazvuku.</p></div>
+            <div class="step"><b>02</b><p>Následuje dočištění ručními nástroji a odstranění zbytků zubního kamene.</p></div>
+            <div class="step"><b>03</b><p>Chrupu pomůže Airflow, depurace, polishing a závěrečná fluoridace.</p></div>
+            <div class="step"><b>04</b><p>Součástí je motivace a prezentace domácí péče podle Vašich potřeb.</p></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Cena a délka</p>
+            <h2>Rozhoduje stav chrupu.</h2>
+          </div>
+          <p>Délka vyšetření se konzultuje v ordinaci. Pečlivější domácí příprava obvykle znamená kratší návštěvu i příznivější výslednou cenu.</p>
+        </div>
+        <div class="price-grid">
+          <article class="price-card">
+            <div>
+              <p class="mono">vstupní návštěva</p>
+              <h3>Vyšetření a čištění</h3>
+              <p>Kompletní péče dentální hygienistky s doporučením dalšího postupu a domácí techniky.</p>
+            </div>
+            <a class="btn btn-secondary" href="tel:+420777948593">Zjistit termín</a>
+          </article>
+          <article class="price-card">
+            <div>
+              <p class="mono">kontrolní režim</p>
+              <h3>Každých 6 měsíců</h3>
+              <p>Pravidelnost pomáhá s prevencí zubního kazu, zubního kamene, zánětů dásní i parodontitidy.</p>
+            </div>
+            <a class="btn btn-secondary" href="mailto:info@dhbarrandov.cz">Napsat dotaz</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra ordinace">
+      <div class="wrap gallery">
+        <figure><img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows."></figure>
+        <figure><img src="https://images.pexels.com/photos/8407574/pexels-photo-8407574.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist pendant light against a soft focus background with window blinds."></figure>
+        <figure><img src="https://images.pexels.com/photos/6633444/pexels-photo-6633444.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist bookshelf featuring an open book and elegant candleholders, perfect for modern decor inspiration."></figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté otázky</p>
+            <h2>Než se objednáte.</h2>
+          </div>
+          <p>Krátké odpovědi vycházejí z informací ordinace SanaDent a pomohou Vám lépe odhadnout první návštěvu.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Jak často chodit na dentální hygienu?</h3><p>Ideální frekvence je každých 6 měsíců. Přesný interval se upraví podle stavu ústní dutiny.</p></article>
+          <article class="faq-item"><h3>Je vyšetření bolestivé?</h3><p>Vyšetření je popsané jako šetrné a bezbolestné díky moderním technologiím a citlivému přístupu.</p></article>
+          <article class="faq-item"><h3>Co se řeší při první návštěvě?</h3><p>Čištění, odstranění kamene a nečistot, Airflow, závěrečná péče a doporučení domácí techniky.</p></article>
+          <article class="faq-item"><h3>Proč neotálet s objednáním?</h3><p>Ústní dutina má vysoký výskyt bakterií. Prevence snižuje riziko kazu, zánětů i dalších obtíží.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <article class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h3>SanaDent Barrandov</h3>
+          <div class="contact-list">
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420777948593">+420 777 948 593</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:info@dhbarrandov.cz">info@dhbarrandov.cz</a></div>
+            <div class="contact-line"><span>Adresa</span><strong>Werichova 1145/23, 152 00 Praha 5-Barrandov</strong></div>
+            <div class="contact-line"><span>Web</span><a href="https://www.dhbarrandov.cz/">www.dhbarrandov.cz</a></div>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa ordinace SanaDent Barrandov"></div>
+      </div>
+      <div class="wrap final">
+        <div>
+          <p class="eyebrow">Objednání</p>
+          <h2>Začněte prevencí.</h2>
+          <p>Domluvte si termín dentální hygieny na Barrandově telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420777948593">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@dhbarrandov.cz">Napsat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>SanaDent - dentální hygiena Barrandov · Werichova 1145/23, Praha 5-Barrandov</div>
+      <div class="disclaimer">
+        Webflex ukázková prezentace pro vlastníka firmy. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit zde:
+        <a href="https://webflex.cz/remove/2iircy7">https://webflex.cz/remove/2iircy7</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.3647722, 50.0308888],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#2060A0' })
+      .setLngLat([14.3647722, 50.0308888])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
