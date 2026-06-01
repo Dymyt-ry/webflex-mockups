@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZeHa Medica s.r.o. | Centrum lymfologické péče</title>
+  <meta name="description" content="ZeHa Medica s.r.o. v Ostravě a Opavě: lymfologie, fyzioterapie, kompresní pomůcky na míru a následná péče pro ženy po operaci prsu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfc;
+      --surface: rgba(255,255,255,.82);
+      --surface-solid: #ffffff;
+      --soft: #eef7f6;
+      --ink: #14201f;
+      --muted: #657371;
+      --accent: #35BFAF;
+      --accent-dark: #168f82;
+      --line: rgba(20,32,31,.08);
+      --shadow: 0 38px 100px rgba(31, 76, 72, .11);
+      --shadow-soft: 0 24px 70px rgba(31, 76, 72, .08);
+      --radius: 26px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(53,191,175,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(53,191,175,.035) 1px, transparent 1px),
+        radial-gradient(circle at 16% 0%, rgba(53,191,175,.16), transparent 31rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,252,252,.84);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(286px, 55vw);
+      max-height: 44px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(20,32,31,.72);
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(53,191,175,.22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #06201d; }
+    .btn-primary:hover { background: #50d2c4; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { border-color: var(--accent-dark); color: var(--accent-dark); background: rgba(53,191,175,.08); }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.2vw, 62px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: 54px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(20,32,31,.72);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 690px;
+      margin-top: 42px;
+    }
+
+    .meta-tile, .service-card, .care-panel, .trust-card, .hours-card, .map-card, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .meta-tile {
+      min-height: 108px;
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+
+    .meta-tile span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 48%, rgba(8,30,27,.46));
+    }
+
+    .photo-label {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .service-card {
+      min-height: 250px;
+      padding: 26px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+
+    .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .service-card svg { color: var(--accent-dark); margin-bottom: 28px; }
+    .service-card p { margin: 14px 0 0; color: var(--muted); font-size: 15px; }
+
+    .care-layout {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(340px, .48fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .care-panel {
+      border-radius: 32px;
+      padding: 34px;
+    }
+
+    .care-list { display: grid; gap: 0; margin-top: 28px; }
+    .care-row {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .care-row strong {
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .care-row p { margin: 0; color: var(--muted); }
+
+    .side-photo {
+      min-height: 440px;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+
+    .side-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .trust-card {
+      border-radius: 32px;
+      padding: 34px;
+      min-height: 320px;
+    }
+
+    .rating {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .rating strong {
+      font-family: var(--font-mono);
+      font-size: clamp(56px, 9vw, 116px);
+      line-height: .8;
+      color: var(--accent-dark);
+    }
+
+    .rating span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .quote {
+      margin: 30px 0 0;
+      color: rgba(20,32,31,.74);
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1.25;
+      hyphens: auto;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+    }
+
+    .gallery figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 30px;
+      min-height: 360px;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+
+    .gallery figure:first-child { min-height: 520px; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-stack { display: grid; gap: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, .78fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .hours-card, .map-card {
+      border-radius: 32px;
+      padding: 30px;
+    }
+
+    .contact-line {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .contact-line:first-of-type { border-top: 0; }
+    .contact-line span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .contact-line strong, .contact-line a {
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    #map {
+      height: 420px;
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .faq-item {
+      border-radius: 26px;
+      padding: 26px;
+      min-height: 190px;
+    }
+
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 92px 0;
+    }
+
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) auto;
+      gap: 34px;
+      align-items: center;
+      padding: 44px;
+      border-radius: 36px;
+      background: #102522;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .final-panel p { margin: 16px 0 0; color: rgba(255,255,255,.72); font-size: 18px; max-width: 680px; }
+    .final-panel .eyebrow { color: #77e1d7; }
+    .final-panel .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 36px 0 44px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .webflex-disclaimer {
+      max-width: 760px;
+      font-size: 12px;
+      color: rgba(101,115,113,.82);
+    }
+
+    .webflex-disclaimer a { color: var(--accent-dark); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .care-layout, .trust-strip, .gallery, .contact-grid, .final-panel, .section-head {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { width: 100%; }
+      .service-grid, .faq-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .final-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 720px) {
+      .nav { min-height: 68px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-grid { gap: 30px; }
+      .hero-meta, .service-grid, .faq-list { grid-template-columns: 1fr; }
+      .care-row, .contact-line { grid-template-columns: 1fr; gap: 8px; }
+      .care-panel, .trust-card, .hours-card, .map-card, .final-panel { padding: 24px; border-radius: 26px; }
+      .gallery figure, .gallery figure:first-child { min-height: 320px; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="ZeHa Medica s.r.o.">
+        <img src="https://a83a8bb8e6.clvaw-cdnwnd.com/2f64d8a6070cda0d26defa320f784daf/200000208-bbfcebbfd1/tempImage9I4vQT.png?ph=a83a8bb8e6" alt="ZeHa Medica s.r.o.">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Péče</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420603930093">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Ostrava & Opava · lymfologická péče</p>
+          <h1>Centrum lymfologické péče</h1>
+          <p class="lead">Specializované zdravotnické zařízení pro léčbu otoků, fyzioterapii, onkorehabilitaci a individuální kompresní pomůcky.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420603930093">Objednat se telefonicky</a>
+            <a class="btn btn-secondary" href="mailto:info@zeha.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>5,0</strong><span>hodnocení Google</span></div>
+            <div class="meta-tile"><strong>11</strong><span>veřejných recenzí</span></div>
+            <div class="meta-tile"><strong>2</strong><span>pracoviště v regionu</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/33469928/pexels-photo-33469928.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman elegantly posed in a minimalist, modern architectural setting with soft light.">
+          <div class="photo-label"><span>ZeHa Medica</span><span>empatická atmosféra</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Služby</p>
+            <h2>Péče zaměřená na lymfatický systém</h2>
+          </div>
+          <p>ZeHa Medica se věnuje klientům s poruchou lymfatické drenáže a navazuje odbornou péčí podle aktuálního zdravotního stavu.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <div>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4c4 3 6 6 6 9.1A6 6 0 1 1 6 13.1C6 10 8 7 12 4Z" stroke="currentColor" stroke-width="1.8"/><path d="M9 14c1.5 1.2 4.5 1.2 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <h3>Lymfologie</h3>
+              <p>Terapie otoků a odborné poradenství při potížích s lymfatickou drenáží.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 18c4-7 10-7 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 8a4 4 0 1 0 8 0" stroke="currentColor" stroke-width="1.8"/></svg>
+              <h3>Fyzioterapie</h3>
+              <p>Individuální práce s pohybem, regenerací a návaznou rehabilitační péčí.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="1.8"/><path d="M9 6v12M15 6v12M6 10h12M6 14h12" stroke="currentColor" stroke-width="1.3"/></svg>
+              <h3>Kompresní pomůcky</h3>
+              <p>Vybavení a zařízení individuálních kompresních pomůcek na míru.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <div>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-4.4 7-11a4 4 0 0 0-7-2.6A4 4 0 0 0 5 10c0 6.6 7 11 7 11Z" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <h3>Onkorehabilitace</h3>
+              <p>Následná péče a poradenství pro ženy po onkologických operacích prsu.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap care-layout">
+        <div class="care-panel">
+          <p class="eyebrow">Průběh péče</p>
+          <h2>Klidný postup od konzultace po pomůcky</h2>
+          <div class="care-list">
+            <div class="care-row">
+              <strong>01</strong>
+              <p>Nejprve se domluvíte na návštěvě a zdravotních souvislostech, které jsou pro péči důležité.</p>
+            </div>
+            <div class="care-row">
+              <strong>02</strong>
+              <p>Terapeut navrhne vhodnou terapii otoků, fyzioterapii nebo návaznou rehabilitační péči.</p>
+            </div>
+            <div class="care-row">
+              <strong>03</strong>
+              <p>Podle potřeby centrum pomůže s individuálními kompresními pomůckami a další péčí.</p>
+            </div>
+          </div>
+        </div>
+        <div class="side-photo">
+          <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-strip">
+        <article class="trust-card">
+          <p class="eyebrow">Důvěra</p>
+          <h2>Odborně, diskrétně, s respektem</h2>
+          <p class="quote">„Záleží nám na Vašem zdraví“ je jednoduchá věta, která vystihuje přístup centra k dlouhodobé péči i citlivým zdravotním tématům.</p>
+        </article>
+        <article class="trust-card">
+          <p class="eyebrow">Hodnocení</p>
+          <div class="rating"><strong>5,0</strong><span>z 11 recenzí na Google</span></div>
+          <p>Veřejné hodnocení doplňuje osobní kontakt: telefon pro obě pracoviště je jednotný, takže se můžete objednat bez hledání správné pobočky.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prostředí</p>
+            <h2>Příjemná atmosféra pro citlivou péči</h2>
+          </div>
+          <p>Klidné prostředí pomáhá soustředit se na péči, konzultaci a postup, který odpovídá Vašemu zdravotnímu stavu.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          </figure>
+          <div class="gallery-stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/8407574/pexels-photo-8407574.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist pendant light against a soft focus background with window blinds.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Objednání a pracoviště</h2>
+          </div>
+          <p>Pro Ostravu i Opavu je uvedený stejný telefon a e-mail. Ozvěte se, domluvíte nejvhodnější termín a pracoviště.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="hours-card">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420603930093">+420 603 930 093</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:info@zeha.cz">info@zeha.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Ostrava</span>
+              <strong>28. října 961/279, 709 00 Ostrava-Mariánské Hory a Hulváky</strong>
+            </div>
+            <div class="contact-line">
+              <span>Opava</span>
+              <strong>Hrnčířská 282/1, 746 01 Opava</strong>
+            </div>
+          </article>
+          <article class="map-card">
+            <div id="map" aria-label="Mapa pracoviště v Ostravě"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než se objednáte</h2>
+          </div>
+          <p>Krátké odpovědi vycházejí z informací uvedených pro centrum a jeho služby.</p>
+        </div>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Komu je péče určená?</h3>
+            <p>Klientům s poruchou lymfatické drenáže, otoky a také ženám po onkologických operacích prsu.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Řešíte kompresní pomůcky?</h3>
+            <p>Ano, centrum klientům pomáhá s individuálními kompresními pomůckami na míru.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je možné přijít v Opavě?</h3>
+            <p>Ano, ZeHa Medica uvádí pracoviště v Ostravě i v Opavě na Hrnčířské 282/1.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak se objednat?</h3>
+            <p>Pro objednání zavolejte na +420 603 930 093 nebo napište na info@zeha.cz.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <p class="eyebrow">ZeHa Medica s.r.o.</p>
+          <h2>Domluvte si péči osobně</h2>
+          <p>Lymfologie, fyzioterapie, kompresní pomůcky a následná péče v Ostravě a Opavě.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" href="tel:+420603930093">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@zeha.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© ZeHa Medica s.r.o.</div>
+      <div class="webflex-disclaimer">
+        Tuto prezentační stránku připravil Webflex jako nezávazný podklad pro provozovatele zdravotnického zařízení. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/g63yib5" rel="nofollow">webflex.cz/delete/g63yib5</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.246169899999998, 49.8261],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#35BFAF' })
+      .setLngLat([18.246169899999998, 49.8261])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
