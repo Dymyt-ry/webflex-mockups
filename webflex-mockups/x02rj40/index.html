@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MUDr. Ryšavá Hana | Praktická lékařka pro dospělé</title>
+  <meta name="description" content="MUDr. Hana Ryšavá, praktická lékařka pro dospělé v Poliklinice Horníkova, Brno-Líšeň. Ordinační hodiny, odběry krve, telefon a kontakt.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --paper: #ffffff;
+      --ink: #181a1f;
+      --muted: #5f656b;
+      --line: #d9ded8;
+      --line-strong: #b9c4b8;
+      --accent: #4FA93A;
+      --accent-dark: #2f7b25;
+      --accent-soft: #eaf7e7;
+      --warn: #9c2c1c;
+      --shadow: 0 24px 60px rgba(24, 26, 31, .08);
+      --font-display: "Archivo", Inter, system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(24, 26, 31, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24, 26, 31, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    .page { overflow: clip; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+
+    .nav-links a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+
+    .nav-links a:hover { background: var(--paper); border-color: var(--line); color: var(--ink); }
+    .nav-links a:focus-visible,
+    .button:focus-visible,
+    .service-row:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+      cursor: pointer;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(1px); }
+    .button.primary { background: var(--accent); border-color: var(--accent); color: #071106; }
+    .button.primary:hover { background: #60bd49; border-color: #60bd49; }
+    .button.secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .button.secondary:hover { background: var(--paper); }
+
+    .hero {
+      padding: 72px 0 52px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+      align-items: center;
+      gap: 48px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-top: 22px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 660px;
+      margin: 24px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      color: var(--muted);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+    .notice {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      max-width: 660px;
+      padding: 16px;
+      background: #fff8f5;
+      border: 1px solid #f1c7bb;
+    }
+
+    .notice strong { font-family: var(--font-mono); color: var(--warn); font-size: 12px; text-transform: uppercase; }
+    .notice p { margin: 0; color: #59342b; font-size: 14px; }
+
+    .hours-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-head span:first-child {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .today-pill {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #071106;
+      background: var(--accent);
+      padding: 7px 9px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      background: #f4f6f3;
+    }
+
+    td.time, th.time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    tr.today td { background: var(--accent-soft); }
+    tr:last-child td { border-bottom: 0; }
+
+    .section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+
+    .section-number {
+      font-family: var(--font-mono);
+      font-size: clamp(56px, 9vw, 112px);
+      font-weight: 700;
+      line-height: .8;
+      color: rgba(79, 169, 58, .2);
+    }
+
+    h2 {
+      max-width: 780px;
+      font-size: clamp(32px, 4.4vw, 62px);
+      overflow-wrap: anywhere;
+    }
+
+    .section-copy {
+      max-width: 650px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .service-list {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 180px;
+      gap: 24px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+      transition: background .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .service-row:hover { background: #f6faf5; transform: translateY(-1px); }
+    .service-row:active { transform: translateY(1px); }
+    .service-row:last-child { border-bottom: 0; }
+    .code { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; }
+    .service-row h3 { font-size: 24px; line-height: 1.08; }
+    .service-row p { margin: 7px 0 0; color: var(--muted); }
+
+    .matrix-wrap {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      overflow: auto;
+    }
+
+    .matrix th {
+      position: sticky;
+      top: 73px;
+      z-index: 2;
+      background: #eef4ec;
+    }
+
+    .matrix td:first-child,
+    .matrix th:first-child {
+      min-width: 150px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      align-items: stretch;
+    }
+
+    .stat {
+      min-height: 150px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .stat:last-child { border-right: 0; }
+    .stat b { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 600; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 26px;
+    }
+
+    .timeline {
+      counter-reset: step;
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+
+    .step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 20px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .step:last-child { border-bottom: 0; }
+    .step::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+
+    .step h3 { font-size: 22px; }
+    .step p { margin: 7px 0 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .contact-item {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .contact-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .label {
+      display: block;
+      margin-bottom: 5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .value { font-size: 19px; font-weight: 800; }
+    .mono { font-family: var(--font-mono); }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    details {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 0;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 20px;
+      font-weight: 800;
+      transition: background .18s var(--ease);
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: #f6faf5; }
+    details p { margin: 0; padding: 0 20px 20px; color: var(--muted); }
+
+    .cta {
+      padding: 56px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .cta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 26px;
+      align-items: center;
+    }
+
+    .cta h2 { color: #fff; font-size: clamp(32px, 4vw, 58px); }
+    .cta p { max-width: 680px; margin: 14px 0 0; color: rgba(255,255,255,.72); }
+    .cta .button.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta .button.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .wf-disclaimer {
+      padding: 22px 0;
+      background: #0f1115;
+      color: rgba(255,255,255,.68);
+      font-size: 12px;
+      border-top: 1px solid rgba(255,255,255,.12);
+    }
+
+    .wf-disclaimer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { min-height: auto; padding: 16px 0; align-items: flex-start; }
+      .nav-links { display: none; }
+      .hero { padding-top: 48px; }
+      .hero-grid,
+      .split,
+      .contact-grid,
+      .cta-grid {
+        grid-template-columns: 1fr;
+      }
+      .section-head { grid-template-columns: 1fr; gap: 8px; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats,
+      .faq { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .matrix th { top: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      h1 { font-size: clamp(40px, 13vw, 58px); }
+      .hero-actions, .cta-actions { display: grid; }
+      .button { width: 100%; }
+      th, td { padding: 11px 10px; }
+      td.time, th.time { font-size: 12px; }
+      .step { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <div class="wrap nav" aria-label="Hlavní navigace">
+        <a class="wordmark" href="#top">MUDr. Ryšavá Hana</a>
+        <nav class="nav-links">
+          <a href="#ordinace">Ordinace</a>
+          <a href="#hodiny">Ordinační hodiny</a>
+          <a href="#kontakt">Kontakt</a>
+        </nav>
+        <a class="button primary" href="tel:+420544134292">544 134 292</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div>
+            <span class="eyebrow">Praktická lékařka pro dospělé</span>
+            <h1 id="hero-title">Ordinace pro dospělé v Líšni</h1>
+            <p class="lead">MUDr. Hana Ryšavá ordinuje v Poliklinice Horníkova, Horníkova 34, Brno-Líšeň. Pro objednání a provozní informace volejte ordinaci.</p>
+            <div class="hero-actions">
+              <a class="button primary" href="tel:+420544134292">Zavolat do ordinace</a>
+              <a class="button secondary" href="#hodiny">Zobrazit ordinační hodiny</a>
+            </div>
+            <div class="notice" role="note" aria-label="Provozní informace">
+              <strong>Info</strong>
+              <p>Z technických důvodů bude v pátek 22. 5. 2026 ordinace od 11 hodin uzavřena. Dovolená: 19. 6. 2026, zastupuje MUDr. Petrželková ve svých ordinačních hodinách.</p>
+            </div>
+          </div>
+
+          <aside class="hours-card" aria-label="Dnešní ordinační hodiny">
+            <div class="card-head">
+              <span>Dnes</span>
+              <span class="today-pill">Po 1. 6. 2026</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Režim</th>
+                  <th class="time">Čas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Nemocní</td>
+                  <td class="time">12:00-16:00</td>
+                </tr>
+                <tr>
+                  <td>Objednaní</td>
+                  <td class="time">16:00-18:00</td>
+                </tr>
+              </tbody>
+            </table>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="ordinace" aria-labelledby="ordinace-title">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="section-number">01</div>
+            <div>
+              <h2 id="ordinace-title">Co v ordinaci najdete</h2>
+              <p class="section-copy">Přehled vychází z provozních informací ordinace v Poliklinice Horníkova. Pro konkrétní termín vyšetření použijte telefonický kontakt.</p>
+            </div>
+          </div>
+          <div class="service-list">
+            <a class="service-row" href="tel:+420544134292">
+              <span class="code">PLD</span>
+              <div>
+                <h3>Praktická lékařka pro dospělé</h3>
+                <p>Ordinace MUDr. Hany Ryšavé pro dospělé pacienty v Brně-Líšni.</p>
+              </div>
+              <span class="code">Horníkova 34</span>
+            </a>
+            <a class="service-row" href="#hodiny">
+              <span class="code">Režim</span>
+              <div>
+                <h3>Nemocní a objednaní pacienti</h3>
+                <p>Ordinační hodiny jsou rozdělené podle režimu návštěvy pro jednotlivé dny.</p>
+              </div>
+              <span class="code">Po-Pá</span>
+            </a>
+            <a class="service-row" href="#odbery">
+              <span class="code">Odběry</span>
+              <div>
+                <h3>Odběry krve</h3>
+                <p>Odběry probíhají od úterý do pátku v ranním čase uvedeném v rozvrhu.</p>
+              </div>
+              <span class="code">7:00-9:00</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="hodiny" aria-labelledby="hodiny-title">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="section-number">02</div>
+            <div>
+              <h2 id="hodiny-title">Ordinační hodiny</h2>
+              <p class="section-copy">Rozvrh je členěný na nemocné a objednané pacienty. Pondělí je zvýrazněné podle dnešního data.</p>
+            </div>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>Den</th>
+                  <th class="time">Nemocní</th>
+                  <th class="time">Objednaní</th>
+                  <th>Poznámka</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="today">
+                  <td>Pondělí</td>
+                  <td class="time">12:00-16:00</td>
+                  <td class="time">16:00-18:00</td>
+                  <td>Dnešní ordinační den</td>
+                </tr>
+                <tr>
+                  <td>Úterý</td>
+                  <td class="time">7:00-12:00</td>
+                  <td class="time">12:30-14:00</td>
+                  <td id="odbery">Odběry krve 7:00-9:00</td>
+                </tr>
+                <tr>
+                  <td>Středa</td>
+                  <td class="time">7:00-12:00</td>
+                  <td class="time">12:30-14:00</td>
+                  <td>Odběry krve 7:00-9:00</td>
+                </tr>
+                <tr>
+                  <td>Čtvrtek</td>
+                  <td class="time">7:00-12:00</td>
+                  <td class="time">12:30-14:00</td>
+                  <td>Odběry krve 7:00-9:00</td>
+                </tr>
+                <tr>
+                  <td>Pátek</td>
+                  <td class="time">7:00-13:00</td>
+                  <td class="time">-</td>
+                  <td>Odběry krve 7:00-9:00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="duvera-title">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="section-number">03</div>
+            <div>
+              <h2 id="duvera-title">Ordinace v číslech</h2>
+              <p class="section-copy">Kontaktní a orientační údaje jsou uvedené tak, aby se daly rychle opsat do telefonu nebo navigace.</p>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <b>4.9</b>
+              <span>Hodnocení podle dostupných dat v zadání</span>
+            </div>
+            <div class="stat">
+              <b>33</b>
+              <span>Uvedený počet recenzí</span>
+            </div>
+            <div class="stat">
+              <b>34</b>
+              <span>Číslo budovy Polikliniky Horníkova</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="navsteva-title">
+        <div class="wrap split">
+          <div>
+            <div class="section-head">
+              <div class="section-number">04</div>
+              <div>
+                <h2 id="navsteva-title">Před návštěvou ordinace</h2>
+                <p class="section-copy">Krátký provozní postup pro pacienty, kteří potřebují návštěvu ordinace nebo ranní odběr.</p>
+              </div>
+            </div>
+            <div class="timeline">
+              <div class="step">
+                <div>
+                  <h3>Zkontrolujte režim dne</h3>
+                  <p>Rozlišujte čas pro nemocné a čas pro objednané pacienty.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div>
+                  <h3>Volejte ordinaci</h3>
+                  <p>Pro objednání použijte telefon <span class="mono">544 134 292</span>.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div>
+                  <h3>Odběry plánujte ráno</h3>
+                  <p>Odběry krve jsou uvedené od úterý do pátku v čase <span class="mono">7:00-9:00</span>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="panel">
+            <span class="label">Poliklinika</span>
+            <h3 style="font-size: 30px; margin-bottom: 14px;">Horníkova Brno-Líšeň</h3>
+            <p style="color: var(--muted); margin: 0 0 18px;">Budova má bezbariérový vstup z ulice Molákova.</p>
+            <table>
+              <tbody>
+                <tr>
+                  <td>Ordinace</td>
+                  <td class="time">MUDr. Hana Ryšavá</td>
+                </tr>
+                <tr>
+                  <td>Telefon</td>
+                  <td class="time">544 134 292</td>
+                </tr>
+                <tr>
+                  <td>E-mail polikliniky</td>
+                  <td class="time">poliklinika@hornikova.cz</td>
+                </tr>
+              </tbody>
+            </table>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="kontakt" aria-labelledby="kontakt-title">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="section-number">05</div>
+            <div>
+              <h2 id="kontakt-title">Kontakt a mapa</h2>
+              <p class="section-copy">Ordinace je v Poliklinice Horníkova v Brně-Líšni. Mapu můžete přiblížit a použít pro orientaci v okolí.</p>
+            </div>
+          </div>
+          <div class="contact-grid">
+            <div class="contact-card">
+              <div class="contact-item">
+                <span class="label">Adresa</span>
+                <div class="value">Horníkova 34<br>628 00 Brno-Líšeň</div>
+              </div>
+              <div class="contact-item">
+                <span class="label">Telefon ordinace</span>
+                <a class="value mono" href="tel:+420544134292">+420 544 134 292</a>
+              </div>
+              <div class="contact-item">
+                <span class="label">E-mail polikliniky</span>
+                <a class="value" href="mailto:poliklinika@hornikova.cz">poliklinika@hornikova.cz</a>
+              </div>
+              <div class="contact-item">
+                <span class="label">Přístup</span>
+                <div class="value">Bezbariérový vstup z ulice Molákova</div>
+              </div>
+            </div>
+            <div id="map" aria-label="Mapa ordinace MUDr. Hany Ryšavé"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="faq-title">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="section-number">06</div>
+            <div>
+              <h2 id="faq-title">Časté dotazy</h2>
+              <p class="section-copy">Odpovědi vycházejí z dostupných provozních údajů ordinace a polikliniky.</p>
+            </div>
+          </div>
+          <div class="faq">
+            <details>
+              <summary>Kdy probíhají odběry krve?</summary>
+              <p>Od úterý do pátku v čase 7:00-9:00.</p>
+            </details>
+            <details>
+              <summary>Jak se objednám?</summary>
+              <p>Pro objednání volejte telefon ordinace +420 544 134 292.</p>
+            </details>
+            <details>
+              <summary>Kde ordinaci najdu?</summary>
+              <p>V Poliklinice Horníkova na adrese Horníkova 34, 628 00 Brno-Líšeň.</p>
+            </details>
+            <details>
+              <summary>Je v budově bezbariérový vstup?</summary>
+              <p>Ano, podle informací polikliniky je bezbariérový vstup z ulice Molákova.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" aria-labelledby="cta-title">
+        <div class="wrap cta-grid">
+          <div>
+            <h2 id="cta-title">Potřebujete termín v ordinaci?</h2>
+            <p>Volejte ordinaci MUDr. Hany Ryšavé nebo si zkontrolujte aktuální režim ordinačních hodin pro nemocné a objednané pacienty.</p>
+          </div>
+          <div class="cta-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a class="button primary" href="tel:+420544134292">Zavolat</a>
+            <a class="button secondary" href="#hodiny">Ordinační hodiny</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wf-disclaimer">
+      <div class="wrap">
+        Neoficiální prezentační stránka připravená službou Webflex. Pokud si nepřejete tuto stránku zobrazovat, můžete ji odstranit na adrese
+        <a href="https://webflex.cz/delete?token=x02rj40">webflex.cz/delete?token=x02rj40</a>.
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6820579, 49.2130951],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#4FA93A' })
+      .setLngLat([16.6820579, 49.2130951])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
