@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FyzioČechák | Fyzioterapie Praha 10</title>
+  <meta name="description" content="Fyzioterapie, tejpování a masáže v Praze 10-Vinohradech a na Kačerově. Mgr. Štěpán Čechák Cert.MDT.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --surface: rgba(255,255,255,.78);
+      --surface-solid: #ffffff;
+      --ink: #002020;
+      --muted: #5c6966;
+      --soft: #e9eeea;
+      --accent: #002020;
+      --accent-2: #d8e4df;
+      --shadow: 0 30px 90px rgba(0,32,32,.10);
+      --shadow-soft: 0 18px 60px rgba(0,32,32,.075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,32,32,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,32,32,.018) 1px, transparent 1px),
+        radial-gradient(circle at 18% 0%, rgba(216,228,223,.85), transparent 32rem),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .skip-link {
+      position: absolute; left: 16px; top: -60px; z-index: 10;
+      padding: 10px 14px; background: var(--ink); color: #fff; border-radius: 10px;
+    }
+    .skip-link:focus { top: 16px; }
+
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(251,251,248,.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(0,32,32,.06);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex; align-items: center; justify-content: space-between; gap: 28px;
+    }
+    .brand img { max-height: 42px; width: auto; object-fit: contain; }
+    .nav-links { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; }
+    .nav-links a { padding: 10px 12px; border-radius: 999px; transition: .22s var(--ease); }
+    .nav-links a:hover { background: rgba(0,32,32,.07); color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active, .soft-link:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 48px; padding: 13px 18px; border-radius: 999px;
+      font-weight: 700; border: 1px solid transparent; transition: .22s var(--ease);
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 14px 34px rgba(0,32,32,.18); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 20px 42px rgba(0,32,32,.24); }
+    .btn-outline { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn-outline:hover { background: rgba(0,32,32,.06); transform: translateY(-1px); }
+
+    main { overflow: hidden; }
+    .hero { padding: 82px 0 72px; }
+    .hero-grid {
+      display: grid; grid-template-columns: minmax(0, .95fr) minmax(420px, .75fr);
+      gap: 56px; align-items: center;
+    }
+    .kicker {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 22px;
+    }
+    .kicker::before { content: ""; width: 34px; height: 1px; background: var(--accent); }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 620px; margin: 26px 0 0; font-size: clamp(18px, 2vw, 22px);
+      color: var(--muted); line-height: 1.55;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-card {
+      position: relative; aspect-ratio: 4 / 3; border-radius: 28px; overflow: hidden;
+      background: var(--surface-solid); box-shadow: var(--shadow);
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(.98); }
+    .hero-card::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 46%, rgba(0,32,32,.42));
+    }
+    .hero-note {
+      position: absolute; left: 22px; right: 22px; bottom: 22px; z-index: 1;
+      display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end;
+      color: #fff;
+    }
+    .hero-note strong { font-size: 18px; }
+    .mono { font-family: var(--font-mono); }
+    .rating {
+      padding: 10px 12px; border-radius: 16px;
+      background: rgba(255,255,255,.18); backdrop-filter: blur(10px);
+      font-family: var(--font-mono); font-weight: 700;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid; grid-template-columns: minmax(0, .76fr) minmax(280px, .44fr);
+      gap: 44px; align-items: end; margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display); font-size: clamp(34px, 4.4vw, 64px);
+      line-height: 1; overflow-wrap: anywhere;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-list {
+      display: grid; gap: 12px;
+    }
+    .service-row {
+      display: grid; grid-template-columns: 76px 1fr minmax(180px, .35fr);
+      gap: 28px; align-items: center;
+      padding: 26px; border-radius: var(--radius);
+      background: var(--surface); box-shadow: var(--shadow-soft);
+      transition: .22s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-2px); background: #fff; }
+    .service-row .num { font-family: var(--font-mono); color: var(--muted); }
+    .service-row h3 { font-size: clamp(24px, 3vw, 36px); line-height: 1.05; }
+    .service-row p { margin: 6px 0 0; color: var(--muted); }
+    .service-row .tag { justify-self: end; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+    .trust-grid {
+      display: grid; grid-template-columns: .72fr 1.08fr; gap: 18px; align-items: stretch;
+    }
+    .stat-card, .quote-card, .process-card, .contact-panel, .faq-item, .price-card {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-soft);
+    }
+    .stat-card { padding: 34px; display: grid; align-content: space-between; min-height: 310px; }
+    .stat-card .big { font-family: var(--font-display); font-size: clamp(72px, 10vw, 136px); line-height: .85; }
+    .stat-card p { margin: 20px 0 0; color: var(--muted); font-size: 18px; }
+    .quote-card { padding: 34px; display: grid; gap: 22px; }
+    blockquote { margin: 0; font-size: clamp(24px, 3vw, 38px); line-height: 1.14; font-weight: 700; }
+    .quote-list { display: grid; gap: 12px; }
+    .quote-mini { padding-top: 16px; border-top: 1px solid rgba(0,32,32,.09); color: var(--muted); }
+    .quote-mini strong { color: var(--ink); }
+
+    .process {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: stretch;
+    }
+    .process-card { padding: 26px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+    .process-card span { font-family: var(--font-mono); color: var(--muted); }
+    .process-card h3 { margin-top: 32px; font-size: 24px; }
+    .process-card p { color: var(--muted); margin: 10px 0 0; }
+
+    .price-band {
+      display: grid; grid-template-columns: .8fr 1.2fr; gap: 18px; align-items: stretch;
+    }
+    .price-card { padding: 34px; }
+    .price-card h2 {
+      font-family: var(--font-display); font-size: clamp(34px, 5vw, 70px); line-height: .98;
+      overflow-wrap: anywhere;
+    }
+    .price-table { display: grid; gap: 10px; }
+    .price-row {
+      display: grid; grid-template-columns: 1fr auto; gap: 20px;
+      padding: 18px 0; border-bottom: 1px solid rgba(0,32,32,.09);
+    }
+    .price-row strong { font-size: 20px; }
+    .price-row span { color: var(--muted); font-family: var(--font-mono); text-align: right; }
+
+    .gallery-strip {
+      display: grid; grid-template-columns: 1.2fr .8fr .8fr; gap: 16px; align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0; position: relative; overflow: hidden; border-radius: 26px; box-shadow: var(--shadow-soft);
+      min-height: 280px; background: var(--soft);
+    }
+    .gallery-strip figure:first-child { min-height: 420px; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.75); }
+    .gallery-strip figcaption {
+      position: absolute; left: 18px; bottom: 18px; right: 18px;
+      color: #fff; font-weight: 700; text-shadow: 0 1px 18px rgba(0,0,0,.55);
+    }
+
+    .contact-grid {
+      display: grid; grid-template-columns: .72fr 1fr; gap: 18px; align-items: stretch;
+    }
+    .contact-panel { padding: 34px; }
+    .contact-panel h2 {
+      font-family: var(--font-display); font-size: clamp(34px, 4.6vw, 64px); line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .contact-list { display: grid; gap: 16px; margin-top: 28px; }
+    .contact-line { display: grid; gap: 4px; padding: 16px 0; border-bottom: 1px solid rgba(0,32,32,.09); }
+    .contact-line span { color: var(--muted); font-size: 14px; }
+    .contact-line strong, .contact-line a { font-size: 19px; font-weight: 700; }
+    .hours { margin-top: 28px; display: grid; gap: 8px; }
+    .hours-row {
+      display: grid; grid-template-columns: 1fr auto; gap: 20px;
+      padding: 11px 14px; border-radius: 14px; background: rgba(0,32,32,.045);
+      font-family: var(--font-mono); font-size: 13px;
+    }
+    .map-shell { min-height: 420px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
+    #map { height: 100%; min-height: 420px; }
+
+    .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { font-size: 22px; }
+    .faq-item p { color: var(--muted); margin: 10px 0 0; }
+
+    .final {
+      padding: 92px 0;
+      background: var(--ink); color: #fff;
+    }
+    .final-box {
+      display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center;
+    }
+    .final h2 { font-family: var(--font-display); font-size: clamp(38px, 6vw, 82px); line-height: .98; overflow-wrap: anywhere; }
+    .final p { margin: 18px 0 0; color: rgba(255,255,255,.74); max-width: 660px; font-size: 19px; }
+    .final .btn-primary { background: #fff; color: var(--ink); box-shadow: none; }
+    .final .btn-outline { color: #fff; border-color: rgba(255,255,255,.55); }
+    .final .btn-outline:hover { background: rgba(255,255,255,.10); }
+
+    footer { padding: 34px 0; color: var(--muted); font-size: 14px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .trust-grid, .price-band, .contact-grid, .final-box {
+        grid-template-columns: 1fr;
+      }
+      .hero-card { min-height: 360px; }
+      .process, .faq, .gallery-strip { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .service-row .tag { justify-self: start; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 52px; }
+      section { padding: 62px 0; }
+      .hero-actions, .final-actions { display: grid; }
+      .btn { width: 100%; }
+      .hero-note { grid-template-columns: 1fr; }
+      .contact-panel, .price-card, .quote-card, .stat-card { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="FyzioČechák">
+        <img src="images/logo.svg" alt="FyzioČechák - Mgr. Štěpán Čechák Cert.MDT fyzioterapie">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420773171215" aria-label="Zavolat +420 773 171 215">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Praha 10 · Vinohrady</div>
+          <h1>Fyzioterapie pro pohyb bez bolesti</h1>
+          <p class="lead">Mgr. Štěpán Čechák Cert.MDT pomáhá s bolestmi páteře, svalovými zraněními, úponovými bolestmi i rehabilitací po úrazech a operacích.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420773171215">Objednat telefonicky</a>
+            <a class="btn btn-outline" href="mailto:fyziocechak@gmail.com">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-card" aria-label="Prostředí ordinace">
+          <img src="https://images.pexels.com/photos/13068380/pexels-photo-13068380.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Sleek modern nail salon interior with stylish design and treatment station.">
+          <div class="hero-note">
+            <strong>Dykova 31, Praha 10</strong>
+            <span class="rating">5,0 · 4 recenze</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Odborná péče v souvislostech</h2>
+          <p>Vyšetření, terapie a srozumitelné cviky domů. Cílem je úleva od obtíží i lepší vnímání vlastního těla.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Fyzioterapie</h3>
+              <p>Bolesti zad, páteře, svalová zranění, úponové bolesti, zánětlivé stavy a návrat do běžného pohybu.</p>
+            </div>
+            <span class="tag">individuálně</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Tejpování</h3>
+              <p>Podpora pohybového aparátu při terapii, sportu nebo návratu po přetížení.</p>
+            </div>
+            <span class="tag">po dohodě</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Masáže</h3>
+              <p>Manuální práce pro uvolnění přetížených partií a podporu regenerace.</p>
+            </div>
+            <span class="tag">po domluvě</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení pacientů">
+      <div class="wrap trust-grid">
+        <div class="stat-card">
+          <div>
+            <div class="big">5,0</div>
+            <p>Google hodnocení podle dostupných recenzí.</p>
+          </div>
+          <span class="mono">4 recenze</span>
+        </div>
+        <div class="quote-card">
+          <blockquote>„Profesionální přístup a jasně vysvětlené cviky.“</blockquote>
+          <div class="quote-list">
+            <p class="quote-mini"><strong>Petr J.</strong> Po pár návštěvách popisuje velké zlepšení.</p>
+            <p class="quote-mini"><strong>Blanka J.</strong> Oceňuje kombinaci manuální práce, edukace a empatie.</p>
+            <p class="quote-mini"><strong>Lubomír K.</strong> Vyzdvihuje klidný přístup bez spěchu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak návštěva probíhá</h2>
+          <p>Každý termín stojí na rozhovoru, vyšetření a terapii zvolených podle vašich obtíží.</p>
+        </div>
+        <div class="process">
+          <article class="process-card">
+            <span>01</span>
+            <div><h3>Domluva termínu</h3><p>Zanecháte kontakt nebo zavoláte, následně se domluví vhodný čas.</p></div>
+          </article>
+          <article class="process-card">
+            <span>02</span>
+            <div><h3>Vyšetření</h3><p>Nejdříve se hledá příčina potíží a souvislosti v pohybu.</p></div>
+          </article>
+          <article class="process-card">
+            <span>03</span>
+            <div><h3>Terapie</h3><p>Manuální práce, edukace a postup přizpůsobený aktuálnímu stavu.</p></div>
+          </article>
+          <article class="process-card">
+            <span>04</span>
+            <div><h3>Cviky domů</h3><p>Dostanete srozumitelné cviky, které podporují efekt terapie.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Ceník">
+      <div class="wrap price-band">
+        <div class="price-card">
+          <h2>Ceník po domluvě</h2>
+          <p class="lead">Termín i vhodný rozsah péče se domlouvá podle konkrétních obtíží a zvolené služby.</p>
+        </div>
+        <div class="price-card price-table">
+          <div class="price-row"><strong>Fyzioterapie</strong><span>po dohodě</span></div>
+          <div class="price-row"><strong>Tejpování</strong><span>po dohodě</span></div>
+          <div class="price-row"><strong>Masáže</strong><span>po dohodě</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí">
+      <div class="wrap">
+        <div class="gallery-strip">
+          <figure>
+            <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+            <figcaption>Klidné prostředí pro terapii</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+            <figcaption>Individuální péče</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+            <figcaption>Praha 10 a Kačerov</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-panel">
+          <h2>Kontakt a ordinace</h2>
+          <div class="contact-list">
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420773171215">+420 773 171 215</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:fyziocechak@gmail.com">fyziocechak@gmail.com</a></div>
+            <div class="contact-line"><span>Adresa</span><strong>Dykova 543/31, 101 00 Praha 10-Vinohrady</strong></div>
+            <div class="contact-line"><span>Další pracoviště</span><strong>Krumlovská 2, Praha 4 - Kačerov</strong></div>
+          </div>
+          <div class="hours" aria-label="Ordinační hodiny">
+            <div class="hours-row"><span>Pondělí</span><strong>po dohodě</strong></div>
+            <div class="hours-row"><span>Úterý</span><strong>po dohodě</strong></div>
+            <div class="hours-row"><span>Středa</span><strong>po dohodě</strong></div>
+            <div class="hours-row"><span>Čtvrtek</span><strong>po dohodě</strong></div>
+            <div class="hours-row"><span>Pátek</span><strong>po dohodě</strong></div>
+          </div>
+        </div>
+        <div class="map-shell">
+          <div id="map" aria-label="Mapa ordinace Dykova 543/31"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Časté otázky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Než se objednáte</h2>
+          <p>Praktické informace k prvnímu kontaktu a typům obtíží, se kterými můžete přijít.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>S čím se mohu objednat?</h3><p>S bolestmi páteře, svalovými zraněními, úponovými bolestmi, zánětlivými stavy i rehabilitací po úrazech a operacích.</p></article>
+          <article class="faq-item"><h3>Jak se domlouvají termíny?</h3><p>Telefonicky nebo e-mailem. Můžete také zanechat kontaktní údaje a termín se doladí následně.</p></article>
+          <article class="faq-item"><h3>Kde ordinace probíhá?</h3><p>Na adrese Dykova 31 v Praze 10-Vinohradech a také na adrese Krumlovská 2 v Praze 4-Kačerově.</p></article>
+          <article class="faq-item"><h3>Jsou ordinační hodiny pevné?</h3><p>V pracovních dnech jsou termíny po dohodě, aby šly sladit s typem péče a vašimi možnostmi.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Objednání">
+      <div class="wrap final-box">
+        <div>
+          <h2>Domluvte si termín</h2>
+          <p>Popište stručně své obtíže a ozvěte se telefonicky nebo e-mailem. Následně společně vyberete vhodný postup.</p>
+        </div>
+        <div class="hero-actions final-actions">
+          <a class="btn btn-primary" href="tel:+420773171215">+420 773 171 215</a>
+          <a class="btn btn-outline" href="mailto:fyziocechak@gmail.com">fyziocechak@gmail.com</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>© 2026 FyzioČechák - Mgr. Štěpán Čechák Cert.MDT fyzioterapie</span>
+      <p class="disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální ukázku. Pro odstranění použijte <a href="https://webflex.cz/remove/pjirgen">tento odkaz</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4537333, 50.074774299999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002020' })
+      .setLngLat([14.4537333, 50.074774299999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
