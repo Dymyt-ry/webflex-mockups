@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFTA s.r.o. PLZEŇ | Centrum mikrochirurgie oka</title>
+  <meta name="description" content="OFTA s.r.o. PLZEŇ - centrum mikrochirurgie oka v Plzni. Laserová korekce zraku, refrakční operace, léčba šedého zákalu a oční vyšetření.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050505;
+      --panel: rgba(12, 14, 15, 0.74);
+      --panel-strong: rgba(5, 6, 7, 0.9);
+      --fg: #f6f8f7;
+      --muted: rgba(246, 248, 247, 0.68);
+      --soft: rgba(246, 248, 247, 0.46);
+      --hair: rgba(255, 255, 255, 0.08);
+      --hair-strong: rgba(255, 255, 255, 0.16);
+      --accent: #33e7bd;
+      --accent-2: #6eb7ff;
+      --danger: #ff715b;
+      --radius: 8px;
+      --font-display: "Geist", system-ui, sans-serif;
+      --font-body: "Geist", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 4%, rgba(51, 231, 189, .2), transparent 28rem),
+        radial-gradient(circle at 82% 18%, rgba(110, 183, 255, .18), transparent 30rem),
+        radial-gradient(circle at 50% 86%, rgba(51, 231, 189, .1), transparent 34rem),
+        var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.8), transparent 70%);
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .section { padding: 92px 0; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--hair);
+      background: rgba(5, 5, 5, .72);
+      backdrop-filter: blur(22px);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .navlinks a { transition: color .2s var(--ease); }
+    .navlinks a:hover { color: var(--fg); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn.primary {
+      background: var(--fg);
+      color: #050505;
+    }
+    .btn.primary:hover { background: var(--accent); }
+    .btn.outline {
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+      background: rgba(255,255,255,.02);
+    }
+    .btn.outline:hover { border-color: var(--accent); background: rgba(51,231,189,.09); }
+
+    .hero {
+      min-height: calc(100vh - 74px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 86px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .82fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: 0;
+      text-transform: uppercase;
+      font-size: 12px;
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      margin: 0;
+    }
+    h1 {
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      max-width: 660px;
+      margin: 26px 0 0;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      min-width: 40%;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--hair);
+      background: var(--panel);
+      position: relative;
+      box-shadow: 0 40px 120px rgba(0,0,0,.48);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .72;
+      filter: saturate(.8) contrast(1.08);
+    }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(5,5,5,.1), rgba(51,231,189,.12));
+    }
+    .hero-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      padding: 18px;
+      border: 1px solid var(--hair-strong);
+      border-radius: 16px;
+      background: rgba(5, 5, 5, .62);
+      backdrop-filter: blur(18px);
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+    .hero-card strong { font-size: 17px; }
+    .mono { font-family: var(--font-mono); }
+    .hero-card .mono { color: var(--accent); font-size: 13px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      border: 1px solid var(--hair);
+      background: var(--hair);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .stat {
+      padding: 24px;
+      background: rgba(7,8,8,.8);
+      min-height: 132px;
+    }
+    .stat b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1;
+    }
+    .stat span { color: var(--muted); font-size: 14px; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .42fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head h2 {
+      font-size: clamp(32px, 4.7vw, 64px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .service-list {
+      border-top: 1px solid var(--hair);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(240px, .36fr);
+      gap: 30px;
+      align-items: center;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--hair);
+    }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--soft);
+    }
+    .service-row h3 { font-size: clamp(24px, 3vw, 38px); line-height: 1.05; }
+    .service-row p { color: var(--muted); margin: 0; }
+
+    .glass {
+      border: 1px solid var(--hair);
+      background: var(--panel);
+      backdrop-filter: blur(24px);
+      border-radius: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 1px;
+      background: var(--hair);
+      border: 1px solid var(--hair);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .split > div { background: rgba(7,8,8,.82); padding: clamp(26px, 4vw, 48px); }
+    .split h2 { font-size: clamp(30px, 4vw, 58px); line-height: 1; margin-bottom: 22px; overflow-wrap: anywhere; }
+    .split p { color: var(--muted); margin: 0 0 22px; }
+    .doctors {
+      display: grid;
+      gap: 12px;
+    }
+    .doctor {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--hair);
+    }
+    .doctor:last-child { border-bottom: 0; }
+    .doctor span { color: var(--muted); font-size: 14px; }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      padding: 24px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step .mono { color: var(--accent); font-size: 13px; }
+    .step h3 { font-size: 22px; margin-top: 24px; }
+    .step p { color: var(--muted); margin: 12px 0 0; font-size: 15px; }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .price-card {
+      padding: 26px;
+      min-height: 190px;
+    }
+    .price-card h3 { font-size: 24px; margin-bottom: 16px; }
+    .price-card p { color: var(--muted); margin: 0; }
+    .price-card .tag {
+      display: inline-flex;
+      margin-top: 22px;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid var(--hair);
+      background: #080808;
+      min-height: 320px;
+      position: relative;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .66;
+      filter: saturate(.82) contrast(1.08);
+    }
+    .gallery figcaption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      color: rgba(255,255,255,.8);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .74fr 1.26fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 28px; }
+    .contact-card h2 { font-size: clamp(30px, 4vw, 54px); line-height: 1; margin-bottom: 24px; }
+    .info-line {
+      padding: 16px 0;
+      border-top: 1px solid var(--hair);
+    }
+    .info-line span {
+      display: block;
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .info-line strong { display: block; margin-top: 5px; }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours td {
+      padding: 11px 0;
+      border-top: 1px solid var(--hair);
+    }
+    .hours td:last-child { text-align: right; color: var(--accent); }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--hair);
+      min-height: 100%;
+    }
+
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      padding: 22px 24px;
+      border: 1px solid var(--hair);
+      border-radius: 16px;
+      background: rgba(9,10,10,.72);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      transition: color .2s var(--ease);
+    }
+    summary:hover { color: var(--accent); }
+    details p { color: var(--muted); margin: 14px 0 0; }
+
+    .final {
+      padding: 54px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(51,231,189,.2), transparent 22rem),
+        rgba(7,8,8,.86);
+      border: 1px solid var(--hair);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(32px, 5vw, 70px); line-height: .98; overflow-wrap: anywhere; }
+    .final p { color: var(--muted); margin: 18px 0 0; max-width: 620px; }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(246,248,247,.5);
+      font-size: 13px;
+      border-top: 1px solid var(--hair);
+    }
+    footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    footer a { color: rgba(246,248,247,.72); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .split, .gallery, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero-photo { min-width: 0; aspect-ratio: 16 / 10; }
+      .stats, .process, .price-grid { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .section { padding: 70px 0; }
+      .final { padding: 32px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 36px; min-height: auto; }
+      .hero-grid { gap: 34px; }
+      .hero-card { position: relative; left: auto; right: auto; bottom: auto; margin: -72px 14px 14px; }
+      .section { padding: 58px 0; }
+      .stat, .step, .price-card, .contact-card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="OFTA s.r.o. PLZEŇ">
+        <img src="https://www.ofta.cz/logo_OFTA_modre.svg" alt="OFTA s.r.o. PLZEŇ">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#zakroky">Zákroky</a>
+        <a href="#tym">Tým</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420377539125">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Centrum mikrochirurgie oka · Plzeň</p>
+          <h1>Péče o Vaše oči</h1>
+          <p class="lead">Laserová korekce zraku, refrakční operace, léčba šedého zákalu a oční vyšetření na pracovišti OFTA v Plzni.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Chci vyšetření</a>
+            <a class="btn outline" href="mailto:ofta@ofta.cz">ofta@ofta.cz</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/36210995/pexels-photo-36210995.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman in glasses sits on a couch in moody blue lighting, creating a dramatic atmosphere.">
+          <div class="hero-card">
+            <div>
+              <strong>Ambulance Plzeň</strong>
+              <div class="mono">Po-Pá 8:00-15:00</div>
+            </div>
+            <a class="btn outline" href="tel:+420377539125">+420 377 539 125</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap stats" aria-label="Důležité údaje">
+      <div class="stat"><b>32</b><span>let péče o Vaše oči</span></div>
+      <div class="stat"><b>4,7</b><span>hodnocení pacientů na Googlu</span></div>
+      <div class="stat"><b>51</b><span>veřejných recenzí</span></div>
+    </section>
+
+    <section class="section" id="zakroky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Zákroky a vyšetření</h2>
+          <p>OFTA se věnuje pacientům od vstupního očního vyšetření přes korekci zraku až po chirurgickou léčbu šedého zákalu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Laserová korekce zraku</h3>
+            <p>Řešení pro pacienty přibližně od 18 do 45 let, kteří chtějí život bez omezení brýlemi nebo čočkami.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Refrakční operace</h3>
+            <p>Výměna nitrooční čočky pro období středního věku, kdy už běžná korekce přestává stačit.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Léčba šedého zákalu</h3>
+            <p>Chirurgická péče pro ostrý zrak v aktivním stáří, vedená specialisty na kataraktovou chirurgii.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">04</div>
+            <h3>Oční vyšetření</h3>
+            <p>Vyšetření zraku a doporučení dalšího postupu podle aktuálního nálezu a potřeb pacienta.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tym">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">Tým předních lékařů a chirurgů</p>
+          <h2>Pacient je na prvním místě.</h2>
+          <p>Odborný tým OFTA Plzeň vede ambulantní i chirurgickou péči v prostředí s nadstandardním vybavením.</p>
+          <a class="btn outline" href="#kontakt">Objednat se</a>
+        </div>
+        <div class="doctors">
+          <div class="doctor"><strong>MUDr. Petr Salfický</strong><span>oftalmolog</span></div>
+          <div class="doctor"><strong>MUDr. Gabriel Hadrávek</strong><span>oftalmolog</span></div>
+          <div class="doctor"><strong>MUDr. Jiří Cendelín CSc.</strong><span>refrakční a kataraktová chirurgie</span></div>
+          <div class="doctor"><strong>MUDr. Lubomír Továrek</strong><span>refrakční a kataraktová chirurgie</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak probíhá péče</h2>
+          <p>Od prvního kontaktu po kontrolu po zákroku zůstává postup srozumitelný a vedený lékařem.</p>
+        </div>
+        <div class="process">
+          <article class="glass step"><span class="mono">01 / Kontakt</span><div><h3>Objednání</h3><p>Zavoláte do ambulance Plzeň nebo pošlete e-mail s žádostí o termín.</p></div></article>
+          <article class="glass step"><span class="mono">02 / Diagnostika</span><div><h3>Vyšetření</h3><p>Lékař vyhodnotí stav zraku a vhodnost dalšího řešení.</p></div></article>
+          <article class="glass step"><span class="mono">03 / Doporučení</span><div><h3>Postup</h3><p>Dostanete vysvětlení možností včetně informovaného souhlasu.</p></div></article>
+          <article class="glass step"><span class="mono">04 / Péče</span><div><h3>Kontroly</h3><p>Po zákroku následují kontroly podle typu péče a doporučení lékaře.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Ceník a pojišťovny</h2>
+          <p>Konkrétní ceny a dokumenty k jednotlivým výkonům poskytuje OFTA v samostatné sekci ceníku a informovaných souhlasů.</p>
+        </div>
+        <div class="price-grid">
+          <article class="glass price-card">
+            <h3>Ceník výkonů</h3>
+            <p>Pro laserovou korekci, refrakční operace, léčbu šedého zákalu a vyšetření je vhodné ověřit aktuální položky při objednání.</p>
+            <span class="tag">CENÍK · KONTAKT</span>
+          </article>
+          <article class="glass price-card">
+            <h3>Smluvní pojišťovny</h3>
+            <p>U hrazené péče a doplatků rozhoduje typ výkonu, doporučení lékaře a smluvní vztahy zdravotní pojišťovny.</p>
+            <span class="tag">INFORMOVANÉ SOUHLASY</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap gallery">
+        <figure>
+          <img src="https://images.pexels.com/photos/30096216/pexels-photo-30096216.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A dark abstract image showcasing blurred bokeh lights with a moody atmosphere.">
+          <figcaption>Klidné prostředí pro vyšetření i zákrok</figcaption>
+        </figure>
+        <figure>
+          <img src="https://images.pexels.com/photos/31425005/pexels-photo-31425005.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a ceramic vase on shelf in a dimly lit room with warm decor.">
+          <figcaption>Soukromí, domluvený termín, jasný postup</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté dotazy</h2>
+          <p>Krátké odpovědi k objednání a orientaci před návštěvou ambulance v Plzni.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak se objednám na vyšetření?</summary>
+            <p>Pro objednání zavolejte na ambulanci Plzeň: +420 377 539 125. Můžete také napsat na ofta@ofta.cz.</p>
+          </details>
+          <details>
+            <summary>Jaké zákroky OFTA v Plzni řeší?</summary>
+            <p>Laserovou korekci zraku, refrakční operace včetně výměny nitrooční čočky, léčbu šedého zákalu a oční vyšetření.</p>
+          </details>
+          <details>
+            <summary>Kde najdu pracoviště v Plzni?</summary>
+            <p>Ambulance OFTA Plzeň sídlí na adrese Sokolovská 2035/82, 323 00 Plzeň-Plzeň 1.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="glass contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Objednejte se na vyšetření.</h2>
+          <div class="info-line"><span>Telefon</span><strong><a href="tel:+420377539125">+420 377 539 125</a></strong></div>
+          <div class="info-line"><span>E-mail</span><strong><a href="mailto:ofta@ofta.cz">ofta@ofta.cz</a></strong></div>
+          <div class="info-line"><span>Adresa</span><strong>Sokolovská 2035/82, 323 00 Plzeň-Plzeň 1</strong></div>
+          <table class="hours" aria-label="Ordinační doba">
+            <tr><td>Po-Pá</td><td>8:00-15:00</td></tr>
+            <tr><td>Akutní případy od 16:00 a víkendy</td><td>+420 734 473 730</td></tr>
+          </table>
+        </div>
+        <div id="map" aria-label="Mapa OFTA Plzeň"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap final">
+        <div>
+          <p class="eyebrow">OFTA · Plzeň</p>
+          <h2>Těšíme se na viděnou.</h2>
+          <p>Pro termín vyšetření kontaktujte ambulanci Plzeň v ordinační době Po-Pá 8:00-15:00.</p>
+        </div>
+        <a class="btn primary" href="tel:+420377539125">+420 377 539 125</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Neoficiální prezentační stránka vytvořená studiem Webflex pro ukázání možné podoby veřejné prezentace. Nesouvisí s provozovatelem OFTA s.r.o. PLZEŇ.</span>
+      <a href="https://webflex.cz/delete/f7yws5u">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.368933499999999, 49.7730165],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#33e7bd' })
+      .setLngLat([13.368933499999999, 49.7730165])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
