@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plavecký areál Rokycany</title>
+  <meta name="description" content="Bazén, koupaliště, sauna a sportoviště v Rokycanech. Otevírací doba, provoz, odstávky a kontakt.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #101317;
+      --muted: #5d6570;
+      --line: #d8dde5;
+      --line-strong: #9ba7b6;
+      --soft: #f5f7fa;
+      --soft-2: #eef3f8;
+      --accent: #004080;
+      --accent-2: #0b61b8;
+      --ok: #137a4b;
+      --warn: #9c5b00;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(16, 19, 23, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 19, 23, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px;
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .wordmark::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border: 5px solid var(--accent);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 4px #fff;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-links a {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      transition: color 180ms var(--ease), background 180ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--fg); background: var(--soft); }
+    .nav-links a:active, .btn:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 12px 16px;
+      border: 1px solid var(--accent);
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--fg); border-color: currentColor; }
+    .btn-outline:hover { background: var(--soft-2); transform: translateY(-1px); }
+
+    main { overflow: hidden; }
+    section { padding: 72px 0; }
+    .hero {
+      padding: 54px 0 70px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      gap: 48px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      margin: 0;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 22px 0 0;
+      font-size: 19px;
+      color: var(--muted);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+    .status-card {
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      box-shadow: 10px 10px 0 var(--soft-2);
+    }
+    .status-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .status-row:last-child { border-bottom: 0; }
+    .status-name { font-weight: 800; }
+    .status-time { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+    .today { background: #eef6ff; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid var(--line-strong);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: #fff;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 26px;
+    }
+    .section-no {
+      font-family: var(--font-mono);
+      font-size: clamp(44px, 6vw, 76px);
+      line-height: .8;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--line-strong);
+    }
+    h2 { font-size: clamp(30px, 4vw, 54px); line-height: 1; overflow-wrap: anywhere; }
+    .section-copy { margin: 12px 0 0; color: var(--muted); max-width: 720px; }
+
+    .facility-table {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 73px;
+      z-index: 5;
+      background: var(--fg);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    td strong { display: block; margin-bottom: 4px; }
+    .mono { font-family: var(--font-mono); font-weight: 700; }
+    .note { color: var(--muted); font-size: 14px; }
+    .open { color: var(--ok); }
+    .closed { color: #a1281f; }
+
+    .notice-grid {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .notice-panel, .trust-panel, .contact-panel, .faq details {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .notice-panel { padding: 24px; min-height: 100%; }
+    .notice-panel h3 { font-size: 25px; line-height: 1.1; }
+    .notice-panel p, .trust-panel p { color: var(--muted); margin: 12px 0 0; }
+    .shutdown-list { margin: 20px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+    .shutdown-list li {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 16px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .trust-panel {
+      border: 0;
+      border-right: 1px solid var(--line);
+      padding: 24px;
+      min-height: 154px;
+    }
+    .trust-panel:last-child { border-right: 0; }
+    .big-number {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: .95;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .rules {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .rule-list {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .rule-row {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .rule-row:last-child { border-bottom: 0; }
+    .rule-index { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .rule-row h3 { font-size: 18px; margin-bottom: 5px; }
+    .rule-row p { margin: 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-panel { padding: 24px; }
+    .contact-panel h3 { font-size: 24px; margin-bottom: 16px; }
+    .contact-line {
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+    }
+    .contact-line span:first-child {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .faq details {
+      padding: 0;
+      transition: border-color 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .faq details:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .faq summary {
+      cursor: pointer;
+      padding: 18px;
+      font-weight: 800;
+    }
+    .faq p { margin: 0; padding: 0 18px 18px; color: var(--muted); }
+
+    .final-cta {
+      padding: 44px 0;
+      background: var(--fg);
+      color: #fff;
+    }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final-cta h2 { font-size: clamp(30px, 4vw, 52px); }
+    .final-cta p { color: rgba(255,255,255,.72); margin: 10px 0 0; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.1); }
+
+    footer {
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      background: #fff;
+    }
+    .footer-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer {
+      max-width: 820px;
+    }
+    .disclaimer a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 860px) {
+      .nav { align-items: flex-start; flex-direction: column; padding: 16px 0; }
+      .nav-links { flex-wrap: wrap; }
+      .hero-grid, .notice-grid, .rules, .contact-grid, .cta-grid { grid-template-columns: 1fr; }
+      .status-card { box-shadow: 6px 6px 0 var(--soft-2); }
+      .section-head { grid-template-columns: 1fr; gap: 10px; }
+      .trust-strip, .faq { grid-template-columns: 1fr; }
+      .trust-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-panel:last-child { border-bottom: 0; }
+      th { top: 0; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      section { padding: 54px 0; }
+      .hero { padding-top: 34px; }
+      .shutdown-list li, .rule-row, .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="wordmark" href="#top" aria-label="Plavecký areál Rokycany">Plavecký areál Rokycany</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#provoz">Provoz</a>
+        <a href="#upozorneni">Upozornění</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420371745111">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">Sportovní zařízení města Rokycany</p>
+          <h1>Bazén, koupaliště, sauna v Rokycanech</h1>
+          <p class="lead">Aktivní odpočinek, plavání a relaxace na jednom místě. Zkontrolujte aktuální provoz, odstávky a kontakt před návštěvou.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#provoz">Zobrazit provoz</a>
+            <a class="btn btn-outline" href="mailto:sportovni.zarizeni@rokycany.cz">Napsat e-mail</a>
+          </div>
+        </div>
+
+        <aside class="status-card" aria-label="Aktuální provoz">
+          <div class="status-head">
+            <span>Dnes · čtvrtek 4. 6. 2026</span>
+            <span>Rokycany</span>
+          </div>
+          <div class="status-row today">
+            <span><strong class="status-name">Bazén</strong><span class="tag">v provozu</span></span>
+            <span class="status-time">9:00–21:00</span>
+          </div>
+          <div class="status-row">
+            <span><strong class="status-name">Koupaliště</strong><span class="tag">sezóna běží</span></span>
+            <span class="status-time">10:00–20:00</span>
+          </div>
+          <div class="status-row today">
+            <span><strong class="status-name">Sauna</strong><span class="tag">společná</span></span>
+            <span class="status-time">17:00–21:00</span>
+          </div>
+          <div class="status-row">
+            <span><strong class="status-name">Zimní stadion</strong><span class="tag">mimo provoz</span></span>
+            <span class="status-time">zavřeno</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="shell">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <p class="eyebrow">Provoz areálu</p>
+            <h2>Rozpis pro dnešní návštěvu</h2>
+            <p class="section-copy">Údaje vycházejí z aktuálních informací sportovních zařízení města. Před cestou sledujte upozornění k bazénu, sauně a koupališti.</p>
+          </div>
+        </div>
+
+        <div class="facility-table" role="region" aria-label="Tabulka provozu" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>Zařízení</th>
+                <th>Stav</th>
+                <th>Dnešní čas</th>
+                <th>Poznámka</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Krytý plavecký bazén</strong><span class="note">Plavání a aktivní odpočinek</span></td>
+                <td class="mono open">v provozu</td>
+                <td class="mono">9:00–21:00</td>
+                <td>Otevřen do <span class="mono">19. 6. 2026</span>. Vstupné lze platit platební kartou, karty MONETA BANK nejsou akceptovány.</td>
+              </tr>
+              <tr>
+                <td><strong>Koupaliště</strong><span class="note">Letní venkovní provoz</span></td>
+                <td class="mono open">otevřeno</td>
+                <td class="mono">10:00–20:00</td>
+                <td>Sezóna zahájena <span class="mono">1. 6. 2026</span>. Aktuálně uváděná voda <span class="mono">22,7 °C</span>, vzduch <span class="mono">20,6 °C</span>.</td>
+              </tr>
+              <tr>
+                <td><strong>Sauna</strong><span class="note">Letní provoz</span></td>
+                <td class="mono open">čtvrtek</td>
+                <td class="mono">17:00–21:00</td>
+                <td>Sauna je společná pro muže i ženy.</td>
+              </tr>
+              <tr>
+                <td><strong>Zimní stadion</strong><span class="note">Ledová plocha</span></td>
+                <td class="mono closed">zavřeno</td>
+                <td class="mono">—</td>
+                <td>Zimní stadion je podle aktuálního sdělení uzavřen.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="upozorneni">
+      <div class="shell">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <p class="eyebrow">Odstávky a pravidla</p>
+            <h2>Termíny, které ovlivní provoz</h2>
+            <p class="section-copy">Přehled zavíracích termínů a provozních pravidel, která je dobré znát před příchodem do areálu.</p>
+          </div>
+        </div>
+
+        <div class="notice-grid">
+          <article class="notice-panel">
+            <h3>Technické odstávky bazénu</h3>
+            <p>Krytý plavecký bazén bude v roce 2026 uzavřen v těchto oznámených termínech.</p>
+            <ul class="shutdown-list">
+              <li><span class="mono">31. 3. 2026</span><span>od 9:00 do 16:00</span></li>
+              <li><span class="mono">20. 6.–30. 8.</span><span>letní odstávka bazénu</span></li>
+              <li><span class="mono">24.–25. 12.</span><span>vánoční uzavření</span></li>
+              <li><span class="mono">31. 12. 2026</span><span>silvestrovské uzavření</span></li>
+              <li><span class="mono">1. 1. 2027</span><span>novoroční uzavření</span></li>
+            </ul>
+          </article>
+
+          <article class="notice-panel">
+            <h3>Sauna v letním režimu</h3>
+            <p>Sauna je otevřena každý čtvrtek od <span class="mono">17:00</span> do <span class="mono">21:00</span> a je společná.</p>
+            <ul class="shutdown-list">
+              <li><span class="mono">1.–31. 7.</span><span>sauna uzavřena</span></li>
+              <li><span class="mono">24.–27. 12.</span><span>vánoční uzavření</span></li>
+              <li><span class="mono">31. 12.–3. 1.</span><span>přelom roku</span></li>
+            </ul>
+            <p><strong>Plavecký úbor:</strong> do bazénu nejsou povoleny trenky, šortky, kraťasy ani bermudy.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div>
+            <p class="eyebrow">Důvěra návštěvníků</p>
+            <h2>Areál pro plavání i relaxaci</h2>
+          </div>
+        </div>
+        <div class="trust-strip">
+          <article class="trust-panel">
+            <span class="big-number">4,4</span>
+            <p>Hodnocení návštěvníků podle strukturovaných dat.</p>
+          </article>
+          <article class="trust-panel">
+            <span class="big-number">1327</span>
+            <p>Veřejných recenzí u areálu.</p>
+          </article>
+          <article class="trust-panel">
+            <span class="big-number">5</span>
+            <p>Hlavních částí sportovních zařízení: bazén, koupaliště, zimní stadion, areál Jižní Předměstí a venkovní sportoviště.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell rules">
+        <div>
+          <p class="eyebrow">Před návštěvou</p>
+          <h2>Prakticky a bez hledání</h2>
+          <p class="section-copy">Nejdůležitější informace jsou seřazené podle toho, co řešíte těsně před odchodem: čas, platba, provoz a pravidla.</p>
+        </div>
+        <div class="rule-list">
+          <div class="rule-row">
+            <span class="rule-index">01</span>
+            <div><h3>Platba vstupného</h3><p>Vstupné lze platit platební kartou. Karty MONETA BANK nejsou akceptovány.</p></div>
+          </div>
+          <div class="rule-row">
+            <span class="rule-index">02</span>
+            <div><h3>Koupaliště od června</h3><p>Letní sezóna koupaliště je zahájena od 1. června 2026.</p></div>
+          </div>
+          <div class="rule-row">
+            <span class="rule-index">03</span>
+            <div><h3>Sauna ve čtvrtek</h3><p>Letní provoz sauny probíhá každý čtvrtek večer, společně pro muže i ženy.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <p class="eyebrow">Kontakt a poloha</p>
+            <h2>Pod Husovými sady 1160</h2>
+            <p class="section-copy">Plavecký areál najdete v Rokycanech na adrese Pod Husovými sady 1160, 337 01 Rokycany-Rokycany 1.</p>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-panel">
+            <h3>Recepce areálu</h3>
+            <div class="contact-line"><span>Telefon</span><a class="mono" href="tel:+420371745111">+420 371 745 111</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:sportovni.zarizeni@rokycany.cz">sportovni.zarizeni@rokycany.cz</a></div>
+            <div class="contact-line"><span>Adresa</span><span>Pod Husovými sady 1160<br>337 01 Rokycany-Rokycany 1</span></div>
+            <div class="contact-line"><span>Web</span><a href="https://sport.rokycany.cz/">sport.rokycany.cz</a></div>
+          </aside>
+          <div id="map" aria-label="Mapa s polohou Plaveckého areálu Rokycany"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Rychlé odpovědi před cestou</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Je bazén otevřený i v červnu?</summary>
+            <p>Ano, krytý plavecký bazén je podle aktuálního sdělení otevřen do 19. 6. 2026.</p>
+          </details>
+          <details>
+            <summary>Kdy je otevřená sauna?</summary>
+            <p>V letním provozu každý čtvrtek od 17:00 do 21:00. Sauna je společná.</p>
+          </details>
+          <details>
+            <summary>Platí se kartou?</summary>
+            <p>Vstupné lze platit platební kartou. Areál uvádí, že neakceptuje karty MONETA BANK.</p>
+          </details>
+          <details>
+            <summary>Jaký plavecký úbor je povolen?</summary>
+            <p>Areál upozorňuje, že nejsou povoleny trenky, šortky, kraťasy ani bermudy.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="shell cta-grid">
+        <div>
+          <p class="eyebrow" style="color:#9fc6ff">Přijeďte plavat</p>
+          <h2>Zkontrolujte provoz a vyrazte</h2>
+          <p>Bazén, koupaliště i sauna mají odlišné časy. Přímé ověření získáte telefonicky na recepci.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420371745111">+420 371 745 111</a>
+          <a class="btn btn-outline" href="#provoz">Provozní tabulka</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-grid">
+      <div class="disclaimer">
+        Tato stránka od Webflex slouží jako nezávazný náhled možné prezentace. Nejste-li adresátem, můžete ji odstranit zde:
+        <a href="https://app.webflex.cz/delete/2pgiw4j">odstranit stránku</a>.
+      </div>
+      <div class="mono">TOKEN 2pgiw4j</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.5989537, 49.747454399999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004080' })
+      .setLngLat([13.5989537, 49.747454399999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
