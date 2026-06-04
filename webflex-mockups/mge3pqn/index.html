@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koupaliště Kolovraty</title>
+  <meta name="description" content="Koupaliště Kolovraty: vyhřívaný plavecký a relaxační bazén, dětský bazén s klouzačkou, sauna, opalovací louka, terasa, pláž a občerstvení.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101317;
+      --surface: rgba(255, 255, 255, .08);
+      --surface-strong: rgba(255, 255, 255, .12);
+      --ink: #f6f8fb;
+      --muted: rgba(246, 248, 251, .68);
+      --line: rgba(255, 255, 255, .12);
+      --accent: #1E5594;
+      --accent-soft: rgba(30, 85, 148, .24);
+      --water: #76c6e8;
+      --shadow: 0 38px 120px rgba(0, 0, 0, .28);
+      --shadow-soft: 0 24px 90px rgba(0, 0, 0, .18);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 72% 8%, rgba(30, 85, 148, .38), transparent 34%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--water);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 19, 23, .78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 46px;
+      width: min(260px, 54vw);
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-weight: 700;
+      font-size: 15px;
+      color: rgba(246,248,251,.78);
+    }
+    .nav-links a { text-decoration: none; transition: color .2s ease; }
+    .nav-links a:hover { color: #fff; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(30,85,148,.25); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn-secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.7); }
+
+    .hero { padding: 72px 0 92px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 52px;
+      align-items: center;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 680px;
+    }
+    .meta-tile, .feature-card, .hours-card, .map-card, .faq-item, .price-panel {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(16px);
+    }
+    .meta-tile {
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 106px;
+    }
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: #fff;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+
+    .pool-visual {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background:
+        radial-gradient(circle at 28% 24%, rgba(118,198,232,.35), transparent 24%),
+        linear-gradient(135deg, rgba(30,85,148,.96), rgba(12,24,38,.96));
+    }
+    .lane {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      height: 1px;
+      background: rgba(255,255,255,.32);
+      transform: rotate(-18deg);
+    }
+    .lane:nth-child(1) { top: 28%; }
+    .lane:nth-child(2) { top: 42%; }
+    .lane:nth-child(3) { top: 56%; }
+    .lane:nth-child(4) { top: 70%; }
+    .pool-card {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      padding: 20px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(18px);
+      color: #fff;
+    }
+    .pool-card strong { display: block; font-family: var(--font-mono); font-size: 13px; color: var(--water); }
+    .pool-card p { margin: 8px 0 0; font-size: 22px; font-weight: 800; line-height: 1.12; }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .feature-card {
+      min-height: 230px;
+      border-radius: 24px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s;
+    }
+    .feature-card:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .feature-card:active { transform: translateY(1px); }
+    .feature-card .num {
+      font-family: var(--font-mono);
+      color: var(--water);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .feature-card h3 { margin-top: 36px; font-size: 25px; line-height: 1.05; }
+    .feature-card p { margin: 16px 0 0; color: var(--muted); font-size: 16px; hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .58fr) minmax(340px, .42fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .timeline, .stats-panel {
+      border-radius: 28px;
+      padding: 30px;
+      background: rgba(255,255,255,.075);
+      box-shadow: var(--shadow-soft);
+    }
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      padding: 22px 0;
+      border-top: 1px solid var(--line);
+    }
+    .timeline-row:first-child { border-top: 0; padding-top: 0; }
+    .timeline-row:last-child { padding-bottom: 0; }
+    .timeline-row b { font-family: var(--font-mono); color: var(--water); font-size: 13px; }
+    .timeline-row strong { display: block; font-size: 20px; }
+    .timeline-row p { margin: 8px 0 0; color: var(--muted); }
+    .stats-panel {
+      display: grid;
+      gap: 14px;
+      align-content: stretch;
+    }
+    .stat {
+      border-radius: 22px;
+      padding: 24px;
+      background: rgba(16,19,23,.34);
+    }
+    .stat strong { display: block; font-family: var(--font-mono); font-size: clamp(28px, 4vw, 46px); color: #fff; }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .price-panel {
+      border-radius: 28px;
+      padding: 30px;
+    }
+    .price-list { display: grid; gap: 0; }
+    .price-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      align-items: center;
+    }
+    .price-row:first-child { border-top: 0; }
+    .price-row strong { font-size: 18px; }
+    .price-row span { color: var(--muted); }
+    .price-row em {
+      font-family: var(--font-mono);
+      font-style: normal;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .42fr) minmax(0, .58fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card, .map-card {
+      border-radius: 28px;
+      padding: 30px;
+      overflow: hidden;
+    }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row.today { color: #fff; }
+    .contact-line {
+      display: block;
+      margin-top: 16px;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color .2s ease, transform .2s ease;
+    }
+    .contact-line:hover { color: #fff; transform: translateY(-1px); }
+    #map { height: 420px; border-radius: 20px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      border-radius: 22px;
+      padding: 24px;
+    }
+    .faq-item h3 { font-size: 20px; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding-bottom: 96px;
+    }
+    .cta-strip {
+      min-height: 300px;
+      border-radius: 32px;
+      padding: clamp(30px, 5vw, 56px);
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) auto;
+      gap: 34px;
+      align-items: end;
+      background:
+        radial-gradient(circle at 86% 24%, rgba(118,198,232,.22), transparent 30%),
+        linear-gradient(135deg, rgba(30,85,148,.62), rgba(255,255,255,.08));
+      box-shadow: var(--shadow);
+    }
+    .cta-strip h2 { max-width: 760px; }
+    .cta-strip p { max-width: 580px; margin: 18px 0 0; color: rgba(255,255,255,.74); font-size: 18px; }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: rgba(246,248,251,.56);
+      font-size: 13px;
+    }
+    footer a { color: rgba(246,248,251,.82); }
+
+    @media (max-width: 920px) {
+      .hero-grid, .section-head, .split, .contact-grid, .cta-strip { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .pool-visual { max-width: 620px; }
+      .feature-grid, .faq-grid { grid-template-columns: 1fr; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 44px; }
+      section { padding: 58px 0; }
+      .timeline-row { grid-template-columns: 1fr; gap: 8px; }
+      .price-row { grid-template-columns: 1fr; gap: 8px; }
+      .pool-card p { font-size: 19px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Koupaliště Kolovraty">
+        <img src="https://www.koupalistekolovraty.cz/files/kolovraty-logo-1.jpg" alt="Koupaliště Kolovraty">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#areal">Areál</a>
+        <a href="#zazemi">Zázemí</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420734692740">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha-Kolovraty · každý den</p>
+          <h1>Den u vody v Kolovratech</h1>
+          <p class="lead">Vyhřívané bazény, plavecké dráhy, dětská klouzačka, písečná pláž a klidné posezení pod slunečníky na okraji Prahy.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Kontakt a mapa</a>
+            <a class="btn btn-secondary" href="mailto:info@koupalistekolovraty.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>9:30-19:30</strong><span>otevřeno PO-NE</span></div>
+            <div class="meta-tile"><strong>4.4 / 687</strong><span>hodnocení a recenze</span></div>
+            <div class="meta-tile"><strong>795 osob</strong><span>kapacita areálu</span></div>
+          </div>
+        </div>
+        <div class="pool-visual" aria-label="Abstraktní vodní plocha s drahami">
+          <span class="lane"></span>
+          <span class="lane"></span>
+          <span class="lane"></span>
+          <span class="lane"></span>
+          <div class="pool-card">
+            <strong>25 m bazén</strong>
+            <p>Plavecké dráhy i relaxační část v jednom venkovním areálu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areal">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Areál</p>
+            <h2>Voda, tráva, terasa</h2>
+          </div>
+          <p>Koupaliště kombinuje aktivní plavání, dětské vodní prvky a prostor pro odpočinek bez nutnosti odjíždět hluboko za Prahu.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="num">01</span>
+            <div>
+              <h3>Plavecký a relaxační bazén</h3>
+              <p>Vyhřívaný venkovní bazén s hloubkou 1,15-1,55 m, plaveckými dráhami a relaxační částí.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <span class="num">02</span>
+            <div>
+              <h3>Dětský bazén s klouzačkou</h3>
+              <p>Vyhřívaný bazén pro děti s hloubkou 0,4-0,8 m, klouzačkou a chrličem.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <span class="num">03</span>
+            <div>
+              <h3>Louka, terasa a pláž</h3>
+              <p>Rozlehlá travnatá plocha, slunná terasa s lehátky a písečná relaxační pláž s dětským koutkem.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="zazemi">
+      <div class="wrap split">
+        <div class="timeline">
+          <p class="eyebrow">Zázemí během dne</p>
+          <div class="timeline-row">
+            <b>VODA</b>
+            <div><strong>Vyhřívané bazény</strong><p>Příjemná teplota vody i při prvních teplých dnech sezóny.</p></div>
+          </div>
+          <div class="timeline-row">
+            <b>RELAX</b>
+            <div><strong>Finská panoramatická sauna</strong><p>Sauna na plovárně s teplotou 70-95 °C a vlhkostí 10-20 %.</p></div>
+          </div>
+          <div class="timeline-row">
+            <b>PAUZA</b>
+            <div><strong>Občerstvení a posezení</strong><p>Stánek s občerstvením, slunečníky, převlékárny a sociální zařízení přímo v areálu.</p></div>
+          </div>
+        </div>
+        <aside class="stats-panel" aria-label="Důležité údaje">
+          <div class="stat"><strong>25 m</strong><span>venkovní bazén</span></div>
+          <div class="stat"><strong>70-95 °C</strong><span>finská sauna</span></div>
+          <div class="stat"><strong>0,4-0,8 m</strong><span>dětský bazén</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Přehled</p>
+            <h2>Co najdete v areálu</h2>
+          </div>
+          <p>Jednoduchý výběr podle toho, jestli chcete plavat, být s dětmi u vody, nebo si jen na chvíli lehnout do trávy.</p>
+        </div>
+        <div class="price-panel">
+          <div class="price-list">
+            <div class="price-row"><div><strong>Plavání</strong><br><span>25metrový venkovní bazén s drahami</span></div><em>1,15-1,55 m</em></div>
+            <div class="price-row"><div><strong>Děti</strong><br><span>Malý bazén s klouzačkou a chrličem</span></div><em>0,4-0,8 m</em></div>
+            <div class="price-row"><div><strong>Odpočinek</strong><br><span>Opalovací louka, terasa, lehátka a písečná pláž</span></div><em>venkovní areál</em></div>
+            <div class="price-row"><div><strong>Sauna</strong><br><span>Finská panoramatická sauna na plovárně</span></div><em>10-20 % vlhkost</em></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Nad Nádrží, Kolovraty</h2>
+          </div>
+          <p>Areál leží na okraji Prahy-Kolovrat. Pro rychlé dotazy volejte, pro delší zprávu použijte e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="hours-card">
+            <h3>Otevírací doba</h3>
+            <div class="hours-row today"><span>PO-NE</span><span>9:30-19:30</span></div>
+            <a class="contact-line" href="tel:+420734692740">+420 734 692 740</a>
+            <a class="contact-line" href="mailto:info@koupalistekolovraty.cz">info@koupalistekolovraty.cz</a>
+            <span class="contact-line">Nad Nádrží 103 00, 10 Praha-Kolovraty</span>
+          </div>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa Koupaliště Kolovraty"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prakticky</p>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Nejdůležitější informace z areálu pohromadě, aby se vám lépe plánoval den u vody.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Je areál vhodný pro děti?</h3><p>Ano. K dispozici je dětský vyhřívaný bazén s klouzačkou, chrličem a dětským koutkem u písečné pláže.</p></article>
+          <article class="faq-item"><h3>Dá se na místě odpočívat mimo bazén?</h3><p>Ano. V areálu je opalovací louka, slunná terasa s lehátky, písečná relaxační pláž a posezení pod slunečníky.</p></article>
+          <article class="faq-item"><h3>Je voda vyhřívaná?</h3><p>Plavecký a relaxační bazén i dětský bazén jsou vyhřívané pro příjemnější koupání.</p></article>
+          <article class="faq-item"><h3>Je v areálu občerstvení?</h3><p>Ano. Součástí koupaliště je stánek s občerstvením a posezením pod slunečníky.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="cta-strip">
+          <div>
+            <p class="eyebrow">Těšíme se na vaši návštěvu</p>
+            <h2>Přijeďte se vykoupat</h2>
+            <p>Každý den od 9:30 do 19:30, s bazény, terasou, pláží, saunou a občerstvením v jednom areálu.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="tel:+420734692740">Zavolat</a>
+            <a class="btn btn-secondary" href="https://www.koupalistekolovraty.cz/">Oficiální stránky</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>Prezentační stránku připravil Webflex. Pokud ji nechcete zobrazovat, můžete ji odstranit zde:
+        <a href="https://www.webflex.cz/delete/mge3pqn">https://www.webflex.cz/delete/mge3pqn</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.633466599999998, 50.0085531],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#1E5594' })
+      .setLngLat([14.633466599999998, 50.0085531])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
