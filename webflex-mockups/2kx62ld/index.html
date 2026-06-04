@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NAUTICA, spol. s r.o. - interiérové bazény, wellness</title>
+  <meta name="description" content="Bazény, wellness a vodní prvky od společnosti NAUTICA v Moravanech u Brna.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101217;
+      --bg-soft: #151922;
+      --fg: #f7f9fc;
+      --muted: rgba(247, 249, 252, .66);
+      --faint: rgba(247, 249, 252, .1);
+      --accent: #004080;
+      --accent-bright: #1c72c7;
+      --surface: rgba(255, 255, 255, .07);
+      --surface-strong: rgba(255, 255, 255, .11);
+      --shadow: 0 28px 90px rgba(0, 0, 0, .32);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 8%, rgba(28, 114, 199, .28), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-bright);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .98;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4vw, 64px); max-width: 860px; }
+    h3 { font-size: clamp(22px, 2vw, 30px); }
+    p { margin: 0; color: var(--muted); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16, 18, 23, .78);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      color: rgba(247, 249, 252, .74);
+    }
+    .navlinks a, .btn, .service-row, .faq summary {
+      transition: transform 220ms var(--ease), color 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease);
+    }
+    .navlinks a:hover { color: #fff; }
+    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 0 20px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 18px 52px rgba(0, 64, 128, .38); }
+    .btn.primary:hover { background: #07508f; }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.75); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .72fr);
+      align-items: center;
+      gap: 56px;
+      padding: 70px 0 92px;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { margin-bottom: 18px; }
+    .hero-copy p {
+      max-width: 650px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: rgba(247, 249, 252, .76);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-visual {
+      aspect-ratio: 4 / 3;
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 68% 30%, rgba(65, 158, 255, .42), transparent 26%),
+        linear-gradient(140deg, rgba(255,255,255,.14), rgba(255,255,255,.03)),
+        #121721;
+      box-shadow: var(--shadow);
+    }
+    .hero-visual svg { width: 100%; height: 100%; }
+    .glass-note {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(8, 12, 18, .58);
+      backdrop-filter: blur(18px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.78);
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: .85fr .75fr;
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 42px;
+    }
+    .section-head p { font-size: 17px; }
+    .services { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 90px 1fr minmax(220px, .55fr);
+      align-items: center;
+      gap: 28px;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: 0 24px 80px rgba(0,0,0,.14);
+    }
+    .service-row:hover { transform: translateY(-1px); background: var(--surface-strong); }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-bright); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat, .feature, .contact-card, .faq details {
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: 0 30px 100px rgba(0,0,0,.16);
+    }
+    .stat { padding: 30px; min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(38px, 5vw, 74px); line-height: 1; color: #fff; }
+    .stat span { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: .72fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .feature { padding: 34px; }
+    .feature p { margin-top: 16px; }
+    .timeline { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 22px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--faint);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b { font-family: var(--font-mono); color: var(--accent-bright); }
+    .step h3 { font-size: 24px; margin-bottom: 8px; }
+
+    .project-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .project {
+      min-height: 250px;
+      padding: 28px;
+      border-radius: 24px;
+      background:
+        linear-gradient(150deg, rgba(255,255,255,.14), rgba(255,255,255,.05)),
+        radial-gradient(circle at 80% 20%, rgba(28,114,199,.32), transparent 32%);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .project span { font-family: var(--font-mono); color: var(--accent-bright); font-size: 12px; }
+
+    .contact-layout {
+      display: grid;
+      grid-template-columns: .7fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 34px; }
+    .contact-list { display: grid; gap: 18px; margin-top: 28px; }
+    .contact-list a, .contact-list div {
+      padding-top: 18px;
+      border-top: 1px solid var(--faint);
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,.86);
+      overflow-wrap: anywhere;
+    }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .faq details { padding: 24px; }
+    .faq summary { cursor: pointer; font-weight: 800; }
+    .faq summary:hover { color: #fff; }
+    .faq p { margin-top: 14px; }
+
+    .final {
+      margin: 42px 0 70px;
+      padding: clamp(34px, 6vw, 70px);
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 88% 20%, rgba(28,114,199,.4), transparent 34%),
+        linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.06));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(36px, 5vw, 72px); }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(247,249,252,.48);
+      font-size: 12px;
+    }
+    .credits {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+    }
+    .disclaimer {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--faint);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .navlinks { display: none; }
+      .hero, .section-head, .split, .contact-layout, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 44px; }
+      .hero-visual { min-width: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .trust-grid, .project-strip, .faq { grid-template-columns: 1fr; }
+      section { padding: 64px 0; }
+      .final { margin-bottom: 44px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="shell nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="NAUTICA">
+        <img src="https://nautica.cz/wp-content/themes/nautica/img/logo.png" alt="NAUTICA, spol. s r.o. - interiérové bazény, wellness">
+      </a>
+      <div class="navlinks">
+        <a href="#sluzby">Služby</a>
+        <a href="#reference">Reference</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn secondary" href="tel:+420543216734">+420 543 216 734</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="shell hero" aria-label="Úvod">
+      <div class="hero-copy">
+        <div class="eyebrow">Moravany u Brna · bazény · wellness</div>
+        <h1>Voda jako součást prostoru</h1>
+        <p>NAUTICA řeší venkovní a interiérové bazény, wellness zóny i vodní prvky pro místa, kde má technika zůstat klidná a výsledek působit přirozeně.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420543216734">Zavolat</a>
+          <a class="btn secondary" href="mailto:nautica@nautica.cz">Napsat e-mail</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 640 480" role="img">
+          <defs>
+            <linearGradient id="pool" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#f7f9fc" stop-opacity=".25"/>
+              <stop offset=".45" stop-color="#1c72c7" stop-opacity=".58"/>
+              <stop offset="1" stop-color="#004080" stop-opacity=".82"/>
+            </linearGradient>
+            <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+          </defs>
+          <rect width="640" height="480" fill="transparent"/>
+          <ellipse cx="440" cy="130" rx="130" ry="90" fill="#1c72c7" opacity=".2" filter="url(#blur)"/>
+          <path d="M62 288 C150 220 248 220 338 288 S526 362 604 290" fill="none" stroke="url(#pool)" stroke-width="76" stroke-linecap="round"/>
+          <path d="M80 302 C170 250 244 252 330 302 S500 350 584 306" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>
+          <path d="M102 342 C188 304 262 310 336 342 S496 382 560 344" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="2"/>
+          <circle cx="136" cy="126" r="58" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1"/>
+          <circle cx="136" cy="126" r="20" fill="#fff" opacity=".1"/>
+          <path d="M410 86h112v112H410z" fill="none" stroke="#fff" stroke-opacity=".16"/>
+          <path d="M438 114h56v56h-56z" fill="none" stroke="#fff" stroke-opacity=".2"/>
+        </svg>
+        <div class="glass-note">
+          <span>MODŘICKÁ 73</span>
+          <span>49.148732 · 16.592649</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" id="sluzby">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Služby</div>
+          <h2>Čtyři směry práce s vodou</h2>
+        </div>
+        <p>Ze zveřejněných kategorií NAUTICA vychází jasné zaměření: bazény pro exteriér i interiér, wellness řešení a samostatné vodní prvky.</p>
+      </div>
+      <div class="services">
+        <a class="service-row" href="#kontakt">
+          <span class="num">01</span>
+          <h3>Venkovní bazény</h3>
+          <p>Řešení bazénu pro zahradu, terasu nebo venkovní zázemí objektu.</p>
+        </a>
+        <a class="service-row" href="#kontakt">
+          <span class="num">02</span>
+          <h3>Interiérové bazény</h3>
+          <p>Bazén jako součást stavby, interiéru a návazné technologie.</p>
+        </a>
+        <a class="service-row" href="#kontakt">
+          <span class="num">03</span>
+          <h3>Wellness</h3>
+          <p>Klidové vodní zóny pro soukromé i provozní využití.</p>
+        </a>
+        <a class="service-row" href="#kontakt">
+          <span class="num">04</span>
+          <h3>Vodní prvky</h3>
+          <p>Prvky pro architekturu, veřejný prostor a místa s výraznou atmosférou.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="trust-grid">
+        <div class="stat">
+          <span>Hodnocení na Google</span>
+          <strong>5,0</strong>
+        </div>
+        <div class="stat">
+          <span>Počet recenzí</span>
+          <strong>2</strong>
+        </div>
+        <div class="stat">
+          <span>Sídlo provozovny</span>
+          <strong style="font-size:clamp(28px,4vw,48px)">Moravany</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" id="reference">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Projekty a zprávy</div>
+          <h2>Aktuální práce v přehledu</h2>
+        </div>
+        <p>Výběr z veřejně uvedených položek ukazuje typ zakázek a témat, kterým se společnost věnuje.</p>
+      </div>
+      <div class="project-strip">
+        <article class="project">
+          <span>14. 5. 2021</span>
+          <h3>Vodní prvek Bořitov</h3>
+          <p>Samostatný vodní prvek jako výrazný bod prostoru.</p>
+        </article>
+        <article class="project">
+          <span>16. 7. 2021</span>
+          <h3>Rekonstrukce Paní lázně v AQP Kohoutovice</h3>
+          <p>Práce navázaná na lázeňské a bazénové prostředí.</p>
+        </article>
+        <article class="project">
+          <span>4. 2. 2024</span>
+          <h3>Provozovna v Moravanech</h3>
+          <p>Zázemí na adrese Modřická 73.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="split">
+        <div class="feature">
+          <div class="eyebrow">Postup</div>
+          <h2>Od záměru k vodě</h2>
+          <p>U bazénů a wellness je důležité spojit prostor, techniku a údržbu do jednoho funkčního celku. První krok je kontakt a upřesnění místa, rozsahu a návazností.</p>
+        </div>
+        <div class="feature timeline">
+          <div class="step">
+            <b>01</b>
+            <div>
+              <h3>Kontakt</h3>
+              <p>Zavoláte nebo pošlete e-mail s adresou a typem realizace.</p>
+            </div>
+          </div>
+          <div class="step">
+            <b>02</b>
+            <div>
+              <h3>Upřesnění rozsahu</h3>
+              <p>Společně se vyjasní, zda jde o bazén, wellness nebo vodní prvek.</p>
+            </div>
+          </div>
+          <div class="step">
+            <b>03</b>
+            <div>
+              <h3>Další domluva</h3>
+              <p>Naváže konkrétní postup podle místa a požadavků objektu.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" id="kontakt">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Kontakt</div>
+          <h2>Domluvte si konzultaci</h2>
+        </div>
+        <p>NAUTICA, spol. s r.o. sídlí na adrese Modřická 73, 664 48 Moravany-Moravany u Brna.</p>
+      </div>
+      <div class="contact-layout">
+        <div class="contact-card">
+          <h3>NAUTICA, spol. s r.o.</h3>
+          <div class="contact-list">
+            <a href="tel:+420543216734">+420 543 216 734</a>
+            <a href="mailto:nautica@nautica.cz">nautica@nautica.cz</a>
+            <div>Modřická 73, 664 48 Moravany-Moravany u Brna</div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa sídla NAUTICA"></div>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Otázky</div>
+          <h2>Než zavoláte</h2>
+        </div>
+        <p>Krátké odpovědi k základním typům poptávky.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Řešíte interiérové bazény?</summary>
+          <p>Ano, interiérové bazény jsou jedna z veřejně uvedených hlavních kategorií společnosti.</p>
+        </details>
+        <details>
+          <summary>Mohu se ozvat kvůli wellness?</summary>
+          <p>Ano, wellness patří mezi uvedené oblasti vedle bazénů a vodních prvků.</p>
+        </details>
+        <details>
+          <summary>Kde vás najdu?</summary>
+          <p>Provozovna je v Moravanech u Brna na adrese Modřická 73.</p>
+        </details>
+        <details>
+          <summary>Jaký kontakt použít?</summary>
+          <p>Telefon je +420 543 216 734, e-mail nautica@nautica.cz.</p>
+        </details>
+      </div>
+    </section>
+
+    <div class="shell final">
+      <div>
+        <div class="eyebrow">Bazény · wellness · vodní prvky</div>
+        <h2>Začněte jedním hovorem</h2>
+      </div>
+      <a class="btn primary" href="tel:+420543216734">Volat NAUTICA</a>
+    </div>
+  </main>
+
+  <footer class="shell">
+    <div>© 2026 Nautica s.r.o. Všechna práva vyhrazena.</div>
+    <div class="credits" aria-label="Fotografické kredity">
+      <span>Vizuální motivy: vlastní CSS a SVG kompozice.</span>
+    </div>
+    <div class="disclaimer">
+      Tato prezentační stránka byla připravena službou Webflex pro interní náhled adresáta. Pro odstranění použijte
+      <a href="https://webflex.cz/remove?token=2kx62ld">tento odkaz</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5926489, 49.148731999999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004080' })
+      .setLngLat([16.5926489, 49.148731999999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
