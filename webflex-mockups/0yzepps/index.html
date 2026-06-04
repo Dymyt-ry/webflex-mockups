@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pyramida s.r.o. | Bazény, vířivé vany, sauny a úprava vody v Plzni</title>
+  <meta name="description" content="Pyramida s.r.o. v Plzni dodává bazény, vířivé vany, sauny, úpravu vody, zastřešení, bazénovou chemii a příslušenství.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #151923;
+      --panel-2: #f7f9fc;
+      --ink: #f6f8fb;
+      --ink-dark: #10131a;
+      --muted: #a9b2c1;
+      --muted-dark: #586171;
+      --line: rgba(255,255,255,.14);
+      --line-dark: #d9e0ea;
+      --accent: #002060;
+      --accent-bright: #ceebf4;
+      --ok: #3dc37d;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15,18,24,.88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .navlinks a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: .2s var(--ease);
+    }
+    .navlinks a:hover { color: var(--ink); border-color: var(--line); background: rgba(255,255,255,.04); }
+    .navlinks a:focus-visible,
+    .btn:focus-visible,
+    .service-row:focus-visible,
+    .faq summary:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 12px 18px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); background: #06317f; border-color: #06317f; }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,.45);
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      align-items: center;
+      padding: 70px 0 56px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .72fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hours-card {
+      background: var(--panel-2);
+      color: var(--ink-dark);
+      border: 1px solid var(--line-dark);
+      box-shadow: 0 30px 90px rgba(0,0,0,.32);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+      padding: 18px;
+      border-bottom: 1px solid var(--line-dark);
+      background: #fff;
+    }
+    .serial { font-family: var(--font-mono); font-size: 12px; color: var(--muted-dark); }
+    .status {
+      font-family: var(--font-mono);
+      color: var(--ok);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .schedule { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 14px; }
+    .schedule th, .schedule td {
+      border-bottom: 1px solid var(--line-dark);
+      padding: 14px 18px;
+      text-align: left;
+    }
+    .schedule th { color: var(--muted-dark); font-weight: 600; }
+    .schedule .today { background: #eaf3ff; box-shadow: inset 4px 0 0 var(--accent); }
+    .quick {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line-dark);
+    }
+    .quick a, .quick div {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line-dark);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      transition: .2s var(--ease);
+    }
+    .quick a:hover { background: #eef4fb; }
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr);
+      gap: 36px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: .8;
+      color: rgba(206,235,244,.18);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      max-width: 760px;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-copy { max-width: 670px; margin: 14px 0 0; color: var(--muted); font-size: 18px; }
+    .service-table {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 84px minmax(180px, .7fr) minmax(0, 1fr) 140px;
+      min-height: 88px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      transition: background .2s var(--ease), transform .2s var(--ease);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: rgba(255,255,255,.045); transform: translateY(-1px); }
+    .service-row > * { padding: 18px; border-right: 1px solid var(--line); }
+    .service-row > *:last-child { border-right: 0; }
+    .code, .rate, .metric { font-family: var(--font-mono); }
+    .code { color: var(--accent-bright); font-weight: 700; }
+    .service-name { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
+    .service-desc { color: var(--muted); }
+    .rate { color: #fff; font-weight: 700; text-align: right; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      align-items: stretch;
+    }
+    .stat {
+      padding: 26px;
+      border-right: 1px solid var(--line);
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 62px); line-height: 1; }
+    .stat span { color: var(--muted); max-width: 250px; }
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .split-panel { padding: 34px; border-right: 1px solid var(--line); }
+    .split-panel:last-child { border-right: 0; }
+    .checklist { margin: 0; padding: 0; list-style: none; }
+    .checklist li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 14px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .checklist li:last-child { border-bottom: 0; }
+    .tick { color: var(--accent-bright); font-family: var(--font-mono); font-weight: 800; }
+    .matrix-wrap { overflow: auto; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-dark); }
+    .matrix { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .matrix th, .matrix td {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line-dark);
+      border-bottom: 1px solid var(--line-dark);
+      text-align: left;
+      vertical-align: top;
+    }
+    .matrix th {
+      position: sticky;
+      top: 72px;
+      background: #fff;
+      z-index: 2;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted-dark);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .matrix td:first-child { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+    .matrix td:last-child { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .photo-card {
+      min-height: 330px;
+      background: #10141c;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; filter: saturate(.82) contrast(1.04); }
+    .caption {
+      display: grid;
+      align-content: end;
+      padding: 26px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      min-height: 330px;
+    }
+    .caption strong { display: block; color: #fff; font-family: var(--font-display); font-size: 30px; line-height: 1.05; margin-bottom: 12px; }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .faq details {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      padding: 20px;
+    }
+    .faq summary {
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 800;
+    }
+    .faq p { color: var(--muted); margin: 12px 0 0; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      padding: 28px;
+    }
+    .contact-list { display: grid; gap: 16px; margin-top: 22px; }
+    .contact-list a, .contact-list div {
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .contact-list strong { display: block; color: #fff; font-family: var(--font-mono); margin-bottom: 5px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
+    .final {
+      padding: 44px 0 68px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 34px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink-dark);
+    }
+    .final-box h2 { color: var(--ink-dark); }
+    .final-box p { color: var(--muted-dark); }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 24px 0 34px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .disclaimer {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: #7f899a;
+    }
+    .disclaimer a { color: var(--accent-bright); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .navlinks { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .split, .gallery, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 64px 1fr; }
+      .service-desc, .rate { grid-column: 2; text-align: left; }
+      .service-row > * { border-right: 0; }
+      .stats, .faq-grid { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .split-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .split-panel:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: 54px 0; }
+      .quick { grid-template-columns: 1fr; }
+      .quick a, .quick div { border-right: 0; border-bottom: 1px solid var(--line-dark); }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      h1 { font-size: clamp(40px, 15vw, 64px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Pyramida s.r.o.">
+        <img src="http://www.pyramida-plzen.cz/images/Logo.jpg" alt="Pyramida s.r.o.">
+      </a>
+      <div class="navlinks">
+        <a href="#sluzby">Služby</a>
+        <a href="#tabulka">Přehled</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="tel:+420377455059">+420 377 455 059</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Plzeň · bazény · wellness · voda</div>
+          <h1>Technologie pro soukromý wellness</h1>
+          <p class="lead">Bazény na míru i na klíč, vířivé vany, sauny, úprava vody, zastřešení, chemie a příslušenství pro domácnosti, penziony, hotely i veřejné provozy.</p>
+          <div class="hero-actions">
+            <a class="btn" href="tel:+420377455059">Zavolat do Pyramida</a>
+            <a class="btn secondary" href="#sluzby">Prohlédnout služby</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Otevírací doba">
+          <div class="card-head">
+            <div>
+              <div class="serial">PROVOZ / DOMAŽLICKÁ 167</div>
+              <strong>Otevírací doba</strong>
+            </div>
+            <div class="status">DNES 9:00-17:00</div>
+          </div>
+          <table class="schedule">
+            <tbody>
+              <tr class="today"><th>Čtvrtek</th><td>9:00-17:00</td></tr>
+              <tr><th>Pondělí</th><td>9:00-17:00</td></tr>
+              <tr><th>Úterý</th><td>9:00-17:00</td></tr>
+              <tr><th>Středa</th><td>9:00-17:00</td></tr>
+              <tr><th>Pátek</th><td>9:00-17:00</td></tr>
+            </tbody>
+          </table>
+          <div class="quick">
+            <a href="mailto:info@pyramida-plzen.cz">info@pyramida-plzen.cz</a>
+            <div>Hodnocení 4,2 / 70 recenzí</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <div>
+            <h2>Voda, teplo a technologie v jednom systému</h2>
+            <p class="section-copy">Pyramida s.r.o. spojuje bazénovou část, wellness technologie a provozní doplňky od výběru prvků po realizaci.</p>
+          </div>
+        </div>
+        <div class="service-table">
+          <a class="service-row" href="#kontakt">
+            <div class="code">BZN</div>
+            <div class="service-name">Bazény</div>
+            <div class="service-desc">Vnitřní, venkovní a veřejné bazény, betonové, keramické, fóliové i sklolaminátové provedení.</div>
+            <div class="rate">na míru</div>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <div class="code">VIR</div>
+            <div class="service-name">Vířivé vany</div>
+            <div class="service-desc">Řešení pro domov, zahradu, penzion i hotel včetně technologie pro celoroční použití.</div>
+            <div class="rate">vnitřní / venkovní</div>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <div class="code">SAU</div>
+            <div class="service-name">Sauny</div>
+            <div class="service-desc">Suché finské, ruské, bylinné a vonné sauny, infra sauny a parní kabiny.</div>
+            <div class="rate">wellness</div>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <div class="code">H2O</div>
+            <div class="service-name">Úprava vody</div>
+            <div class="service-desc">Dávkovací systémy, měření, regulace, kontrolní přístroje a recyklace pro koupací vany.</div>
+            <div class="rate">technologie</div>
+          </a>
+          <a class="service-row" href="#kontakt">
+            <div class="code">ZST</div>
+            <div class="service-name">Zastřešení</div>
+            <div class="service-desc">Roletové zakrytí a zastřešení, které chrání bazén a prodlužuje koupací sezónu.</div>
+            <div class="rate">sezóna +</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <strong>4,2</strong>
+            <span>Hodnocení zákazníků podle dodaných firemních dat.</span>
+          </div>
+          <div class="stat">
+            <strong>70</strong>
+            <span>Recenzí navázaných na profil firmy.</span>
+          </div>
+          <div class="stat">
+            <strong>9-17</strong>
+            <span>Provozní doba od pondělí do pátku na adrese Domažlická 167.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="split-panel">
+          <div class="eyebrow">02 / průběh zakázky</div>
+          <h2>Od výběru technologie po provoz</h2>
+          <p class="section-copy">U soukromých i veřejných provozů rozhoduje návaznost: bazén, voda, zakrytí, wellness část a servisní doplňky mají fungovat společně.</p>
+        </div>
+        <div class="split-panel">
+          <ul class="checklist">
+            <li><span class="tick">01</span><span>Ujasnění typu provozu: domácí wellness, penzion, hotel, koupaliště nebo veřejný bazén.</span></li>
+            <li><span class="tick">02</span><span>Volba konstrukce bazénu, vířivé vany, sauny, regulace vody a navazujícího příslušenství.</span></li>
+            <li><span class="tick">03</span><span>Dodání prvků od bazénové chemie po hadice, kartáče, vysavače a vonné esence.</span></li>
+            <li><span class="tick">04</span><span>Předání řešení připraveného pro běžný provoz a relaxaci bez zbytečných starostí.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="tabulka">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <div>
+            <h2>Přehled podle typu využití</h2>
+            <p class="section-copy">Rychlé rozdělení oblastí, se kterými se na Pyramida s.r.o. můžete obrátit.</p>
+          </div>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>Oblast</th><th>Typické použití</th><th>Prvky</th><th>Kontakt</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Privátní bazén</td><td>Rodinný dům, zahrada, celoroční péče o vodu.</td><td>Bazén, zastřešení, zakrytí, chemie, vysavač.</td><td>+420 377 455 059</td></tr>
+              <tr><td>Profi provoz</td><td>Hotel, penzion, koupaliště nebo veřejný wellness.</td><td>Technologie, regulace, měření a kontrolní přístroje.</td><td>info@pyramida-plzen.cz</td></tr>
+              <tr><td>Sauna</td><td>Suchá finská, ruská, bylinná, vonná, infra nebo parní.</td><td>Kabina, příslušenství, esence a provozní doplňky.</td><td>Po-Pá 9:00-17:00</td></tr>
+              <tr><td>Vířivá vana</td><td>Domov, zahrada, penzion nebo hotel.</td><td>Vana, technologie, recyklace a akumulační nádrže.</td><td>Domažlická 167</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap gallery">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/6969967/pexels-photo-6969967.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two people exchanging a shopping bag in an indoor setting highlighting online shopping and delivery.">
+        </div>
+        <div class="caption">
+          <div>
+            <div class="eyebrow">04 / sortiment</div>
+            <strong>Od technologie po poslední doplněk</strong>
+            <p>Bazénová chemie, měřicí přístroje, hadice, kartáče, vysavače a vonné esence doplňují hlavní dodávky bazénů, saun a vířivých van.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <div>
+            <h2>Časté otázky před návštěvou</h2>
+          </div>
+        </div>
+        <div class="faq-grid">
+          <details>
+            <summary>Děláte i veřejné provozy?</summary>
+            <p>Ano. V nabídce jsou technologie pro privátní i profi provozy, včetně hotelů, penzionů a koupališť.</p>
+          </details>
+          <details>
+            <summary>Řešíte úpravu vody?</summary>
+            <p>Ano. Patří sem dávkovací systémy, měření, regulace, kontrolní přístroje a recyklační prvky.</p>
+          </details>
+          <details>
+            <summary>Máte příslušenství?</summary>
+            <p>Ano. Od bazénové chemie přes hadice, kartáče a vysavače až po vonné esence.</p>
+          </details>
+          <details>
+            <summary>Kde vás najdu?</summary>
+            <p>Na adrese Domažlická 167, 318 00 Plzeň-Plzeň 3. Otevřeno je od pondělí do pátku 9:00-17:00.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div class="eyebrow">06 / kontakt</div>
+          <h2>Domažlická 167, Plzeň</h2>
+          <div class="contact-list">
+            <a href="tel:+420377455059"><strong>Telefon</strong>+420 377 455 059</a>
+            <a href="mailto:info@pyramida-plzen.cz"><strong>E-mail</strong>info@pyramida-plzen.cz</a>
+            <div><strong>Adresa</strong>Domažlická 167, 318 00 Plzeň-Plzeň 3</div>
+            <div><strong>Otevírací doba</strong>Po-Pá 9:00-17:00</div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa k adrese Pyramida s.r.o."></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <h2>Proberte bazén, saunu nebo vodu přímo v Plzni</h2>
+          <p class="section-copy">Zavolejte během otevírací doby nebo napište e-mail s typem provozu a požadovanou oblastí.</p>
+        </div>
+        <a class="btn" href="tel:+420377455059">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>Pyramida s.r.o. · Domažlická 167, 318 00 Plzeň-Plzeň 3 · <a href="mailto:info@pyramida-plzen.cz">info@pyramida-plzen.cz</a></div>
+      <div class="disclaimer">
+        Webflex · administrativní patička · odstranění: <a href="https://webflex.cz/delete/0yzepps">https://webflex.cz/delete/0yzepps</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3196316, 49.730975699999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002060' })
+      .setLngLat([13.3196316, 49.730975699999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
