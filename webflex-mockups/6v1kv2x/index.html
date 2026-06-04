@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koupaliště Lhotka (biotop)</title>
+  <meta name="description" content="Přírodní koupaliště Lhotka v Praze 4. Koupací jezero, šatny, sprchy, WC, občerstvení a dobrá dostupnost MHD.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfb;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #132016;
+      --muted: #657068;
+      --soft: #eef4ee;
+      --accent: #40A020;
+      --accent-dark: #267012;
+      --line: rgba(19,32,22,.08);
+      --shadow: 0 28px 90px rgba(34, 68, 38, .10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(19,32,22,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(19,32,22,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 10%, rgba(64,160,32,.13), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,252,251,.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-links a,
+    .btn,
+    .maplibregl-ctrl button {
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+
+    .nav-links a {
+      padding: 10px 12px;
+      border-radius: 999px;
+    }
+
+    .nav-links a:hover { background: var(--soft); color: var(--ink); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible, .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 16px 38px rgba(64,160,32,.24);
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .btn-outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+      background: rgba(255,255,255,.55);
+    }
+    .btn-outline:hover { background: #fff; transform: translateY(-1px); box-shadow: var(--shadow); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .72fr);
+      align-items: center;
+      gap: 54px;
+      padding: 64px 0 86px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--accent-dark);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(64,160,32,.12);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .95;
+      hyphens: none;
+      color: var(--ink);
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-top: 22px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 26px 0 0;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.35;
+      color: #324037;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-panel {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 30% 28%, rgba(255,255,255,.94), transparent 20%),
+        radial-gradient(circle at 68% 44%, rgba(64,160,32,.34), transparent 26%),
+        linear-gradient(145deg, #dfeee1, #ffffff 54%, #eaf3ea);
+      box-shadow: var(--shadow);
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 9%;
+      border-radius: 50%;
+      border: 22px solid rgba(64,160,32,.12);
+      filter: blur(.2px);
+      z-index: -1;
+    }
+
+    .lake-symbol {
+      width: min(74%, 420px);
+      color: var(--accent);
+    }
+
+    .status-card {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      right: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 16px 60px rgba(19,32,22,.11);
+    }
+
+    .status-card span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .status-card small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(300px, .52fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(34px, 4.8vw, 68px);
+      overflow-wrap: anywhere;
+    }
+
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .feature-card,
+    .soft-card,
+    .price-card,
+    .faq-item {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.72);
+    }
+
+    .feature-card {
+      min-height: 210px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: var(--soft);
+      color: var(--accent-dark);
+    }
+
+    .feature-card h3 {
+      margin-top: 28px;
+      font-family: var(--font-body);
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .feature-card p { margin: 12px 0 0; color: var(--muted); }
+
+    .facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .soft-card { padding: 28px; }
+    .big-number {
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 5vw, 70px);
+      line-height: 1;
+      font-weight: 700;
+      color: var(--accent-dark);
+      letter-spacing: 0;
+    }
+
+    .fact-label { margin-top: 10px; color: var(--muted); font-weight: 700; }
+
+    .journey {
+      display: grid;
+      grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .route-list {
+      background: var(--surface-strong);
+      border-radius: 28px;
+      padding: 8px 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .route-row {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 22px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .route-row:last-child { border-bottom: 0; }
+    .route-row b {
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+    }
+    .route-row h3 {
+      font-family: var(--font-body);
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+    .route-row p { margin: 8px 0 0; color: var(--muted); }
+
+    .price-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .price-card {
+      padding: 26px;
+      min-height: 190px;
+    }
+
+    .price-card strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--accent-dark);
+      margin-bottom: 22px;
+    }
+
+    .price-card h3 {
+      font-family: var(--font-body);
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .price-card p { margin: 12px 0 0; color: var(--muted); }
+
+    .contact {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 30px;
+      border-radius: 28px;
+      background: #132016;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .contact-card h2 { color: #fff; font-size: clamp(34px, 4.4vw, 62px); overflow-wrap: anywhere; }
+    .contact-card p { color: rgba(255,255,255,.72); }
+    .contact-lines {
+      margin-top: 30px;
+      display: grid;
+      gap: 14px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .contact-lines a:hover { color: #a9e098; }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .faq-item { padding: 24px; }
+    .faq-item h3 {
+      font-family: var(--font-body);
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.18;
+    }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); }
+
+    .final-cta {
+      margin: 52px 0 76px;
+      padding: clamp(32px, 6vw, 66px);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 85% 18%, rgba(64,160,32,.26), transparent 30%),
+        #ffffff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .final-cta h2 {
+      font-size: clamp(34px, 4.8vw, 66px);
+      overflow-wrap: anywhere;
+    }
+    .final-cta p { margin: 14px 0 0; color: var(--muted); max-width: 620px; }
+
+    footer {
+      padding: 34px 0 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+
+    .webflex-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav { min-height: 68px; }
+      .nav-links { display: none; }
+      .hero, .section-head, .journey, .contact, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: auto;
+        padding-top: 42px;
+        gap: 34px;
+      }
+      .hero-panel { min-width: 0; }
+      .feature-grid, .price-strip { grid-template-columns: repeat(2, 1fr); }
+      .final-cta { align-items: start; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 58px 0; }
+      .feature-grid, .facts, .price-strip, .faq-grid { grid-template-columns: 1fr; }
+      .status-card { grid-template-columns: 1fr; }
+      .route-row { grid-template-columns: 42px 1fr; gap: 14px; }
+      .footer-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Koupaliště Lhotka (biotop)">
+        <img src="https://www.koupaliste-lhotka.cz/wp-content/themes/fresh/img/logo.png" alt="Koupaliště Lhotka (biotop)">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#areal">Areál</a>
+        <a href="#cesta">Kudy k nám</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <span class="eyebrow"><span class="dot"></span> Sezóna od 1. 6. v 10:00</span>
+        <h1>Koupaliště Lhotka</h1>
+        <p class="lead">Přírodní biotop v Praze 4 s koupacím jezerem, zázemím pro návštěvníky a vstupem z ulice Nad Koupadly.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#kontakt">Naplánovat cestu</a>
+          <a class="btn btn-outline" href="#areal">Prohlédnout areál</a>
+        </div>
+      </div>
+      <aside class="hero-panel" aria-label="Aktuální údaje">
+        <svg class="lake-symbol" viewBox="0 0 520 360" role="img" aria-label="Abstraktní tvar koupacího jezera">
+          <path d="M67 194C44 115 105 46 197 59c61 9 75 49 139 45 75-4 130 39 132 107 2 77-67 115-151 103-55-8-87 24-145 13-55-10-87-73-105-133Z" fill="currentColor" opacity=".18"/>
+          <path d="M104 185c-15-52 33-92 93-84 52 7 73 42 126 35 52-6 91 29 90 76-1 54-49 78-108 70-48-6-72 21-117 11-42-9-72-65-84-108Z" fill="currentColor" opacity=".55"/>
+          <path d="M142 178c26 14 52 14 79 0s53-14 80 0 53 14 80 0" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".86"/>
+          <path d="M164 224c21 11 42 11 64 0s43-11 65 0 43 11 65 0" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".72"/>
+        </svg>
+        <div class="status-card">
+          <div><span>22,4 °C</span><small>teplota vody</small></div>
+          <div><span>23 °C</span><small>teplota vzduchu</small></div>
+          <div><span>13 / 1000</span><small>obsazenost</small></div>
+        </div>
+      </aside>
+    </div>
+
+    <section id="areal">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co najdete v areálu</h2>
+          <p>Koupací jezero má rozlohu 5 570 m². Plavecká část dosahuje hloubky až 3,25 m, neplavecká část je do 1 m.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="icon">≈</div>
+            <div>
+              <h3>Koupací jezero</h3>
+              <p>Nepravidelný ovál rozdělený na plaveckou a neplaveckou část.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="icon">⌂</div>
+            <div>
+              <h3>Šatny a sprchy</h3>
+              <p>Zázemí pro převlečení, sprchy a WC přímo v areálu.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="icon">☕</div>
+            <div>
+              <h3>Občerstvení</h3>
+              <p>Stánek s občerstvením pro přestávku mezi koupáním.</p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="icon">▣</div>
+            <div>
+              <h3>Klubovna</h3>
+              <p>Součást návštěvnického zázemí spolu s provozními službami.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důležité údaje">
+      <div class="wrap facts">
+        <article class="soft-card">
+          <div class="big-number">4,4</div>
+          <div class="fact-label">hodnocení podle 1 903 recenzí</div>
+        </article>
+        <article class="soft-card">
+          <div class="big-number">9.</div>
+          <div class="fact-label">koupací sezóna zahájená 1. 6. 2026</div>
+        </article>
+        <article class="soft-card">
+          <div class="big-number">5 570</div>
+          <div class="fact-label">m² vodní plochy pro koupání</div>
+        </article>
+        <article class="soft-card">
+          <div class="big-number">1000</div>
+          <div class="fact-label">kapacita areálu pro aktuální obsazenost</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="cesta">
+      <div class="wrap journey">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> Praha 4 · Nad Koupadly</span>
+          <h2 style="margin-top:18px;font-size:clamp(34px,4.8vw,68px);overflow-wrap:anywhere;">Kudy k nám</h2>
+          <p class="lead" style="font-size:20px;">Vstup do areálu je z ulice Nad Koupadly. Kvůli nízkému počtu parkovacích stání je vhodnější cesta MHD.</p>
+        </div>
+        <div class="route-list">
+          <div class="route-row">
+            <b>01</b>
+            <div>
+              <h3>Zastávka Lhotka</h3>
+              <p>Autobusové linky 121, 139, 150, 157 a 197.</p>
+            </div>
+          </div>
+          <div class="route-row">
+            <b>02</b>
+            <div>
+              <h3>Zastávka Novodvorská</h3>
+              <p>Autobusové linky 106, 196 a 197.</p>
+            </div>
+          </div>
+          <div class="route-row">
+            <b>03</b>
+            <div>
+              <h3>Platba kartou</h3>
+              <p>V areálu je uvedeno přijímání plateb kartou.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Ceník a provoz</h2>
+          <p>Aktuální informace sledujte před cestou. Provoz areálu se může řídit počasím, sezónou a aktuální obsazeností.</p>
+        </div>
+        <div class="price-strip">
+          <article class="price-card">
+            <strong>CENÍK</strong>
+            <h3>Vstupné u pokladny</h3>
+            <p>Ceník je součástí provozních informací koupaliště.</p>
+          </article>
+          <article class="price-card">
+            <strong>KREDITOVÉ VSTUPENKY</strong>
+            <h3>Čipy do vyprodání</h3>
+            <p>Pro zájemce jsou na pokladně v prodeji kreditové vstupenky podle dostupnosti.</p>
+          </article>
+          <article class="price-card">
+            <strong>PROVOZ</strong>
+            <h3>Podle počasí</h3>
+            <p>Při nepříznivém počasí může být areál uzavřen.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Než vyrazíte</h2>
+          <p>Krátké odpovědi na věci, které návštěvníci řeší před první cestou na Lhotku.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Je v areálu neplavecká část?</h3>
+            <p>Ano. Neplavecká část je uvedená do hloubky 1 m.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Kde je vstup?</h3>
+            <p>Vstup do areálu je z ulice Nad Koupadly v Praze 4.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Dá se přijet autem?</h3>
+            <p>Parkovacích stání je málo, proto je doporučená cesta MHD.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je dostupná webkamera?</h3>
+            <p>Webkamera patří mezi uvedené informace koupaliště spolu s teplotou a obsazeností.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact">
+        <div class="contact-card">
+          <span class="eyebrow" style="color:#a9e098;"><span class="dot"></span> Rychlý kontakt</span>
+          <h2 style="margin-top:18px;">Nad Koupadly</h2>
+          <p>Nad Koupadly, 142 00 Praha 4</p>
+          <div class="contact-lines">
+            <a href="mailto:info@koupaliste-lhotka.cz">info@koupaliste-lhotka.cz</a>
+            <a href="https://www.koupaliste-lhotka.cz/">www.koupaliste-lhotka.cz</a>
+            <span>GPS 50.022073, 14.436931</span>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa umístění Koupaliště Lhotka"></div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <div class="final-cta">
+        <div>
+          <h2>Zkontrolujte obsazenost</h2>
+          <p>Před cestou si ověřte počasí, provozní informace a aktuální stav areálu.</p>
+        </div>
+        <a class="btn btn-primary" href="mailto:info@koupaliste-lhotka.cz">Napsat e-mail</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div>© Koupaliště Lhotka (biotop)</div>
+      <div class="webflex-disclaimer">Tento prezentační náhled vytvořil Webflex. Pro odstranění použijte <a href="https://webflex.cz/delete/6v1kv2x">tento odkaz</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.436931000000001, 50.022073000000006],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#40A020' })
+      .setLngLat([14.436931000000001, 50.022073000000006])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
