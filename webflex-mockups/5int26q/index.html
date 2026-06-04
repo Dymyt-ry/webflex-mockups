@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plavecký Bazén Strahov | Otevírací doba, ceník, kontakty</title>
+  <meta name="description" content="Plavecký Bazén Strahov v Praze 6: rozvrh plavání pro veřejnost, ceník vstupného, permanentky, kurzy a kontaktní informace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: #ffffff;
+      --surface-soft: #f1f7fa;
+      --ink: #111827;
+      --muted: #667085;
+      --line: #d7e4ea;
+      --line-strong: #9bb8c5;
+      --accent: #40A0C0;
+      --accent-dark: #227fa1;
+      --accent-soft: #e3f4f9;
+      --ok: #1b7f54;
+      --closed: #9b2d2d;
+      --shadow: 0 24px 70px rgba(17, 24, 39, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(64,160,192,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,160,192,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 252, 253, .9);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .logo img {
+      width: auto;
+      max-width: min(280px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(17, 24, 39, .72);
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, color .2s, box-shadow .2s;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(64, 160, 192, .18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #06141a; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    h2 { font-size: clamp(34px, 4.6vw, 68px); }
+    h3 { font-size: 22px; }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .hero { padding: 58px 0 74px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(390px, .58fr);
+      gap: 44px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 22px 0 0;
+      color: rgba(17, 24, 39, .74);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+
+    .hours-card, .data-panel, .contact-card, .note-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .hours-card { border-radius: 8px; overflow: hidden; }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .card-head strong { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; }
+    .status { font-family: var(--font-mono); font-size: 12px; color: #b8f4d2; }
+
+    .today-row {
+      padding: 18px;
+      background: var(--accent-soft);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .today-row .day {
+      display: block;
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+    }
+
+    .time-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .time-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 9px 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .quick-facts { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .quick-facts div { padding: 16px 18px; border-right: 1px solid var(--line); }
+    .quick-facts div:last-child { border-right: 0; }
+    .quick-facts strong { display: block; font-family: var(--font-mono); font-size: 20px; color: var(--accent-dark); }
+    .quick-facts span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; font-weight: 700; }
+
+    section { padding: 76px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, .9fr) minmax(280px, .45fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    .section-no {
+      color: rgba(64,160,192,.25);
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: .8;
+    }
+
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .data-panel { border-radius: 8px; overflow: hidden; }
+    .table-scroll { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: #fff;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 72px;
+      z-index: 5;
+      background: #eef7fb;
+      color: #244a5a;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    td:first-child, th:first-child { font-weight: 800; }
+    td.time, td.price, td.rate { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+    tr.today td { background: var(--accent-soft); }
+    .closed { color: var(--closed); font-weight: 800; }
+
+    .services-list {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .38fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .row-list { background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .row-item {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .row-item:last-child { border-bottom: 0; }
+    .row-item b { font-family: var(--font-mono); color: var(--accent-dark); }
+    .row-item strong { display: block; margin-bottom: 4px; font-size: 18px; }
+    .row-item span { color: var(--muted); }
+
+    .note-card { border-radius: 8px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; }
+    .note-card .big { font-family: var(--font-display); font-size: 54px; line-height: .9; color: var(--accent-dark); }
+    .note-card p { margin: 18px 0 0; color: var(--muted); hyphens: auto; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .trust-strip div { padding: 22px; border-right: 1px solid var(--line); min-height: 142px; }
+    .trust-strip div:last-child { border-right: 0; }
+    .trust-strip strong { display: block; font-family: var(--font-mono); font-size: 25px; color: var(--accent-dark); }
+    .trust-strip span { display: block; margin-top: 10px; color: var(--muted); font-weight: 700; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .46fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card { border-radius: 8px; padding: 24px; }
+    .contact-lines { display: grid; gap: 16px; margin-top: 22px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .contact-lines small { display: block; margin-bottom: 5px; color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; }
+    #map { height: 420px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .faq-item { border-radius: 8px; padding: 22px; min-height: 190px; }
+    .faq-item h3 { margin-bottom: 12px; font-size: 18px; }
+    .faq-item p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding: 54px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .final-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .final h2 { font-size: clamp(32px, 4vw, 56px); }
+    .final p { margin: 12px 0 0; color: rgba(255,255,255,.72); }
+    .final .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer { padding: 30px 0; background: #fff; border-top: 1px solid var(--line); }
+    .footer-grid { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+    .wf-disclaimer { width: 100%; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: #8a98a3; }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid, .services-list, .contact-grid, .final-inner { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .section-no { font-size: 54px; }
+      .quick-facts, .trust-strip, .faq-grid { grid-template-columns: 1fr; }
+      .quick-facts div, .trust-strip div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .quick-facts div:last-child, .trust-strip div:last-child { border-bottom: 0; }
+      th { top: 72px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 22px, 1180px); }
+      .hero { padding-top: 36px; }
+      section { padding: 54px 0; }
+      .btn { width: 100%; }
+      .hero-actions { width: 100%; }
+      .card-head, .today-row, .quick-facts div, .contact-card, .note-card, .faq-item { padding: 16px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Plavecký Bazén Strahov">
+        <img src="https://bazenstrahov.cz/wp-content/uploads/2015/09/new_logo_ourcolor.png" alt="Plavecký Bazén Strahov">
+      </a>
+      <div class="nav-links">
+        <a href="#rozvrh">Rozvrh</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kurzy">Kurzy</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420725595756">725 595 756</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 6-Břevnov · Vaníčkova 100/6</p>
+          <h1>Plavání na Strahově</h1>
+          <p class="lead">Veřejné plavání, permanentky a kurzy ve východní tribuně Velkého strahovského stadionu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#rozvrh">Zobrazit rozvrh</a>
+            <a class="btn btn-secondary" href="#cenik">Ceník vstupného</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Dnešní otevírací doba">
+          <div class="card-head">
+            <strong>Čtvrtek 4. 6. 2026</strong>
+            <span class="status">Veřejnost</span>
+          </div>
+          <div class="today-row">
+            <span class="day">Dnešní časy plavání</span>
+            <ul class="time-list">
+              <li><span>Ráno</span><span>06:00-07:00</span></li>
+              <li><span>Odpoledne</span><span>09:00-15:00</span></li>
+              <li><span>Večer</span><span>20:00-22:00</span></li>
+            </ul>
+          </div>
+          <div class="quick-facts">
+            <div><strong>4.2</strong><span>Google hodnocení</span></div>
+            <div><strong>256</strong><span>recenzí</span></div>
+            <div><strong>100 Kč</strong><span>záloha na zámek</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="rozvrh">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <p class="eyebrow">1. 6. 2026 - 7. 6. 2026</p>
+            <h2>Rozvrh pro veřejnost</h2>
+          </div>
+          <p>Časy jsou převzaté z aktuálního týdenního rozvrhu plavání pro veřejnost.</p>
+        </div>
+        <div class="data-panel table-scroll">
+          <table aria-label="Rozvrh plavání pro veřejnost">
+            <thead>
+              <tr><th>Den</th><th>Ranní blok</th><th>Denní blok</th><th>Večerní blok</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Pondělí</td><td class="time">06:00-07:00</td><td class="time">09:00-15:00</td><td class="time">20:00-22:00</td></tr>
+              <tr><td>Úterý</td><td class="time">06:00-07:00</td><td class="time">12:00-15:00</td><td class="time">20:00-22:00</td></tr>
+              <tr><td>Středa</td><td class="time">06:00-07:00</td><td class="time">12:15-15:00</td><td class="time">20:00-22:00</td></tr>
+              <tr class="today"><td>Čtvrtek</td><td class="time">06:00-07:00</td><td class="time">09:00-15:00</td><td class="time">20:00-22:00</td></tr>
+              <tr><td>Pátek</td><td class="time">06:00-07:00</td><td class="time">12:45-15:00</td><td class="time">19:15-21:00</td></tr>
+              <tr><td>Sobota</td><td class="time">10:15-12:00</td><td class="time">13:00-17:00</td><td class="closed">-</td></tr>
+              <tr><td>Neděle</td><td class="closed" colspan="3">Zavřeno</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <p class="eyebrow">60 minut + 10 minut zdarma</p>
+            <h2>Ceník vstupného</h2>
+          </div>
+          <p>U permanentek se při vstupu odečte kredit odpovídající 30 minutám pobytu, následuje 10 minut zdarma.</p>
+        </div>
+        <div class="data-panel table-scroll">
+          <table aria-label="Ceník vstupného">
+            <thead>
+              <tr><th>Kategorie</th><th>Jednorázový vstup</th><th>Permanentka</th><th>Poznámka</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Dospělí</td><td class="price">130 Kč</td><td class="rate">1,70 Kč / minuta</td><td>60 minut + 10 minut zdarma</td></tr>
+              <tr><td>Senioři od 60 let, studenti do 26 let</td><td class="price">95 Kč</td><td class="rate">1,30 Kč / minuta</td><td>Nutno prokázat</td></tr>
+              <tr><td>Děti do 15 let</td><td class="price">65 Kč</td><td class="rate">0,90 Kč / minuta</td><td>Děti do 12 let pouze v doprovodu dospělé osoby</td></tr>
+              <tr><td>ZTP, ZTP/P</td><td class="price">90 Kč</td><td class="rate">1,20 Kč / minuta</td><td>U ZTP/P má doprovod vstup zdarma</td></tr>
+              <tr><td>Děti do 3 let</td><td class="price">zdarma</td><td class="rate">-</td><td>Podle návštěvního řádu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="kurzy">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div>
+            <p class="eyebrow">Výuka a organizované plavání</p>
+            <h2>Kurzy v bazénu</h2>
+          </div>
+          <p>V areálu působí plavecké školy, sportovní akademie, oddíly a specializované programy.</p>
+        </div>
+        <div class="services-list">
+          <div class="row-list">
+            <div class="row-item"><b>01</b><div><strong>Plavecké školy</strong><span>ACTIVITY CLUB, Happy Swim, Waters' Sports School, V Aquatics Swimming Academy a Plavecké školy - Sport Praha.</span></div></div>
+            <div class="row-item"><b>02</b><div><strong>Sportovní kluby</strong><span>Prague Sharks International Swimming Club, Sport Academy Czech Republic a Aquatics Prague No1.</span></div></div>
+            <div class="row-item"><b>03</b><div><strong>Instituce a programy</strong><span>Victoria VSC MŠMT, Vyšší odborná škola České unie sportu, AQUA-FIT a Para plavání.</span></div></div>
+          </div>
+          <aside class="note-card">
+            <div>
+              <div class="big">10+ </div>
+              <h3>kurzových partnerů</h3>
+              <p>Konkrétní termíny a podmínky jednotlivých kurzů řeší příslušný pořadatel.</p>
+            </div>
+            <a class="btn btn-secondary" href="#kontakt">Zeptat se na kontakt</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <p class="eyebrow">Pro vstup do bazénu</p>
+            <h2>Praktické informace</h2>
+          </div>
+          <p>Stručné provozní údaje, které se hodí před návštěvou.</p>
+        </div>
+        <div class="trust-strip" aria-label="Praktické údaje">
+          <div><strong>100 Kč</strong><span>Záloha na zámek ke skříňkám</span></div>
+          <div><strong>12 let</strong><span>Děti do 12 let vstupují s dospělou osobou</span></div>
+          <div><strong>143</strong><span>Autobus u zastávky Koleje Strahov</span></div>
+          <div><strong>50°4'47.5"N</strong><span>GPS souřadnice z kontaktních informací</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <div>
+            <p class="eyebrow">Kontakt a cesta</p>
+            <h2>Vaníčkova 100/6</h2>
+          </div>
+          <p>Bazén najdete ve východní tribuně Velkého strahovského stadionu v Praze 6-Břevnově.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Plavecký Bazén Strahov</h3>
+            <div class="contact-lines">
+              <span><small>Adresa</small>Vaníčkova 100/6, 169 00 Praha 6-Břevnov</span>
+              <a href="tel:+420725595756"><small>Telefon</small>+420 725 595 756</a>
+              <a href="mailto:info@bazenstrahov.cz"><small>E-mail</small>info@bazenstrahov.cz</a>
+              <span><small>MHD</small>Autobusová zastávka Koleje Strahov, linka 143</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa: Plavecký Bazén Strahov"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <div>
+            <p class="eyebrow">Nejčastější dotazy</p>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Informace vycházejí z provozních údajů a návštěvního řádu uvedených pro bazén Strahov.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item"><h3>Jak dlouho platí vstup?</h3><p>Jednorázové vstupné je uvedené pro 60 minut pobytu a dalších 10 minut zdarma.</p></article>
+          <article class="faq-item"><h3>Jak funguje permanentka?</h3><p>Při vstupu se odečte kredit za 30 minut, následuje 10 minut zdarma a poté se odečítá po minutách dle ceníku.</p></article>
+          <article class="faq-item"><h3>Co potřebuji ke slevě?</h3><p>U seniorů, studentů, dětí, ZTP a ZTP/P je potřeba nárok prokázat podle uvedené kategorie.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-inner">
+        <div>
+          <p class="eyebrow">Plavecký Bazén Strahov</p>
+          <h2>Přijďte podle rozvrhu</h2>
+          <p>Pro aktuální dotazy k provozu volejte přímo na recepci bazénu.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420725595756">Zavolat na recepci</a>
+          <a class="btn btn-secondary" href="mailto:info@bazenstrahov.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Plavecký Bazén Strahov · Vaníčkova 100/6, Praha 6-Břevnov</span>
+      <span>725 595 756 · info@bazenstrahov.cz</span>
+      <div class="wf-disclaimer">Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/5int26q">webflex.cz/delete/5int26q</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.389759, 50.080003399999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#40A0C0' })
+      .setLngLat([14.389759, 50.080003399999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
