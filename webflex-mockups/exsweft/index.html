@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Venkovní koupaliště Pražačka</title>
+  <meta name="description" content="Venkovní koupaliště Pražačka v Praze 3: vyhřívaný bazén, plavecká, relaxační a rodinná zóna, aktuální otevírací doba, vstupné a kontakt.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfb;
+      --surface: #ffffff;
+      --surface-2: #f1f5f2;
+      --ink: #101814;
+      --muted: #5e6a64;
+      --line: rgba(0, 96, 64, .18);
+      --line-strong: rgba(0, 96, 64, .36);
+      --accent: #006040;
+      --accent-ink: #ffffff;
+      --warn: #e6302c;
+      --shadow: 0 24px 80px rgba(16, 24, 20, .08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(0, 96, 64, .032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 96, 64, .032) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 252, 251, .91);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 44px;
+      width: min(260px, 52vw);
+      height: auto;
+      object-fit: contain;
+    }
+
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .navlinks a {
+      text-decoration: none;
+      color: rgba(16, 24, 20, .76);
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .navlinks a:hover { color: var(--accent); }
+    .navlinks a:focus-visible,
+    .btn:focus-visible,
+    .matrix a:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, color .2s, box-shadow .2s;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0, 96, 64, .14); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .hero {
+      padding: 58px 0 72px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(390px, .72fr);
+      gap: 44px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: clamp(19px, 2.1vw, 24px);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .status-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .status-head strong {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .status-head span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .schedule-row,
+    .price-row,
+    .zone-row,
+    .contact-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .schedule-row:last-child,
+    .price-row:last-child,
+    .zone-row:last-child,
+    .contact-row:last-child { border-bottom: 0; }
+
+    .cell {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .cell:last-child { border-right: 0; }
+    .label { color: var(--muted); font-weight: 700; }
+    .mono { font-family: var(--font-mono); font-weight: 700; }
+    .today { background: rgba(0, 96, 64, .08); }
+    .today .label { color: var(--accent); }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 96px minmax(0, .85fr) minmax(280px, .44fr);
+      gap: 26px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    .section-no {
+      font-family: var(--font-mono);
+      font-size: clamp(42px, 6vw, 76px);
+      line-height: .9;
+      color: rgba(0, 96, 64, .18);
+      font-weight: 700;
+    }
+
+    h2 { font-size: clamp(32px, 4.2vw, 60px); text-transform: uppercase; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .zones {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .zone-row {
+      grid-template-columns: 210px minmax(0, 1fr) 220px;
+      align-items: stretch;
+    }
+
+    .zone-row .cell { min-height: 112px; }
+    .zone-title { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; }
+    .zone-copy { margin: 0; color: var(--muted); hyphens: auto; }
+    .zone-spec { color: var(--accent); }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .fact {
+      min-height: 170px;
+      padding: 22px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .fact strong {
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 54px);
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .fact span { color: var(--muted); font-weight: 700; }
+
+    .matrix-wrap {
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 15px 14px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th:last-child, td:last-child { border-right: 0; }
+    thead th {
+      position: sticky;
+      top: 72px;
+      z-index: 5;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    tbody td:not(:first-child) {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .note-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .note {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 18px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .note strong { display: block; color: var(--ink); margin-bottom: 6px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(360px, .55fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      min-height: 100%;
+    }
+
+    .panel h3 {
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      font-size: 28px;
+      text-transform: uppercase;
+    }
+
+    .panel-body { padding: 20px; }
+    .panel-body p { margin: 0 0 16px; color: var(--muted); font-size: 18px; hyphens: auto; }
+    .panel-body p:last-child { margin-bottom: 0; }
+
+    .mini-table {
+      border: 1px solid var(--line);
+    }
+
+    .mini-table .price-row { grid-template-columns: 1fr 140px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .58fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .contact-row { grid-template-columns: 150px 1fr; }
+    .contact-row a { font-weight: 800; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    details {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      transition: border-color .2s cubic-bezier(.2,.8,.2,1), transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    details:hover { border-color: var(--accent); transform: translateY(-1px); }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      padding: 18px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 0; padding: 0 18px 18px; color: var(--muted); hyphens: auto; }
+
+    .final {
+      padding: 54px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .final h2 { color: #fff; font-size: clamp(34px, 5vw, 70px); }
+    .final p { margin: 14px 0 0; color: rgba(255,255,255,.78); font-size: 18px; }
+    .final .btn-primary { background: #fff; color: var(--accent); }
+    .final .btn-secondary { border-color: rgba(255,255,255,.65); color: #fff; }
+
+    footer {
+      padding: 28px 0;
+      background: #101814;
+      color: rgba(255,255,255,.74);
+      font-size: 13px;
+    }
+
+    footer a { color: #fff; }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr minmax(260px, .5fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .wf-disclaimer {
+      color: rgba(255,255,255,.48);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .nav { align-items: flex-start; padding: 14px 0; flex-direction: column; }
+      .navlinks { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .final-grid,
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero-grid { gap: 28px; }
+      .zone-row { grid-template-columns: 1fr; }
+      .cell { border-right: 0; border-bottom: 1px solid var(--line); }
+      .zone-row .cell:last-child,
+      .schedule-row .cell:last-child,
+      .price-row .cell:last-child,
+      .contact-row .cell:last-child { border-bottom: 0; }
+      .facts,
+      .faq,
+      .note-grid { grid-template-columns: 1fr; }
+      .section-no { font-size: 42px; }
+      thead th { top: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 36px; }
+      .schedule-row,
+      .price-row,
+      .contact-row { grid-template-columns: 1fr; }
+      h1 { font-size: clamp(40px, 14vw, 64px); }
+      .btn { width: 100%; }
+      .final-grid .btn { width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Venkovní koupaliště Pražačka">
+        <img src="https://www.prazacka.cz/data/setting/prazacka-logo.png" alt="Venkovní koupaliště Pražačka">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#zony">Zóny</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420228802314">+420 228 802 314</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 3 · otevřeno od 29. 5. 2026</p>
+          <h1>Koupání s kouskem přírody</h1>
+          <p class="lead">Vyhřívaný venkovní bazén nedaleko centra města, travnatá plocha pro odpočinek, terasa s výhledem na Prahu a tři zóny pro plavce, relax i rodiny s dětmi.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#cenik">Zobrazit vstupné</a>
+            <a class="btn btn-secondary" href="#kontakt">Najít koupaliště</a>
+          </div>
+        </div>
+        <aside class="status-card" aria-label="Otevírací doba">
+          <div class="status-head">
+            <strong>Dnešní provoz</strong>
+            <span>čtvrtek 4. 6. 2026</span>
+          </div>
+          <div class="schedule-row today">
+            <div class="cell"><span class="label">Po - pá</span></div>
+            <div class="cell mono">6.00 - 7.45 + 9.00 - 21.30</div>
+          </div>
+          <div class="schedule-row">
+            <div class="cell"><span class="label">So - ne + svátky</span></div>
+            <div class="cell mono">9.00 - 20.00</div>
+          </div>
+          <div class="schedule-row">
+            <div class="cell"><span class="label">Ranní kondiční plavání</span></div>
+            <div class="cell mono">6.00 - 7.45</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="zony">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Tři funkční zóny</h2>
+          <p>Bazén je rozdělený tak, aby si každý vybral klidné tempo, odpočinek ve vodě nebo bezpečný prostor pro děti.</p>
+        </div>
+        <div class="zones">
+          <div class="zone-row">
+            <div class="cell"><div class="zone-title">Plavecká</div></div>
+            <div class="cell"><p class="zone-copy">Místo výhradně určené plavcům. Kondiční plavci mohou využít ranní provoz i denní časy podle rozpisu.</p></div>
+            <div class="cell mono zone-spec">4 dráhy · 16,7 m</div>
+          </div>
+          <div class="zone-row">
+            <div class="cell"><div class="zone-title">Relaxační</div></div>
+            <div class="cell"><p class="zone-copy">Vířivky, oddychová zóna a vyvýšená terasa s pohledem na Prahu pro návštěvníky, kteří se chtějí zchladit a odpočinout si.</p></div>
+            <div class="cell mono zone-spec">vířivky · terasa</div>
+          </div>
+          <div class="zone-row">
+            <div class="cell"><div class="zone-title">Rodinná</div></div>
+            <div class="cell"><p class="zone-copy">Část s atrakcemi pro děti, kde mohou zkoušet pohyb ve vodě a bezpečně dopadat do bazénu.</p></div>
+            <div class="cell mono zone-spec">děti · neplavci</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Areál uprostřed zeleně</h2>
+          <p>Pražačka kombinuje městskou dostupnost s prostorem, kde vás obklopují stromy a venkovní plocha kolem bazénu.</p>
+        </div>
+        <div class="facts">
+          <div class="fact">
+            <strong>26 m</strong>
+            <span>Délka vyhřívaného bazénu</span>
+          </div>
+          <div class="fact">
+            <strong>14,5 m</strong>
+            <span>Šířka bazénu</span>
+          </div>
+          <div class="fact">
+            <strong>4,2</strong>
+            <span>Hodnocení z 1098 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>Vstupné</h2>
+          <p>Vyberte si celodenní vstup, dopolední čas, odpolední návštěvu nebo kratší pobyt na 60 či 120 minut.</p>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix" aria-label="Ceník vstupného">
+            <thead>
+              <tr>
+                <th>Doba pobytu</th>
+                <th>Celodenní</th>
+                <th>9 - 15 hod</th>
+                <th>Po 16 hod</th>
+                <th>60 min</th>
+                <th>120 min</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Základní vstupné</td>
+                <td>250 Kč</td>
+                <td>200 Kč</td>
+                <td>200 Kč</td>
+                <td>130 Kč</td>
+                <td>170 Kč</td>
+              </tr>
+              <tr>
+                <td>Zvýhodněné vstupné</td>
+                <td>200 Kč</td>
+                <td>170 Kč</td>
+                <td>170 Kč</td>
+                <td>110 Kč</td>
+                <td>140 Kč</td>
+              </tr>
+              <tr>
+                <td>Rodinné 1+1</td>
+                <td>350 Kč</td>
+                <td colspan="4">Každé další dítě 80 Kč</td>
+              </tr>
+              <tr>
+                <td>Rodinné 2+1</td>
+                <td>500 Kč</td>
+                <td colspan="4">Každé další dítě 80 Kč</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note-grid">
+          <div class="note"><strong>Zvýhodněné vstupné</strong>Děti do 15 let, senioři nad 65 let, studenti do 26 let a osoby s průkazem ZTP nebo ZTP/P.</div>
+          <div class="note"><strong>Čas na převlečení</strong>U vstupného na 60 minut, 120 minut a do 15 hod je připočteno 15 minut na převlečení.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="wrap split">
+        <div class="panel">
+          <h3>Doplatky za překročení</h3>
+          <div class="panel-body">
+            <div class="mini-table">
+              <div class="price-row">
+                <div class="cell label">Doplatek do 30 min</div>
+                <div class="cell mono">70 Kč</div>
+              </div>
+              <div class="price-row">
+                <div class="cell label">Doplatek nad 30 min</div>
+                <div class="cell mono">140 Kč</div>
+              </div>
+              <div class="price-row">
+                <div class="cell label">Vstupné do 15 hod</div>
+                <div class="cell mono">70 Kč</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Pro koho je Pražačka</h3>
+          <div class="panel-body">
+            <p>Pro nenáročné plavce, milovníky sluníčka, rodiny s dětmi, seniory i neplavce.</p>
+            <p>Travnatá plocha vedle bazénu je určená pro odpočinek po koupání, terasa nabízí výhled směrem na Prahu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Kontakt a adresa</h2>
+          <p>Areál najdete v Praze 3 v ulici Za Žižkovskou vozovnou. Pro dotazy volejte nebo napište na e-mail bazénu.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-row">
+              <div class="cell label">Adresa</div>
+              <div class="cell">19, Za Žižkovskou vozovnou 2716, 130 00 Praha 3</div>
+            </div>
+            <div class="contact-row">
+              <div class="cell label">Telefon</div>
+              <div class="cell mono"><a href="tel:+420228802314">+420 228 802 314</a></div>
+            </div>
+            <div class="contact-row">
+              <div class="cell label">E-mail</div>
+              <div class="cell"><a href="mailto:bazen@prazacka.cz">bazen@prazacka.cz</a></div>
+            </div>
+            <div class="contact-row">
+              <div class="cell label">Web</div>
+              <div class="cell"><a href="https://www.prazacka.cz/koupaliste">www.prazacka.cz/koupaliste</a></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa koupaliště Pražačka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Časté otázky</h2>
+          <p>Nejpraktičtější informace k návštěvě, času pobytu a jednotlivým tarifům.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Kdy je otevřeno ve všední den?</summary>
+            <p>Od pondělí do pátku je provoz 6.00 - 7.45 a poté 9.00 - 21.30.</p>
+          </details>
+          <details>
+            <summary>Jak dlouhý je plavecký úsek?</summary>
+            <p>Plavecká část má čtyři dráhy dlouhé 16,7 metru.</p>
+          </details>
+          <details>
+            <summary>Kdo má zvýhodněné vstupné?</summary>
+            <p>Děti do 15 let, senioři nad 65 let, studenti do 26 let a osoby s průkazem ZTP nebo ZTP/P.</p>
+          </details>
+          <details>
+            <summary>Co se stane při překročení času?</summary>
+            <p>Doplatek do 30 minut je 70 Kč, nad 30 minut 140 Kč. U vstupného do 15 hod je jednotný doplatek 70 Kč.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-grid">
+        <div>
+          <h2>Dorazte se zchladit</h2>
+          <p>Venkovní koupání, travnatý odpočinek a tři zóny v jednom areálu na Praze 3.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420228802314">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:bazen@prazacka.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Venkovní koupaliště Pražačka</strong><br>
+        19, Za Žižkovskou vozovnou 2716, 130 00 Praha 3
+      </div>
+      <div class="wf-disclaimer">
+        Tuto nezávaznou vizuální prezentaci připravil Webflex jako součást individuální obchodní nabídky. Pokud si nepřejete podobné oslovení, můžete jej odstranit na <a href="https://webflex.cz/delete/exsweft">webflex.cz/delete/exsweft</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.477088799999997, 50.0935364],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#006040' })
+      .setLngLat([14.477088799999997, 50.0935364])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
