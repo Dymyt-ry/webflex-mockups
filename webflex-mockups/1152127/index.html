@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oldřich Hájek | Servis oken a dveří Praha</title>
+  <meta name="description" content="Servis, seřízení a pozáruční opravy plastových i dřevěných oken a dveří v Praze a okolí.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #101318;
+      --muted: #5f6670;
+      --soft: #f4f7fb;
+      --soft-2: #e8f4fc;
+      --line: #d8e0e8;
+      --line-strong: #aebdca;
+      --accent: #20A0E0;
+      --accent-dark: #116fa1;
+      --accent-soft: rgba(32, 160, 224, .12);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(16,19,24,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,19,24,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.4vw, 64px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.08; }
+    p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.58; hyphens: auto; }
+    .mono { font-family: var(--font-mono); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(32,160,224,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); background: #fff; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-weight: 700; }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    section { padding: 82px 0; }
+    .hero { padding: 66px 0 76px; border-bottom: 1px solid var(--line); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      gap: 54px;
+      align-items: center;
+    }
+    .hero p { max-width: 620px; margin-top: 22px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .status-line {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 22px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+    .status-line::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+    .hours-card {
+      background: #fff;
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 24px 70px rgba(16,19,24,.08);
+    }
+    .table-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--soft);
+    }
+    .table-title strong { font-family: var(--font-display); font-size: 24px; }
+    .hours-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; }
+    .hours-note {
+      padding: 16px 18px;
+      border-top: 1px solid var(--line-strong);
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr) minmax(260px, 430px);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+    .section-no {
+      font-family: var(--font-display);
+      font-size: clamp(58px, 9vw, 126px);
+      line-height: .78;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .data-table {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+    }
+    .data-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(170px, 240px);
+      align-items: stretch;
+      min-height: 96px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .data-row:last-child { border-bottom: 0; }
+    .data-row > * {
+      padding: 20px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .data-row > *:last-child { border-right: 0; }
+    .code { font-family: var(--font-mono); font-weight: 700; color: var(--accent-dark); }
+    .data-row p { font-size: 16px; margin-top: 6px; }
+    .tag { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .rating-card, .benefit-panel {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      min-height: 320px;
+    }
+    .rating-card { padding: 28px; display: flex; flex-direction: column; justify-content: space-between; }
+    .rating-number {
+      font-family: var(--font-display);
+      font-size: clamp(82px, 12vw, 156px);
+      line-height: .82;
+      overflow-wrap: anywhere;
+    }
+    .rating-card .mono { color: var(--accent-dark); font-weight: 700; }
+    .benefit-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      min-height: 106px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .benefit-row:last-child { border-bottom: 0; }
+    .benefit-row > * { padding: 22px; border-right: 1px solid var(--line); }
+    .benefit-row > *:last-child { border-right: 0; }
+    .benefit-row strong { font-size: 20px; }
+
+    .price-matrix {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      overflow: clip;
+    }
+    .price-row {
+      display: grid;
+      grid-template-columns: minmax(210px, .85fr) minmax(0, 1.15fr) 180px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .price-row:last-child { border-bottom: 0; }
+    .price-row.head {
+      position: sticky;
+      top: 72px;
+      z-index: 2;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .price-row > * { padding: 18px; border-right: 1px solid var(--line); }
+    .price-row > *:last-child { border-right: 0; }
+    .price-row.head > * { border-right-color: rgba(255,255,255,.22); }
+    .price-row p { font-size: 15px; margin-top: 4px; }
+    .price { font-family: var(--font-mono); font-weight: 700; color: var(--accent-dark); }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 230px;
+      padding: 22px;
+      border-right: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step:last-child { border-right: 0; }
+    .step .mono { color: var(--accent-dark); font-weight: 700; }
+    .step p { font-size: 15px; margin-top: 10px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .76fr) minmax(420px, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      padding: 26px;
+    }
+    .contact-list { margin-top: 20px; border-top: 1px solid var(--line-strong); }
+    .contact-item {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-item span:first-child { color: var(--muted); }
+    .contact-item span:last-child, .contact-item a { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }
+    #map { height: 420px; border: 1px solid var(--line-strong); overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .qa {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      padding: 22px;
+      min-height: 170px;
+    }
+    .qa p { font-size: 16px; margin-top: 12px; }
+
+    .final {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final h2 { max-width: 760px; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    footer {
+      padding: 30px 0;
+      color: var(--muted);
+      font-size: 13px;
+      background: #fff;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+    .disclaimer { max-width: 760px; line-height: 1.5; }
+    .delete-link { font-family: var(--font-mono); color: var(--accent-dark); }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .trust-grid, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .section-head { gap: 16px; }
+      .data-row, .price-row, .benefit-row { grid-template-columns: 1fr; }
+      .data-row > *, .price-row > *, .benefit-row > * { border-right: 0; border-bottom: 1px solid var(--line); }
+      .data-row > *:last-child, .price-row > *:last-child, .benefit-row > *:last-child { border-bottom: 0; }
+      .process, .faq { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .step:last-child { border-bottom: 0; }
+      .final-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 58px 0; }
+      .hero { padding-top: 38px; }
+      .contact-item { grid-template-columns: 1fr; gap: 6px; }
+      .btn { width: 100%; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="wordmark" href="#top" aria-label="Oldřich Hájek">Oldřich Hájek</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#ceny">Ceny</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420732329898">Zavolat servis</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="status-line">Praha a okolí · servis oken</div>
+          <h1>Okna seřízená bez zdržení</h1>
+          <p>Servis, pozáruční opravy, seřízení plastových i dřevěných oken, doplnění ventilace, mikroventilace a práce s celoobvodovým kováním.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420732329898">+420 732 329 898</a>
+            <a class="btn secondary" href="mailto:olhajek@seznam.cz">olhajek@seznam.cz</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Dostupnost">
+          <div class="table-title">
+            <strong>Dostupnost</strong>
+            <span class="eyebrow">Dnes</span>
+          </div>
+          <div class="hours-row today"><span>Čtvrtek</span><span>telefonicky</span></div>
+          <div class="hours-row"><span>Praha</span><span>doprava zdarma</span></div>
+          <div class="hours-row"><span>Okolí Prahy</span><span>dohodou</span></div>
+          <div class="hours-row"><span>ČR</span><span>po dohodě</span></div>
+          <div class="hours-note">Pro urychlení komunikace uveďte telefonní číslo a alespoň přibližnou adresu. Pokud se nedovoláte hned, ozveme se zpátky.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <div>
+            <div class="eyebrow">Servisní list</div>
+            <h2>Opravy pro běžné i havarijní situace</h2>
+          </div>
+          <p>Práce probíhá na dostupných typech okenních profilů a kování. Cílem je vrátit oknům těsnost, chod a pohodlné používání.</p>
+        </div>
+        <div class="data-table">
+          <div class="data-row">
+            <div class="code">S-01</div>
+            <div><h3>Seřízení plastových oken</h3><p>Seřízení přítlaku, klik, pantů a chodu křídel u plastových oken.</p></div>
+            <div class="tag">Praha · okolí</div>
+          </div>
+          <div class="data-row">
+            <div class="code">S-02</div>
+            <div><h3>Pozáruční servis</h3><p>Servis plastových i dřevěných oken po záruce včetně kontroly těsnění a kování.</p></div>
+            <div class="tag">plast · dřevo</div>
+          </div>
+          <div class="data-row">
+            <div class="code">S-03</div>
+            <div><h3>Havarijní servis oken</h3><p>Rychlý dojezd na určené místo při závadách, které brání běžnému užívání.</p></div>
+            <div class="tag">rychlý výjezd</div>
+          </div>
+          <div class="data-row">
+            <div class="code">S-04</div>
+            <div><h3>Ventilace a mikroventilace</h3><p>Doplnění ventilačních prvků nebo výměna a zlepšení celoobvodového kování.</p></div>
+            <div class="tag">kování · komfort</div>
+          </div>
+          <div class="data-row">
+            <div class="code">S-05</div>
+            <div><h3>Dodávky a montáže</h3><p>Kompletní dodávka a montáž nových oken a dveří pro dům nebo byt.</p></div>
+            <div class="tag">zadání e-mailem</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <div>
+            <div class="eyebrow">Důvěra</div>
+            <h2>Hodnocení a provozní jistoty</h2>
+          </div>
+          <p>Kontaktní údaje, adresa a veřejné hodnocení jsou převzaté z aktuálních firemních údajů.</p>
+        </div>
+        <div class="trust-grid">
+          <div class="rating-card">
+            <div>
+              <div class="eyebrow">Google hodnocení</div>
+              <div class="rating-number">4.9</div>
+            </div>
+            <div>
+              <p class="mono">65 recenzí</p>
+              <p>Praktická služba pro řidiče domácností i správců, kteří řeší okna v Praze a blízkém okolí.</p>
+            </div>
+          </div>
+          <div class="benefit-panel">
+            <div class="benefit-row">
+              <div class="code">B-01</div>
+              <div><strong>Nižší náklady na vytápění</strong><p>Správný servis pomáhá omezit únik tepla a zlepšit těsnost.</p></div>
+            </div>
+            <div class="benefit-row">
+              <div class="code">B-02</div>
+              <div><strong>Delší životnost profilu i kování</strong><p>Seřízené okno méně namáhá panty, těsnění a celoobvodové prvky.</p></div>
+            </div>
+            <div class="benefit-row">
+              <div class="code">B-03</div>
+              <div><strong>Méně hluku z exteriéru</strong><p>Po opravě a nastavení se zvyšuje uživatelský komfort v místnosti.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ceny">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <div>
+            <div class="eyebrow">Ceníková logika</div>
+            <h2>Rozsah práce podle závady</h2>
+          </div>
+          <p>Konkrétní částka se potvrzuje podle typu profilu, kování, rozsahu opravy a místa výjezdu. Po Praze je doprava zdarma.</p>
+        </div>
+        <div class="price-matrix" aria-label="Přehled prací a cenové logiky">
+          <div class="price-row head"><div>Položka</div><div>Co připravit</div><div>Doprava</div></div>
+          <div class="price-row">
+            <div><strong>Servis oken</strong><p>Seřízení, kontrola a drobné opravy.</p></div>
+            <div>Uveďte přibližnou adresu, počet oken a popis závady.</div>
+            <div class="price">Praha zdarma</div>
+          </div>
+          <div class="price-row">
+            <div><strong>Havarijní zásah</strong><p>Okno nejde zavřít, drhne nebo netěsní.</p></div>
+            <div>Pošlete fotografii detailu a telefonní kontakt pro domluvu.</div>
+            <div class="price">okolí dohodou</div>
+          </div>
+          <div class="price-row">
+            <div><strong>Dodávka oken a dveří</strong><p>Kompletní dodávka a montáž výrobků.</p></div>
+            <div>Zašlete zadání, rozměry a požadovaný typ výrobku.</div>
+            <div class="price">individuálně</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <div>
+            <div class="eyebrow">Postup</div>
+            <h2>Od prvního hovoru k opravenému oknu</h2>
+          </div>
+          <p>Komunikace je nejpřesnější, když hned doplníte telefon, adresu a stručný popis problému.</p>
+        </div>
+        <div class="process">
+          <div class="step"><span class="mono">01</span><div><h3>Zavoláte nebo napíšete</h3><p>Telefonicky na servisní číslo nebo e-mailem s krátkým zadáním.</p></div></div>
+          <div class="step"><span class="mono">02</span><div><h3>Doplníte místo</h3><p>Přibližná adresa pomůže určit dojezd po Praze nebo mimo Prahu.</p></div></div>
+          <div class="step"><span class="mono">03</span><div><h3>Domluví se zásah</h3><p>Podle závady se potvrdí rozsah práce a vhodný termín.</p></div></div>
+          <div class="step"><span class="mono">04</span><div><h3>Okno se seřídí</h3><p>Servis se zaměří na chod, těsnění, kování a pohodlné užívání.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Servis oken Praha 3</h2>
+          </div>
+          <p>Adresa firmy je v Praze 3-Žižkov. Služby jsou zajišťované po Praze, okolí a po dohodě i jinde v ČR.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Oldřich Hájek</h3>
+            <div class="contact-list">
+              <div class="contact-item"><span>Telefon</span><a href="tel:+420732329898">+420 732 329 898</a></div>
+              <div class="contact-item"><span>E-mail</span><a href="mailto:olhajek@seznam.cz">olhajek@seznam.cz</a></div>
+              <div class="contact-item"><span>Adresa</span><span>26, Jeseniova 2832, 130 00 Praha 3-Žižkov</span></div>
+              <div class="contact-item"><span>Web</span><a href="https://servis-okna-dvere.cz/">servis-okna-dvere.cz</a></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa: Oldřich Hájek, Praha 3-Žižkov"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-no">06</div>
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než zavoláte servis</h2>
+          </div>
+          <p>Nejčastější informace pro rychlou domluvu výjezdu a správné určení závady.</p>
+        </div>
+        <div class="faq">
+          <div class="qa"><h3>Jaké údaje poslat?</h3><p>Telefonní číslo, přibližnou adresu, počet oken a popis problému. Fotografie závady pomůže.</p></div>
+          <div class="qa"><h3>Řešíte plastová i dřevěná okna?</h3><p>Ano, pozáruční servis se týká plastových i dřevěných oken a dostupných typů kování.</p></div>
+          <div class="qa"><h3>Je doprava po Praze účtovaná?</h3><p>Podle uvedených informací je doprava po Praze zdarma. Okolí Prahy se domlouvá oboustranně.</p></div>
+          <div class="qa"><h3>Co když se nedovolám?</h3><p>Nechte kontakt nebo napište e-mail. Po nepřijatém hovoru se servis ozve zpátky.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <h2>Domluvte servis oken v Praze</h2>
+        <div class="final-actions">
+          <a class="btn primary" href="tel:+420732329898">Volat servis</a>
+          <a class="btn secondary" href="mailto:olhajek@seznam.cz">Poslat zadání</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div class="disclaimer">Tuto prezentační stránku připravila společnost Webflex jako informační demo pro majitele firmy. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde: <a class="delete-link" href="https://app.webflex.cz/delete/1152127">odstranit stránku</a>.</div>
+      <a class="delete-link" href="#top">Nahoru</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.458375799999999, 50.085934099999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#20A0E0' })
+      .setLngLat([14.458375799999999, 50.085934099999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
