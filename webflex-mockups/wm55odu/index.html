@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZK autoservis - Zdeněk Komárek | Autoservis Plzeň</title>
+  <meta name="description" content="Autoservis a pneuservis v Plzni: opravy vozů, diagnostika motoru, karosérie, klimatizace, podvozky, STK, emise, tažná zařízení a pojistné události.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101014;
+      --panel: #17171d;
+      --panel-2: #1f1f27;
+      --fg: #f7f5ef;
+      --muted: #b9b3aa;
+      --line: rgba(247,245,239,.18);
+      --line-strong: rgba(247,245,239,.36);
+      --accent: #200040;
+      --accent-2: #6e35a8;
+      --paper: #f5f1ea;
+      --black: #08080a;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--fg);
+      letter-spacing: 0;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)' opacity='.75'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16,16,20,.86);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      max-width: 330px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+      text-transform: uppercase;
+    }
+    .navlinks { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: 14px; font-weight: 700; text-transform: uppercase; }
+    .navlinks a { transition: color .2s var(--ease); }
+    .navlinks a:hover { color: var(--fg); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--line-strong);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      transition: transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--fg); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+    .btn.primary { background: var(--paper); color: var(--black); border-color: var(--paper); }
+    .btn.primary:hover { background: #ffffff; }
+    .btn.secondary { color: #fff; border: 1px solid rgba(255,255,255,.45); background: transparent; }
+    .hero {
+      min-height: calc(100svh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 72px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .8fr);
+      align-items: center;
+      gap: 48px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .kicker::before { content: ""; width: 42px; height: 2px; background: var(--accent-2); }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 26px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      min-width: 0;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82) contrast(1.08); }
+    .hero-photo::after {
+      content: "PLZEŇ / REPUBLIKÁNSKÁ 45";
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      background: var(--black);
+      border: 1px solid rgba(255,255,255,.24);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    section { padding: 86px 0; border-top: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr);
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 34px;
+    }
+    .num { font-family: var(--font-mono); color: var(--accent-2); font-weight: 800; font-size: 13px; }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .service-table { border: 1px solid var(--line-strong); background: rgba(255,255,255,.025); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.7fr auto;
+      gap: 24px;
+      align-items: center;
+      min-height: 88px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row strong { font-size: 20px; text-transform: uppercase; }
+    .service-row p { margin: 0; color: var(--muted); line-height: 1.5; font-size: 16px; }
+    .tag { font-family: var(--font-mono); font-size: 12px; color: var(--paper); border: 1px solid var(--line-strong); padding: 8px 10px; white-space: nowrap; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line-strong);
+    }
+    .stat { min-height: 170px; padding: 26px; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; }
+    .stat:last-child { border-right: 0; }
+    .stat b { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 64px); line-height: 1; color: var(--paper); }
+    .stat span { color: var(--muted); font-size: 15px; line-height: 1.45; }
+    .split {
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 28px;
+    }
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-strip figure { margin: 0; border: 1px solid var(--line); background: var(--panel-2); }
+    .photo-strip img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; filter: grayscale(.15) saturate(.82); }
+    .photo-strip figcaption { padding: 12px; font-family: var(--font-mono); color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .steps { border-top: 1px solid var(--line-strong); }
+    .step { display: grid; grid-template-columns: 76px 1fr; gap: 20px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .step b { font-family: var(--font-mono); color: var(--accent-2); }
+    .step h3 { margin: 0 0 8px; text-transform: uppercase; font-size: 20px; }
+    .step p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card { border: 1px solid var(--line-strong); background: var(--panel); padding: 28px; }
+    .contact-card h3 { margin: 0 0 22px; font-family: var(--font-display); font-size: 28px; text-transform: uppercase; }
+    .contact-list { display: grid; gap: 14px; }
+    .contact-list a, .contact-list div { padding-bottom: 14px; border-bottom: 1px solid var(--line); color: var(--fg); }
+    .contact-list span { display: block; margin-bottom: 6px; font-family: var(--font-mono); color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    #map { height: 420px; border: 1px solid var(--line-strong); overflow: hidden; }
+    .final {
+      padding: 70px 0;
+      background: linear-gradient(90deg, var(--accent), #121217);
+      border-top: 1px solid var(--line-strong);
+    }
+    .final .wrap { display: flex; justify-content: space-between; align-items: center; gap: 28px; }
+    .final h2 { max-width: 760px; font-size: clamp(32px, 5vw, 70px); }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .credit { margin-top: 14px; font-family: var(--font-mono); font-size: 11px; }
+    .wf-disclaimer { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .wf-disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 900px) {
+      .navlinks { display: none; }
+      .hero-grid, .split, .contact-grid { grid-template-columns: 1fr; }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .section-head { grid-template-columns: 1fr; gap: 10px; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); min-height: 132px; }
+      .stat:last-child { border-bottom: 0; }
+      .final .wrap { display: grid; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .wordmark { font-size: 16px; }
+      .photo-strip { grid-template-columns: 1fr; }
+      section { padding: 62px 0; }
+      .hero-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">ZK autoservis - Zdeněk Komárek</a>
+      <div class="navlinks">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420608961747">608 961 747</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Autoservis Plzeň</div>
+          <h1 id="hero-title">Servis pro vaše auto</h1>
+          <p class="lead">Opravy vozů, pneuservis, diagnostika motoru, karosérie, klimatizace, tažná zařízení i vyřízení po nehodě na jedné adrese v Plzni.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420608961747">Zavolat do servisu</a>
+            <a class="btn secondary" href="#kontakt">Adresa a mapa</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/7564871/pexels-photo-7564871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic using hand tools to fix an engine, showcasing precision and skill.">
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01 / ROZSAH</div>
+          <h2>Autoservis, pneuservis a práce po nehodě</h2>
+        </div>
+        <div class="service-table" role="list">
+          <div class="service-row" role="listitem"><strong>Opravy vozů</strong><p>Běžné servisní práce pro osobní, dodávkové a užitkové vozy včetně kontroly brzd, výfuků a zamykání řadících pák.</p><span class="tag">SERVIS</span></div>
+          <div class="service-row" role="listitem"><strong>Diagnostika motoru</strong><p>Kontrola závad před opravou, dohledání příčiny a domluva dalšího postupu před zásahem.</p><span class="tag">DIAGNOSTIKA</span></div>
+          <div class="service-row" role="listitem"><strong>Pneuservis</strong><p>Sezónní přezutí, kontrola kol a servis pneumatik pro každodenní provoz v Plzni a okolí.</p><span class="tag">PNEU</span></div>
+          <div class="service-row" role="listitem"><strong>Karosérie</strong><p>Opravy karosérií osobních, dodávkových a užitkových vozidel po poškození i běžném provozu.</p><span class="tag">KAROSÉRIE</span></div>
+          <div class="service-row" role="listitem"><strong>Klimatizace</strong><p>Servis a plnění klimatizací, protože pravidelná údržba prodlužuje životnost celého systému.</p><span class="tag">KLIMA</span></div>
+          <div class="service-row" role="listitem"><strong>Tažná zařízení</strong><p>Prodej a montáž tažných zařízení s certifikátem, včetně praktického řešení pro vaše vozidlo.</p><span class="tag">MONTÁŽ</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats" aria-label="Důvěryhodnost servisu">
+          <div class="stat"><b>4,0</b><span>Hodnocení zákazníků podle strukturovaných údajů v profilu firmy.</span></div>
+          <div class="stat"><b>61</b><span>Recenzí od řidičů, kteří servis hodnotili po své návštěvě.</span></div>
+          <div class="stat"><b>312 00</b><span>Plzeň 4, Republikánská 1102/45.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="panel">
+          <div class="num">02 / DALŠÍ PRÁCE</div>
+          <h2>Podvozek, doklady, STK</h2>
+          <p class="lead">Kromě oprav se řeší také ochranný nástřik podvozku, dutin a karoserie, přihlášení nebo odhlášení vozidla, doklady na dovezené vozy, STK a emise.</p>
+        </div>
+        <div class="photo-strip" aria-label="Práce v autoservisu">
+          <figure>
+            <img src="https://images.pexels.com/photos/27665740/pexels-photo-27665740.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up view of a mechanic's hands working on a car engine with a wrench in an industrial setting.">
+            <figcaption>Motorový prostor / ruční práce</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/8478248/pexels-photo-8478248.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic fixing a car engine, showcasing hands-on maintenance work.">
+            <figcaption>Kontrola dílů / servisní zásah</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03 / POSTUP</div>
+          <h2>Od zavolání po předání vozu</h2>
+        </div>
+        <div class="steps">
+          <div class="step"><b>01</b><div><h3>Popíšete problém</h3><p>Zavoláte na číslo 608 961 747 nebo napíšete na info@zkautoservis.cz a domluvíte návštěvu.</p></div></div>
+          <div class="step"><b>02</b><div><h3>Servis vůz zkontroluje</h3><p>Podle typu závady proběhne diagnostika, kontrola dílů, pneumatik, karosérie nebo klimatizace.</p></div></div>
+          <div class="step"><b>03</b><div><h3>Domluví se práce</h3><p>U běžného servisu, pojistné události, STK, emisí nebo tažného zařízení víte, co se bude řešit.</p></div></div>
+          <div class="step"><b>04</b><div><h3>Převezmete auto</h3><p>Hotový vůz si vyzvednete na adrese Republikánská 1102/45 v Plzni 4.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04 / KONTAKT</div>
+          <h2>Republikánská 1102/45, Plzeň</h2>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Objednání servisu</h3>
+            <div class="contact-list">
+              <a href="tel:+420608961747"><span>Telefon</span>+420 608 961 747</a>
+              <a href="mailto:info@zkautoservis.cz"><span>E-mail</span>info@zkautoservis.cz</a>
+              <div><span>Adresa</span>Republikánská 1102/45, 312 00 Plzeň-Plzeň 4</div>
+              <a href="https://www.zkautoservis.cz/"><span>Web</span>www.zkautoservis.cz</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou autoservisu"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <h2>Potřebujete servis v Plzni?</h2>
+        <a class="btn primary" href="tel:+420608961747">Zavolat 608 961 747</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>ZK autoservis - Zdeněk Komárek · Republikánská 1102/45, 312 00 Plzeň-Plzeň 4 · <a href="mailto:info@zkautoservis.cz">info@zkautoservis.cz</a></div>
+      <div class="credit">Fotografie: christian buehner, cottonbro studio, Sergey Meshkov / Pexels.</div>
+      <div class="wf-disclaimer">Tuto prezentační stránku připravil Webflex jako nezávaznou vizuální variantu. Pro odstranění použijte <a href="https://webflex.cz/remove/wm55odu">https://webflex.cz/remove/wm55odu</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.415142099999999, 49.7462028],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#200040' })
+      .setLngLat([13.415142099999999, 49.7462028])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
