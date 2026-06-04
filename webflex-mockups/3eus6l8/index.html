@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Infinit Sportcentrum Step | Tenis, squash, badminton a stolní tenis</title>
+  <meta name="description" content="Sportcentrum Infinit Step v Praze 9: tenis, squash, badminton, stolní tenis, recepce a online rezervace. Otevřeno denně 7:00-22:30.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfc;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --ink: #131719;
+      --muted: #687277;
+      --soft: #eef4f4;
+      --accent: #C0E0E0;
+      --accent-ink: #183232;
+      --line: rgba(19, 23, 25, 0.08);
+      --shadow: 0 32px 90px rgba(35, 54, 58, 0.09);
+      --shadow-small: 0 18px 48px rgba(35, 54, 58, 0.07);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(19, 23, 25, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(19, 23, 25, 0.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(192, 224, 224, 0.48), transparent 30%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+      text-wrap: balance;
+    }
+    h1 {
+      max-width: 680px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.8vw, 68px);
+      overflow-wrap: anywhere;
+    }
+    h3 {
+      font-size: clamp(22px, 2.2vw, 32px);
+      line-height: 1;
+    }
+    p { margin: 0; color: var(--muted); }
+    .lead { max-width: 620px; font-size: clamp(19px, 2vw, 24px); color: #354044; line-height: 1.38; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+      cursor: pointer;
+    }
+    .btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 14px 36px rgba(93, 137, 137, .22); }
+    .btn-secondary { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 18px 42px rgba(35, 54, 58, .12); }
+    .btn:active, .card-link:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 252, 252, .82);
+      border-bottom: 1px solid rgba(19, 23, 25, .06);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { width: auto; max-width: 220px; max-height: 44px; object-fit: contain; }
+    .navlinks { display: flex; align-items: center; gap: 22px; color: #263034; font-weight: 700; }
+    .navlinks a { transition: color 180ms var(--ease); }
+    .navlinks a:hover { color: #4d7676; }
+
+    .hero { padding: 72px 0 46px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(420px, .98fr);
+      gap: 52px;
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .lead { margin-top: 24px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hero-panel {
+      position: relative;
+      min-height: 468px;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      padding: 26px;
+      background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(236,246,246,.92));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 30px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(192,224,224,.72), rgba(192,224,224,0) 64%);
+      filter: blur(8px);
+    }
+    .court-diagram {
+      position: relative;
+      height: 100%;
+      border-radius: 22px;
+      background:
+        linear-gradient(90deg, transparent 49.6%, rgba(19,23,25,.18) 49.6%, rgba(19,23,25,.18) 50.4%, transparent 50.4%),
+        linear-gradient(0deg, transparent 49.6%, rgba(19,23,25,.18) 49.6%, rgba(19,23,25,.18) 50.4%, transparent 50.4%),
+        linear-gradient(135deg, rgba(192,224,224,.62), rgba(255,255,255,.7));
+      border: 1px solid rgba(19,23,25,.08);
+      box-shadow: inset 0 0 0 18px rgba(255,255,255,.42);
+    }
+    .court-diagram span {
+      position: absolute;
+      left: 22px;
+      bottom: 18px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(19,23,25,.62);
+    }
+    .floating-note {
+      position: absolute;
+      right: 24px;
+      top: 24px;
+      width: min(240px, 50%);
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow-small);
+    }
+    .floating-note strong { display: block; font-size: 34px; line-height: 1; }
+    .floating-note small { font-family: var(--font-mono); color: var(--muted); font-weight: 700; }
+
+    section { padding: 78px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(320px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) auto;
+      gap: 22px;
+      align-items: center;
+      min-height: 122px;
+      padding: 24px;
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow-small);
+    }
+    .num { font-family: var(--font-mono); color: #5b7d7d; font-weight: 700; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .chip { padding: 8px 10px; border-radius: 999px; background: var(--soft); font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #415356; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(36px, 5vw, 66px); line-height: 1; }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .feature-card, .timeline, .price-card, .contact-card {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      padding: 32px;
+    }
+    .feature-card {
+      background: linear-gradient(145deg, #ffffff, #edf7f7);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 430px;
+    }
+    .feature-card .mono-badge { align-self: flex-start; }
+    .mono-badge {
+      display: inline-flex;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #415356;
+    }
+    .timeline { display: grid; gap: 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 18px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b { font-family: var(--font-mono); color: #5b7d7d; }
+    .step p { margin-top: 4px; }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .price-card {
+      min-height: 312px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .price-card strong { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 58px); line-height: 1; }
+    .rate-table {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .rate-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 22px 26px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .rate-row:last-child { border-bottom: 0; }
+    .rate-row span:first-child { font-weight: 800; }
+    .rate-row span:last-child { font-family: var(--font-mono); color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(420px, 1.2fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .contact-card { display: grid; gap: 22px; }
+    .contact-item span { display: block; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .contact-item a, .contact-item strong { display: inline-block; margin-top: 4px; font-size: 24px; font-weight: 800; color: var(--ink); }
+    .hours {
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--soft);
+    }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    details {
+      min-height: 126px;
+      padding: 24px;
+      border-radius: 24px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-small);
+      transition: transform 220ms var(--ease);
+    }
+    details:hover { transform: translateY(-1px); }
+    summary { cursor: pointer; font-weight: 900; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 12px; }
+
+    .final {
+      padding: 72px 0 88px;
+    }
+    .final-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 36px;
+      border-radius: 32px;
+      background: #121819;
+      color: #fff;
+      box-shadow: 0 36px 100px rgba(18, 24, 25, .18);
+    }
+    .final-panel p { color: rgba(255,255,255,.72); margin-top: 12px; }
+    .final-panel .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 28px 0 36px;
+      color: #6f777b;
+      font-size: 13px;
+    }
+    .disclaimer {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      justify-content: space-between;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .navlinks a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .pricing, .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { min-height: 360px; }
+      .service-row { grid-template-columns: 1fr; }
+      .chips { justify-content: flex-start; }
+      .stats, .faq-list { grid-template-columns: 1fr; }
+      .final-panel { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 26px, 1180px); }
+      .hero { padding-top: 44px; }
+      section { padding: 54px 0; }
+      .hero-panel, .feature-card, .timeline, .price-card, .contact-card, .final-panel { border-radius: 22px; padding: 22px; }
+      .floating-note { width: calc(100% - 48px); }
+      .hero-actions, .final-panel > div:last-child { display: grid; }
+      .btn { width: 100%; }
+      .contact-item a, .contact-item strong { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav wrap" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Infinit Sportcentrum Step">
+        <img src="https://step.infinit.cz/files/logo-infinit-vysocany-2.svg" alt="Infinit Sportcentrum Step">
+      </a>
+      <div class="navlinks">
+        <a href="#sporty">Sportoviště</a>
+        <a href="#rezervace">Rezervace</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="#kontakt">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rezervovat
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Praha 9 · otevřeno 7:00-22:30</p>
+          <h1>Sportcentrum Infinit Step</h1>
+          <p class="lead">Tenis, squash, badminton a stolní tenis pod jednou střechou. Vyberte si sportoviště, čas a potvrďte rezervaci online nebo přes recepci.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#rezervace">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 2v4m8-4v4M4 10h16M6 4h12a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Online rezervace
+            </a>
+            <a class="btn btn-secondary" href="tel:+420733141630">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              +420 733 141 630
+            </a>
+          </div>
+        </div>
+        <div class="hero-panel" aria-label="Schéma sportoviště">
+          <div class="court-diagram"><span>STEP · SPORTCENTRUM</span></div>
+          <div class="floating-note">
+            <small>Hodnocení Google</small>
+            <strong>4,5</strong>
+            <p>z 908 recenzí</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sporty">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Sportoviště</p>
+            <h2>Vyberte kurt podle sezóny.</h2>
+          </div>
+          <p class="lead">V areálu najdete venkovní i vnitřní tenis, klimatizované squashové kurty, badmintonové haly a stolní tenis s výhodami pro držitele karet.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Tenis</h3>
+              <p>Letní sezóna nabízí 3 venkovní kurty s umělou trávou a vnitřní kurt s povrchem Wimbledon. V zimě jsou k dispozici 3 vnitřní kurty s celoročním provozem.</p>
+            </div>
+            <div class="chips"><span class="chip">trenéři</span><span class="chip">turnaje</span><span class="chip">vybavení</span></div>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Squash</h3>
+              <p>Tři klimatizované squashové kurty značky Fiberesin, půjčovna a prodej squashového vybavení přímo v areálu.</p>
+            </div>
+            <div class="chips"><span class="chip">3 kurty</span><span class="chip">Fiberesin</span></div>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Badminton</h3>
+              <p>V zimní sezóně 12 profesionálních kurtů Pro Court v přetlakové hale, v letní sezóně 8 kurtů ve vnitřní hale.</p>
+            </div>
+            <div class="chips"><span class="chip">12 / 8 kurtů</span><span class="chip">Pro Court</span></div>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <div>
+              <h3>Stolní tenis</h3>
+              <p>S Multisport kartou získáte 100% slevu na prvních 30 minut rezervace; při využití 2 Multisport karet máte 60 minut zdarma.</p>
+            </div>
+            <div class="chips"><span class="chip">Multisport</span><span class="chip">60 minut</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fakta">
+      <div class="wrap stats">
+        <div class="stat"><strong>7:00</strong><span>začátek provozu</span></div>
+        <div class="stat"><strong>22:30</strong><span>konec provozu</span></div>
+        <div class="stat"><strong>5%</strong><span>sleva s Infinit kartou na sportoviště</span></div>
+      </div>
+    </section>
+
+    <section id="rezervace">
+      <div class="wrap split">
+        <article class="feature-card">
+          <span class="mono-badge">ONLINE REZERVACE</span>
+          <div>
+            <h2>Rezervujte si halu.</h2>
+            <p class="lead">Rezervaci můžete v rezervačním systému sami zrušit. Pokud potřebujete pomoc s termínem, recepce je dostupná na telefonu.</p>
+          </div>
+          <a class="btn btn-primary" href="https://step.infinit.cz/kontakty">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Přejít na rezervace
+          </a>
+        </article>
+        <div class="timeline">
+          <div class="step"><b>01</b><div><h3>Vyberete sportoviště</h3><p>Tenis, squash, badminton nebo stolní tenis podle dostupnosti a sezóny.</p></div></div>
+          <div class="step"><b>02</b><div><h3>Zvolíte termín</h3><p>V rezervační stránce potvrdíte konkrétní čas a areál.</p></div></div>
+          <div class="step"><b>03</b><div><h3>Přijdete hrát</h3><p>Vybavení si můžete podle sportu půjčit nebo zakoupit přímo na místě.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap pricing">
+        <article class="price-card">
+          <p class="eyebrow">Karty a výhody</p>
+          <strong>5%</strong>
+          <p class="lead">S Infinit kartou získáte slevu na tenis, squash, badminton i další sportoviště.</p>
+        </article>
+        <div class="rate-table" aria-label="Přehled výhod">
+          <div class="rate-row"><span>Infinit karta</span><span>5% sleva</span></div>
+          <div class="rate-row"><span>Multisport karta · stolní tenis</span><span>30 min zdarma</span></div>
+          <div class="rate-row"><span>2 Multisport karty · stolní tenis</span><span>60 min zdarma</span></div>
+          <div class="rate-row"><span>Badminton · údržba povrchů</span><span>10:00-11:00 / 13:00-14:00</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Infinit Step Praha 9.</h2>
+          </div>
+          <p class="lead">Najdete nás na adrese 6, Malletova 2350, 190 00 Praha-Praha 9. Pro rezervace a změny termínů volejte recepci.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div class="contact-item"><span>Telefon</span><a href="tel:+420733141630">+420 733 141 630</a></div>
+            <div class="contact-item"><span>E-mail</span><a href="mailto:step@infinit.cz">step@infinit.cz</a></div>
+            <div class="contact-item"><span>Adresa</span><strong>6, Malletova 2350, 190 00 Praha-Praha 9</strong></div>
+            <div class="hours" aria-label="Otevírací doba">
+              <div><span>Každý den</span><strong>7:00-22:30</strong></div>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa Infinit Sportcentrum Step"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p class="lead">Praktické informace vycházejí z aktuální nabídky sportcentra.</p>
+        </div>
+        <div class="faq-list">
+          <details open>
+            <summary>Jaké sporty si mohu rezervovat?</summary>
+            <p>Tenis, squash, badminton a stolní tenis. Dostupnost tenisových a badmintonových kurtů se liší podle sezóny.</p>
+          </details>
+          <details>
+            <summary>Je možné si půjčit vybavení?</summary>
+            <p>U tenisu a squashe je v areálu uvedena půjčovna a prodej vybavení.</p>
+          </details>
+          <details>
+            <summary>Mohu rezervaci zrušit?</summary>
+            <p>Ano, rezervaci můžete zrušit v rezervačním systému, případně kontaktovat recepci.</p>
+          </details>
+          <details>
+            <summary>Platí zde Multisport?</summary>
+            <p>U stolního tenisu je uvedena výhoda pro Multisport kartu: 30 minut zdarma, se dvěma kartami 60 minut zdarma.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-panel">
+        <div>
+          <h2>Vyberte kurt a čas.</h2>
+          <p>Online rezervace, recepce na telefonu a sportoviště otevřené každý den do 22:30.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://step.infinit.cz/kontakty">Rezervovat online</a>
+          <a class="btn btn-secondary" href="tel:+420733141630">Zavolat recepci</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      <span>Tento prezentační materiál připravilo Webflex pro interní posouzení. Nejste-li adresátem, můžete jej odstranit.</span>
+      <a href="https://webflex.cz/remove/3eus6l8">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.483531599999997, 50.1012649],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0E0E0' })
+      .setLngLat([14.483531599999997, 50.1012649])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
