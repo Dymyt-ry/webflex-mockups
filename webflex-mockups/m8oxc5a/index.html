@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kuchyně Drozd - Eva Drozdová - nábytek na míru</title>
+  <meta name="description" content="Kuchyně, vestavěné skříně a nábytek na míru z poctivé české výroby v Ostravě-Zábřehu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #171412;
+      --muted: #6e6861;
+      --accent: #402000;
+      --accent-soft: #efe7de;
+      --line: rgba(64,32,0,.12);
+      --shadow: 0 34px 90px rgba(64,32,0,.10);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(64,32,0,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,32,0,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.86);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-size: 18px;
+      line-height: 1.05;
+      max-width: 430px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .nav-links { display: flex; gap: 22px; color: var(--muted); font-weight: 600; font-size: 15px; }
+    .nav-links a, .btn, .service-row, .faq summary {
+      transition: transform .22s var(--ease), border-color .22s var(--ease), background .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid currentColor;
+      cursor: pointer;
+    }
+    .btn.primary { color: #fff; background: var(--accent); border-color: var(--accent); box-shadow: 0 18px 36px rgba(64,32,0,.18); }
+    .btn.secondary { color: var(--ink); background: transparent; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 22px 48px rgba(64,32,0,.14); }
+    .btn:active, .service-row:active, .faq summary:active { transform: translateY(1px); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(420px, .9fr);
+      gap: 56px;
+      align-items: center;
+      padding: 76px 0 64px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 18px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .95;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(36px, 5vw, 72px); }
+    h3 { font-size: 24px; line-height: 1.08; }
+    p { margin: 0; color: var(--muted); }
+    .lead { margin-top: 24px; max-width: 660px; font-size: clamp(19px, 2vw, 25px); line-height: 1.35; color: #3b352f; }
+    .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
+    .hero-panel {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      background: linear-gradient(145deg, #fff, #f2eee9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+    .cabinet-svg { width: 86%; height: 86%; }
+    .float-note {
+      position: absolute;
+      right: 24px;
+      bottom: 24px;
+      width: min(260px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 58px rgba(64,32,0,.12);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+    }
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .62fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .services {
+      display: grid;
+      gap: 12px;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, 1fr) minmax(180px, .36fr);
+      gap: 26px;
+      align-items: center;
+      min-height: 118px;
+      padding: 24px 28px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: 0 20px 70px rgba(64,32,0,.055);
+    }
+    .service-row:hover { transform: translateY(-1px); background: #fff; }
+    .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .tag { justify-self: end; font-family: var(--font-mono); font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 9px 12px; border-radius: 999px; }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat, .quote, .contact-card, .faq details, .process-step {
+      background: var(--surface-strong);
+      border-radius: 30px;
+      box-shadow: 0 24px 80px rgba(64,32,0,.07);
+    }
+    .stat { padding: 30px; min-height: 190px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 4vw, 58px); color: var(--accent); line-height: 1; }
+    .quote { margin-top: 16px; padding: 36px; display: grid; grid-template-columns: .4fr 1fr; gap: 28px; align-items: center; }
+    .quote .mark { font-family: var(--font-display); font-size: 88px; line-height: .8; color: var(--accent-soft); }
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .process-step { padding: 26px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+    .materials {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .material-list {
+      border-radius: 30px;
+      background: var(--accent);
+      color: #fff;
+      padding: 34px;
+      box-shadow: var(--shadow);
+    }
+    .material-list p { color: rgba(255,255,255,.72); }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .chip { border: 1px solid rgba(255,255,255,.24); border-radius: 999px; padding: 10px 13px; font-weight: 700; }
+    .atelier-card {
+      border-radius: 30px;
+      padding: 34px;
+      background: linear-gradient(145deg, #fff, #f0ebe6);
+      box-shadow: 0 24px 80px rgba(64,32,0,.08);
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .74fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 34px; }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    #map { height: 420px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); }
+    .faq {
+      display: grid;
+      grid-template-columns: .7fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .faq-list { display: grid; gap: 12px; }
+    .faq details { padding: 22px 26px; }
+    .faq summary { cursor: pointer; font-weight: 800; list-style: none; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq details p { margin-top: 12px; }
+    .final {
+      margin: 72px auto 34px;
+      padding: 46px;
+      border-radius: 36px;
+      background: #171412;
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 36px 100px rgba(23,20,18,.16);
+    }
+    .final p { color: rgba(255,255,255,.70); margin-top: 12px; }
+    .final .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    footer {
+      padding: 28px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .disclaimer {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero, .section-head, .materials, .contact-grid, .faq, .final { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 54px; }
+      .hero-panel { min-width: 0; }
+      .trust-grid, .process { grid-template-columns: 1fr 1fr; }
+      .final { align-items: start; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .nav-inner { height: auto; min-height: 70px; }
+      .brand { font-size: 15px; }
+      section { padding: 58px 0; }
+      .hero { gap: 34px; }
+      .hero-panel { border-radius: 24px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; padding: 22px; }
+      .tag { justify-self: start; }
+      .trust-grid, .process { grid-template-columns: 1fr; }
+      .quote { grid-template-columns: 1fr; }
+      .contact-line { grid-template-columns: 1fr; gap: 4px; }
+      .final { padding: 30px 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top">Kuchyně Drozd - Eva Drozdová - nábytek na míru</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#materialy">Materiály</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn secondary" href="tel:+420725957443">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <p class="kicker">Ostrava-Zábřeh · areál KOTVA · 1. patro</p>
+        <h1>Kuchyně na míru</h1>
+        <p class="lead">Poctivá česká výroba kuchyní, vestavěných skříní a dalšího nábytku, který přesně sedí prostoru, postavě i každodennímu používání.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420725957443">+420 725 957 443</a>
+          <a class="btn secondary" href="mailto:eva-drozdova@seznam.cz">Napsat e-mail</a>
+        </div>
+      </div>
+      <div class="hero-panel" aria-label="Stylizovaný plán kuchyňské sestavy">
+        <svg class="cabinet-svg" viewBox="0 0 640 480" role="img" aria-label="Kuchyňská linka a úložné moduly">
+          <rect x="38" y="42" width="564" height="396" rx="28" fill="#f7f4f0"/>
+          <path d="M92 126h456M92 250h456M240 126v260M392 126v260" stroke="#402000" stroke-opacity=".18" stroke-width="4"/>
+          <rect x="92" y="126" width="456" height="260" rx="18" fill="none" stroke="#402000" stroke-width="6"/>
+          <rect x="126" y="168" width="82" height="28" rx="14" fill="#402000"/>
+          <rect x="278" y="168" width="82" height="28" rx="14" fill="#402000" fill-opacity=".55"/>
+          <rect x="430" y="168" width="82" height="28" rx="14" fill="#402000" fill-opacity=".25"/>
+          <circle cx="320" cy="318" r="44" fill="#efe7de" stroke="#402000" stroke-width="5"/>
+          <path d="M286 318h68" stroke="#402000" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div class="float-note">Lamino · fólie · lak · Senosan · Acrylic · dýha · masiv</div>
+      </div>
+    </div>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Co vyrábíme</h2>
+          <p>Zakázková výroba vychází z kuchyňského studia v Ostravě-Zábřehu. Každý kus nábytku vzniká podle prostoru a podle toho, jak jej doma opravdu používáte.</p>
+        </div>
+        <div class="services">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Kuchyně klasické i atypické</h3>
+              <p>Linky na míru včetně ergonomie pracovní výšky, dispozice úložných míst a sladění s vybranými spotřebiči.</p>
+            </div>
+            <span class="tag">vlastní výroba</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Vestavěné skříně</h3>
+              <p>Řešení pro niky, šikminy, chodby a další atypické prostory, kde běžný nábytek nechává nevyužité místo.</p>
+            </div>
+            <span class="tag">na centimetry</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Spotřebiče, dřezy a doplňky</h3>
+              <p>K nové kuchyni lze vybrat vybavení od zavedených výrobců tak, aby celek fungoval prakticky i vzhledově.</p>
+            </div>
+            <span class="tag">kompletní celek</span>
+          </article>
+          <article class="service-row">
+            <span class="num">04</span>
+            <div>
+              <h3>Matrace, postele a ostatní nábytek</h3>
+              <p>Zakázkové úložné prvky i vybavení dalších místností podle přání a možností interiéru.</p>
+            </div>
+            <span class="tag">domov jako celek</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust-grid">
+          <article class="stat">
+            <span class="label">Hodnocení zákazníků</span>
+            <strong>4,9</strong>
+            <p>Průměrné veřejné hodnocení firmy.</p>
+          </article>
+          <article class="stat">
+            <span class="label">Reference</span>
+            <strong>15</strong>
+            <p>Veřejně uvedených zákaznických recenzí.</p>
+          </article>
+          <article class="stat">
+            <span class="label">Výroba</span>
+            <strong>2003</strong>
+            <p>Rok, od kterého se firma zabývá výrobou nábytku.</p>
+          </article>
+        </div>
+        <article class="quote">
+          <div class="mark">“</div>
+          <p class="lead">„Nábytek na míru, který dokonale zapadne do vašeho domova.“</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="materialy">
+      <div class="wrap materials">
+        <div class="material-list">
+          <p class="kicker" style="color:rgba(255,255,255,.64)">Materiálové řady</p>
+          <h2>Od lamina po masiv</h2>
+          <p>Jednotlivé řady se liší vzhledem i cenovou úrovní, aby šlo vybrat řešení pro jednoduchý byt i náročnější interiér.</p>
+          <div class="chips">
+            <span class="chip">lamino</span>
+            <span class="chip">fólie</span>
+            <span class="chip">lak</span>
+            <span class="chip">Senosan</span>
+            <span class="chip">Acrylic</span>
+            <span class="chip">dýha</span>
+            <span class="chip">masiv</span>
+          </div>
+        </div>
+        <div class="atelier-card">
+          <p class="kicker">Jak spolupráce probíhá</p>
+          <div class="process" style="grid-template-columns:1fr; gap:12px">
+            <article class="process-step" style="min-height:auto">
+              <span class="num">01</span>
+              <h3>Schůzka ve studiu</h3>
+              <p>V areálu KOTVA si projdete možnosti uspořádání, materiálů a vybavení.</p>
+            </article>
+            <article class="process-step" style="min-height:auto">
+              <span class="num">02</span>
+              <h3>Společné doladění</h3>
+              <p>Vy znáte svůj domov, dílna zná výrobu. Výsledek se skládá z obou pohledů.</p>
+            </article>
+            <article class="process-step" style="min-height:auto">
+              <span class="num">03</span>
+              <h3>Výroba a realizace</h3>
+              <p>Nábytek vzniká jako vlastní česká výroba, ne jako katalogový kompromis.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Studio v Ostravě</h2>
+          <p>Domluvte si návštěvu kuchyňského studia v Ostravě-Zábřehu. Pro přímou domluvu použijte telefon, pro podklady a rozměry můžete využít e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <div class="contact-line">
+              <span class="label">Telefon</span>
+              <a href="tel:+420725957443">+420 725 957 443</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">E-mail</span>
+              <a href="mailto:eva-drozdova@seznam.cz">eva-drozdova@seznam.cz</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">Adresa</span>
+              <span>116, Výškovická 2636, 700 30 Ostrava-jih</span>
+            </div>
+            <div class="contact-line">
+              <span class="label">Umístění</span>
+              <span>Ostrava-Zábřeh, areál KOTVA, 1. patro</span>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa polohy kuchyňského studia"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap faq">
+        <div>
+          <p class="kicker">Časté otázky</p>
+          <h2>Než zavoláte</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Vyrábíte i atypické kuchyně?</summary>
+            <p>Ano. Firma uvádí výrobu klasických i atypických kuchyní na míru podle prostoru a představ zákazníka.</p>
+          </details>
+          <details>
+            <summary>Děláte také jiný nábytek než kuchyně?</summary>
+            <p>Ano. Kromě kuchyní vyrábí také vestavěné skříně, postele, matrace a další nábytek podle přání.</p>
+          </details>
+          <details>
+            <summary>Mohu řešit i spotřebiče a dřez?</summary>
+            <p>Ano. Ke kuchyni lze vybrat kuchyňské vybavení, dřezy a spotřebiče od renomovaných výrobců.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap final">
+      <div>
+        <h2>Začněte ve studiu</h2>
+        <p>Vezměte rozměry prostoru, představu o používání a domluvte si termín návštěvy v Ostravě-Zábřehu.</p>
+      </div>
+      <a class="btn primary" href="tel:+420725957443">Zavolat do studia</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      Tuto prezentační stránku připravil Webflex pro obchodní oslovení. Pokud si nepřejete další kontakt, stránku odstraníte zde:
+      <a href="https://webflex.cz/delete/m8oxc5a">https://webflex.cz/delete/m8oxc5a</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [18.227849799999998, 49.790535899999995],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#402000' })
+      .setLngLat([18.227849799999998, 49.790535899999995])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
