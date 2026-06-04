@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>INDECO - vestavěné skříně, kuchyně a nábytek na míru</title>
+  <meta name="description" content="INDECO v Plzni-Křimicích: vestavěné skříně, kuchyně, sedací soupravy a kompletní interiéry na míru.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --fg: #f7f4ee;
+      --muted: rgba(247, 244, 238, .68);
+      --soft: rgba(247, 244, 238, .1);
+      --line: rgba(247, 244, 238, .16);
+      --accent: #604020;
+      --accent-ink: #ffffff;
+      --font-display: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.4, 0, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: 500; letter-spacing: 0; hyphens: none; }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      max-width: 760px;
+      font-size: clamp(34px, 4.2vw, 64px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: clamp(23px, 2vw, 34px); line-height: 1.05; }
+
+    .wrap { width: min(1240px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      background: linear-gradient(to bottom, rgba(15,15,16,.74), rgba(15,15,16,0));
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: min(300px, 56vw);
+      max-height: 42px;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: rgba(255,255,255,.86);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .navlinks a { transition: color .33s var(--ease); }
+    .navlinks a:hover { color: #fff; }
+    .navlinks a:focus-visible,
+    .btn:focus-visible,
+    .text-link:focus-visible,
+    .service-row:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform .33s var(--ease), background-color .33s var(--ease), border-color .33s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); background: #73512d; }
+    .btn:active { transform: translateY(1px); }
+    .btn.outline {
+      background: transparent;
+      border-color: rgba(255,255,255,.46);
+      color: #fff;
+    }
+    .btn.outline:hover { border-color: rgba(255,255,255,.82); background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: 100vh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.08) brightness(.48);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(15,15,16,.88), rgba(15,15,16,.38) 56%, rgba(15,15,16,.72));
+      z-index: 1;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 118px 0 72px;
+      max-width: 760px;
+    }
+    .hero-lead {
+      max-width: 560px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 24px);
+      color: rgba(255,255,255,.82);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+    .section {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      padding: 92px 0;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(40%, 1.1fr);
+      gap: clamp(36px, 7vw, 96px);
+      align-items: center;
+    }
+    .section-copy {
+      max-width: 560px;
+      display: grid;
+      gap: 24px;
+    }
+    .section-copy p { font-size: clamp(18px, 2vw, 24px); }
+    .photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: #171717;
+    }
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.78) contrast(1.04) brightness(.76);
+      transition: transform .7s var(--ease), filter .7s var(--ease);
+    }
+    .photo:hover img { transform: scale(1.025); filter: saturate(.92) contrast(1.08) brightness(.82); }
+
+    .service-list { display: grid; border-top: 1px solid var(--line); }
+    .service-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) minmax(220px, .42fr);
+      gap: 26px;
+      align-items: baseline;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+      transition: color .33s var(--ease), transform .33s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); color: #fff; }
+    .service-row:active { transform: translateY(1px); }
+    .service-row p { font-size: 17px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+    .stat {
+      min-height: 220px;
+      display: grid;
+      align-content: center;
+      gap: 12px;
+      padding: 36px;
+      background: var(--bg);
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      color: #fff;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery .photo:first-child { aspect-ratio: 16 / 10; }
+    .gallery-stack { display: grid; gap: 16px; }
+    .gallery-stack .photo { aspect-ratio: 4 / 3; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(40%, 1fr);
+      gap: clamp(36px, 6vw, 80px);
+      align-items: center;
+    }
+    .contact-lines {
+      display: grid;
+      margin-top: 36px;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line a { color: #fff; transition: color .33s var(--ease); }
+    .contact-line a:hover { color: rgba(255,255,255,.72); }
+    #map {
+      height: 420px;
+      overflow: hidden;
+      background: #171717;
+    }
+
+    .final {
+      min-height: 78vh;
+      display: grid;
+      align-items: center;
+      text-align: center;
+      padding: 96px 0;
+    }
+    .final .wrap {
+      display: grid;
+      justify-items: center;
+      gap: 28px;
+    }
+    .final p {
+      max-width: 580px;
+      font-size: clamp(18px, 2vw, 23px);
+    }
+
+    .disclaimer {
+      padding: 28px 0;
+      color: rgba(255,255,255,.48);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 860px) {
+      .navlinks a:not(.btn) { display: none; }
+      .split,
+      .contact-grid,
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+      .section { min-height: auto; padding: 72px 0; }
+      .service-row { grid-template-columns: 54px 1fr; }
+      .service-row p { grid-column: 2; }
+      .stats { grid-template-columns: 1fr; }
+      .hero-content { padding-top: 108px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="INDECO">
+        <img src="https://www.indeco.cz/images/indeco-30.png" alt="INDECO - vestavěné skříně, kuchyně a nábytek na míru">
+      </a>
+      <div class="navlinks">
+        <a href="#sluzby">Interiéry</a>
+        <a href="#materialy">Materiály</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn" href="tel:+420733165005">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Úvod">
+      <div class="hero-media">
+        <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+      </div>
+      <div class="wrap">
+        <div class="hero-content">
+          <p class="mono">Chebská 2 · Plzeň-Křimice</p>
+          <h1>Kompletní interiér na míru.</h1>
+          <p class="hero-lead">Vestavěné skříně, kuchyně, sedací soupravy a nábytek, který využije prostor od podlahy až ke stropu.</p>
+          <div class="hero-actions">
+            <a class="btn" href="tel:+420733165005">+420 733 165 005</a>
+            <a class="btn outline" href="mailto:info@indeco.cz">info@indeco.cz</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sluzby">
+      <div class="wrap">
+        <div class="split">
+          <div class="section-copy">
+            <p class="mono">Interiéry INDECO</p>
+            <h2>Řešení pro celý byt i jeden pokoj.</h2>
+            <p>Od úložného prostoru po kuchyňskou linku. Každý prvek navazuje na vybraný styl interiéru.</p>
+          </div>
+          <div class="service-list" aria-label="Služby">
+            <a class="service-row" href="#kontakt">
+              <span class="mono">01</span>
+              <h3>Vestavěné skříně</h3>
+              <p>Využití volného místa v pokoji od podlahy až ke stropu.</p>
+            </a>
+            <a class="service-row" href="#kontakt">
+              <span class="mono">02</span>
+              <h3>Kuchyně na míru</h3>
+              <p>Různé velikosti, materiály a povrchové úpravy podle vašich představ.</p>
+            </a>
+            <a class="service-row" href="#kontakt">
+              <span class="mono">03</span>
+              <h3>Nábytek na míru</h3>
+              <p>Komody, psací stoly, botníky, knihovny a další vybavení.</p>
+            </a>
+            <a class="service-row" href="#kontakt">
+              <span class="mono">04</span>
+              <h3>Kompletní interiéry</h3>
+              <p>Vybavení interiéru jako jeden celek, originálně a pouze pro vás.</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="materialy">
+      <div class="wrap">
+        <div class="split">
+          <div class="photo">
+            <img src="https://images.pexels.com/photos/7464646/pexels-photo-7464646.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hands holding a cardboard box on a wooden floor, captured from above.">
+          </div>
+          <div class="section-copy">
+            <p class="mono">Materiály a povrchy</p>
+            <h2>Na detailu záleží každý den.</h2>
+            <p>Výběr materiálu, povrchu a proporcí určuje, jak bude nábytek působit i fungovat v běžném provozu.</p>
+            <a class="btn" href="#kontakt">Domluvit schůzku</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Důvěra">
+      <div class="wrap">
+        <div class="split">
+          <div class="section-copy">
+            <p class="mono">Reference</p>
+            <h2>Tady chci bydlet.</h2>
+            <p>Interiér má být přesný, klidný a osobní. Proto INDECO spojuje skříně, kuchyně i samostatný nábytek do jednoho řešení.</p>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <strong>5,0</strong>
+              <p>Hodnocení podle dostupných firemních dat.</p>
+            </div>
+            <div class="stat">
+              <strong>1</strong>
+              <p>Veřejně uvedené hodnocení.</p>
+            </div>
+            <div class="stat">
+              <strong>4</strong>
+              <p>Hlavní skupiny vybavení interiéru.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Galerie">
+      <div class="wrap gallery">
+        <div class="photo">
+          <img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes.">
+        </div>
+        <div class="gallery-stack">
+          <div class="photo">
+            <img src="https://images.pexels.com/photos/6348046/pexels-photo-6348046.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Crop faceless woman in casual clothes sitting on carpet while wrapping parcel bag for shipping in light room">
+          </div>
+          <div class="section-copy">
+            <p class="mono">Galerie</p>
+            <h2>Inspirace pro prostor, který má sloužit.</h2>
+            <p>Skříně, kuchyně a úložné prvky musí být praktické, ale pořád patřit do stejného domova.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kontakt">
+      <div class="wrap contact-grid">
+        <div>
+          <p class="mono">Kontakt a prodejna</p>
+          <h2>Chebská 2, Plzeň 5-Křimice.</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span class="mono">Telefon</span>
+              <a href="tel:+420733165005">+420 733 165 005</a>
+            </div>
+            <div class="contact-line">
+              <span class="mono">E-mail</span>
+              <a href="mailto:info@indeco.cz">info@indeco.cz</a>
+            </div>
+            <div class="contact-line">
+              <span class="mono">Adresa</span>
+              <span>Chebská 2, 322 00 Plzeň 5-Křimice</span>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa prodejny INDECO"></div>
+      </div>
+    </section>
+
+    <section class="final" aria-label="Akce">
+      <div class="wrap">
+        <p class="mono">INDECO Plzeň</p>
+        <h2>Začněte místem, které chcete vyřešit.</h2>
+        <p>Napište nebo zavolejte. Společně určíte skříň, kuchyň nebo vybavení interiéru, které má dávat smysl každý den.</p>
+        <div class="hero-actions">
+          <a class="btn" href="tel:+420733165005">Zavolat do INDECO</a>
+          <a class="btn outline" href="mailto:info@indeco.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="disclaimer">
+    <div class="wrap">
+      Tato nezávazná vizualizace byla vytvořena společností Webflex. Pokud si nepřejete být kontaktováni, můžete stránku odstranit zde:
+      <a href="https://webflex.cz/remove/1g7mu0n">odstranit stránku</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3211967, 49.752670099999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#604020' })
+      .setLngLat([13.3211967, 49.752670099999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
