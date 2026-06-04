@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design Studio Plzeň s.r.o. | Interiéry na míru</title>
+  <meta name="description" content="Design Studio Plzeň s.r.o. v Plzni: kuchyně, obýváky, ložnice a dětské pokoje na míru. Plaská 78, telefon +420 603 436 432.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-solid: #ffffff;
+      --soft: #f2f0ed;
+      --ink: #171211;
+      --muted: #6e6662;
+      --faint: rgba(64, 32, 32, .11);
+      --accent: #402020;
+      --accent-soft: #ede6e3;
+      --shadow: 0 38px 110px rgba(64, 32, 32, .09);
+      --shadow-sm: 0 20px 70px rgba(64, 32, 32, .07);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(64, 32, 32, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64, 32, 32, .018) 1px, transparent 1px),
+        radial-gradient(circle at 74% 8%, rgba(64, 32, 32, .055), transparent 28%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251, 251, 250, .82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(64, 32, 32, .08);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: auto;
+      max-width: min(300px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(23, 18, 17, .72);
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .22s cubic-bezier(.2, .8, .2, 1);
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(64, 32, 32, .15); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: clamp(23px, 2.2vw, 32px); }
+
+    .hero { padding: 70px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(23, 18, 17, .74);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 42px;
+      max-width: 700px;
+    }
+    .meta-tile {
+      min-height: 108px;
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .meta-tile strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 650; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(23,18,17,0) 48%, rgba(23,18,17,.46));
+    }
+    .photo-caption {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      hyphens: auto;
+    }
+
+    .service-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 260px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s, background .22s;
+    }
+    .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); background: #fff; }
+    .service-card .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .service-card p { margin: 18px 0 0; color: var(--muted); font-size: 16px; hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(360px, .52fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .panel-text { padding: clamp(28px, 5vw, 56px); }
+    .values {
+      display: grid;
+      gap: 0;
+      margin-top: 30px;
+    }
+    .value-row {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr);
+      gap: 22px;
+      padding: 18px 0;
+      border-top: 1px solid var(--faint);
+    }
+    .value-row strong { font-family: var(--font-mono); color: var(--accent); }
+    .value-row span { color: var(--muted); font-weight: 650; }
+    .side-photo { min-height: 100%; }
+    .side-photo img { width: 100%; height: 100%; min-height: 480px; object-fit: cover; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .stat {
+      padding: 28px;
+      min-height: 210px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat span { display: block; margin-top: 16px; color: var(--muted); font-weight: 700; }
+
+    .process {
+      display: grid;
+      gap: 12px;
+      counter-reset: step;
+    }
+    .process-row {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 92px minmax(0, .56fr) minmax(260px, .44fr);
+      gap: 24px;
+      align-items: center;
+      padding: 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.64);
+      box-shadow: 0 14px 56px rgba(64, 32, 32, .055);
+    }
+    .process-row::before {
+      content: "0" counter(step);
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .process-row p { margin: 0; color: var(--muted); font-size: 17px; hyphens: auto; }
+
+    .price-contact {
+      display: grid;
+      grid-template-columns: minmax(0, .62fr) minmax(360px, .48fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .pricing {
+      padding: clamp(28px, 5vw, 52px);
+      border-radius: 30px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .pricing .eyebrow { color: rgba(255,255,255,.72); }
+    .pricing h2 { color: #fff; }
+    .price-lines { margin-top: 30px; display: grid; gap: 0; }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px 0;
+      border-top: 1px solid rgba(255,255,255,.18);
+      font-size: 18px;
+      font-weight: 750;
+    }
+    .price-line span:last-child {
+      text-align: right;
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,.82);
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .hours {
+      margin-top: 22px;
+      display: grid;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-top: 1px solid var(--faint);
+    }
+    .hours .today { color: var(--accent); font-weight: 700; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 330px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+    .gallery figure:nth-child(2) { transform: translateY(34px); }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    figcaption {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(23,18,17,.58);
+      backdrop-filter: blur(10px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    details {
+      padding: 22px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s;
+    }
+    details:hover { transform: translateY(-2px); background: #fff; }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); hyphens: auto; }
+
+    .map-shell {
+      display: grid;
+      grid-template-columns: minmax(0, .44fr) minmax(420px, .74fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .address-card {
+      padding: 30px;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .address-card p { margin: 12px 0 0; color: var(--muted); font-size: 18px; }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .final {
+      padding: 86px 0 100px;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 58px);
+      border-radius: 34px;
+      background: var(--surface-solid);
+      box-shadow: var(--shadow);
+    }
+    .final-box p { margin: 16px 0 0; color: var(--muted); font-size: 19px; hyphens: auto; }
+
+    footer {
+      padding: 28px 0 34px;
+      color: rgba(23,18,17,.58);
+      font-size: 13px;
+      border-top: 1px solid rgba(64,32,32,.08);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .split, .price-contact, .map-shell, .final-box { grid-template-columns: 1fr; }
+      .service-list, .stats, .gallery, .faq { grid-template-columns: 1fr 1fr; }
+      .hero-photo { width: 100%; }
+      .side-photo img { min-height: 360px; }
+      .gallery figure:nth-child(2) { transform: none; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 42px; }
+      .hero-meta, .service-list, .stats, .gallery, .faq { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-photo { border-radius: 24px; }
+      .section-head, .process-row { grid-template-columns: 1fr; }
+      .value-row { grid-template-columns: 1fr; gap: 8px; }
+      .price-line { display: grid; }
+      .map-shell { gap: 14px; }
+      #map { height: 360px; border-radius: 24px; }
+      section { padding: 62px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Design Studio Plzeň s.r.o.">
+        <img src="asset/img/header/icon-f.svg" alt="Design Studio Plzeň s.r.o.">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420603436432">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Plaská 78 · Plzeň</p>
+          <h1>Interiéry přesně na míru</h1>
+          <p class="lead">Kuchyně, obýváky, ložnice i dětské pokoje navržené pro konkrétní prostor, kvalitní materiál a montáž dotažená do detailu.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420603436432">+420 603 436 432</a>
+            <a class="btn btn-secondary" href="mailto:info@designplzen.cz">info@designplzen.cz</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile"><strong>Po-Pá</strong><span>9:00-17:00, jindy dle domluvy</span></div>
+            <div class="meta-tile"><strong>5,0</strong><span>hodnocení od 13 klientů</span></div>
+            <div class="meta-tile"><strong>Plzeň</strong><span>studio na adrese Plaská 78</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+          <figcaption class="photo-caption"><span>Materiál · detail · péče</span><span>Plzeň</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">V čem jsme dobří</p>
+            <h2>Prostor, který sedí vašemu životu.</h2>
+          </div>
+          <p>Každá místnost i každý produkt vzniká podle vašich představ, rozměrů a způsobu používání.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Kuchyně</h3><p>Praktické řešení úložných zón, pracovních ploch, spotřebičů a povrchů pro každodenní provoz.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Obýváky</h3><p>Nábytek, stěny a sestavy na míru s důrazem na pohodlí, proporce a čisté vedení detailů.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Ložnice</h3><p>Vestavné skříně, úložné sestavy a vybavení, které pracuje s dispozicí místnosti.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>Dětské pokoje</h3><p>Chytré řešení pro učení, spaní, hraní i proměny potřeb v čase.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <article class="panel panel-text">
+          <p class="eyebrow">Materiál a montáž</p>
+          <h2>Od výběru až po předání.</h2>
+          <div class="values">
+            <div class="value-row"><strong>Na míru</strong><span>Rozměry, funkce i vzhled vychází z vaší místnosti.</span></div>
+            <div class="value-row"><strong>Kvalita</strong><span>Materiály se vybírají podle ověřené praxe a dlouhodobého používání.</span></div>
+            <div class="value-row"><strong>Pomoc</strong><span>Komponenty se sestaví, doladí a předají s informacemi k údržbě.</span></div>
+            <div class="value-row"><strong>Termíny</strong><span>Práce běží podle dohodnutého plánu a jasné domluvy.</span></div>
+          </div>
+        </article>
+        <figure class="panel side-photo">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+        </figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><strong>5,0</strong><span>Google hodnocení podle dostupných firemních údajů.</span></div>
+          <div class="stat"><strong>13</strong><span>klientských hodnocení u profilu studia.</span></div>
+          <div class="stat"><strong>4</strong><span>oblasti interiéru: kuchyně, obýváky, ložnice, dětské pokoje.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Jak spolupráce probíhá</p>
+            <h2>Klidný postup bez zbytečností.</h2>
+          </div>
+          <p>Začíná se domluvou ve studiu nebo po telefonu. Pokračuje výběr materiálu, technické řešení, výroba a odborná montáž.</p>
+        </div>
+        <div class="process">
+          <div class="process-row"><h3>Seznámení s prostorem</h3><p>Proberete místnost, styl, potřeby domácnosti a praktické limity.</p></div>
+          <div class="process-row"><h3>Výběr materiálů</h3><p>Studio poradí s povrchy, kováním, sestavami a prvky na míru.</p></div>
+          <div class="process-row"><h3>Realizace a montáž</h3><p>Dodání, odborná montáž, seřízení a vysvětlení běžné údržby.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap price-contact">
+        <article class="pricing">
+          <p class="eyebrow">Cena práce</p>
+          <h2>Rozpočet podle konkrétní místnosti.</h2>
+          <div class="price-lines">
+            <div class="price-line"><span>Kuchyně a sestavy</span><span>individuálně</span></div>
+            <div class="price-line"><span>Nábytek na míru</span><span>podle materiálu</span></div>
+            <div class="price-line"><span>Doprava a montáž</span><span>dle domluvy</span></div>
+          </div>
+        </article>
+        <article class="contact-card">
+          <p class="eyebrow">Dnes ve studiu</p>
+          <h3>Čtvrtek</h3>
+          <div class="hours">
+            <div class="today"><span>Po-Pá</span><span>9:00-17:00</span></div>
+            <div><span>Jiný čas</span><span>dle domluvy</span></div>
+            <div><span>Telefon</span><span>+420 603 436 432</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Realizace a detail</p>
+            <h2>Materiály, balení, předání.</h2>
+          </div>
+          <p>Výsledná sestava nekončí výrobou. Důležité je doručení, přesná instalace a čisté předání hotového prostoru.</p>
+        </div>
+        <div class="gallery">
+          <figure><img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors."><figcaption>výběr prvků</figcaption></figure>
+          <figure><img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes."><figcaption>předání</figcaption></figure>
+          <figure><img src="https://images.pexels.com/photos/6969971/pexels-photo-6969971.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding a cardboard box, ideal for delivery service concepts."><figcaption>doručení</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než se ozvete.</h2>
+          </div>
+          <p>Stačí zavolat do studia v pracovní době nebo poslat e-mail s popisem místnosti.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Děláte i jednotlivý kus nábytku?</summary>
+            <p>Práce na míru se domlouvá podle konkrétního prostoru a požadovaných prvků.</p>
+          </details>
+          <details>
+            <summary>Poradíte s výběrem materiálu?</summary>
+            <p>Ano. Studio pomáhá s výběrem komponentů, materiálů a výsledným sladěním.</p>
+          </details>
+          <details>
+            <summary>Zajišťujete montáž?</summary>
+            <p>Ano. Součástí práce je odborná montáž, seřízení a seznámení s údržbou.</p>
+          </details>
+          <details>
+            <summary>Lze přijít mimo běžnou dobu?</summary>
+            <p>Po-Pá je studio otevřené 9:00-17:00, jiný čas je možný po domluvě.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap map-shell">
+        <article class="address-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Najdete nás v Plzni.</h2>
+          <p>78, Plaská 2080<br>323 00 Plzeň-Plzeň 1</p>
+          <p><a href="tel:+420603436432">+420 603 436 432</a><br><a href="mailto:info@designplzen.cz">info@designplzen.cz</a></p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://maps.google.com/?q=49.7832996,13.3846996">Navigovat</a>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa s polohou Design Studio Plzeň s.r.o."></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-box">
+        <div>
+          <p class="eyebrow">Domluvte si návštěvu</p>
+          <h2>Začněte místností, kterou chcete změnit.</h2>
+          <p>Zavolejte nebo napište. Připravte si rozměry, fotografie prostoru a základní představu o používání místnosti.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420603436432">Zavolat do studia</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>Design Studio Plzeň s.r.o. · Plaská 78 · Plzeň</div>
+      <div class="disclaimer">Tuto prezentaci připravil Webflex. Pokud si nepřejete její další zobrazování, můžete ji odstranit zde: <a href="https://app.webflex.cz/delete/lh8hwdu">odstranit stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3846996, 49.7832996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#402020' })
+      .setLngLat([13.3846996, 49.7832996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
