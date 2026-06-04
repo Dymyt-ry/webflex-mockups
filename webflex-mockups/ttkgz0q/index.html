@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ANNY carmat | Matrace do auta na míru</title>
+  <meta name="description" content="ANNY carmat vyrábí matrace do auta na míru, termoclony a doplňky pro pohodlné spaní na cestách. Zahradní 47, Plzeň.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --fg: #f7f5f1;
+      --muted: rgba(247, 245, 241, .68);
+      --soft: rgba(247, 245, 241, .12);
+      --line: rgba(247, 245, 241, .16);
+      --accent: #C02000;
+      --font-display: "Inter Tight", "Arial Narrow", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.4, 0, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+    .nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      height: 72px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 clamp(20px, 4vw, 56px);
+      background: linear-gradient(to bottom, rgba(13,13,15,.74), rgba(13,13,15,0));
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .navlinks {
+      display: flex;
+      gap: 28px;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .navlinks a, .phone {
+      opacity: .86;
+      transition: opacity .33s var(--ease), transform .33s var(--ease);
+    }
+
+    .navlinks a:hover, .phone:hover { opacity: 1; transform: translateY(-1px); }
+    .navlinks a:active, .phone:active, .btn:active { transform: translateY(1px); }
+
+    .phone {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .section {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      padding: 96px clamp(20px, 5vw, 72px);
+      position: relative;
+    }
+
+    .hero {
+      padding-top: 72px;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, 1.08fr);
+      gap: clamp(36px, 6vw, 92px);
+    }
+
+    .hero-copy { max-width: 680px; }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      max-width: 720px;
+    }
+
+    h2 {
+      font-size: clamp(36px, 4.4vw, 68px);
+      line-height: 1;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    h3 {
+      font-size: clamp(22px, 2vw, 34px);
+      line-height: 1.06;
+      font-weight: 500;
+    }
+
+    p { margin: 0; color: var(--muted); }
+    .lead {
+      margin-top: 24px;
+      max-width: 560px;
+      font-size: clamp(18px, 1.5vw, 23px);
+      line-height: 1.36;
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .33s var(--ease), border-color .33s var(--ease), transform .33s var(--ease), color .33s var(--ease);
+    }
+
+    .btn.primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+    .btn.primary:hover { background: #d42706; border-color: #d42706; transform: translateY(-1px); }
+    .btn.outline { color: #fff; border: 1px solid rgba(255,255,255,.45); }
+    .btn.outline:hover { border-color: rgba(255,255,255,.86); transform: translateY(-1px); }
+
+    .photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: #171719;
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.9) contrast(1.05);
+    }
+
+    .split {
+      grid-template-columns: minmax(360px, .95fr) minmax(0, 1.05fr);
+      gap: clamp(36px, 7vw, 100px);
+    }
+
+    .split.reverse { grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); }
+    .sentence {
+      max-width: 720px;
+      font-size: clamp(24px, 3vw, 46px);
+      line-height: 1.08;
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .rows {
+      margin-top: 42px;
+      display: grid;
+      border-top: 1px solid var(--line);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(120px, 220px) 1fr;
+      gap: 32px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .row strong {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .row span { color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      margin-top: 46px;
+    }
+
+    .stat {
+      background: var(--bg);
+      min-height: 154px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat b {
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: 1;
+      color: var(--fg);
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .process {
+      width: min(980px, 100%);
+      margin: 46px auto 0;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 28px;
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .step em {
+      font-family: var(--font-mono);
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(420px, 1.18fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: center;
+      width: 100%;
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 18px;
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .contact-list a:hover { color: #fff; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; }
+
+    .footer {
+      padding: 28px clamp(20px, 5vw, 72px);
+      color: rgba(247,245,241,.52);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .navlinks { display: none; }
+      .hero, .split, .split.reverse, .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      .split.reverse .photo { order: -1; }
+      .section { min-height: auto; padding-top: 110px; padding-bottom: 84px; }
+      .hero { min-height: 100vh; }
+      .stats { grid-template-columns: 1fr; }
+      .row, .step { grid-template-columns: 1fr; gap: 12px; }
+      .photo { aspect-ratio: 4 / 3; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav" aria-label="Hlavní navigace">
+    <a class="logo" href="#top" aria-label="ANNY carmat">
+      <img src="https://www.petrkuchynka.cz/annycarmat/wp-content/uploads/2024/03/anny_carmat_logo_white.png" alt="ANNY carmat">
+    </a>
+    <nav class="navlinks" aria-label="Sekce stránky">
+      <a href="#matrace">Matrace</a>
+      <a href="#materialy">Materiály</a>
+      <a href="#postup">Postup</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+    <a class="phone" href="tel:+420723120205">+420 723 120 205</a>
+  </header>
+
+  <main id="top">
+    <section class="section hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="kicker">Plzeň · matrace do auta</div>
+        <h1 id="hero-title">Spěte tam, kde zastavíte.</h1>
+        <p class="lead">ANNY carmat vyrábí matrace do auta na míru pro cestování bez dodávky a bez pevného plánu.</p>
+        <div class="actions">
+          <a class="btn primary" href="mailto:mira@annycarmat.com">Objednat vlastní</a>
+          <a class="btn outline" href="#kontakt">Půjčit a vyzkoušet</a>
+        </div>
+      </div>
+      <figure class="photo" aria-label="Balení a příprava zásilky">
+        <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+      </figure>
+    </section>
+
+    <section class="section split reverse" id="matrace" aria-labelledby="matrace-title">
+      <div>
+        <h2 id="matrace-title">Na míru vašemu vozu.</h2>
+        <p class="lead">Rozměry prostoru auta, systém skládání, počet segmentů, barva potahu i výška matrace vznikají podle vaší objednávky.</p>
+        <div class="rows">
+          <div class="row"><strong>Výška</strong><span>Volitelně 6, 8 nebo 10 cm podle typu cestování a místa v autě.</span></div>
+          <div class="row"><strong>Skladnost</strong><span>Díly jsou sešité do jednoho celku, aby se matrace snadno skládala, přenášela a ukládala.</span></div>
+          <div class="row"><strong>Spodní strana</strong><span>Možnost vodě odolného protiskluzového PVC pro praktičtější používání.</span></div>
+        </div>
+      </div>
+      <figure class="photo">
+        <img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes.">
+      </figure>
+    </section>
+
+    <section class="section split" id="materialy" aria-labelledby="materialy-title">
+      <figure class="photo">
+        <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+      </figure>
+      <div>
+        <h2 id="materialy-title">Komfort jako doma.</h2>
+        <p class="sentence">Středně tvrdá studená HR pěna je vzdušnější než běžný molitan a drží pohodlí i na delších cestách.</p>
+        <div class="stats" aria-label="Ověřené údaje">
+          <div class="stat"><b>5,0</b><span>hodnocení na Googlu</span></div>
+          <div class="stat"><b>38</b><span>recenzí od zákazníků</span></div>
+          <div class="stat"><b>3</b><span>volitelné výšky matrace</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="postup" aria-labelledby="postup-title">
+      <div>
+        <h2 id="postup-title">Od rozměrů k cestě.</h2>
+        <div class="process">
+          <div class="step"><em>01</em><p>Pošlete poptávku a základní informace o autě, ve kterém chcete spát.</p></div>
+          <div class="step"><em>02</em><p>Doladí se rozměry, členění matrace, výška pěny, potahová látka a případná taška.</p></div>
+          <div class="step"><em>03</em><p>Hotová matrace využije prostor auta a zůstane skladná pro běžné cestování.</p></div>
+        </div>
+        <div class="actions" style="justify-content:center">
+          <a class="btn primary" href="mailto:mira@annycarmat.com">Poslat poptávku</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact" id="kontakt" aria-labelledby="kontakt-title">
+      <div class="contact-grid">
+        <div>
+          <div class="kicker">Zahradní 47 · Plzeň 2-Slovany</div>
+          <h2 id="kontakt-title">Domluvte vlastní matraci.</h2>
+          <p class="lead">Ozvěte se s autem, rozměry a představou použití. ANNY carmat sídlí v Plzni na adrese Zahradní 47.</p>
+          <div class="contact-list">
+            <a href="tel:+420723120205">+420 723 120 205</a>
+            <a href="mailto:mira@annycarmat.com">mira@annycarmat.com</a>
+            <span>Zahradní 47, 326 00 Plzeň 2-Slovany</span>
+          </div>
+          <div class="actions">
+            <a class="btn primary" href="tel:+420723120205">Zavolat</a>
+            <a class="btn outline" href="mailto:mira@annycarmat.com">Napsat e-mail</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa sídla ANNY carmat"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Neoficiální prezentační návrh vytvořený studiem Webflex pro ANNY carmat. Pokud si nepřejete tuto stránku zobrazovat, smažete ji zde:
+    <a href="https://webflex.cz/remove/ttkgz0q">https://webflex.cz/remove/ttkgz0q</a>.
+    Fotografie: Ron Lach, Berna / Pexels.
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3921169, 49.7312896],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C02000' })
+      .setLngLat([13.3921169, 49.7312896])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
