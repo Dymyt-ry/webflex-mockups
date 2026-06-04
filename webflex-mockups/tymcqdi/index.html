@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel Atlantis | Rozdrojovice u Brněnské přehrady</title>
+  <meta name="description" content="Hotel Atlantis v Rozdrojovicích: ubytování, wellness, restaurace, kongresové zázemí a zahrada nedaleko Brněnské přehrady.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101418;
+      --surface: rgba(255, 255, 255, .075);
+      --surface-strong: rgba(255, 255, 255, .12);
+      --ink: #f7fafc;
+      --muted: rgba(247, 250, 252, .68);
+      --faint: rgba(247, 250, 252, .1);
+      --accent: #004060;
+      --accent-bright: #5fb4d3;
+      --paper: #f5f7f8;
+      --dark: #0b0f12;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .24);
+      --radius: 24px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .7, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 18% 12%, rgba(95, 180, 211, .18), transparent 34rem),
+        linear-gradient(180deg, #101418 0%, #11181d 52%, #0d1114 100%);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); }
+    h1, h2, h3 { margin: 0; hyphens: none; }
+    h1, .display {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .shell { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(24px);
+      background: rgba(16, 20, 24, .78);
+      border-bottom: 1px solid var(--faint);
+    }
+    .nav-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: auto;
+      max-width: 168px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: rgba(247, 250, 252, .78);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a, .button, .tile, .faq-item, .photo-card {
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-links a:focus-visible, .button:focus-visible, .faq-item:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(1px); }
+    .button.primary { background: var(--ink); color: #0d1114; box-shadow: 0 18px 44px rgba(255,255,255,.12); }
+    .button.secondary { color: #fff; border-color: rgba(255,255,255,.45); background: rgba(255,255,255,.04); }
+    .button.secondary:hover { background: rgba(255,255,255,.1); }
+
+    .hero {
+      min-height: calc(100vh - 78px);
+      display: grid;
+      align-items: center;
+      padding: 64px 0 82px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      align-items: center;
+      gap: 56px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      color: rgba(247, 250, 252, .74);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 38px;
+      height: 1px;
+      background: var(--accent-bright);
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+    }
+    .lead {
+      max-width: 650px;
+      margin-top: 26px;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(247, 250, 252, .78);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+    .hero-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(.96);
+    }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(0,0,0,.52));
+      pointer-events: none;
+    }
+    .hero-note {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 20px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #fff;
+    }
+    .hero-note strong { display: block; font-size: 20px; font-family: var(--font-body); }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .64fr) minmax(280px, .36fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 68px);
+      line-height: .95;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .service-list {
+      display: grid;
+      background: rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: 0 30px 100px rgba(0,0,0,.14);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 88px 1fr minmax(220px, .42fr);
+      gap: 28px;
+      align-items: center;
+      padding: 26px 28px;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num { font-family: var(--font-mono); color: rgba(247,250,252,.46); }
+    .service-row h3 { font-size: clamp(24px, 3vw, 40px); line-height: 1; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 186px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.075);
+      box-shadow: 0 24px 72px rgba(0,0,0,.12);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: #fff;
+    }
+    .stat span { color: var(--muted); max-width: 260px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .86fr) minmax(0, 1fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .photo-card {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+    }
+    .photo-card:hover { transform: translateY(-2px); }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .feature-stack { display: grid; gap: 14px; }
+    .tile {
+      padding: 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.07);
+    }
+    .tile:hover { background: rgba(255,255,255,.11); transform: translateY(-1px); }
+    .tile h3 { font-size: 22px; margin-bottom: 6px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.25fr .9fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: rgba(255,255,255,.06);
+      position: relative;
+      box-shadow: 0 22px 70px rgba(0,0,0,.12);
+    }
+    .gallery figure:first-child { grid-row: span 2; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery figcaption {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(13,17,20,.7);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, .48fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 30px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .line {
+      display: grid;
+      grid-template-columns: 116px 1fr;
+      gap: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.09);
+    }
+    .line span:first-child { font-family: var(--font-mono); color: rgba(247,250,252,.5); font-size: 12px; text-transform: uppercase; }
+    .line a:hover { color: var(--accent-bright); }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #0b0f12;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      padding: 24px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.065);
+    }
+    .faq-item:hover { background: rgba(255,255,255,.1); transform: translateY(-1px); }
+    .faq-item h3 { font-size: 21px; margin-bottom: 8px; }
+
+    .cta {
+      padding: 54px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 28px;
+    }
+    .cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 64px);
+      line-height: .96;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    footer {
+      padding: 36px 0 44px;
+      color: rgba(247,250,252,.55);
+      font-size: 13px;
+    }
+    .disclaimer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .credits { margin-top: 10px; font-size: 12px; color: rgba(247,250,252,.42); }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-card { aspect-ratio: 16 / 10; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .stats, .gallery, .faq { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .cta { padding: 32px; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 28px, 1160px); }
+      section { padding: 62px 0; }
+      h1 { font-size: clamp(40px, 14vw, 62px); }
+      .button { width: 100%; }
+      .hero-note { position: static; padding: 14px 0 0; color: var(--ink); }
+      .hero-card::after { display: none; }
+      .line { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="shell nav-inner">
+      <a class="logo" href="#" aria-label="Hotel Atlantis">
+        <img src="https://www.hotel-atlantis.cz/userfiles/thumbs/d/atlantis-symbol-white-72f23b1e-300x100-0.webp?vlcit9ms6js" alt="Hotel Atlantis">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#wellness">Wellness</a>
+        <a href="#ubytovani">Ubytování</a>
+        <a href="#gastronomie">Gastronomie</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="button secondary" href="tel:+420546419000">Zavolat recepci</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="eyebrow">Brána 177 · Rozdrojovice-Kuřim</div>
+          <h1>Atlantis u Brněnské přehrady</h1>
+          <p class="lead">Místo pro odpočinek, práci i rodinný pobyt: 64 pokojů, wellness se saunovým světem, dvě restaurace, kongresové sály a hotelová zahrada s bazénem.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="mailto:recepce@hotel-atlantis.cz">Rezervovat pobyt</a>
+            <a class="button secondary" href="#kontakt">Kontakt a mapa</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <img src="https://images.pexels.com/photos/25155254/pexels-photo-25155254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant dining room table set with glassware and a decorative vase, perfect for a classy dinner setting.">
+          <div class="hero-note">
+            <span><strong>4,3</strong> hodnocení hostů</span>
+            <span>1 081 recenzí</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="wellness">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Resort</div>
+            <h2>Vše pro pobyt v jednom místě</h2>
+          </div>
+          <p>Atlantis propojuje klid přírody u Brněnské přehrady s hotelovým zázemím pro víkend, firemní akci i delší rodinnou dovolenou.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <h3>Wellness</h3>
+            <p>Saunový svět, saunové ceremoniály, bazény, masáže a procedury, privátní spa i kolagenové solárium.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <h3>Ubytování</h3>
+            <p>Pokoj PLUS, Rodinné Apartmá PLUS, Jednolůžkový pokoj PLUS, Standard i dvoulůžkový pokoj s privátním spa.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <h3>Kongres</h3>
+            <p>Sál NEBE, Sál LES, Salonek Atrium a Grill Park pro eventy s profesionálním technickým zázemím.</p>
+          </article>
+          <article class="service-row">
+            <div class="num">04</div>
+            <h3>Gastronomie</h3>
+            <p>Restaurace ATLANTIS, Restaurace ZAHRADA, à la carte nabídka, dětské menu, vinná karta, nápojový lístek a rumová karta.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="ubytovani">
+      <div class="shell">
+        <div class="stats">
+          <div class="stat">
+            <strong>64</strong>
+            <span>moderně vybavených pokojů pro pracovní cestu, dovolenou i rodinný pobyt.</span>
+          </div>
+          <div class="stat">
+            <strong>4,3</strong>
+            <span>průměrné hodnocení podle veřejného profilu hotelu.</span>
+          </div>
+          <div class="stat">
+            <strong>1 081</strong>
+            <span>recenzí hostů, kteří hodnotili pobyt a služby resortu.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell split">
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/30420679/pexels-photo-30420679.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant table setup with candles and plants, creating a cozy atmosphere.">
+        </div>
+        <div>
+          <div class="kicker">Pro rodiny i týmy</div>
+          <div class="feature-stack">
+            <article class="tile">
+              <h3>Klid na práci</h3>
+              <p>Kongresové sály splní požadavky na moderní technické zázemí a navazují na hotelové služby pod jednou střechou.</p>
+            </article>
+            <article class="tile">
+              <h3>Odpočinek po programu</h3>
+              <p>Wellness, relaxační bazén, venkovní jezírko a hotelová zahrada dávají pobytu přirozený rytmus.</p>
+            </article>
+            <article class="tile">
+              <h3>Zázemí pro děti</h3>
+              <p>Zahrada s velkým plaveckým bazénem, dětským hřištěm a možnostmi sportovního vyžití.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="gastronomie">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Atmosféra</div>
+            <h2>Večeře, snídaně, zahrada</h2>
+          </div>
+          <p>Dvě restaurace a sezonní venkovní zázemí drží pobyt pohodlný od ranní kávy až po večerní sklenku vína.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/10135116/pexels-photo-10135116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Cozy restaurant interior featuring elegant decor and warm lighting.">
+            <figcaption>Restaurace</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/1080383/pexels-photo-1080383.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of hanging wine glasses with bokeh lights in a dimly lit bar setting, creating a soft, warm ambiance.">
+            <figcaption>Vinná karta</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/29309717/pexels-photo-29309717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Warm and inviting restaurant interior with decorative lighting and artistic wall patterns.">
+            <figcaption>Večerní posezení</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Časté dotazy</div>
+            <h2>Než dorazíte</h2>
+          </div>
+          <p>Recepce vám pomůže s rezervací pokoje, wellness, restaurace i kongresového prostoru.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item" tabindex="0">
+            <h3>Je hotel vhodný pro firemní akce?</h3>
+            <p>Ano. K dispozici jsou sály NEBE a LES, Salonek Atrium i Grill Park.</p>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <h3>Najdu zde wellness služby?</h3>
+            <p>Ano. Nabídka zahrnuje saunový svět, ceremoniály, bazény, masáže, procedury a privátní spa.</p>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <h3>Je zde program pro děti?</h3>
+            <p>Součástí resortu je hotelová zahrada, plavecký bazén, dětské hřiště a sportovní vyžití.</p>
+          </article>
+          <article class="faq-item" tabindex="0">
+            <h3>Kde hotel najdu?</h3>
+            <p>Adresa je Brána 177, 664 34 Rozdrojovice-Kuřim, nedaleko Brněnské přehrady.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="kicker">Kontakt</div>
+            <h2 class="display" style="font-size:clamp(34px,4vw,58px);line-height:.96;">Recepce Atlantis</h2>
+            <div class="contact-lines">
+              <div class="line">
+                <span>Telefon</span>
+                <a href="tel:+420546419000">+420 546 419 000</a>
+              </div>
+              <div class="line">
+                <span>E-mail</span>
+                <a href="mailto:recepce@hotel-atlantis.cz">recepce@hotel-atlantis.cz</a>
+              </div>
+              <div class="line">
+                <span>Adresa</span>
+                <p>Brána 177, 664 34 Rozdrojovice-Kuřim</p>
+              </div>
+              <div class="line">
+                <span>Web</span>
+                <a href="https://www.hotel-atlantis.cz/">hotel-atlantis.cz</a>
+              </div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa: Hotel Atlantis"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="cta">
+          <div>
+            <div class="kicker">Pobyt · wellness · kongres</div>
+            <h2>Domluvte si termín</h2>
+          </div>
+          <a class="button primary" href="mailto:recepce@hotel-atlantis.cz">Napsat recepci</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <div>© Hotel Atlantis · Brána 177, Rozdrojovice-Kuřim</div>
+      <div class="credits">Fotografie: Valeria Boltneva, Zain Ali, Daniil Kondrashin, Alari Tammsalu, NGUYỄN THÀNH NHƠN / Pexels.</div>
+      <div class="disclaimer">
+        Toto je nezávazná vizuální ukázka od Webflex. Nejste-li správným příjemcem nebo si nepřejete další kontakt, stránku můžete odstranit zde:
+        <a href="https://webflex.cz/remove/tymcqdi">webflex.cz/remove/tymcqdi</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5180556, 49.247777799999994],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004060' })
+      .setLngLat([16.5180556, 49.247777799999994])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
