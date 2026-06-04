@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AquaDream Barrandov | Centrum vodní zábavy v Praze</title>
+  <meta name="description" content="AquaDream Barrandov: tobogány, divoká řeka, vířivka, 25m bazén se slanou vodou, parní komory a venkovní bazén v Praze 5.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist+Mono:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #111827;
+      --muted: #5f6675;
+      --soft: #eef1f7;
+      --line: rgba(17,24,39,.08);
+      --accent: #002080;
+      --accent-2: #5c76d6;
+      --accent-soft: rgba(0,32,128,.08);
+      --shadow: 0 28px 90px rgba(18, 29, 63, .10);
+      --shadow-soft: 0 16px 60px rgba(18, 29, 63, .075);
+      --radius: 28px;
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,32,128,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,32,128,.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 12%, rgba(0,32,128,.10), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .section { padding: clamp(64px, 9vw, 118px) 0; }
+    .mono { font-family: var(--font-mono); letter-spacing: .01em; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,253,.78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(17,24,39,.72);
+    }
+    .nav-links a { text-decoration: none; transition: color 180ms var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+      cursor: pointer;
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 16px 35px rgba(0,32,128,.18); }
+    .button:active { transform: translateY(1px); }
+    .button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .button.primary { background: var(--accent); color: #fff; }
+    .button.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+
+    .hero { padding: 76px 0 56px; }
+    .hero-grid {
+      min-height: calc(100vh - 132px);
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .78fr);
+      gap: clamp(40px, 7vw, 92px);
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 36px;
+      height: 2px;
+      background: currentColor;
+      border-radius: 999px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 720px;
+      margin-top: 24px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.8vw, 68px);
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: clamp(22px, 2vw, 30px); }
+    .lead {
+      max-width: 620px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      font-weight: 500;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-card {
+      position: relative;
+      min-width: 0;
+      padding: 18px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo {
+      aspect-ratio: 4 / 3;
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-note {
+      position: absolute;
+      left: -28px;
+      bottom: 26px;
+      max-width: 260px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 24px 70px rgba(0,32,128,.12);
+    }
+    .floating-note strong { display: block; font-size: 28px; color: var(--accent); }
+    .floating-note span { display: block; margin-top: 4px; color: var(--muted); font-weight: 700; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; font-weight: 500; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .feature {
+      min-height: 100%;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .feature .num { color: var(--accent); font-size: 13px; font-weight: 700; }
+    .feature h3 { margin-top: 42px; }
+    .feature p { margin: 14px 0 0; color: var(--muted); font-size: 17px; }
+
+    .attractions {
+      display: grid;
+      grid-template-columns: .86fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .photo-panel {
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .photo-panel img { width: 100%; height: 100%; min-height: 520px; object-fit: cover; }
+    .rows {
+      padding: 10px 0;
+      border-radius: 28px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 22px;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .row:last-child { border-bottom: 0; }
+    .row strong { color: var(--accent); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; }
+    .row p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .stat {
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--accent);
+      color: #fff;
+      min-height: 174px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(34px, 5vw, 58px); line-height: 1; }
+    .stat span { color: rgba(255,255,255,.78); font-weight: 700; }
+
+    .hours-contact {
+      display: grid;
+      grid-template-columns: .72fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card, .map-card {
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .hours {
+      margin: 26px 0;
+      display: grid;
+      gap: 10px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .hours time { font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
+    .contact-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .contact-list a { color: var(--ink); text-decoration: none; }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery-strip img { width: 100%; height: 360px; object-fit: cover; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .8fr 1fr;
+      gap: 48px;
+    }
+    details {
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    summary {
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 800;
+      list-style: none;
+      transition: color 180ms var(--ease);
+    }
+    summary:hover { color: var(--accent); }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin: 14px 0 0; color: var(--muted); font-size: 17px; }
+
+    .final-cta {
+      margin: 18px 0 72px;
+      padding: clamp(34px, 6vw, 64px);
+      border-radius: 32px;
+      background: #111827;
+      color: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-cta p { margin: 14px 0 0; color: rgba(255,255,255,.72); font-size: 19px; }
+    .final-cta .button.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(17,24,39,.58);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .credits { margin-bottom: 12px; }
+    .webflex-disclaimer a, .credits a { text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .attractions, .hours-contact, .faq, .final-cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { min-height: auto; }
+      .floating-note { position: static; margin: -28px 18px 0; }
+      .feature-grid, .stats, .gallery-strip { grid-template-columns: 1fr; }
+      .photo-panel img, .gallery-strip img { min-height: 0; height: 300px; }
+      .row { grid-template-columns: 1fr; gap: 8px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 42px; }
+      .hero-card, .feature, .contact-card, .map-card { padding: 18px; border-radius: 22px; }
+      .hero-actions, .final-cta .hero-actions { flex-direction: column; }
+      .button { width: 100%; }
+      .hours div { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="AquaDream">
+        <img src="https://www.aquadream.cz/images/logo.png" alt="AquaDream">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#areal">Areál</a>
+        <a href="#atrakce">Atrakce</a>
+        <a href="#otevreno">Otevírací doba</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="button primary" href="tel:+420251550259">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">Praha 5 · Barrandov</div>
+          <h1>Centrum vodní zábavy</h1>
+          <p class="lead">Tobogány, divoká řeka, vířivka, 25metrový plavecký bazén se slanou vodou a celoročně otevřený venkovní bazén v jednom areálu.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#otevreno">Otevírací doba</a>
+            <a class="button secondary" href="#atrakce">Co u nás najdete</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-photo">
+            <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          </div>
+          <div class="floating-note">
+            <strong class="mono">8:00-22:00</strong>
+            <span>víkend a státní svátky</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areal" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Voda pro plavání i odpočinek</h2>
+          <p>AquaDream Barrandov spojuje sportovní plavání, vodní atrakce a relaxační zónu pro děti i dospělé.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <div class="num mono">01</div>
+            <h3>Tobogány</h3>
+            <p>115 m a 62 m dlouhé tobogány pro návštěvníky, kteří si chtějí pobyt u vody užít aktivně.</p>
+          </article>
+          <article class="feature">
+            <div class="num mono">02</div>
+            <h3>Slaná voda</h3>
+            <p>25metrový plavecký bazén se slanou vodou, která je šetrná k pokožce a očím.</p>
+          </article>
+          <article class="feature">
+            <div class="num mono">03</div>
+            <h3>Relax</h3>
+            <p>Vířivka s masážními funkcemi, masážní trysky, vodní lehátka a parní komory se solí.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="atrakce" class="section">
+      <div class="wrap attractions">
+        <div class="photo-panel">
+          <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+        </div>
+        <div>
+          <div class="section-head" style="display:block;margin-bottom:24px">
+            <div class="eyebrow">Co u nás najdete</div>
+            <h2 style="margin-top:16px">Areál v rytmu dne</h2>
+          </div>
+          <div class="rows">
+            <div class="row">
+              <strong>Voda</strong>
+              <p>Divoká řeka s protiproudem, vnitřní i venkovní dětské bazénky a venkovní bazén otevřený celoročně.</p>
+            </div>
+            <div class="row">
+              <strong>Wellness</strong>
+              <p>Parní komory, sůl k nanesení před vstupem, vířivka a relaxační vodní lehátka s tryskami.</p>
+            </div>
+            <div class="row">
+              <strong>Léto</strong>
+              <p>Beachvolejbalové hřiště, louka a lehátka na zelené ploše pro delší odpočinek venku.</p>
+            </div>
+            <div class="row">
+              <strong>Provoz</strong>
+              <p>Při nízké návštěvnosti mohou atrakce jezdit podle časového rozvrhu; při větší návštěvnosti běží naplno.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat">
+            <span>Hodnocení návštěvníků</span>
+            <strong>4,2</strong>
+          </div>
+          <div class="stat">
+            <span>Recenzí v profilu</span>
+            <strong>4209</strong>
+          </div>
+          <div class="stat">
+            <span>Plavecký bazén</span>
+            <strong>25 m</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="otevreno" class="section">
+      <div class="wrap hours-contact">
+        <div class="contact-card">
+          <div class="eyebrow">Otevírací doba</div>
+          <h2 style="margin-top:16px">Přijďte ve svém čase</h2>
+          <div class="hours">
+            <div><span>Pondělí</span><time>9:00-22:00</time></div>
+            <div><span>Úterý až pátek</span><time>6:00-22:00</time></div>
+            <div><span>Víkend a státní svátky</span><time>8:00-22:00</time></div>
+            <div><span>Červenec až srpen</span><time>8:00-22:00</time></div>
+          </div>
+          <div class="contact-list">
+            <span>K Barrandovu 1173/8, 152 00 Praha 5-Hlubočepy</span>
+            <a href="tel:+420251550259">+420 251 550 259</a>
+            <a href="mailto:info@aquadream.cz">info@aquadream.cz</a>
+          </div>
+        </div>
+        <div id="kontakt" class="map-card">
+          <div id="map" aria-label="Mapa AquaDream Barrandov"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Klidné zázemí mezi vodou</h2>
+          <p>Prohlédněte si atmosféru areálu a naplánujte si návštěvu podle otevřených hodin, atrakcí a kontaktu na recepci.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/4857890/pexels-photo-4857890.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A white wooden step stool with circular toppers bathed in natural sunlight, casting shadows."></figure>
+          <figure><img src="https://images.pexels.com/photos/6633444/pexels-photo-6633444.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A minimalist bookshelf featuring an open book and elegant candleholders, perfect for modern decor inspiration."></figure>
+          <figure><img src="https://images.pexels.com/photos/20152628/pexels-photo-20152628.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Elegant wooden pendant lights in a stylish modern room interior design."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap faq">
+        <div>
+          <div class="eyebrow">Časté dotazy</div>
+          <h2 style="margin-top:16px">Než vyrazíte</h2>
+        </div>
+        <div>
+          <details>
+            <summary>Je venkovní bazén otevřený celý rok?</summary>
+            <p>Ano, venkovní bazén je podle informací AquaDreamu otevřený celoročně, v zimě také pro otužilce.</p>
+          </details>
+          <details>
+            <summary>Jsou v areálu dětské bazénky?</summary>
+            <p>Ano, v areálu jsou vnitřní i venkovní brouzdaliště pro děti.</p>
+          </details>
+          <details>
+            <summary>Jak fungují atrakce při nižší návštěvnosti?</summary>
+            <p>Při malé návštěvnosti mohou atrakce jezdit podle časového rozvrhu. Při větší návštěvnosti běží naplno.</p>
+          </details>
+          <details>
+            <summary>Je voda v plaveckém bazénu slaná?</summary>
+            <p>Ano, 25metrový plavecký bazén má slanou vodu šetrnou k pokožce a očím.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap final-cta">
+      <div>
+        <h2>Voda čeká na Barrandově</h2>
+        <p>Ověřte si dnešní provoz a vydejte se do AquaDreamu na plavání, tobogány nebo odpočinek.</p>
+      </div>
+      <div class="hero-actions" style="margin:0">
+        <a class="button primary" href="tel:+420251550259">Zavolat</a>
+        <a class="button secondary" href="mailto:info@aquadream.cz">Napsat e-mail</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="credits">Fotografie: <a href="https://www.pexels.com/@jaris-avn">Jaris Remigio</a>, <a href="https://www.pexels.com/@cottonbro">cottonbro studio</a>, <a href="https://www.pexels.com/@vie-studio">Vie Studio</a>, <a href="https://www.pexels.com/@cup-of-couple">Cup of Couple</a>, <a href="https://www.pexels.com/@kenzero14">Kenneth Surillo</a> / Pexels.</div>
+      <div class="webflex-disclaimer">Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/dlsowuu">webflex.cz/delete/dlsowuu</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.3676184, 50.0265492],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002080' })
+      .setLngLat([14.3676184, 50.0265492])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
