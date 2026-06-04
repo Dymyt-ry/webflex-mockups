@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biotop Radotín | Koupání, sauna, hot-tub</title>
+  <meta name="description" content="Biotop Radotín v Praze 5: koupání, sauna Kijukiju, hot-tub, parkování, kamery, tábory a aktuální provozní informace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #f7f8f5;
+      --ink: #101312;
+      --muted: #606761;
+      --line: #d7ddd4;
+      --line-strong: #aeb8ad;
+      --accent: #00C000;
+      --accent-dark: #007a14;
+      --font-display: "Archivo", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(16,19,18,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,19,18,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: white; padding: 10px 12px; z-index: 99; }
+    .skip:focus { left: 8px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 28px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .navlinks { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+    .navlinks a, .small-action {
+      border: 1px solid transparent;
+      padding: 9px 12px;
+      font: 600 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+    }
+    .navlinks a:hover, .small-action:hover { border-color: var(--line-strong); background: var(--paper); transform: translateY(-1px); }
+    .navlinks a:active, .small-action:active, .btn:active { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 18px;
+      border: 1px solid var(--ink);
+      font: 700 14px/1 var(--font-mono);
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease);
+    }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #051205; }
+    .btn.primary:hover { background: #12d112; border-color: #12d112; transform: translateY(-1px); }
+    .btn.outline { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn.outline:hover { background: var(--ink); color: white; transform: translateY(-1px); }
+
+    .hero { padding: 72px 0 44px; border-bottom: 1px solid var(--ink); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(330px, 420px);
+      gap: 44px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font: 700 12px/1 var(--font-mono);
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      border: 1px solid var(--line-strong);
+      background: white;
+      padding: 8px 10px;
+      margin-bottom: 18px;
+    }
+    .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 22px 0 28px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.35;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .hours-card {
+      background: white;
+      border: 1px solid var(--ink);
+      box-shadow: 10px 10px 0 var(--accent);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 1px solid var(--ink);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .today { background: var(--accent); padding: 5px 8px; color: #051205; }
+    .schedule-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .schedule-row:last-child { border-bottom: 0; }
+    .schedule-row strong { font-family: var(--font-body); font-size: 15px; }
+    .schedule-row span:last-child { font-weight: 700; }
+
+    section { padding: 72px 0; }
+    .section-title {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .num {
+      font: 800 clamp(44px, 6vw, 76px)/.85 var(--font-display);
+      color: transparent;
+      -webkit-text-stroke: 1px var(--line-strong);
+    }
+    h2 {
+      margin: 0;
+      font: 800 clamp(30px, 4vw, 52px)/1 var(--font-display);
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-title p { margin: 12px 0 0; color: var(--muted); max-width: 700px; font-size: 18px; }
+
+    .service-table, .price-table {
+      display: grid;
+      border-top: 1px solid var(--ink);
+      border-left: 1px solid var(--ink);
+      background: white;
+    }
+    .service-row, .price-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr auto;
+    }
+    .cell {
+      min-height: 74px;
+      padding: 16px;
+      border-right: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      display: flex;
+      align-items: center;
+    }
+    .cell.mono { font-family: var(--font-mono); font-weight: 600; }
+    .cell.head {
+      min-height: 48px;
+      background: var(--paper);
+      font: 700 12px/1 var(--font-mono);
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .status { color: var(--accent-dark); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--ink);
+      background: white;
+    }
+    .stat { padding: 28px; border-right: 1px solid var(--ink); min-height: 160px; }
+    .stat:last-child { border-right: 0; }
+    .stat b { display: block; font: 800 clamp(36px, 5vw, 64px)/1 var(--font-mono); letter-spacing: 0; }
+    .stat span { display: block; margin-top: 10px; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--ink);
+      background: white;
+    }
+    .panel { padding: 28px; border-right: 1px solid var(--ink); }
+    .panel:last-child { border-right: 0; }
+    .panel h3 { margin: 0 0 18px; font: 800 28px/1.05 var(--font-display); }
+    .list { display: grid; gap: 0; border-top: 1px solid var(--line-strong); }
+    .list div {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .list code { font-family: var(--font-mono); color: var(--accent-dark); font-weight: 700; }
+
+    .price-wrap { position: relative; }
+    .price-row { grid-template-columns: 1.2fr .8fr 1fr 1fr; }
+    .sticky-row { position: sticky; top: 72px; z-index: 5; }
+    .sticky-row .cell { background: var(--paper); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--ink);
+      background: white;
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .contact-line { display: grid; gap: 5px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+    .contact-line small { font: 700 12px/1 var(--font-mono); color: var(--muted); text-transform: uppercase; }
+    .contact-line a, .contact-line span { font-size: 20px; font-weight: 700; }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--ink); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--ink);
+      border-left: 1px solid var(--ink);
+    }
+    details {
+      background: white;
+      border-right: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      min-height: 120px;
+    }
+    summary {
+      cursor: pointer;
+      padding: 20px;
+      font: 700 18px/1.2 var(--font-display);
+      transition: background .18s var(--ease);
+    }
+    summary:hover { background: var(--paper); }
+    details p { margin: 0; padding: 0 20px 20px; color: var(--muted); }
+
+    .cta {
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      background: var(--accent);
+      padding: 48px 0;
+    }
+    .cta-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .cta h2 { max-width: 760px; }
+    .cta .btn.primary { background: var(--ink); border-color: var(--ink); color: white; }
+    .cta .btn.outline { background: transparent; color: #051205; border-color: #051205; }
+
+    footer { padding: 28px 0; color: var(--muted); font-size: 13px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; }
+      .navlinks { display: none; }
+      .hero-grid, .split, .contact-grid, .cta-inner { grid-template-columns: 1fr; }
+      .hero { padding-top: 42px; }
+      .panel { border-right: 0; border-bottom: 1px solid var(--ink); }
+      .panel:last-child { border-bottom: 0; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--ink); min-height: 130px; }
+      .stat:last-child { border-bottom: 0; }
+      .section-title { grid-template-columns: 1fr; gap: 10px; }
+      .service-row, .price-row { grid-template-columns: 1fr; }
+      .cell, .cell.head { min-height: auto; }
+      .cell.head:not(:first-child) { display: none; }
+      .faq { grid-template-columns: 1fr; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Biotop Radotín">
+        <img src="http://halaradotin.cz/wp-content/uploads/2015/02/logo-biotop.png" alt="Biotop Radotín">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#provoz">Provoz</a>
+        <a href="#program">Program</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="small-action" href="tel:+420774485998">+420 774 485 998</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker"><span class="dot"></span> K Lázním 9 · Radotín</div>
+          <h1>Biotop Radotín je v sezóně.</h1>
+          <p class="lead">Přírodní koupání v Radotíně, sauna Kijukiju, hot-tub, parkování a aktuální provozní informace na jednom místě.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420774485998">Zavolat na recepci</a>
+            <a class="btn outline" href="#kontakt">Najít areál</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Provozní informace">
+          <div class="card-head">
+            <span>Provoz</span>
+            <span class="today">Dnes · čtvrtek</span>
+          </div>
+          <div class="schedule-row"><strong>Zahájení letní sezóny</strong><span>18. 5. 2026</span></div>
+          <div class="schedule-row"><strong>Otevírací doba v květnu</strong><span>10:00-18:00</span></div>
+          <div class="schedule-row"><strong>Ranní plavání pro permanentky</strong><span>7:00-9:00</span></div>
+          <div class="schedule-row"><strong>Kontakt</strong><span>774 485 998</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="num">01</div>
+          <div>
+            <h2>Provoz areálu</h2>
+            <p>Rozcestník pro návštěvu biotopu, sauny Kijukiju a doplňkových služeb v areálu.</p>
+          </div>
+        </div>
+        <div class="service-table" role="table" aria-label="Služby a provoz">
+          <div class="service-row" role="row">
+            <div class="cell head" role="columnheader">Služba</div>
+            <div class="cell head" role="columnheader">Režim</div>
+            <div class="cell head" role="columnheader">Informace</div>
+            <div class="cell head" role="columnheader">Akce</div>
+          </div>
+          <div class="service-row" role="row">
+            <div class="cell"><strong>Biotop</strong></div>
+            <div class="cell mono status">letní sezóna</div>
+            <div class="cell">Zahájení sezóny je uvedené od 18. 5. 2026.</div>
+            <div class="cell mono"><a href="#kontakt">kontakt</a></div>
+          </div>
+          <div class="service-row" role="row">
+            <div class="cell"><strong>Sauna Kijukiju + hot-tub</strong></div>
+            <div class="cell mono">areálová služba</div>
+            <div class="cell">Součást nabídky areálu podle zveřejněných kategorií.</div>
+            <div class="cell mono"><a href="mailto:info@biotopradotin.cz">e-mail</a></div>
+          </div>
+          <div class="service-row" role="row">
+            <div class="cell"><strong>Parkování a kamery</strong></div>
+            <div class="cell mono">praktické info</div>
+            <div class="cell">Parkování a kamery patří mezi hlavní informační položky pro návštěvníky.</div>
+            <div class="cell mono"><a href="#kontakt">mapa</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="program">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="num">02</div>
+          <div>
+            <h2>Program a sezóna</h2>
+            <p>Termíny z areálu, které návštěvníci nejčastěji hledají před cestou do Radotína.</p>
+          </div>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <h3>Sportfest Radotín 2026</h3>
+            <div class="list">
+              <div><code>11.6.</code><span>Program zahajuje Bosch E-bike Eliminátor, závod dvojic na elektrokolech.</span></div>
+              <div><code>13.-14.6.</code><span>Čtvrtý ročník Sportfestu na čtrnácti sportovištích.</span></div>
+              <div><code>22</code><span>Sportovních odvětví v programu Radotína.</span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Příměstské tábory 2026</h3>
+            <div class="list">
+              <div><code>27.-31.7.</code><span>Termín je podle zveřejněné informace již obsazený.</span></div>
+              <div><code>10.-14.8.</code><span>Další uvedený termín příměstského tábora.</span></div>
+              <div><code>PDF</code><span>Přihláška je uvedená jako Tábory 2026.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Hodnocení a důvěra">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><b>4,5</b><span>Průměrné hodnocení podle poskytnutých dat.</span></div>
+          <div class="stat"><b>2306</b><span>Počet uvedených recenzí.</span></div>
+          <div class="stat"><b>153 00</b><span>Praha 5 · Radotín, K Lázním 9.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="num">03</div>
+          <div>
+            <h2>Ceník bez dohledávání</h2>
+            <p>Ceník je samostatná návštěvnická položka areálu; aktuální částky ověříte přímo přes recepci nebo informační stránku.</p>
+          </div>
+        </div>
+        <div class="price-wrap">
+          <div class="price-table" role="table" aria-label="Informační matice">
+            <div class="price-row sticky-row" role="row">
+              <div class="cell head" role="columnheader">Položka</div>
+              <div class="cell head" role="columnheader">Stav</div>
+              <div class="cell head" role="columnheader">Pro koho</div>
+              <div class="cell head" role="columnheader">Kontakt</div>
+            </div>
+            <div class="price-row" role="row">
+              <div class="cell"><strong>Vstup do areálu</strong></div>
+              <div class="cell mono">ceník</div>
+              <div class="cell">Návštěvníci biotopu</div>
+              <div class="cell mono"><a href="tel:+420774485998">telefon</a></div>
+            </div>
+            <div class="price-row" role="row">
+              <div class="cell"><strong>Sauna Kijukiju</strong></div>
+              <div class="cell mono">ceník</div>
+              <div class="cell">Návštěvníci sauny</div>
+              <div class="cell mono"><a href="mailto:info@biotopradotin.cz">e-mail</a></div>
+            </div>
+            <div class="price-row" role="row">
+              <div class="cell"><strong>Hot-tub</strong></div>
+              <div class="cell mono">ceník</div>
+              <div class="cell">Návštěvníci areálu</div>
+              <div class="cell mono"><a href="#kontakt">recepce</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-title">
+          <div class="num">04</div>
+          <div>
+            <h2>Kontakt a poloha</h2>
+            <p>Areál najdete v Radotíně na adrese K Lázním 9. Pro ověření provozu volejte recepci.</p>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line"><small>Telefon</small><a href="tel:+420774485998">+420 774 485 998</a></div>
+            <div class="contact-line"><small>E-mail</small><a href="mailto:info@biotopradotin.cz">info@biotopradotin.cz</a></div>
+            <div class="contact-line"><small>Adresa</small><span>K Lázním 9 Radotín, 153 00 Praha 5</span></div>
+            <div class="contact-line"><small>Souřadnice</small><span>49.9792144, 14.3590457</span></div>
+          </div>
+          <div id="map" aria-label="Mapa Biotop Radotín"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-title">
+          <div class="num">05</div>
+          <div>
+            <h2>Časté dotazy</h2>
+            <p>Krátké odpovědi k věcem, které jsou v areálových informacích vedené jako samostatné položky.</p>
+          </div>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Kdy začala letní sezóna?</summary>
+            <p>Uvedené zahájení letní sezóny je od pondělí 18. 5. 2026.</p>
+          </details>
+          <details>
+            <summary>Je ranní plavání pro každého?</summary>
+            <p>Ranní plavání 7:00-9:00 je v informacích uvedené pro držitele permanentek.</p>
+          </details>
+          <details>
+            <summary>Kde ověřím ceny?</summary>
+            <p>Ceník je uvedený jako samostatná informační položka. Pro aktuální částky kontaktujte recepci.</p>
+          </details>
+          <details>
+            <summary>Řeší areál parkování?</summary>
+            <p>Parkování je mezi hlavními položkami pro návštěvníky areálu.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <h2>Přijeďte do Radotína připravení.</h2>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420774485998">Zavolat</a>
+          <a class="btn outline" href="mailto:info@biotopradotin.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© Biotop Radotín · K Lázním 9 Radotín</div>
+      <div class="disclaimer">
+        Webflex disclaimer: Toto je nezávazná prezentační stránka vytvořená jako obchodní ukázka pro oslovení provozovatele. Pokud ji nechcete zobrazovat, použijte <a href="/delete/byhopup">odstranění stránky</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.359045700000001, 49.9792144],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#00C000' })
+      .setLngLat([14.359045700000001, 49.9792144])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
