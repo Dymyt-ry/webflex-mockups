@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CARWEST - autoservis, pneuservis a půjčovna aut</title>
+  <meta name="description" content="Autoservis, pneuservis, klimatizace, automatické převodovky, fleet servis, autopůjčovna a autobazar v Plzni.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #f8f8f6;
+      --ink: #141414;
+      --muted: #62625f;
+      --line: #d9d9d4;
+      --line-strong: #1e1e1e;
+      --accent: #E0A000;
+      --accent-ink: #141414;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2,.7,.2,1);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(20,20,20,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,20,20,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .site-header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    }
+    .wordmark {
+      font-family: var(--font-display); font-size: 20px; font-weight: 700;
+      letter-spacing: 0; max-width: 420px; line-height: 1;
+    }
+    .nav-links { display: flex; align-items: center; gap: 2px; font-family: var(--font-mono); font-size: 12px; }
+    .nav-links a { padding: 12px 10px; border: 1px solid transparent; transition: .2s var(--ease); }
+    .nav-links a:hover { border-color: var(--line); background: var(--paper); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 46px; padding: 13px 18px;
+      border: 1px solid var(--line-strong);
+      font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+      transition: .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .btn.secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(.98); }
+    .hero { padding: 72px 0 44px; border-bottom: 1px solid var(--line-strong); }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; align-items: center; gap: 44px; }
+    .kicker { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0; color: var(--muted); }
+    h1 {
+      margin: 16px 0 18px;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead { max-width: 620px; font-size: clamp(18px, 2vw, 23px); color: #333; margin: 0 0 28px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hours-card { background: var(--paper); border: 1px solid var(--line-strong); }
+    .card-head { display: flex; justify-content: space-between; gap: 16px; padding: 15px; border-bottom: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: 12px; }
+    .hours-row { display: grid; grid-template-columns: 1fr auto; padding: 13px 15px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 13px; }
+    .hours-row:last-child { border-bottom: 0; }
+    .hours-row.today { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+    section { padding: 64px 0; }
+    .section-top { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 28px; align-items: end; margin-bottom: 24px; }
+    .section-no { font-family: var(--font-display); font-size: clamp(54px, 7vw, 104px); line-height: .8; color: rgba(20,20,20,.12); overflow-wrap: anywhere; hyphens: none; }
+    h2 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 4vw, 54px); line-height: .98; letter-spacing: 0; hyphens: none; }
+    .section-note { margin: 10px 0 0; max-width: 680px; color: var(--muted); font-size: 18px; }
+    .service-table, .price-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line-strong); }
+    th, td { border: 1px solid var(--line); text-align: left; padding: 16px; vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; background: var(--paper); }
+    td strong { display: block; font-size: 20px; margin-bottom: 5px; }
+    td .mono, .mono { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-strong); background: #fff; }
+    .stat { padding: 26px; border-right: 1px solid var(--line); min-height: 150px; }
+    .stat:last-child { border-right: 0; }
+    .stat b { display: block; font-family: var(--font-display); font-size: clamp(42px, 5vw, 72px); line-height: .9; }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); }
+    .process { border: 1px solid var(--line-strong); background: #fff; }
+    .process-row { display: grid; grid-template-columns: 110px 1fr 190px; gap: 22px; padding: 22px; border-bottom: 1px solid var(--line); align-items: center; }
+    .process-row:last-child { border-bottom: 0; }
+    .num { font-family: var(--font-display); font-size: 40px; color: var(--accent); }
+    .tag { font-family: var(--font-mono); font-size: 12px; padding: 8px 10px; border: 1px solid var(--line); background: var(--paper); justify-self: start; }
+    .pricing-wrap { overflow-x: auto; border: 1px solid var(--line-strong); background: #fff; }
+    .price-table { min-width: 760px; border: 0; }
+    .price-table th { position: sticky; top: 72px; z-index: 3; border-top: 0; }
+    .price-table .price { font-family: var(--font-display); font-size: 34px; color: var(--ink); }
+    .gallery { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: stretch; }
+    .photo { border: 1px solid var(--line-strong); background: var(--paper); overflow: hidden; min-height: 260px; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; filter: saturate(.82) contrast(1.04); }
+    .contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 22px; align-items: stretch; }
+    .contact-card { border: 1px solid var(--line-strong); background: #fff; padding: 24px; }
+    .contact-card h3 { margin: 0 0 16px; font-family: var(--font-display); font-size: 28px; }
+    .contact-list { display: grid; gap: 12px; font-family: var(--font-mono); font-size: 14px; }
+    #map { height: 420px; border: 1px solid var(--line-strong); overflow: hidden; }
+    .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; border: 1px solid var(--line-strong); background: var(--line); }
+    .qa { background: #fff; padding: 22px; min-height: 148px; }
+    .qa h3 { margin: 0 0 10px; font-family: var(--font-mono); font-size: 14px; }
+    .qa p { margin: 0; color: var(--muted); }
+    .cta { padding: 52px 0; background: var(--ink); color: #fff; }
+    .cta .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .cta h2 { max-width: 720px; color: #fff; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,.5); }
+    footer { padding: 28px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; background: #fff; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+    .disclaimer { max-width: 760px; }
+    .disclaimer a { text-decoration: underline; }
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-top, .gallery, .contact-grid { grid-template-columns: 1fr; }
+      .stats, .faq { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .process-row { grid-template-columns: 1fr; }
+      .cta .wrap { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="#top">CARWEST - autoservis, pneuservis a půjčovna aut</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Objednání</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420731104391">+420 731 104 391</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Plzeň, Línská 1054/1 · PO-PÁ 7.00-17.00</div>
+          <h1>Servisní zázemí pro Váš vůz</h1>
+          <p class="lead">Autoservis, pneuservis, klimatizace, automatické převodovky, fleet servis, autopůjčovna a autobazar na jedné adrese v Plzni.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420731104391">Zavolat servis</a>
+            <a class="btn secondary" href="mailto:info@carwest.cz">Poslat zprávu</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Provozní doba">
+          <div class="card-head"><span>Dnes</span><strong>Čtvrtek</strong></div>
+          <div class="hours-row"><span>Po-Pá</span><strong>7.00-17.00</strong></div>
+          <div class="hours-row today"><span>Čtvrtek</span><strong>7.00-17.00</strong></div>
+          <div class="hours-row"><span>Sobota</span><strong>9.00-12.00</strong></div>
+          <div class="hours-row"><span>Neděle</span><strong>zavřeno</strong></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-top">
+          <div class="section-no">01</div>
+          <div>
+            <h2>Servisní plán podle práce</h2>
+            <p class="section-note">Vyberte oblast, kterou potřebujete řešit. Tým CARWEST přijímá zakázky od běžné údržby po sezonní pneuservis a firemní provoz.</p>
+          </div>
+        </div>
+        <table class="service-table">
+          <thead><tr><th>Oblast</th><th>Co řešíte</th><th>Kontakt</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Autoservis</strong><span class="mono">mechanická údržba</span></td><td>Kontrola, opravy a pravidelný servis osobních vozů.</td><td class="mono">tel. +420 731 104 391</td></tr>
+            <tr><td><strong>Pneuservis</strong><span class="mono">sezonní provoz</span></td><td>Přezutí, práce s pneumatikami a související servisní úkony.</td><td class="mono">Po-Pá 7.00-17.00</td></tr>
+            <tr><td><strong>Klimatizace</strong><span class="mono">příprava na léto</span></td><td>Servis klimatizace pro komfortní a čistý provoz vozu.</td><td class="mono">info@carwest.cz</td></tr>
+            <tr><td><strong>Automatické převodovky</strong><span class="mono">specializovaná práce</span></td><td>Servis automatických převodovek v rámci dílenského zázemí.</td><td class="mono">Plzeň 3</td></tr>
+            <tr><td><strong>Fleet servis</strong><span class="mono">firemní vozy</span></td><td>Servisní zajištění vozidel pro firmy a pravidelný provoz.</td><td class="mono">objednání telefonem</td></tr>
+            <tr><td><strong>Autopůjčovna a autobazar</strong><span class="mono">mobilita</span></td><td>Půjčení vozu a nabídka prověřených vozidel.</td><td class="mono">Línská 1054/1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><b>4,4</b><span>hodnocení na Googlu</span></div>
+          <div class="stat"><b>365</b><span>recenzí zákazníků</span></div>
+          <div class="stat"><b>EUROMASTER</b><span>servis sítě uvedený v informacích CARWEST</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap">
+        <div class="section-top">
+          <div class="section-no">02</div>
+          <div>
+            <h2>Objednání bez zdržení</h2>
+            <p class="section-note">Pro servisní zakázku stačí telefon nebo e-mail. V provozní době domluvíte termín a typ práce.</p>
+          </div>
+        </div>
+        <div class="process">
+          <div class="process-row"><div class="num">01</div><div><strong>Zavoláte nebo napíšete</strong><br><span class="mono">+420 731 104 391 · info@carwest.cz</span></div><div class="tag">příjem zakázky</div></div>
+          <div class="process-row"><div class="num">02</div><div><strong>Upřesníte vůz a požadovanou službu</strong><br><span class="mono">autoservis · pneuservis · klimatizace · převodovky</span></div><div class="tag">servisní rozsah</div></div>
+          <div class="process-row"><div class="num">03</div><div><strong>Přistavíte vůz na Línskou</strong><br><span class="mono">Línská 1054/1, 318 00 Plzeň-Plzeň 3</span></div><div class="tag">dílna Plzeň</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-top">
+          <div class="section-no">03</div>
+          <div>
+            <h2>Ceník a zakázky</h2>
+            <p class="section-note">Konkrétní cena závisí na vozu, rozsahu práce a použitých dílech. Pro přesné nacenění kontaktujte příjem servisu.</p>
+          </div>
+        </div>
+        <div class="pricing-wrap">
+          <table class="price-table">
+            <thead><tr><th>Položka</th><th>Typická situace</th><th>Další krok</th></tr></thead>
+            <tbody>
+              <tr><td><span class="price">Servis</span></td><td>Kontrola nebo oprava vozu podle aktuálního stavu.</td><td class="mono">zavolat a domluvit termín</td></tr>
+              <tr><td><span class="price">Pneu</span></td><td>Sezonní práce s pneumatikami a kontrola před jízdou.</td><td class="mono">ověřit kapacitu pneuservisu</td></tr>
+              <tr><td><span class="price">Klima</span></td><td>Příprava klimatizace na letní provoz.</td><td class="mono">poslat poptávku e-mailem</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie servisu">
+      <div class="wrap gallery">
+        <figure class="photo"><img src="https://images.pexels.com/photos/7564871/pexels-photo-7564871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic using hand tools to fix an engine, showcasing precision and skill."></figure>
+        <figure class="photo"><img src="https://images.pexels.com/photos/8478248/pexels-photo-8478248.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a mechanic fixing a car engine, showcasing hands-on maintenance work."></figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-top">
+          <div class="section-no">04</div>
+          <div><h2>Časté dotazy před servisem</h2></div>
+        </div>
+        <div class="faq">
+          <div class="qa"><h3>Je nutné se objednat?</h3><p>Pro jistotu ano. Telefonicky domluvíte volnou kapacitu i typ servisní práce.</p></div>
+          <div class="qa"><h3>Kdy je otevřeno?</h3><p>V týdnu 7.00-17.00, v sobotu 9.00-12.00 a v neděli je zavřeno.</p></div>
+          <div class="qa"><h3>Řešíte firemní vozy?</h3><p>Ano, CARWEST uvádí fleet servis jako samostatnou oblast služeb.</p></div>
+          <div class="qa"><h3>Kde servis najdu?</h3><p>Na adrese Línská 1054/1, 318 00 Plzeň-Plzeň 3.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-top">
+          <div class="section-no">05</div>
+          <div>
+            <h2>Kontakt a příjezd</h2>
+            <p class="section-note">Příjem servisu, pneuservisu, autopůjčovny i autobazaru najdete na Línské v Plzni.</p>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>CARWEST, s.r.o.</h3>
+            <div class="contact-list">
+              <a href="tel:+420731104391">+420 731 104 391</a>
+              <a href="mailto:info@carwest.cz">info@carwest.cz</a>
+              <span>Línská 1054/1, 318 00 Plzeň-Plzeň 3</span>
+              <span>IČ: 26375109 · DIČ: CZ26375109</span>
+              <span>Po-Pá 7.00-17.00 · So 9.00-12.00 · Ne zavřeno</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa CARWEST v Plzni"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap">
+        <h2>Domluvte termín servisu na Línské.</h2>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420731104391">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@carwest.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© 2026 CARWEST, s.r.o.</div>
+      <div class="disclaimer">Tento nezávazný náhled připravilo Webflex Studio pro interní posouzení adresátem. Pokud si jej nepřejete zobrazovat, můžete jej odstranit na adrese <a href="https://webflex.cz/delete/hswdiqc">webflex.cz/delete/hswdiqc</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.331627899999999, 49.736929599999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0A000' })
+      .setLngLat([13.331627899999999, 49.736929599999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
