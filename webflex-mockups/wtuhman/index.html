@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Krytý bazén Nová Ves</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfc;
+      --ink: #101616;
+      --muted: #667272;
+      --line: #d9e1e1;
+      --line-strong: #aebebe;
+      --surface: #ffffff;
+      --surface-soft: #f3f7f7;
+      --accent: #208080;
+      --accent-dark: #155f5f;
+      --accent-pale: #dceeee;
+      --ok: #0f7a50;
+      --warn: #9c6b16;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(18px, 4vw, 56px);
+      --radius: 8px;
+      --shadow: 0 24px 70px rgba(16, 22, 22, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(32, 128, 128, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32, 128, 128, 0.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-family: var(--font-body);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0; hyphens: none; }
+    p { color: var(--muted); text-wrap: pretty; }
+
+    .wrap { width: min(1240px, calc(100% - var(--gutter) * 2)); margin-inline: auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 252, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 16px;
+      line-height: 1.05;
+      display: none;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .navlinks a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: background 180ms cubic-bezier(.2,.8,.2,1), border-color 180ms cubic-bezier(.2,.8,.2,1), transform 180ms cubic-bezier(.2,.8,.2,1);
+    }
+    .navlinks a:hover { background: var(--surface-soft); border-color: var(--line); transform: translateY(-1px); }
+    .navlinks a:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      transition: background 180ms cubic-bezier(.2,.8,.2,1), border-color 180ms cubic-bezier(.2,.8,.2,1), transform 180ms cubic-bezier(.2,.8,.2,1), color 180ms cubic-bezier(.2,.8,.2,1);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn.secondary:hover { background: var(--surface-soft); }
+
+    .hero {
+      padding: clamp(44px, 7vw, 86px) 0 46px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: 0.96;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 660px;
+      margin-top: 22px;
+      font-size: clamp(17px, 1.4vw, 21px);
+      color: #354242;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+
+    .hours-card {
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--surface-soft);
+    }
+    .card-head strong { font-family: var(--font-display); font-size: 18px; }
+    .status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ok);
+      background: #e4f4ec;
+      padding: 5px 8px;
+      border: 1px solid #b7dfca;
+      white-space: nowrap;
+    }
+    .schedule-table, .price-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .schedule-table th, .schedule-table td,
+    .price-table th, .price-table td {
+      border: 1px solid var(--line);
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .schedule-table th, .price-table th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #f8fafa;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+    .today td { background: var(--accent-pale); color: #0d4b4b; font-weight: 700; }
+    .note { padding: 14px 18px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+
+    section { padding: clamp(58px, 8vw, 104px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) minmax(260px, 420px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .num {
+      font-family: var(--font-mono);
+      font-size: clamp(44px, 6vw, 76px);
+      line-height: 0.9;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    h2 {
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .service-list {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr) 180px;
+      gap: 24px;
+      align-items: center;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row h3 { font-size: 21px; font-weight: 900; }
+    .service-row p { font-size: 15px; }
+    .tag {
+      justify-self: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      border: 1px solid var(--line-strong);
+      padding: 8px 10px;
+      background: #f8fbfb;
+      text-align: center;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .fact {
+      min-height: 150px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .fact:last-child { border-right: 0; }
+    .fact b {
+      font-family: var(--font-mono);
+      font-size: clamp(26px, 3.4vw, 48px);
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    .fact span { color: var(--muted); font-size: 14px; }
+
+    .price-wrap {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      overflow: auto;
+    }
+    .price-table { min-width: 680px; font-size: 14px; }
+    .price-table thead th {
+      position: sticky;
+      top: 72px;
+      z-index: 3;
+      background: #eef6f6;
+      color: #174d4d;
+    }
+    .price-table td:last-child {
+      font-weight: 800;
+      color: var(--ink);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: clamp(28px, 5vw, 64px);
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 24px;
+    }
+    .panel h3 { font-size: 24px; margin-bottom: 14px; }
+    .rules {
+      border-top: 1px solid var(--line);
+      margin-top: 18px;
+    }
+    .rule {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 16px;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .rule b {
+      font-family: var(--font-mono);
+      color: var(--accent);
+    }
+    .rule span { color: var(--muted); }
+    .lane {
+      display: grid;
+      gap: 12px;
+    }
+    .lane-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      border: 1px solid var(--line);
+      background: #f8fbfb;
+    }
+    .lane-item time {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: var(--accent-dark);
+      padding: 14px;
+      border-right: 1px solid var(--line);
+    }
+    .lane-item span { padding: 14px; color: #314141; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+    .contact-line {
+      display: grid;
+      gap: 5px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line small {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .contact-line a, .contact-line strong { font-size: 18px; font-weight: 800; }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .qa {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 22px;
+      min-height: 190px;
+    }
+    .qa h3 { font-size: 19px; margin-bottom: 10px; }
+
+    .cta {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--accent);
+      color: #fff;
+    }
+    .cta .wrap {
+      min-height: 260px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta h2 { color: #fff; max-width: 760px; }
+    .cta p { color: rgba(255,255,255,0.82); margin-top: 12px; max-width: 620px; }
+    .cta .btn.primary { background: #fff; color: var(--accent-dark); border-color: #fff; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,0.55); }
+    .cta .btn.secondary:hover { background: rgba(255,255,255,0.12); }
+
+    footer {
+      background: #0f1717;
+      color: #d7e1e1;
+      padding: 34px 0;
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+    }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+    .credits { color: #8da0a0; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .contact-grid, .cta .wrap { grid-template-columns: 1fr; }
+      .facts { grid-template-columns: repeat(2, 1fr); }
+      .fact:nth-child(2) { border-right: 0; }
+      .fact:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .tag { justify-self: start; }
+      .faq { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .navlinks { display: none; }
+      .brand-name { display: block; }
+      .brand img { max-height: 34px; }
+      .hero-actions, .cta-actions { width: 100%; }
+      .btn { width: 100%; }
+      .facts { grid-template-columns: 1fr; }
+      .fact { border-right: 0; border-bottom: 1px solid var(--line); }
+      .fact:last-child { border-bottom: 0; }
+      .lane-item { grid-template-columns: 1fr; }
+      .lane-item time { border-right: 0; border-bottom: 1px solid var(--line); }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Krytý bazén Nová Ves">
+        <img src="images/config/obrazek-logo-1.png" alt="Krytý bazén Nová Ves">
+        <span class="brand-name">Krytý bazén Nová Ves</span>
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#provoz">Provoz</a>
+        <a href="#vybaveni">Vybavení</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420546425411">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker">Nová Ves u Oslavan · celoroční provoz</div>
+          <h1>Bazén, sauna a relaxace.</h1>
+          <p class="lead">Krytý bazén pro školy i veřejnost s vodou 29-30 °C, brouzdalištěm pro nejmenší, masážními tryskami, perličkovými loži, protiproudem a vodním chrličem.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#cenik">Zobrazit ceník</a>
+            <a class="btn secondary" href="mailto:bazennovaves@seznam.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <aside class="hours-card" id="provoz" aria-label="Provozní doba bazénu">
+          <div class="card-head">
+            <strong>Provozní doba</strong>
+            <span class="status">Dnes: čtvrtek</span>
+          </div>
+          <table class="schedule-table">
+            <thead><tr><th>Den</th><th>Otevřeno</th><th>Poslední vstup</th></tr></thead>
+            <tbody>
+              <tr><td>Pondělí</td><td>14:00-21:00</td><td>19:30</td></tr>
+              <tr><td>Úterý</td><td>14:00-19:40</td><td>18:40</td></tr>
+              <tr><td>Středa</td><td>14:00-21:00</td><td>19:30</td></tr>
+              <tr class="today"><td>Čtvrtek</td><td>14:00-16:00</td><td>15:00</td></tr>
+              <tr><td>Pátek</td><td>14:00-21:00</td><td>19:30</td></tr>
+              <tr><td>Sobota</td><td>10:00-21:00</td><td>19:30</td></tr>
+              <tr><td>Neděle</td><td>10:00-21:00</td><td>19:30</td></tr>
+            </tbody>
+          </table>
+          <div class="note">Úterý 19:40-20:40 aqua aerobic. Čtvrtek 16:00-20:00 plavecká škola.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="vybaveni">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Co najdete uvnitř</h2>
+          <p>Areál je postavený pro běžné plavání, výuku, odpočinek i delší pobyt u vody na jednu vstupenku.</p>
+        </div>
+        <div class="service-list">
+          <div class="service-row">
+            <h3>Krytý bazén</h3>
+            <p>Nepravidelný kruhový tvar s největším průměrem 19,8 m a hloubkou vody 1,30 m.</p>
+            <span class="tag">29-30 °C</span>
+          </div>
+          <div class="service-row">
+            <h3>Relaxace ve vodě</h3>
+            <p>Masážní trysky, čtyři perličková lože, protiproud a vodní chrlič pro klidnější část návštěvy.</p>
+            <span class="tag">v ceně vstupu</span>
+          </div>
+          <div class="service-row">
+            <h3>Pro děti</h3>
+            <p>Brouzdaliště pro nejmenší a relaxační plochy pro doprovod.</p>
+            <span class="tag">rodinný provoz</span>
+          </div>
+          <div class="service-row">
+            <h3>Další služby</h3>
+            <p>V areálu jsou dostupné také sauna, masáže a sportovní hala podle aktuálního provozu.</p>
+            <span class="tag">areál školy</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Orientační údaje</h2>
+          <p>Stručný přehled pro rychlé rozhodnutí před cestou do Nové Vsi.</p>
+        </div>
+        <div class="facts">
+          <div class="fact"><b>4,5</b><span>hodnocení návštěvníků</span></div>
+          <div class="fact"><b>294</b><span>recenzí ve veřejném profilu</span></div>
+          <div class="fact"><b>19,8 m</b><span>největší průměr bazénu</span></div>
+          <div class="fact"><b>1,30 m</b><span>hloubka vody v bazénu</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <h2>Ceník vstupného</h2>
+          <p>Vstup je omezen pouze zavírací dobou nebo vyhrazeným plaváním a cvičením.</p>
+        </div>
+        <div class="price-wrap">
+          <table class="price-table">
+            <thead><tr><th>Typ vstupu</th><th>Podmínka</th><th>Cena</th></tr></thead>
+            <tbody>
+              <tr><td>Dospělí</td><td>běžný vstup</td><td>130 Kč</td></tr>
+              <tr><td>Dítě</td><td>nad 3 roky</td><td>100 Kč</td></tr>
+              <tr><td>Senior</td><td>od 65 let</td><td>100 Kč</td></tr>
+              <tr><td>ZTP dospělí</td><td>zvýhodněné vstupné</td><td>100 Kč</td></tr>
+              <tr><td>ZTP dítě</td><td>dítě nad 3 roky</td><td>70 Kč</td></tr>
+              <tr><td>Permanentka</td><td>12 vstupů</td><td>1100 Kč</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="panel">
+          <div class="kicker">Jak plánovat návštěvu</div>
+          <h3>Provoz se během týdne liší podle výuky a cvičení.</h3>
+          <p>Nejdelší veřejné bloky jsou v pondělí, středu, pátek a o víkendu. V úterý večer probíhá aqua aerobic, ve čtvrtek odpoledne plavecká škola.</p>
+          <div class="rules">
+            <div class="rule"><b>01</b><span>Na jednu vstupenku můžete zůstat několik hodin, pokud to dovolí provozní blok.</span></div>
+            <div class="rule"><b>02</b><span>Poslední vstup je uvedený samostatně, proto ho kontrolujte před cestou.</span></div>
+            <div class="rule"><b>03</b><span>Pro informace a rezervace volejte přímo na recepci bazénu.</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="kicker">Vyhrazené bloky</div>
+          <div class="lane">
+            <div class="lane-item"><time>Út 19:40</time><span>Aqua aerobic do 20:40</span></div>
+            <div class="lane-item"><time>Čt 16:00</time><span>Plavecká škola do 20:00</span></div>
+            <div class="lane-item"><time>So-Ne 10:00</time><span>Víkendové otevření pro veřejnost</span></div>
+            <div class="lane-item"><time>19:30</time><span>Poslední vstup ve dnech s provozem do 21:00</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Kontakt a cesta</h2>
+          <p>Bazén je součástí školního sportovního areálu v Nové Vsi u Oslavan.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <small>Adresa</small>
+              <strong>Nová Ves u Oslavan 252<br>664 91 Nová Ves</strong>
+            </div>
+            <div class="contact-line">
+              <small>Telefon</small>
+              <a href="tel:+420546425411">+420 546 425 411</a>
+            </div>
+            <div class="contact-line">
+              <small>Vedoucí</small>
+              <a href="tel:+420725540570">+420 725 540 570</a>
+            </div>
+            <div class="contact-line">
+              <small>E-mail</small>
+              <a href="mailto:bazennovaves@seznam.cz">bazennovaves@seznam.cz</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Krytého bazénu Nová Ves"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <h2>Časté dotazy</h2>
+          <p>Praktické informace vycházející z provozu bazénu a ceníku.</p>
+        </div>
+        <div class="faq">
+          <article class="qa">
+            <h3>Je bazén otevřený celoročně?</h3>
+            <p>Ano, jde o krytý bazén s celoročním provozem pro školy a širokou veřejnost.</p>
+          </article>
+          <article class="qa">
+            <h3>Jak teplá je voda?</h3>
+            <p>Teplota vody se pohybuje v rozmezí 29-30 °C.</p>
+          </article>
+          <article class="qa">
+            <h3>Je vstup časově omezený?</h3>
+            <p>Vstup je omezen zavírací dobou nebo vyhrazeným cvičením a plaveckou školou.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap">
+        <div>
+          <h2>Zavolejte před návštěvou.</h2>
+          <p>Ověřte si aktuální provoz, rezervace nebo dotazy k bazénu přímo na recepci.</p>
+        </div>
+        <div class="hero-actions cta-actions">
+          <a class="btn primary" href="tel:+420546425411">+420 546 425 411</a>
+          <a class="btn secondary" href="mailto:bazennovaves@seznam.cz">E-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong>Krytý bazén Nová Ves</strong><br>
+        <span class="credits">Nová Ves u Oslavan 252 · 664 91 Nová Ves</span>
+      </div>
+      <div class="credits">
+        Tato nezávazná vizualizace od Webflexu je určena pouze vlastníkovi provozu.
+        <a href="https://app.webflex.cz/remove/wtuhman">Odstranit stránku</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.3152334, 49.1061387],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#208080' })
+      .setLngLat([16.3152334, 49.1061387])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
