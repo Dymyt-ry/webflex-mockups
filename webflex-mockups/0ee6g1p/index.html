@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>B&S Laguna s.r.o. - bazény Brno</title>
+  <meta name="description" content="B&S Laguna s.r.o. v Brně: fóliové bazény Alkorplan, bazény do země, zastřešení Alukov, technologie, sauny, vířivky, bazénová chemie a servis.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcff;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --surface-cool: #eef3fb;
+      --ink: #111427;
+      --muted: #647087;
+      --soft: #dce5f2;
+      --line: rgba(32,32,96,.10);
+      --accent: #202060;
+      --accent-soft: #e8ebff;
+      --aqua: #3fb7c6;
+      --shadow: 0 34px 110px rgba(32,32,96,.11);
+      --shadow-soft: 0 18px 70px rgba(32,32,96,.075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 16% 6%, rgba(63,183,198,.14), transparent 34%),
+        linear-gradient(rgba(32,32,96,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,32,96,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 28px 28px, 28px 28px, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,252,255,.82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(310px, 54vw);
+      max-height: 46px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(17,20,39,.72);
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(32,32,96,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--aqua); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(430px, .78fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(17,20,39,.76);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 42px;
+      max-width: 700px;
+    }
+
+    .tile, .service-card, .process, .price-card, .contact-panel, .faq-item, .visual-card {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255,255,255,.64);
+    }
+
+    .tile {
+      min-height: 108px;
+      padding: 18px;
+      border-radius: 20px;
+    }
+    .tile strong {
+      display: block;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+    .tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .visual-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 520px;
+      border-radius: 34px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.92), rgba(233,239,250,.78)),
+        var(--surface-strong);
+      box-shadow: var(--shadow);
+    }
+    .pool-shape {
+      position: absolute;
+      inset: 52px 40px 116px;
+      border-radius: 44% 56% 49% 51% / 47% 42% 58% 53%;
+      background:
+        linear-gradient(135deg, rgba(63,183,198,.92), rgba(32,32,96,.82)),
+        #bfeef6;
+      box-shadow: inset 0 0 0 18px rgba(255,255,255,.72), 0 30px 80px rgba(32,32,96,.18);
+    }
+    .pool-shape::before, .pool-shape::after {
+      content: "";
+      position: absolute;
+      left: 16%;
+      right: 16%;
+      height: 2px;
+      background: rgba(255,255,255,.45);
+      border-radius: 999px;
+    }
+    .pool-shape::before { top: 34%; }
+    .pool-shape::after { top: 58%; }
+    .visual-note {
+      position: absolute;
+      left: 28px;
+      right: 28px;
+      bottom: 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      color: var(--ink);
+    }
+    .visual-note b { font-family: var(--font-display); font-size: 25px; line-height: 1; }
+    .visual-note span { color: var(--muted); font-weight: 700; }
+    .serial { font-family: var(--font-mono); color: var(--accent); font-size: 12px; font-weight: 700; }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 270px;
+      border-radius: var(--radius);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card h3 { font-size: 24px; line-height: 1.05; }
+    .service-card p { margin: 16px 0 0; color: var(--muted); }
+    .num { color: var(--aqua); font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .74fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .process {
+      border-radius: 28px;
+      padding: 34px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 18px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:first-child { padding-top: 0; }
+    .step:last-child { border-bottom: 0; padding-bottom: 0; }
+    .step b { font-family: var(--font-mono); color: var(--accent); }
+    .step h3 { font-size: 24px; }
+    .step p { margin: 8px 0 0; color: var(--muted); }
+
+    .trust {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .trust .tile { min-height: 190px; padding: 26px; }
+    .trust strong { font-size: 38px; }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .price-card {
+      border-radius: 24px;
+      padding: 28px;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .price-card h3 { font-size: 27px; }
+    .price-card ul {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .price-card li { padding: 8px 0; border-top: 1px solid var(--line); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .blueprint {
+      min-height: 380px;
+      border-radius: 32px;
+      padding: 34px;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px),
+        linear-gradient(135deg, #202060, #30378c);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .blueprint h3 { max-width: 620px; font-size: clamp(30px, 4vw, 58px); }
+    .blueprint p { max-width: 560px; color: rgba(255,255,255,.78); font-size: 18px; }
+    .mini-list {
+      display: grid;
+      gap: 14px;
+    }
+    .mini-list .tile { min-height: 112px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .68fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-panel {
+      border-radius: 28px;
+      padding: 32px;
+    }
+    .contact-panel h2 { font-size: clamp(32px, 4vw, 56px); }
+    .contact-list { margin: 28px 0 0; display: grid; gap: 14px; }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 16px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-row span {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .contact-row a, .contact-row b { font-weight: 800; text-decoration: none; }
+    #map {
+      height: 420px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      border-radius: 22px;
+      padding: 26px;
+    }
+    .faq-item h3 { font-size: 23px; }
+    .faq-item p { margin: 12px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 58px 0 82px;
+    }
+    .cta-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      border-radius: 34px;
+      padding: 38px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .cta-strip h2 { font-size: clamp(32px, 5vw, 70px); }
+    .cta-strip p { margin: 14px 0 0; color: rgba(255,255,255,.78); font-size: 18px; }
+    .cta-strip .btn-primary { background: #fff; color: var(--accent); }
+    .cta-strip .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(17,20,39,.58);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .webflex-disclaimer { max-width: 760px; }
+    .webflex-disclaimer a { font-weight: 800; color: var(--accent); }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .gallery, .contact-grid, .section-head {
+        grid-template-columns: 1fr;
+      }
+      .service-grid, .products, .faq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .visual-card { min-height: 430px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 42px; }
+      .hero-meta, .service-grid, .products, .trust, .faq { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .visual-card { min-height: 360px; border-radius: 26px; }
+      .pool-shape { inset: 44px 26px 108px; }
+      section { padding: 58px 0; }
+      .contact-row { grid-template-columns: 1fr; gap: 4px; }
+      .cta-strip { grid-template-columns: 1fr; padding: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="B&S Laguna s.r.o.">
+        <img src="https://www.bslaguna.cz/wp-content/uploads/2024/04/bs-laguna-logo-2026.png" alt="B&S Laguna s.r.o. - bazény, bazénové zastřešení, bazénová chemie">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420543251604">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Brno · Sokolova 5</p>
+          <h1>Bazény do země</h1>
+          <p class="lead">Fóliové bazény Alkorplan a D&W Pool včetně stavebních prací, zastřešení Alukov, automatické lamelové zakrývání hladiny a bazénová technologie pro vnitřní i venkovní řešení.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420543251604">+420 543 251 604</a>
+            <a class="btn btn-secondary" href="mailto:bazeny@bslaguna.cz">Nezávazná poptávka</a>
+          </div>
+          <div class="hero-meta">
+            <div class="tile"><strong>4,5/5</strong><span>hodnocení od zákazníků</span></div>
+            <div class="tile"><strong>6</strong><span>veřejných recenzí</span></div>
+            <div class="tile"><strong>Brno-jih</strong><span>adresa provozovny</span></div>
+          </div>
+        </div>
+        <div class="visual-card" aria-label="Ilustrace bazénové realizace">
+          <div class="pool-shape"></div>
+          <div class="visual-note">
+            <div>
+              <b>Fólie Alkorplan</b>
+              <span>Bazény na klíč, technologie i servis v jedné návaznosti.</span>
+            </div>
+            <div class="serial">BSL · 619 00</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Produkty a servis</p>
+            <h2>Voda, krytí, technologie</h2>
+          </div>
+          <p>Specializace vychází z fóliových betonových bazénů, zastřešení, saun, vířivek, příslušenství a pravidelné péče před sezonou i po ní.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Fóliové bazény</h3><p>Venkovní i vnitřní betonové bazény s fólií Alkorplan pro běžné i neobvyklé tvary.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Zastřešení bazénů</h3><p>Dodávka zastřešení Alukov a automatického lamelového zakrývání hladiny.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Technologie</h3><p>Filtrace, protiproudy, trysky, osvětlení, vysavače, příslušenství a bazénová chemie.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>Sauny a vířivky</h3><p>Vnitřní a venkovní sauny, infrasauny, vířivky a doplňky včetně příslušenství.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap split">
+        <div class="process">
+          <p class="eyebrow">Jak spolupráce probíhá</p>
+          <div class="step">
+            <b>01</b>
+            <div><h3>Poptávka a typ bazénu</h3><p>Domluvíte velikost, umístění, požadované krytí, technologii a doplňky.</p></div>
+          </div>
+          <div class="step">
+            <b>02</b>
+            <div><h3>Stavební a technické řešení</h3><p>U fóliových bazénů se řeší tvar, betonová konstrukce, fólie a návaznosti technologie.</p></div>
+          </div>
+          <div class="step">
+            <b>03</b>
+            <div><h3>Předání a péče</h3><p>Součástí nabídky je chemie, příslušenství, odzimování, zazimování i výměna písku ve filtracích.</p></div>
+          </div>
+        </div>
+        <div class="trust">
+          <div class="tile"><strong>Alkorplan</strong><span>fólie s vysokou UV stabilitou a stálobarevností</span></div>
+          <div class="tile"><strong>Alukov</strong><span>zastřešení bazénů podle skutečné realizace</span></div>
+          <div class="tile"><strong>D&W Pool</strong><span>fóliové bazény a bazény do země</span></div>
+          <div class="tile"><strong>Servis</strong><span>zazimování, odzimování a filtrační písek</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Doplňky a údržba</p>
+            <h2>Vybavení kolem bazénu</h2>
+          </div>
+          <p>Vedle samotné stavby bazénu můžete řešit i prvky, které rozhodují o pohodlí, provozu a sezonní údržbě.</p>
+        </div>
+        <div class="products">
+          <article class="price-card">
+            <div><h3>Zakrytí hladiny</h3><ul><li>automatické lamelové krytí</li><li>zastřešení bazénů Alukov</li></ul></div>
+            <span class="num">KRYTÍ</span>
+          </article>
+          <article class="price-card">
+            <div><h3>Voda a provoz</h3><ul><li>filtrační zařízení</li><li>protiproudy a trysky</li><li>bazénová chemie</li></ul></div>
+            <span class="num">TECHNOLOGIE</span>
+          </article>
+          <article class="price-card">
+            <div><h3>Relaxace</h3><ul><li>sauny a infrasauny</li><li>vířivky a vířivé bazény</li><li>osvětlení a doplňky</li></ul></div>
+            <span class="num">WELLNESS</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap gallery">
+        <div class="blueprint">
+          <p class="eyebrow" style="color:#b9f5ff">Rekonstrukce a tvary</p>
+          <h3>Bazén nemusí být jen obdélník</h3>
+          <p>Fóliové řešení dovoluje různé tvary, vnitřní i venkovní umístění a rekonstrukce stávajících bazénů.</p>
+        </div>
+        <div class="mini-list">
+          <div class="tile"><strong>Venkovní</strong><span>řešení pro zahrady a rodinné domy</span></div>
+          <div class="tile"><strong>Vnitřní</strong><span>bazény s návazností na technologii</span></div>
+          <div class="tile"><strong>Rekonstrukce</strong><span>úpravy a obnova stávajících bazénů</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-panel">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Sokolova 5, Brno</h2>
+          <div class="contact-list">
+            <div class="contact-row"><span>Telefon</span><a href="tel:+420543251604">+420 543 251 604</a></div>
+            <div class="contact-row"><span>E-mail</span><a href="mailto:bazeny@bslaguna.cz">bazeny@bslaguna.cz</a></div>
+            <div class="contact-row"><span>Adresa</span><b>Sokolova 5, 619 00 Brno-Brno-jih</b></div>
+            <div class="contact-row"><span>Web</span><a href="https://www.bslaguna.cz/">www.bslaguna.cz</a></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa provozovny B&S Laguna s.r.o."></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než zavoláte</h2>
+          </div>
+          <p>Krátké odpovědi podle služeb, které B&S Laguna s.r.o. uvádí u bazénů, technologií a údržby.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Děláte i stavební práce?</h3><p>Ano, výstavba fóliových bazénů je uváděna včetně stavebních prací.</p></article>
+          <article class="faq-item"><h3>Řešíte zastřešení?</h3><p>Ano, dodávají se zastřešení bazénů Alukov a automatické lamelové zakrývání hladiny.</p></article>
+          <article class="faq-item"><h3>Umíte sezonní servis?</h3><p>Nabídka zahrnuje zazimování, odzimování a výměnu písku ve filtracích.</p></article>
+          <article class="faq-item"><h3>Dodáváte bazénovou chemii?</h3><p>Ano, součástí sortimentu je bazénová chemie, vysavače a další příslušenství.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="cta-strip">
+          <div>
+            <h2>Domluvte bazén v Brně</h2>
+            <p>Zavolejte nebo pošlete poptávku s typem bazénu, rozměrem, místem realizace a požadovaným příslušenstvím.</p>
+          </div>
+          <div class="hero-actions" style="margin:0">
+            <a class="btn btn-primary" href="tel:+420543251604">Zavolat</a>
+            <a class="btn btn-secondary" href="mailto:bazeny@bslaguna.cz">Napsat e-mail</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>© B&S Laguna s.r.o. - bazény, bazénové zastřešení, bazénová chemie</div>
+      <div class="webflex-disclaimer">Tato prezentační stránka byla připravena službou Webflex jako neveřejný podklad pro oslovení firmy. Pro odstranění použijte <a href="https://webflex.cz/delete/0ee6g1p">tento odkaz</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6153811, 49.1654505],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#202060' })
+      .setLngLat([16.6153811, 49.1654505])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
