@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Koupaliště Petynka | Praha 6</title>
+  <meta name="description" content="Koupaliště Petynka v Praze 6: bazén, tobogán, sportoviště, vstupenky, ceník, parkoviště a aktuální provozní informace." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #101317;
+      --panel: #151a20;
+      --panel-2: #0d1014;
+      --ink: #f5f8fb;
+      --muted: #aab5bf;
+      --line: rgba(245, 248, 251, 0.14);
+      --line-strong: rgba(245, 248, 251, 0.28);
+      --accent: #00A0E0;
+      --accent-2: #80dfff;
+      --ok: #58d68d;
+      --warn: #f6c453;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .shell { width: min(var(--max), calc(100% - 32px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16, 19, 23, .88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      height: 76px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 28px;
+    }
+    .logo img {
+      max-height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+    .menu {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .menu a, .mini {
+      padding: 9px 11px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), background 180ms var(--ease);
+    }
+    .menu a:hover, .mini:hover { color: var(--ink); border-color: var(--line); background: rgba(255,255,255,.04); transform: translateY(-1px); }
+    .menu a:active, .mini:active, .btn:active { transform: translateY(1px); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .hero {
+      padding: 68px 0 44px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 410px;
+      gap: 44px;
+      align-items: center;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent-2);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 20px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease), color 180ms var(--ease);
+    }
+    .btn.primary { background: var(--accent); color: #051015; }
+    .btn.primary:hover { background: #28c1ff; transform: translateY(-1px); }
+    .btn.secondary { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn.secondary:hover { border-color: #fff; background: rgba(255,255,255,.06); transform: translateY(-1px); }
+
+    .hours-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      align-self: stretch;
+      min-height: 360px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .today {
+      padding: 24px 18px;
+      display: grid;
+      gap: 14px;
+      align-content: center;
+    }
+    .time {
+      font-family: var(--font-mono);
+      font-size: clamp(42px, 5vw, 66px);
+      line-height: 1;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 13px 18px;
+      border-top: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--ok); display: inline-block; margin-right: 8px; }
+
+    section { padding: 64px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 54px;
+      line-height: .8;
+      font-weight: 700;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 56px);
+      line-height: .98;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .sub { margin: 10px 0 0; color: var(--muted); max-width: 680px; font-size: 18px; }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+    }
+    .cell {
+      min-height: 146px;
+      padding: 18px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.025);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: background 180ms var(--ease), transform 180ms var(--ease);
+    }
+    .cell:hover { background: rgba(0,160,224,.08); transform: translateY(-1px); }
+    .cell b { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; }
+    .cell span { color: var(--muted); }
+    .mono { font-family: var(--font-mono); }
+
+    .matrix {
+      border: 1px solid var(--line-strong);
+      overflow: auto;
+      background: var(--panel-2);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    th, td {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 76px;
+      background: #121820;
+      z-index: 2;
+      color: var(--accent-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    td strong { display: block; font-family: var(--font-display); text-transform: uppercase; }
+    td small { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .notice {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 24px;
+      min-height: 100%;
+    }
+    .notice h3 {
+      margin: 0 0 18px;
+      font-family: var(--font-display);
+      font-size: 32px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .rows { border-top: 1px solid var(--line); }
+    .row {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .row .mono { color: var(--accent-2); font-size: 13px; }
+    .row p { margin: 0; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: var(--panel-2);
+    }
+    .stat {
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat .value {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 48px);
+      color: var(--ink);
+      line-height: 1;
+    }
+    .stat .label { color: var(--muted); margin-top: 10px; }
+
+    .contact {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 22px;
+    }
+    .contact-card h3 { margin: 0 0 18px; font-family: var(--font-display); text-transform: uppercase; font-size: 28px; }
+    .contact-list { display: grid; gap: 14px; }
+    .contact-list a, .contact-list div {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      transition: color 180ms var(--ease);
+    }
+    .contact-list a:hover { color: var(--ink); }
+    #map { height: 420px; border-radius: 0; overflow: hidden; border: 1px solid var(--line-strong); }
+
+    .final {
+      padding: 48px 0 72px;
+    }
+    .cta-strip {
+      border: 1px solid var(--accent);
+      background: linear-gradient(135deg, rgba(0,160,224,.18), rgba(255,255,255,.03));
+      padding: 30px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .cta-strip h2 { font-size: clamp(30px, 4vw, 52px); }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+    .disclaimer { max-width: 780px; }
+    .disclaimer a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .nav { grid-template-columns: 1fr auto; height: auto; padding: 14px 0; }
+      .menu { grid-column: 1 / -1; justify-content: flex-start; }
+      .hero-grid, .split, .contact, .cta-strip { grid-template-columns: 1fr; }
+      .hours-card { min-height: 0; }
+      .data-grid, .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat:nth-child(2) { border-right: 0; }
+      .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      th { top: 122px; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 22px, var(--max)); }
+      section { padding: 46px 0; }
+      .hero { padding-top: 40px; }
+      .data-grid, .stats { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .row { grid-template-columns: 1fr; gap: 6px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav shell" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Koupaliště Petynka">
+        <img src="https://www.koupalistepetynka.cz/templates/petynka/images/logo-petynka.png" alt="Koupaliště Petynka">
+      </a>
+      <div class="menu">
+        <a href="#areal">Areál</a>
+        <a href="#vstup">Vstupenky</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakty</a>
+      </div>
+      <a class="mini mono" href="tel:+420235094068">+420 235 094 068</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="kicker">Praha 6 · Otevřená 1072</div>
+          <h1>Sportujeme tady s vámi.</h1>
+          <p class="lead">Letní koupaliště s bazénem, tobogánem, sportovišti, parkovištěm a aktuálními provozními informacemi před cestou do areálu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#vstup">Vstupenky a ceník</a>
+            <a class="btn secondary" href="#kontakt">Jak se k nám dostanete</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Dnešní provoz">
+          <div class="card-head">
+            <span>Dnes</span>
+            <span>Letní režim</span>
+          </div>
+          <div class="today">
+            <div class="kicker">Otevírací doba</div>
+            <div class="time">7:00-21:00</div>
+            <p class="sub">Provozní doba platná od 1. 6. Sledujte obsazenost, kapacita areálu je během výstavby krytého bazénu omezená.</p>
+          </div>
+          <div>
+            <div class="status-row"><span><i class="dot"></i>Voda</span><strong>25 °C</strong></div>
+            <div class="status-row"><span>Vzduch</span><strong>23 °C</strong></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="areal">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">01</div>
+          <div>
+            <h2>Areál podle potřeby dne</h2>
+            <p class="sub">Ranní plavání, den u vody, sportoviště i rychlá kontrola kapacity před odjezdem.</p>
+          </div>
+        </div>
+        <div class="data-grid">
+          <div class="cell"><b>Bazén</b><span>Plavání pro veřejnost v denním režimu podle aktuálního provozu.</span></div>
+          <div class="cell"><b>Tobogán</b><span>Atrakce v areálu pro návštěvníky koupaliště.</span></div>
+          <div class="cell"><b>Sportoviště</b><span>Prostor pro aktivní den mimo samotné koupání.</span></div>
+          <div class="cell"><b>Webkamery</b><span>Kontrola stavu areálu před cestou.</span></div>
+          <div class="cell"><b>Vstupenky</b><span>Nákup a informace k návštěvě na jednom místě.</span></div>
+          <div class="cell"><b>Ceník</b><span>Přehled vstupného a návazných služeb.</span></div>
+          <div class="cell"><b>Parkoviště</b><span>Kapacita je snížená kvůli stavbě v areálu.</span></div>
+          <div class="cell"><b>Virtuální prohlídka</b><span>Rychlá orientace v areálu před první návštěvou.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vstup">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">02</div>
+          <div>
+            <h2>Vstup a provozní tabule</h2>
+            <p class="sub">Časy, kapacity a upozornění se vyplatí zkontrolovat ještě před cestou do Otevřené ulice.</p>
+          </div>
+        </div>
+        <div class="matrix" role="region" aria-label="Provozní tabule" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>Položka</th>
+                <th>Aktuální údaj</th>
+                <th>Poznámka</th>
+                <th>Akce</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Otevírací doba</strong><small>Každý den v letním režimu</small></td>
+                <td class="mono">7:00-21:00</td>
+                <td>Platí od 1. 6. podle zveřejněné provozní informace.</td>
+                <td><a href="#kontakt">Kontakt</a></td>
+              </tr>
+              <tr>
+                <td><strong>Kapacita areálu</strong><small>Dočasné omezení</small></td>
+                <td class="mono">max. 1300 osob</td>
+                <td>V horkých dnech může být areál rychle naplněný.</td>
+                <td><a href="#provoz">Upozornění</a></td>
+              </tr>
+              <tr>
+                <td><strong>Obsazenost</strong><small>Údaj z provozní tabule</small></td>
+                <td class="mono">47 návštěvníků</td>
+                <td>Průběžný stav je vhodné sledovat před odjezdem.</td>
+                <td><a href="#areal">Areál</a></td>
+              </tr>
+              <tr>
+                <td><strong>Parkování</strong><small>Snížená kapacita</small></td>
+                <td class="mono">67 míst</td>
+                <td>Část míst zabírá staveniště, doporučená je MHD.</td>
+                <td><a href="#kontakt">Mapa</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="shell split">
+        <div class="notice">
+          <div class="kicker">03 · provozní upozornění</div>
+          <h3>Před cestou zkontrolujte kapacitu</h3>
+          <p class="sub">V areálu probíhá výstavba krytého bazénu. Kvůli tomu platí omezená kapacita areálu a snížená kapacita parkoviště.</p>
+        </div>
+        <div class="notice">
+          <div class="rows">
+            <div class="row">
+              <span class="mono">Bazén</span>
+              <p>Ve čtvrtek 4. 6. v čase 9:00-10:00 je část bazénu, konkrétně 5 drah, vyhrazena pro dětské plavecké závody.</p>
+            </div>
+            <div class="row">
+              <span class="mono">Areál</span>
+              <p>Zbytek areálu a zbývající část bazénu zůstávají v uvedeném čase k dispozici veřejnosti.</p>
+            </div>
+            <div class="row">
+              <span class="mono">Doprava</span>
+              <p>V letních špičkách zvažte cestu MHD, parkování má kvůli stavbě nižší kapacitu.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">04</div>
+          <div>
+            <h2>Rychlá čísla areálu</h2>
+            <p class="sub">Praktické hodnoty pro rozhodnutí, kdy vyrazit a co očekávat při příjezdu.</p>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="value">4,3</div><div class="label">hodnocení návštěvníků</div></div>
+          <div class="stat"><div class="value">2156</div><div class="label">veřejných recenzí</div></div>
+          <div class="stat"><div class="value">1300</div><div class="label">maximální kapacita</div></div>
+          <div class="stat"><div class="value">67</div><div class="label">parkovacích míst</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <div class="num">05</div>
+          <div>
+            <h2>Kontakt a poloha</h2>
+            <p class="sub">Koupaliště najdete v Praze 6 na adrese 4, Otevřená 1072, 169 00 Praha 6.</p>
+          </div>
+        </div>
+        <div class="contact">
+          <aside class="contact-card">
+            <h3>Koupaliště Petynka</h3>
+            <div class="contact-list">
+              <div>4, Otevřená 1072<br>169 00 Praha 6</div>
+              <a href="tel:+420235094068">+420 235 094 068</a>
+              <a href="mailto:info@koupalistepetynka.cz">info@koupalistepetynka.cz</a>
+              <a href="https://www.koupalistepetynka.cz/">www.koupalistepetynka.cz</a>
+            </div>
+          </aside>
+          <div id="map" aria-label="Mapa Koupaliště Petynka"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="shell cta-strip">
+        <div>
+          <div class="kicker">Otevřeno denně 7:00-21:00</div>
+          <h2>Vyrazte podle kapacity</h2>
+        </div>
+        <a class="btn primary" href="tel:+420235094068">Zavolat na pokladnu</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-grid">
+      <div>© Koupaliště Petynka</div>
+      <div class="disclaimer">
+        Prezentační stránku připravilo Webflex. Pokud si ji nepřejete zobrazovat, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/6c5hfww">https://webflex.cz/delete/6c5hfww</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.3817618, 50.0900076],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/dark'
+    });
+    new maplibregl.Marker({ color: '#00A0E0' })
+      .setLngLat([14.3817618, 50.0900076])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
