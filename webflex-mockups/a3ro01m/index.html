@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koupaliště Klánovice</title>
+  <meta name="description" content="Koupaliště Klánovice v Praze 9: bazény, brouzdaliště, travnatá pláž, občerstvení, sportovní a dětské prvky, otevírací doba a kontakty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfb;
+      --surface: rgba(255,255,255,.78);
+      --surface-strong: #ffffff;
+      --mist: #eef4f1;
+      --ink: #101917;
+      --muted: #63736f;
+      --accent: #006060;
+      --accent-soft: #dceceb;
+      --sun: #d6b765;
+      --line: rgba(0,96,96,.12);
+      --shadow: 0 36px 110px rgba(7, 42, 39, .11);
+      --shadow-soft: 0 18px 70px rgba(7, 42, 39, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,96,96,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,96,96,.022) 1px, transparent 1px),
+        radial-gradient(circle at 12% 8%, rgba(0,96,96,.09), transparent 30%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,252,251,.84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand img {
+      max-height: 44px;
+      width: min(310px, 56vw);
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .nav-links a { text-decoration: none; color: rgba(16,25,23,.72); transition: color .2s ease; }
+    .nav-links a:hover { color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(0,96,96,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; }
+    p { hyphens: auto; }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(16,25,23,.76);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 690px;
+    }
+    .stat {
+      min-height: 104px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      color: var(--accent);
+    }
+    .stat span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .pool-card {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 70% 18%, rgba(214,183,101,.34), transparent 20%),
+        linear-gradient(135deg, #e8f2ef 0%, #ffffff 42%, #d8ecea 100%);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .pool-drawing {
+      position: absolute;
+      inset: 54px 34px 82px;
+      border-radius: 28px;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.42) 0 12px, transparent 12px 24px),
+        linear-gradient(140deg, #b9e4df, #2d9a98);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.72), 0 22px 60px rgba(0,96,96,.2);
+    }
+    .pool-drawing::before,
+    .pool-drawing::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      background: rgba(255,255,255,.86);
+    }
+    .pool-drawing::before { width: 58%; height: 10px; left: 20%; top: 34%; }
+    .pool-drawing::after { width: 42%; height: 10px; left: 12%; bottom: 28%; }
+    .pool-label {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 230px;
+      border-radius: var(--radius);
+      padding: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card p { margin: 18px 0 0; color: var(--muted); font-size: 16px; }
+    .service-card .mark { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .feature-list { display: grid; gap: 0; margin-top: 26px; }
+    .feature-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 24px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .feature-row strong { font-family: var(--font-mono); color: var(--accent); }
+    .feature-row span { color: var(--muted); font-weight: 600; }
+    .rating-box {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #10211f;
+      color: #fff;
+    }
+    .rating-number {
+      font-family: var(--font-mono);
+      font-size: clamp(52px, 7vw, 96px);
+      line-height: 1;
+      color: #b9e4df;
+    }
+    .rating-box p { color: rgba(255,255,255,.72); font-size: 18px; }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: minmax(0, .7fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-note {
+      border-radius: 30px;
+      padding: 34px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .price-note h2 { color: #fff; }
+    .price-note p { margin: 20px 0 0; color: rgba(255,255,255,.78); font-size: 18px; }
+    .price-list {
+      border-radius: 30px;
+      padding: 28px 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .price-line:last-child { border-bottom: 0; }
+    .price-line span:last-child { font-family: var(--font-mono); color: var(--accent); text-align: right; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .48fr) minmax(0, .78fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-table { margin: 26px 0; display: grid; gap: 8px; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+    }
+    .hours-line span:last-child { font-family: var(--font-mono); color: var(--accent); text-align: right; }
+    .today { background: var(--accent-soft); border-radius: 12px; padding: 14px 12px; border-bottom: 0; }
+    .contact-links { display: grid; gap: 10px; margin-top: 22px; }
+    .contact-links a {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--accent);
+      transition: color .2s, transform .2s;
+    }
+    .contact-links a:hover { color: var(--ink); transform: translateX(2px); }
+    .map-card { border-radius: 30px; overflow: hidden; box-shadow: var(--shadow-soft); background: var(--surface-strong); min-height: 420px; }
+    #map { height: 420px; width: 100%; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      border-radius: var(--radius);
+      padding: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      min-height: 180px;
+    }
+    .faq-item p { color: var(--muted); margin: 14px 0 0; }
+
+    .final {
+      padding: 70px 0 92px;
+    }
+    .cta {
+      border-radius: 34px;
+      background: #101917;
+      color: #fff;
+      box-shadow: var(--shadow);
+      padding: clamp(30px, 5vw, 58px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .cta p { margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 18px; max-width: 620px; }
+    .cta .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .webflex-disclaimer { line-height: 1.6; }
+    .webflex-disclaimer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .price-band, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .pool-card { max-width: 620px; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 42px 0 56px; }
+      section { padding: 56px 0; }
+      .hero-stats, .service-grid, .faq { grid-template-columns: 1fr; }
+      .feature-row { grid-template-columns: 1fr; gap: 8px; }
+      .pool-card { aspect-ratio: 16 / 10; border-radius: 24px; }
+      .footer-main { display: grid; }
+      .cta { border-radius: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Koupaliště Klánovice">
+        <img src="https://koupalisteklanovice.cz/wp-content/uploads/2016/05/logo_Koupoaliste_Klanovice.png" alt="Koupaliště Klánovice">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#areal">Areál</a>
+        <a href="#vybaveni">Vybavení</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420774553943">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 9 · Klánovice</p>
+          <h1>Slunce, voda, pohoda</h1>
+          <p class="lead">Letní areál v Klánovicích s bazénem, brouzdalištěm pro nejmenší, travnatou pláží, občerstvením a sportovním zázemím pro celý den u vody.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Naplánovat návštěvu</a>
+            <a class="btn btn-secondary" href="mailto:info@koupalisteklanovice.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-stats" aria-label="Rychlé informace">
+            <div class="stat"><strong>25 × 15 m</strong><span>hlavní bazén</span></div>
+            <div class="stat"><strong>09:00 / 10:00</strong><span>víkend / všední den</span></div>
+            <div class="stat"><strong>4,2</strong><span>hodnocení z 653 recenzí</span></div>
+          </div>
+        </div>
+        <div class="pool-card" aria-label="Ilustrace bazénu v areálu">
+          <div class="pool-drawing"></div>
+          <div class="pool-label">
+            <span>V Jehličině 391</span>
+            <span>Bazén · brouzdaliště · pláž</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areal">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Areál</p>
+            <h2>Den u vody bez spěchu.</h2>
+          </div>
+          <p>Koupaliště leží v jedné z nejhezčích pražských obcí a nabízí prostor pro relaxaci, aktivní odpočinek i posezení pod slunečníky.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="mark">01</span>
+            <div><h3>Bazény</h3><p>Hlavní bazén 25 × 15 m, další vodní plocha 14 × 20 m s pozvolným vstupem a brouzdaliště 4 × 4 m pro nejmenší.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="mark">02</span>
+            <div><h3>Odpočinek</h3><p>Rozlehlá travnatá pláž, lehátka u bazénu, slunečníky a dvě zahrádky pro klidné posezení.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="mark">03</span>
+            <div><h3>Občerstvení</h3><p>Bohaté občerstvení přímo v areálu, aby se návštěva dala pohodlně protáhnout na celé odpoledne.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="mark">04</span>
+            <div><h3>Zázemí</h3><p>Moderní sociální zařízení, převlékárny, blízká autobusová zastávka linky 221 a bezplatné parkování.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="vybaveni">
+      <div class="wrap split">
+        <article class="panel">
+          <p class="eyebrow">Aktivní odpočinek</p>
+          <h2>Pro děti i sport.</h2>
+          <div class="feature-list">
+            <div class="feature-row"><strong>Děti</strong><span>Dvě dětská hřiště, trampolíny, houpací zvířátka a brouzdaliště pro nejmenší návštěvníky.</span></div>
+            <div class="feature-row"><strong>Sport</strong><span>Stůl na stolní tenis, minigolf a hřiště na plážový volejbal pro aktivnější odpoledne.</span></div>
+            <div class="feature-row"><strong>Platby</strong><span>Areál akceptuje kartu MultiSport. Platební karty podle dostupných informací přijímány nejsou.</span></div>
+          </div>
+        </article>
+        <aside class="panel rating-box">
+          <div>
+            <p class="eyebrow" style="color:#b9e4df">Hodnocení návštěvníků</p>
+            <div class="rating-number">4,2</div>
+            <p>Průměrné hodnocení z 653 recenzí podle strukturovaných dat leadu.</p>
+          </div>
+          <a class="btn btn-secondary" href="#kontakt">Najít areál</a>
+        </aside>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap price-band">
+        <div class="price-note">
+          <p class="eyebrow" style="color:#b9e4df">Ceník a pravidla</p>
+          <h2>Vstupné u pokladny.</h2>
+          <p>Aktuální ceník a návštěvní řád jsou součástí informací areálu. Pro ověření konkrétní sazby před návštěvou kontaktujte koupaliště telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="price-list" aria-label="Praktické informace">
+          <div class="price-line"><span>MultiSport</span><span>akceptováno</span></div>
+          <div class="price-line"><span>Platební karty</span><span>nepřijímáme</span></div>
+          <div class="price-line"><span>Parkování</span><span>bezplatné</span></div>
+          <div class="price-line"><span>Autobus</span><span>linka 221</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Kudy do Klánovic.</h2>
+          </div>
+          <p>Areál najdete v ulici V Jehličině. Před cestou doporučujeme ověřit provoz podle počasí.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="panel">
+            <p class="eyebrow">Otevírací doba</p>
+            <h3>Sezónní provoz</h3>
+            <div class="hours-table">
+              <div class="hours-line"><span>Pondělí - Pátek</span><span>10:00 - 19:00</span></div>
+              <div class="hours-line today"><span>Sobota - Neděle</span><span>09:00 - 19:00</span></div>
+            </div>
+            <p><strong>Adresa:</strong><br>V Jehličině 391, 190 14 Praha 9</p>
+            <div class="contact-links">
+              <a href="tel:+420774553943">+420 774 553 943</a>
+              <a href="mailto:info@koupalisteklanovice.cz">info@koupalisteklanovice.cz</a>
+            </div>
+          </aside>
+          <div class="map-card">
+            <div id="map" aria-label="Mapa Koupaliště Klánovice"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než vyrazíte.</h2>
+          </div>
+          <p>Krátké odpovědi k dopravě, platbám a vybavení podle dostupných informací areálu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Je v areálu místo pro děti?</h3><p>Ano, pro děti jsou připravena dvě hřiště, trampolíny, houpací zvířátka a brouzdaliště 4 × 4 m.</p></article>
+          <article class="faq-item"><h3>Dá se přijet autem?</h3><p>Ano, hosté přijíždějící autem mohou využít bezplatné parkování u areálu.</p></article>
+          <article class="faq-item"><h3>Jak je to s občerstvením?</h3><p>V areálu je bohaté občerstvení a dvě zahrádky pro posezení pod slunečníky.</p></article>
+          <article class="faq-item"><h3>Berete MultiSport?</h3><p>Ano, koupaliště akceptuje kartu MultiSport. Platební karty podle dostupných informací nepřijímá.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow" style="color:#b9e4df">Návštěva</p>
+          <h2>Uvidíme se u vody.</h2>
+          <p>Pro informace k provozu, počasí nebo ceníku kontaktujte Koupaliště Klánovice přímo.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420774553943">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@koupalisteklanovice.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Koupaliště Klánovice</strong>
+        <span>V Jehličině 391 · Praha 9 · +420 774 553 943</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/a3ro01m">webflex.cz/delete/a3ro01m</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.686523999999999, 50.0981119],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#006060' })
+      .setLngLat([14.686523999999999, 50.0981119])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
