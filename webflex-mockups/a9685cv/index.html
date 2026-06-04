@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ALBIXON Brno | Bazény, zastřešení, vířivky a servis</title>
+  <meta name="description" content="Brněnské bazénové centrum ALBIXON na adrese Žarošická 4260/16. Poradenství k bazénům, zastřešení, technologiím, vířivkám, terasám, instalaci, údržbě a servisu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-blue: #eef7fd;
+      --ink: #111827;
+      --muted: #637083;
+      --line: rgba(0, 119, 200, .13);
+      --accent: #0077C8;
+      --accent-dark: #005b99;
+      --shadow: 0 38px 110px rgba(10, 42, 75, .10);
+      --shadow-soft: 0 22px 70px rgba(10, 42, 75, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, "Arial Black", sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 132px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.55;
+      background:
+        linear-gradient(rgba(0,119,200,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,119,200,.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 12%, rgba(0,119,200,.10), transparent 30vw),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { text-wrap: balance; hyphens: none; overflow-wrap: anywhere; }
+    button, input, textarea { font: inherit; }
+
+    .wrap { width: min(100% - (var(--gutter) * 2), 1220px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1440px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .22s var(--ease), border-color .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(0,119,200,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, .map-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.secondary { background: transparent; color: var(--ink); border-color: currentColor; }
+    .arrow { font-family: var(--font-mono); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(18px);
+      background: rgba(251,252,253,.84);
+      border-bottom: 1px solid rgba(17,24,39,.06);
+    }
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(270px, 58vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: rgba(17,24,39,.68);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a { transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--accent); }
+
+    .hero { padding: clamp(50px, 7vw, 96px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(40%, .92fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 88px);
+    }
+    h1 {
+      max-width: 720px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 640px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(18px, 1.7vw, 23px);
+    }
+    .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
+    .hero-meta {
+      margin-top: 38px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+    }
+    .meta-tile {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-tile strong { display: block; font-family: var(--font-mono); color: var(--accent); font-size: 18px; }
+    .meta-tile span { display: block; margin-top: 7px; color: var(--muted); font-weight: 700; font-size: 13px; }
+
+    .hero-visual {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.92), rgba(238,247,253,.86)),
+        var(--surface-blue);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 44px);
+      display: grid;
+      align-content: space-between;
+    }
+    .hero-visual::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(0,119,200,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,119,200,.08) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(135deg, rgba(0,0,0,.9), transparent 74%);
+    }
+    .pool-line {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      min-height: 250px;
+    }
+    .visual-card {
+      position: relative;
+      z-index: 1;
+      width: min(420px, 100%);
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.80);
+      box-shadow: 0 26px 80px rgba(10,42,75,.10);
+      backdrop-filter: blur(16px);
+    }
+    .visual-card strong { display: block; font-size: 22px; }
+    .visual-card span { display: block; margin-top: 8px; color: var(--muted); }
+
+    section { padding: calc(var(--section) * .72) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .78fr) minmax(280px, .48fr);
+      gap: clamp(32px, 6vw, 76px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 58px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.6vw, 66px);
+      line-height: .98;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .section-head p { color: var(--muted); font-size: 18px; }
+
+    .service-rows { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(220px, .35fr);
+      align-items: center;
+      gap: 28px;
+      padding: clamp(22px, 3vw, 34px);
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: #fff; box-shadow: var(--shadow); }
+    .service-row h3 { font-size: clamp(22px, 2.4vw, 32px); line-height: 1.1; }
+    .service-row p { margin-top: 8px; color: var(--muted); }
+    .service-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: var(--surface-blue);
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .trust-card {
+      min-height: 190px;
+      padding: clamp(24px, 3vw, 34px);
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-card strong {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1;
+      color: var(--accent);
+    }
+    .trust-card span { color: var(--muted); font-weight: 800; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(40%, 1fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 84px);
+    }
+    .soft-panel {
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(30px, 4vw, 54px);
+    }
+    .soft-panel h2 { font-size: clamp(32px, 4vw, 58px); }
+    .soft-panel p { margin-top: 18px; color: var(--muted); font-size: 18px; }
+    .timeline { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-soft);
+    }
+    .step-number {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .step h3 { font-size: 21px; }
+    .step p { margin-top: 5px; color: var(--muted); }
+
+    .showroom-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .showroom-card, .inventory-card {
+      border-radius: 32px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: clamp(26px, 4vw, 44px);
+    }
+    .showroom-card {
+      min-height: 360px;
+      display: grid;
+      align-content: space-between;
+      background:
+        radial-gradient(circle at 84% 20%, rgba(0,119,200,.16), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,.88), rgba(238,247,253,.95));
+    }
+    .showroom-card h2 { max-width: 760px; }
+    .showroom-card p { max-width: 650px; margin-top: 18px; color: var(--muted); font-size: 18px; }
+    .inventory-list { display: grid; gap: 12px; margin-top: 22px; }
+    .inventory-list li {
+      list-style: none;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(17,24,39,.08);
+      font-weight: 800;
+    }
+    .inventory-list li:last-child { border-bottom: 0; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(40%, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card, .map-shell, .faq-item {
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card { padding: clamp(28px, 4vw, 46px); }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 58px); }
+    .contact-list {
+      display: grid;
+      gap: 16px;
+      margin-top: 28px;
+      padding: 0;
+    }
+    .contact-list li {
+      list-style: none;
+      display: grid;
+      gap: 5px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(17,24,39,.08);
+    }
+    .contact-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-list span { color: var(--muted); font-weight: 700; }
+    .contact-list a, .contact-list strong { font-size: 18px; font-weight: 800; }
+    .hours {
+      margin-top: 28px;
+      display: grid;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--surface-blue);
+    }
+    .hours .today { background: var(--accent); color: #fff; }
+    .map-shell { overflow: hidden; min-height: 420px; }
+    #map { height: 420px; min-height: 100%; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { font-size: 21px; }
+    .faq-item p { margin-top: 10px; color: var(--muted); }
+
+    .cta {
+      padding: var(--section) 0;
+    }
+    .cta-panel {
+      border-radius: 38px;
+      padding: clamp(34px, 6vw, 72px);
+      background: #111827;
+      color: #fff;
+      box-shadow: 0 34px 120px rgba(17,24,39,.20);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 30px;
+    }
+    .cta-panel h2 { color: #fff; max-width: 760px; }
+    .cta-panel p { margin-top: 16px; color: rgba(255,255,255,.72); max-width: 640px; font-size: 18px; }
+    .cta-panel .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+
+    footer {
+      padding: 30px 0 42px;
+      color: rgba(17,24,39,.56);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(17,24,39,.08);
+      padding-top: 24px;
+    }
+    .webflex-disclaimer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .section-head, .showroom-grid, .contact-grid, .cta-panel { grid-template-columns: 1fr; }
+      .hero-visual { order: -1; }
+      .trust, .faq-grid { grid-template-columns: 1fr; }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 680px) {
+      :root { --gutter: 18px; }
+      .nav { min-height: 70px; }
+      .nav-links .btn { display: none; }
+      .hero { padding-top: 34px; }
+      .hero-meta, .service-row { grid-template-columns: 1fr; }
+      .service-tags { justify-content: flex-start; }
+      .hero-visual { border-radius: 26px; }
+      .pool-line { min-height: 190px; }
+      .step { grid-template-columns: 1fr; }
+      .map-shell, #map { min-height: 360px; height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="ALBIXON Brno">
+        <img src="https://www.albixon.cz/images/general/logo_new.png" alt="ALBIXON a.s. - pobočka Brno">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#showroom">Showroom</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420771228910">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wide hero-grid">
+        <div>
+          <p class="eyebrow">Bazénové centrum Brno</p>
+          <h1>Bazén začíná v showroomu</h1>
+          <p class="lead">Na pobočce ve Vinohradech vám specialisté poradí s výběrem bazénu, zastřešení, vířivky, terasy, technologie i příslušenství. Domluvit můžete také instalaci, údržbu a servis.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420771228910">+420 771 228 910 <span class="arrow">→</span></a>
+            <a class="btn secondary" href="#kontakt">Adresa a otevírací doba</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-tile"><strong>Po-Pá</strong><span>8-17 hod</span></div>
+            <div class="meta-tile"><strong>4,4</strong><span>hodnocení z 35 recenzí</span></div>
+            <div class="meta-tile"><strong>So-Ne</strong><span>po domluvě</span></div>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Technický přehled bazénového centra">
+          <svg class="pool-line" viewBox="0 0 720 440" role="img" aria-label="Schematická kresba bazénu a zastřešení">
+            <defs>
+              <linearGradient id="water" x1="0" x2="1" y1="0" y2="1">
+                <stop stop-color="#7ed6ff" offset="0"/>
+                <stop stop-color="#0077C8" offset="1"/>
+              </linearGradient>
+              <filter id="blurShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#0a2a4b" flood-opacity=".14"/>
+              </filter>
+            </defs>
+            <rect x="78" y="136" width="520" height="204" rx="72" fill="#fff" filter="url(#blurShadow)"/>
+            <rect x="112" y="166" width="452" height="144" rx="54" fill="url(#water)" opacity=".92"/>
+            <path d="M130 222 C190 190 235 250 292 220 C349 190 396 250 452 220 C498 196 530 214 554 232" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".78"/>
+            <path d="M120 144 C198 60 484 60 562 144" fill="none" stroke="#0077C8" stroke-width="18" stroke-linecap="round" opacity=".35"/>
+            <path d="M162 134 C232 84 448 84 520 134" fill="none" stroke="#0077C8" stroke-width="8" stroke-linecap="round" opacity=".48"/>
+            <circle cx="602" cy="116" r="18" fill="#0077C8"/>
+            <circle cx="636" cy="116" r="18" fill="#111827" opacity=".12"/>
+            <text x="78" y="400" fill="#637083" font-family="JetBrains Mono, monospace" font-size="18">Žarošická 4260/16 · Brno-Vinohrady</text>
+          </svg>
+          <div class="visual-card">
+            <strong>Přelivový i skimmerový bazén na místě</strong>
+            <span>V showroomu uvidíte rozdíl mezi přelivovým žlábkem a skimmerem přímo na vystavených bazénech.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">S čím vám poradíme</p>
+            <h2>Od výběru po servis</h2>
+          </div>
+          <p>Brněnská pobočka má kompletní nabídku produktů i služeb. Vše řešíte s odborným personálem, který pomůže zvolit vhodné řešení pro zahradu, terasu i technické zázemí.</p>
+        </div>
+        <div class="service-rows">
+          <article class="service-row">
+            <div>
+              <h3>Bazény a bazénové sety</h3>
+              <p>Přelivové, skimmerové a fóliové bazény včetně renovací a praktického vysvětlení rozdílů mezi jednotlivými typy.</p>
+            </div>
+            <div class="service-tags"><span class="tag">přeliv</span><span class="tag">skimmer</span><span class="tag">fólie</span></div>
+          </article>
+          <article class="service-row">
+            <div>
+              <h3>Zastřešení bazénů a teras</h3>
+              <p>Nízká, podchozí a terasová zastřešení včetně elektrického posuvu. Na pobočce jsou ukázky více typů zastřešení.</p>
+            </div>
+            <div class="service-tags"><span class="tag">DALLAS</span><span class="tag">CASABLANCA</span><span class="tag">posuv</span></div>
+          </article>
+          <article class="service-row">
+            <div>
+              <h3>Technologie a příslušenství</h3>
+              <p>Technologické stěny, šachty, slaná i sladká úprava vody, tepelná čerpadla, protiproudy, vysavače a další vybavení.</p>
+            </div>
+            <div class="service-tags"><span class="tag">ohřev</span><span class="tag">úprava vody</span><span class="tag">šachta</span></div>
+          </article>
+          <article class="service-row">
+            <div>
+              <h3>Instalace, údržba a servis</h3>
+              <p>Specialisté s vámi projdou postup, domluví návazné služby a pomohou i s dotazy k náhradním dílům nebo zákaznické podpoře.</p>
+            </div>
+            <div class="service-tags"><span class="tag">instalace</span><span class="tag">údržba</span><span class="tag">servis</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust">
+          <div class="trust-card">
+            <strong>2</strong>
+            <span>vystavené bazény: přelivový a skimmerový</span>
+          </div>
+          <div class="trust-card">
+            <strong>6</strong>
+            <span>dalších typů zastřešení k prohlédnutí</span>
+          </div>
+          <div class="trust-card">
+            <strong>35</strong>
+            <span>recenzí s hodnocením 4,4</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wide split">
+        <div class="soft-panel">
+          <p class="eyebrow">Jak probíhá návštěva</p>
+          <h2>Nejdřív se podíváte, potom vybíráte</h2>
+          <p>V centru si můžete porovnat princip bazénů, zastřešení i technologické prvky. Schůzku si domluvíte přímo se specialistou, aby na vás měl čas a mohl se věnovat vašemu pozemku nebo plánované úpravě.</p>
+        </div>
+        <div class="timeline" aria-label="Postup domluvy">
+          <article class="step">
+            <div class="step-number">01</div>
+            <div><h3>Zavoláte nebo napíšete</h3><p>Telefonní kontakt na pobočku je +420 771 228 910, e-mail brno@albixon.cz.</p></div>
+          </article>
+          <article class="step">
+            <div class="step-number">02</div>
+            <div><h3>Projdete showroom</h3><p>Na místě uvidíte bazény, zastřešení, technologii, fólie i vzorky terasových prken EXTERPARK.</p></div>
+          </article>
+          <article class="step">
+            <div class="step-number">03</div>
+            <div><h3>Vyberete další kroky</h3><p>Specialista s vámi probere instalaci, údržbu, servis nebo příslušenství podle konkrétní situace.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="showroom">
+      <div class="wrap showroom-grid">
+        <div class="showroom-card">
+          <div>
+            <p class="eyebrow">Showroom Brno</p>
+            <h2>Vybavení vidíte naživo</h2>
+            <p>Centrum najdete vedle administrativní budovy na Žarošické. Je připravené pro zákazníky, kteří chtějí před rozhodnutím vidět materiály, technologie a pohyb zastřešení v reálném měřítku.</p>
+          </div>
+          <a class="btn primary" href="#kontakt">Naplánovat návštěvu</a>
+        </div>
+        <div class="inventory-card">
+          <p class="eyebrow">Na pobočce</p>
+          <ul class="inventory-list">
+            <li>Přelivový bazén a skimmerový bazén</li>
+            <li>Nízké zastřešení DALLAS</li>
+            <li>CASABLANCA INFINITY</li>
+            <li>Bazénové vysavače a tepelné čerpadlo</li>
+            <li>Technologická stěna a šachta</li>
+            <li>Fólie pro vypláštění bazénu</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>ALBIXON Brno</h2>
+          </div>
+          <p>Pro schůzku v showroomu volejte pobočku nebo napište e-mail. O víkendu je návštěva možná po domluvě.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h2>Žarošická 4260/16</h2>
+            <ul class="contact-list">
+              <li><span>Adresa</span><strong>Žarošická 4260/16, 628 00 Brno-Brno-Vinohrady</strong></li>
+              <li><span>Telefon</span><a href="tel:+420771228910">+420 771 228 910</a></li>
+              <li><span>E-mail</span><a href="mailto:brno@albixon.cz">brno@albixon.cz</a></li>
+            </ul>
+            <div class="hours" aria-label="Otevírací doba">
+              <div class="today"><span>Po-Pá</span><span>8-17 hod</span></div>
+              <div><span>So-Ne</span><span>po domluvě</span></div>
+            </div>
+          </div>
+          <div class="map-shell">
+            <div id="map" aria-label="Mapa pobočky ALBIXON Brno"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Před návštěvou</h2>
+          </div>
+          <p>Nejčastější věci, které zákazníci řeší ještě před příjezdem do centra.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Je potřeba se objednat?</h3>
+            <p>Schůzku je vhodné domluvit předem, aby se vám mohl specialista věnovat individuálně.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Uvidím rozdíl mezi typy bazénů?</h3>
+            <p>Ano. Na pobočce jsou dva bazény, které ukazují fungování přelivového žlábku a skimmeru.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Řeší pobočka i servis?</h3>
+            <p>Ano, personál poradí s instalací, údržbou i servisem a nasměruje vás také na zákaznickou podporu.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Co si mohu prohlédnout k zastřešení?</h3>
+            <p>V showroomu najdete DALLAS, CASABLANCA INFINITY a ukázky dalších typů zastřešení.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-panel">
+        <div>
+          <p class="eyebrow">Domluva schůzky</p>
+          <h2>Přijeďte si bazén osahat</h2>
+          <p>Specialista s vámi projde bazén, zastřešení, technologii i příslušenství podle toho, co plánujete doma řešit.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420771228910">Zavolat na pobočku</a>
+          <a class="btn secondary" href="mailto:brno@albixon.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>ALBIXON a.s. - pobočka Brno · Žarošická 4260/16, Brno-Brno-Vinohrady</div>
+      <div class="webflex-disclaimer">Prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/a9685cv">Odstranit stránku</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6626357, 49.2096312],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#0077C8' })
+      .setLngLat([16.6626357, 49.2096312])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
