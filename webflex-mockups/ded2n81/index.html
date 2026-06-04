@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Art Bazény s.r.o. | Keramické bazény, zastřešení, vířivky a sauny</title>
+  <meta name="description" content="Luxusní keramické bazény, zastřešení bazénů, vířivky a sauny. Art Bazény s.r.o., Nebovidy u Brna.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfc;
+      --surface: #ffffff;
+      --surface-soft: #f1f5f4;
+      --ink: #002020;
+      --muted: #61716f;
+      --accent: #002020;
+      --blue: #027cbe;
+      --line: rgba(0, 32, 32, .10);
+      --shadow: 0 30px 90px rgba(0, 32, 32, .08);
+      --shadow-soft: 0 22px 70px rgba(0, 32, 32, .055);
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,32,32,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,32,32,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.55;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); font-size: 16px; }
+    h1, h2, h3 { margin: 0; letter-spacing: 0; hyphens: none; }
+    h1, h2 { font-family: var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; line-height: .96; }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 700px; }
+    h2 { font-size: clamp(34px, 4.5vw, 68px); }
+    h3 { font-size: 20px; line-height: 1.15; }
+
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 252, 252, .82);
+      border-bottom: 1px solid rgba(0,32,32,.06);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .navlinks { display: flex; align-items: center; gap: 24px; font-size: 14px; font-weight: 700; }
+    .navlinks a { color: rgba(0,32,32,.72); transition: color .18s var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 19px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 14px 34px rgba(0,32,32,.18); }
+    .btn.primary:hover { background: #064040; }
+    .btn.secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn.secondary:hover { background: rgba(0,32,32,.055); }
+
+    .hero { padding: 76px 0 92px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--blue);
+      margin-bottom: 22px;
+    }
+    .lead { margin-top: 24px; max-width: 610px; font-size: 19px; color: rgba(0,32,32,.72); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-visual {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 68% 30%, rgba(2,124,190,.22), transparent 30%),
+        linear-gradient(135deg, #eaf2f1, #ffffff 48%, #dbe9e9);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+    .pool-shape {
+      position: absolute;
+      inset: 9% 8%;
+      border-radius: 42% 58% 52% 48% / 46% 39% 61% 54%;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.18)),
+        radial-gradient(circle at 44% 40%, rgba(2,124,190,.52), rgba(2,124,190,.08) 62%);
+      border: 1px solid rgba(255,255,255,.74);
+      box-shadow: inset 0 0 42px rgba(255,255,255,.62), 0 28px 80px rgba(0,32,32,.12);
+    }
+    .water-lines {
+      position: absolute;
+      inset: 22% 13%;
+      border-radius: inherit;
+      background: repeating-linear-gradient(-18deg, rgba(255,255,255,.44) 0 2px, transparent 2px 18px);
+      mix-blend-mode: screen;
+      opacity: .85;
+    }
+    .spec-card {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(310px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.76);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+    .spec-card b { display: block; font-size: 15px; }
+    .spec-card span { display: block; margin-top: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    section { padding: 78px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .services {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+      gap: 16px;
+    }
+    .service-card {
+      min-height: 270px;
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .service-card:hover { transform: translateY(-3px); box-shadow: 0 34px 90px rgba(0,32,32,.095); }
+    .service-card .num { font-family: var(--font-mono); color: var(--blue); font-weight: 700; font-size: 12px; }
+    .service-card p { margin-top: 14px; font-size: 15px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 18px;
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .stat { padding: 25px 22px; border-radius: 18px; background: var(--surface-soft); }
+    .stat strong { display: block; font-family: var(--font-mono); font-size: clamp(28px, 4vw, 48px); line-height: 1; }
+    .stat span { display: block; margin-top: 12px; color: var(--muted); font-weight: 700; font-size: 13px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(360px, .55fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .rows { margin-top: 24px; }
+    .row {
+      display: grid;
+      grid-template-columns: 145px 1fr;
+      gap: 24px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+    .row:first-child { border-top: 0; padding-top: 0; }
+    .row b { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--blue); }
+    .row p { color: rgba(0,32,32,.74); }
+    .quote {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: var(--ink);
+      color: #fff;
+      min-height: 420px;
+    }
+    .quote p { color: rgba(255,255,255,.78); font-size: 18px; }
+    .quote strong { display: block; margin-top: 28px; font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 52px); line-height: .98; overflow-wrap: anywhere; }
+
+    .process {
+      display: grid;
+      grid-template-columns: 1fr;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 160px 1fr 1.1fr;
+      gap: 28px;
+      align-items: center;
+      padding: 28px 34px;
+      border-top: 1px solid var(--line);
+    }
+    .step:first-child { border-top: 0; }
+    .step .code { font-family: var(--font-mono); color: var(--blue); font-weight: 800; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, .55fr) minmax(0, .9fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .contact-line {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line:first-child { border-top: 0; }
+    .label { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; }
+    .contact-line a, .contact-line strong { font-size: 18px; font-weight: 800; }
+    .hours { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; }
+    .hours td { padding: 11px 0; border-top: 1px solid var(--line); vertical-align: top; }
+    .hours tr:first-child td { border-top: 0; }
+    .hours td:last-child { text-align: right; font-weight: 700; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    details {
+      background: var(--surface);
+      border-radius: 22px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease);
+    }
+    details:hover { transform: translateY(-2px); }
+    summary { cursor: pointer; font-weight: 800; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 14px; }
+
+    .final {
+      padding: 0 0 88px;
+    }
+    .cta {
+      position: relative;
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--ink);
+      color: #fff;
+      padding: 46px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .cta::after {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -80px;
+      top: -110px;
+      border-radius: 50%;
+      border: 48px solid rgba(2,124,190,.24);
+    }
+    .cta h2 { font-size: clamp(34px, 4vw, 60px); max-width: 780px; position: relative; z-index: 1; }
+    .cta p { color: rgba(255,255,255,.72); margin-top: 14px; position: relative; z-index: 1; }
+    .cta .btn.primary { background: #fff; color: var(--ink); position: relative; z-index: 1; box-shadow: none; }
+    .cta .btn.primary:hover { background: #e7f0ef; }
+    .site-footer {
+      padding: 28px 0 42px;
+      color: rgba(0,32,32,.58);
+      font-size: 13px;
+    }
+    .disclaimer {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: rgba(0,32,32,.5);
+    }
+    .disclaimer a { text-decoration: underline; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-visual { min-height: 360px; }
+      .services, .stats, .faq { grid-template-columns: repeat(2, 1fr); }
+      .step { grid-template-columns: 90px 1fr; }
+      .step p { grid-column: 2; }
+      .navlinks { display: none; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, var(--max)); }
+      .hero { padding: 48px 0 58px; }
+      section { padding: 54px 0; }
+      h1 { font-size: clamp(40px, 13vw, 62px); }
+      h2 { font-size: clamp(32px, 10vw, 48px); }
+      .services, .stats, .faq { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .row, .step { grid-template-columns: 1fr; gap: 8px; }
+      .step p { grid-column: auto; }
+      .panel, .cta { padding: 26px; border-radius: 24px; }
+      #map { height: 340px; border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Art Bazény s.r.o.">
+        <img src="https://www.moderni-bazeny.cz/templates/images/logo.png" alt="Art Bazény s.r.o.">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#produkty">Produkty</a>
+        <a href="#showroom">Showroom</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn primary" href="tel:+420603175456">+420 603 175 456</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Nebovidy 222 · Brno / Praha</div>
+          <h1>Bazén jako soukromý resort</h1>
+          <p class="lead">Keramické bazény top kvality, zastřešení bazénů, vířivky a sauny pro domy, zahrady a wellness zázemí. Vyberete si řešení, které drží tvar, komfort i servisní podporu.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420603175456">Zavolat specialistovi</a>
+            <a class="btn secondary" href="mailto:info@moderni-bazeny.cz">Poslat dotaz</a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Abstraktní pohled na keramický bazén">
+          <div class="pool-shape"><div class="water-lines"></div></div>
+          <div class="spec-card">
+            <b>Keramické bazény se zárukou 20 let</b>
+            <span>BAZÉNY · VÍŘIVKY · ZASTŘEŠENÍ · SAUNY</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="produkty">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Produkty pro vodu i relaxaci</h2>
+          <p>Sortiment stojí na keramických bazénech, navazuje zastřešením, vířivkami a saunami. Každá kategorie je řešená s důrazem na každodenní používání, údržbu a pohodlí.</p>
+        </div>
+        <div class="services">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div>
+              <h3>Keramické bazény</h3>
+              <p>Dominantní produkt společnosti Art Bazény s.r.o. se špičkovým zpracováním a 20letou zárukou.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div>
+              <h3>Zastřešení bazénů</h3>
+              <p>Nízké, středně vysoké a vysoké modely včetně variabilních řešení a Linie NEO.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div>
+              <h3>Vířivky</h3>
+              <p>Whirlpooly od předních světových výrobců pro pohodlí, relaxaci a domácí wellness.</p>
+            </div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div>
+              <h3>Sauny</h3>
+              <p>Finské sauny, kombinované sauny, infrasauny, solné terapie i saunová kamna.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra">
+      <div class="wrap stats">
+        <div class="stat"><strong>1385</strong><span>spokojených zákazníků</span></div>
+        <div class="stat"><strong>1914</strong><span>servisů a instalací</span></div>
+        <div class="stat"><strong>4023</strong><span>produktů na výběr</span></div>
+        <div class="stat"><strong>4.6</strong><span>Google hodnocení · 27 recenzí</span></div>
+      </div>
+    </section>
+
+    <section id="showroom">
+      <div class="wrap split">
+        <div class="panel">
+          <div class="eyebrow">Showroom a výběr</div>
+          <h2>Od rozměru po zastřešení</h2>
+          <div class="rows">
+            <div class="row">
+              <b>Výběr</b>
+              <p>Projdete typ bazénu, tvar, technologii a příslušenství podle prostoru na zahradě.</p>
+            </div>
+            <div class="row">
+              <b>Komfort</b>
+              <p>Zastřešení, vířivka nebo sauna doplní sezonní koupání o celoroční relaxaci.</p>
+            </div>
+            <div class="row">
+              <b>Servis</b>
+              <p>Na dodávky navazují instalace a servisní podpora uvedená přímo v historii společnosti.</p>
+            </div>
+          </div>
+        </div>
+        <aside class="panel quote">
+          <div>
+            <p>„Pokud se chcete doslova ponořit do luxusu, pak jste na té správné adrese.“</p>
+            <strong>Voda, která drží styl.</strong>
+          </div>
+          <a class="btn primary" href="mailto:info@moderni-bazeny.cz">Napište nám</a>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Jak začíná realizace</h2>
+          <p>Nejdřív potřebujete vědět, co je pro váš pozemek a způsob používání vhodné. Potom dává smysl řešit konkrétní model, výbavu a termín.</p>
+        </div>
+        <div class="process">
+          <div class="step">
+            <span class="code">KROK 01</span>
+            <h3>Kontakt</h3>
+            <p>Zavoláte nebo pošlete dotaz s adresou, typem produktu a základní představou.</p>
+          </div>
+          <div class="step">
+            <span class="code">KROK 02</span>
+            <h3>Výběr produktu</h3>
+            <p>Společně vyberete bazén, zastřešení, vířivku nebo saunu z dostupných kategorií.</p>
+          </div>
+          <div class="step">
+            <span class="code">KROK 03</span>
+            <h3>Dodání a instalace</h3>
+            <p>Domluví se návaznost prací, předání a servis podle konkrétní objednávky.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Showroom Nebovidy</h2>
+          <p>Domluvte si návštěvu nebo napište dotaz k bazénu, zastřešení, vířivce či sauně. Úterý a pátek jsou po předchozí dohodě.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="panel contact-card">
+            <div class="contact-line">
+              <span class="label">Telefon</span>
+              <a href="tel:+420603175456">+420 603 175 456</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">E-mail</span>
+              <a href="mailto:info@moderni-bazeny.cz">info@moderni-bazeny.cz</a>
+            </div>
+            <div class="contact-line">
+              <span class="label">Adresa</span>
+              <strong>222, 664 48 Nebovidy-Ostopovice</strong>
+            </div>
+            <div class="contact-line">
+              <span class="label">Otevírací doba</span>
+              <table class="hours" aria-label="Otevírací doba">
+                <tr><td>Pondělí</td><td>9:00-12:00<br>13:00-15:00</td></tr>
+                <tr><td>Úterý</td><td>po dohodě předem</td></tr>
+                <tr><td>Středa</td><td>9:00-12:00<br>13:00-15:00</td></tr>
+                <tr><td>Čtvrtek</td><td>9:00-12:00<br>13:00-15:00</td></tr>
+                <tr><td>Pátek</td><td>po dohodě předem</td></tr>
+              </table>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa showroomu Art Bazény s.r.o."></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté dotazy</h2>
+          <p>Krátké odpovědi k hlavním kategoriím, které Art Bazény s.r.o. nabízí.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jaká je záruka na keramické bazény?</summary>
+            <p>U keramických bazénů je uvedená 20letá záruka.</p>
+          </details>
+          <details>
+            <summary>Nabízíte i zastřešení?</summary>
+            <p>Ano, v nabídce jsou nízké, středně vysoké a vysoké modely, variabilní zastřešení i Linie NEO.</p>
+          </details>
+          <details>
+            <summary>Jaké typy saun dodáváte?</summary>
+            <p>Finské sauny, kombinované sauny, infrasauny, solné terapie i saunová kamna.</p>
+          </details>
+          <details>
+            <summary>Kdy je možné přijet?</summary>
+            <p>Pondělí, středa a čtvrtek 9:00-12:00 a 13:00-15:00. Úterý a pátek po dohodě předem.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <h2>Domluvte si výběr bazénu</h2>
+          <p>Ozvěte se s představou, rozměrem pozemku nebo konkrétní kategorií produktu.</p>
+        </div>
+        <a class="btn primary" href="tel:+420603175456">Zavolat nyní</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div>Art Bazény s.r.o. · Nebovidy 222 · IČ: 27718816 · DIČ: CZ27718816</div>
+      <div class="disclaimer">
+        Tato prezentační stránka byla připravena společností Webflex jako nezávazný kreativní podklad. Nejste-li správným příjemcem, můžete ji odstranit zde:
+        <a href="https://webflex.cz/remove/ded2n81">https://webflex.cz/remove/ded2n81</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.5624502, 49.1468328],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002020' })
+      .setLngLat([16.5624502, 49.1468328])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
