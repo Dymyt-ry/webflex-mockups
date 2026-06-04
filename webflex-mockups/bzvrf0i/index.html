@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bazenonline.cz | Bazény, technologie a příslušenství</title>
+  <meta name="description" content="Bazenonline.cz prodává bazény, bazénovou technologii, chemii, příslušenství a náhradní díly s poradenstvím, rozpočty a sklady v Praze a Brně.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfe;
+      --paper: #ffffff;
+      --ink: #101820;
+      --muted: #5c6670;
+      --line: #d8e0e8;
+      --line-strong: #aab8c7;
+      --accent: #0060C0;
+      --accent-dark: #004b98;
+      --accent-soft: #e8f2ff;
+      --ok: #0f7b4b;
+      --warn: #9c2c1c;
+      --shadow: 0 18px 50px rgba(0, 31, 77, .08);
+      --font-display: "Archivo", Arial, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0, 96, 192, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 96, 192, .035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 254, .92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-links a {
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .nav-links a:hover { background: var(--paper); border-color: var(--line); transform: translateY(-1px); }
+    .nav-links a:active, .btn:active, .row-link:active { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); }
+    .btn.outline { background: transparent; color: var(--ink); border-color: currentColor; }
+    .btn.outline:hover { background: var(--ink); color: #fff; }
+
+    .hero {
+      padding: 64px 0 38px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      gap: 44px;
+      align-items: center;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .kicker::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: var(--accent);
+    }
+    h1 {
+      max-width: 720px;
+      margin: 18px 0 18px;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .92;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 660px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      margin: 0 0 28px;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .hours-card {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+    .hours-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--accent-soft);
+    }
+    .hours-head strong {
+      font-family: var(--font-display);
+      font-size: 22px;
+      line-height: 1;
+    }
+    .status {
+      font-family: var(--font-mono);
+      color: var(--ok);
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .hours-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; }
+    .hours-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .hours-table tr.today { background: #f4f9ff; color: var(--accent-dark); font-weight: 700; }
+    .hours-table tr:last-child td { border-bottom: 0; }
+    .hours-note { padding: 14px 18px 18px; color: var(--muted); font-size: 14px; }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) minmax(260px, 420px);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .num {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 9vw, 118px);
+      line-height: .8;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--line-strong);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+
+    .schedule {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line-strong);
+      border-left: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .service-cell {
+      min-height: 220px;
+      padding: 18px;
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      transition: background .2s var(--ease), transform .2s var(--ease);
+    }
+    .service-cell:hover { background: var(--accent-soft); transform: translateY(-1px); }
+    .service-cell h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 24px;
+      line-height: 1.05;
+    }
+    .service-cell p { margin: 0; color: var(--muted); font-size: 15px; }
+    .cell-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .matrix-wrap {
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .matrix {
+      min-width: 860px;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    .matrix th, .matrix td {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    .matrix th {
+      position: sticky;
+      top: 73px;
+      z-index: 5;
+      background: #f1f6fc;
+      font-family: var(--font-mono);
+      color: var(--accent-dark);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .matrix td:first-child { font-weight: 800; }
+    .matrix .price { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      background: var(--paper);
+    }
+    .trust-item {
+      min-height: 150px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trust-item:last-child { border-right: 0; }
+    .trust-value {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .trust-item span:last-child { color: var(--muted); font-size: 14px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 26px;
+    }
+    .panel h3 {
+      margin: 0 0 16px;
+      font-family: var(--font-display);
+      font-size: 32px;
+      line-height: 1;
+    }
+    .row-list { border-top: 1px solid var(--line); }
+    .row-link {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      transition: color .2s var(--ease), transform .2s var(--ease);
+    }
+    .row-link:hover { color: var(--accent); transform: translateY(-1px); }
+    .row-link strong { font-weight: 800; }
+    .row-link span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .copy p { margin: 0 0 16px; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--ink);
+      color: #fff;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 420px;
+    }
+    .contact-card h2 { color: #fff; }
+    .contact-card a { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .contact-line {
+      border-top: 1px solid rgba(255,255,255,.2);
+      padding-top: 14px;
+    }
+    .contact-line span {
+      display: block;
+      color: rgba(255,255,255,.65);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    details {
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      padding: 18px;
+      transition: border-color .2s var(--ease), transform .2s var(--ease);
+    }
+    details:hover { border-color: var(--accent); transform: translateY(-1px); }
+    summary { cursor: pointer; font-weight: 800; }
+    details p { color: var(--muted); margin: 12px 0 0; }
+
+    .final-cta {
+      background: var(--accent);
+      color: #fff;
+      padding: 54px 0;
+    }
+    .final-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .final-box h2 { color: #fff; max-width: 780px; }
+    .final-box p { margin: 10px 0 0; color: rgba(255,255,255,.82); }
+    .final-box .btn { background: #fff; border-color: #fff; color: var(--accent-dark); }
+    .final-box .btn:hover { background: #e8f2ff; }
+
+    footer {
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      background: #fff;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .hero-grid, .section-head, .split, .contact-grid, .final-box { grid-template-columns: 1fr; }
+      .hours-card { max-width: 520px; }
+      .schedule, .trust-strip, .faq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .matrix th { top: 72px; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .nav { min-height: 66px; }
+      .nav-links { display: none; }
+      .hero { padding-top: 42px; }
+      section { padding: 52px 0; }
+      .schedule, .trust-strip, .faq { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .trust-item:last-child { border-bottom: 0; }
+      .section-head { gap: 16px; }
+      #map, .contact-card { min-height: 360px; height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="logo" href="#" aria-label="Bazenonline.cz">
+        <img src="https://www.bazenonline.cz/images/logo/bazenonline.cz.png" alt="Bazenonline.cz">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sortiment">Sortiment</a>
+        <a href="#rozpocty">Rozpočty</a>
+        <a href="#poradna">Poradna</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn" href="tel:+420515915058">Zavolat</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="kicker">Bazény · technologie · příslušenství</span>
+          <h1>Vše pro váš bazén</h1>
+          <p class="lead">Vyberte bazén, filtraci, čerpadlo, solinátor, ohřev, plachtu, fólii nebo chemii s podporou poradny, videí a rozpočtů.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#sortiment">Prohlédnout sortiment</a>
+            <a class="btn outline" href="#rozpocty">Spočítat rozpočet</a>
+          </div>
+        </div>
+        <aside class="hours-card" aria-label="Provozní informace">
+          <div class="hours-head">
+            <strong>Sklady</strong>
+            <span class="status">Praha · Brno</span>
+          </div>
+          <table class="hours-table">
+            <tbody>
+              <tr><td>Doprava</td><td>od 119 Kč</td></tr>
+              <tr class="today"><td>Registrovaní zákazníci</td><td>od 2 500 Kč zdarma</td></tr>
+              <tr><td>Expedice</td><td>okamžitá u skladových položek</td></tr>
+              <tr><td>Poradenství</td><td>články a produktová videa</td></tr>
+            </tbody>
+          </table>
+          <div class="hours-note">Dostupnost ověříte u konkrétní položky před vložením do košíku.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sortiment">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Sortiment podle bazénu</h2>
+          <p>Hlavní kategorie jsou uspořádané podle toho, co právě řešíte: stavbu, provoz, ohřev, čistotu nebo zazimování.</p>
+        </div>
+        <div class="schedule">
+          <article class="service-cell">
+            <div><h3>Bazény</h3><p>Zapuštěné a nadzemní bazény včetně stavebních prvků.</p></div>
+            <div class="cell-meta"><span>kategorie</span><span>01</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Filtrace a čerpadla</h3><p>Pískové filtrace, čerpadla a instalační materiál pro provoz vody.</p></div>
+            <div class="cell-meta"><span>technologie</span><span>02</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Solinátory a dávkovače</h3><p>Automatické dávkování, UV lampy a zařízení pro úpravu vody.</p></div>
+            <div class="cell-meta"><span>údržba</span><span>03</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Ohřevy</h3><p>Tepelná čerpadla a další řešení pro prodloužení koupací sezóny.</p></div>
+            <div class="cell-meta"><span>komfort</span><span>04</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Plachty a fólie</h3><p>Solární, zimní a krycí plachty, fólie a navijáky na plachty.</p></div>
+            <div class="cell-meta"><span>krytí</span><span>05</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Chemie</h3><p>Tekutá chemie, zazimovače a přípravky pro průběžnou péči.</p></div>
+            <div class="cell-meta"><span>voda</span><span>06</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Vysavače</h3><p>Automatické vysavače pro pravidelné čištění dna a stěn.</p></div>
+            <div class="cell-meta"><span>čištění</span><span>07</span></div>
+          </article>
+          <article class="service-cell">
+            <div><h3>Náhradní díly</h3><p>Díly, schůdky, žebříky, polštáře a další příslušenství.</p></div>
+            <div class="cell-meta"><span>servis</span><span>08</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="rozpocty">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Rozpočty a ceny</h2>
+          <p>Orientační výběr podle reálných produktových skupin a cenové logiky z e-shopu.</p>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Oblast</th>
+                <th>Typické položky</th>
+                <th>Ukázka z nabídky</th>
+                <th>Od uvedené ceny</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Slaná voda</td>
+                <td>Solinátory, dávkovače pH, příslušenství</td>
+                <td>TRENDSalt EC 8 pro bazény do 35 m3</td>
+                <td class="price">9 904 Kč</td>
+              </tr>
+              <tr>
+                <td>Automatická úprava</td>
+                <td>Solinátor a dávkovač pH</td>
+                <td>Fairland i-Salt 14 pro bazény do 50 m3</td>
+                <td class="price">31 271 Kč</td>
+              </tr>
+              <tr>
+                <td>Výkonnější sestavy</td>
+                <td>Solinátor, dávkování, průtokové napojení</td>
+                <td>VA Salt Water C15P SMART do 55 m3</td>
+                <td class="price">39 934 Kč</td>
+              </tr>
+              <tr>
+                <td>Doprava</td>
+                <td>Balíkové i větší zásilky podle položky</td>
+                <td>Registrovaní zákazníci od hodnoty objednávky</td>
+                <td class="price">od 119 Kč</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěryhodnost">
+      <div class="wrap">
+        <div class="trust-strip">
+          <div class="trust-item"><span class="trust-value">4,5</span><span>hodnocení Google</span></div>
+          <div class="trust-item"><span class="trust-value">84</span><span>recenzí zákazníků</span></div>
+          <div class="trust-item"><span class="trust-value">600+</span><span>produktových videí</span></div>
+          <div class="trust-item"><span class="trust-value">APEK</span><span>certifikovaný obchod</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="poradna">
+      <div class="wrap split">
+        <div class="panel">
+          <h3>Bazénová poradna</h3>
+          <div class="row-list">
+            <a class="row-link" href="#"><strong>Solární plachta na bazén</strong><span>článek</span></a>
+            <a class="row-link" href="#"><strong>Možnosti ohřevu bazénu</strong><span>článek</span></a>
+            <a class="row-link" href="#"><strong>Zazimování bazénů</strong><span>sezóna</span></a>
+            <a class="row-link" href="#"><strong>Produktová videa</strong><span>video</span></a>
+          </div>
+        </div>
+        <div class="panel copy">
+          <h3>Výběr bez odhadování</h3>
+          <p>U technologií pro bazén často rozhodují konkrétní parametry: objem vody, průtok, připojení, výkon a způsob dávkování. Proto Bazenonline.cz doplňuje zboží rozpočty, poradnou a videi z balení.</p>
+          <p>U vybraných položek najdete informaci o dostupnosti, dopravě zdarma, produktové video a technické údaje přímo v detailu produktu.</p>
+          <a class="btn outline" href="mailto:info@bazenonline.cz">Napsat dotaz</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <h2>Časté otázky</h2>
+          <p>Praktické odpovědi pro nákup bazénové technologie a příslušenství.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Jak zjistím, jestli je položka skladem?</summary>
+            <p>Dostupnost je uvedená přímo u produktu. U skladových položek Bazenonline.cz uvádí okamžitou expedici.</p>
+          </details>
+          <details>
+            <summary>Kdy je doprava zdarma?</summary>
+            <p>Doprava začíná od 119 Kč. Registrovaní zákazníci mají dopravu zdarma od objednávky nad 2 500 Kč.</p>
+          </details>
+          <details>
+            <summary>Pomůžete mi s výběrem solinátoru?</summary>
+            <p>Ano. V nabídce i poradně se pracuje s objemem bazénu, výkonem, produkcí chloru a typem připojení.</p>
+          </details>
+          <details>
+            <summary>Kde najdu videa produktů?</summary>
+            <p>Produktová videa jsou dostupná u vybraných položek i v sekci bazénových videí.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <div>
+            <span class="kicker">Kontakt</span>
+            <h2>Brněnský sklad</h2>
+            <div class="contact-lines">
+              <div class="contact-line"><span>Adresa</span>Písečná 5, Hala 103, 620 00 Brno-Brno-Tuřany</div>
+              <div class="contact-line"><span>Telefon</span><a href="tel:+420515915058">+420 515 915 058</a></div>
+              <div class="contact-line"><span>E-mail</span><a href="mailto:info@bazenonline.cz">info@bazenonline.cz</a></div>
+            </div>
+          </div>
+          <a class="btn" href="https://www.bazenonline.cz/">Přejít do e-shopu</a>
+        </div>
+        <div id="map" aria-label="Mapa umístění skladu"></div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap final-box">
+        <div>
+          <h2>Vyberte technologii podle objemu bazénu.</h2>
+          <p>Poradna, rozpočty a produktová videa pomohou ověřit parametry před objednávkou.</p>
+        </div>
+        <a class="btn" href="https://www.bazenonline.cz/">Otevřít Bazenonline.cz</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Tuto prezentační stránku připravil Webflex jako nezávaznou interní vizualizaci. Není součástí oficiální prezentace společnosti Bazenonline.cz.</span>
+      <a href="https://webflex.cz/delete/bzvrf0i">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6515921, 49.156470399999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#0060C0' })
+      .setLngLat([16.6515921, 49.156470399999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
