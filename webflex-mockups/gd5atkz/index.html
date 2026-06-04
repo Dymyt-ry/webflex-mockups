@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rentmil s.r.o. - bazény a zastřešení v Plzni</title>
+  <meta name="description" content="Rentmil s.r.o. v Plzni: bazénové sety, zapuštěné, nadzemní i přelivové bazény, zastřešení, servis, opravy a rekonstrukce bazénů.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-solid: #ffffff;
+      --surface-warm: #f4f1ed;
+      --ink: #111111;
+      --muted: #66645f;
+      --soft: #8c8880;
+      --line: rgba(17, 17, 17, .09);
+      --accent: #F47A1F;
+      --accent-dark: #b94d08;
+      --shadow: 0 34px 90px rgba(17, 17, 17, .09);
+      --shadow-soft: 0 18px 70px rgba(17, 17, 17, .07);
+      --radius: 22px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(17,17,17,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17,17,17,.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 12%, rgba(244,122,31,.12), transparent 32%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 251, 250, .84);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(270px, 54vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      color: rgba(17,17,17,.72);
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(244, 122, 31, .22); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #111; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, .8fr);
+      gap: 54px;
+      align-items: center;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(17,17,17,.72);
+      font-size: clamp(19px, 2vw, 24px);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+      margin-top: 42px;
+    }
+
+    .meta-tile, .service-card, .float-card, .contact-card, .faq-item, .map-shell {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .meta-tile {
+      min-height: 106px;
+      padding: 18px;
+      border-radius: 18px;
+    }
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 18px;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 650; }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-warm);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 46%, rgba(17,17,17,.52));
+    }
+    .photo-label {
+      position: absolute;
+      z-index: 1;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 235px;
+      padding: 24px;
+      border-radius: var(--radius);
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-card .num { color: var(--accent-dark); font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+    .service-card h3 { margin-top: 32px; font-size: 24px; line-height: 1.05; }
+    .service-card p { margin: 16px 0 0; color: var(--muted); font-size: 16px; hyphens: auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 34px;
+      align-items: center;
+    }
+    .float-card {
+      border-radius: 28px;
+      padding: 34px;
+    }
+    .big-number {
+      font-family: var(--font-mono);
+      font-size: clamp(42px, 6vw, 74px);
+      line-height: 1;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    .proof-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .proof-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .proof-row strong { font-family: var(--font-mono); color: var(--ink); }
+    .proof-row span { color: var(--muted); }
+    .split-photo {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      background: var(--surface-warm);
+    }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .timeline {
+      display: grid;
+      gap: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-solid);
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 160px 1fr minmax(180px, .35fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+    .step b { color: var(--accent-dark); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; }
+    .step h3 { font-size: 26px; }
+    .step p { margin: 0; color: var(--muted); hyphens: auto; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-main, .gallery-stack figure {
+      margin: 0;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-warm);
+    }
+    .gallery-main { aspect-ratio: 16 / 10; }
+    .gallery-stack { display: grid; gap: 16px; }
+    .gallery-stack figure { aspect-ratio: 16 / 7; }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-layout {
+      display: grid;
+      grid-template-columns: minmax(320px, .45fr) minmax(0, .55fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 28px;
+      padding: 32px;
+    }
+    .contact-card h2 { margin-bottom: 24px; }
+    .contact-lines {
+      display: grid;
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .contact-lines a, .contact-lines span {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      text-decoration: none;
+      font-weight: 750;
+    }
+    .contact-lines small {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .hours td { padding: 10px 0; border-top: 1px solid var(--line); }
+    .hours td:last-child { text-align: right; font-weight: 700; }
+    .hours .today td { color: var(--accent-dark); }
+    .map-shell {
+      border-radius: 28px;
+      overflow: hidden;
+      padding: 10px;
+    }
+    #map { height: 420px; border-radius: 20px; overflow: hidden; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 210px;
+      padding: 26px;
+      border-radius: 24px;
+    }
+    .faq-item h3 { font-size: 23px; line-height: 1.08; }
+    .faq-item p { margin: 16px 0 0; color: var(--muted); hyphens: auto; }
+
+    .final-cta {
+      padding: 76px 0 86px;
+    }
+    .cta-band {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 42px;
+      border-radius: 32px;
+      background: #111;
+      color: #fff;
+      box-shadow: 0 34px 90px rgba(17,17,17,.16);
+    }
+    .cta-band h2 { max-width: 780px; font-size: clamp(34px, 5vw, 72px); }
+    .cta-band p { max-width: 620px; margin: 16px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .cta-band .btn-secondary { color: #fff; border-color: rgba(255,255,255,.48); }
+
+    footer {
+      padding: 34px 0;
+      color: rgba(17,17,17,.62);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .footer-grid a { color: inherit; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .section-head, .contact-layout, .gallery-strip, .cta-band { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .hero-photo { width: 100%; }
+      .service-grid, .faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .step { grid-template-columns: 1fr; gap: 10px; }
+      .cta-band { padding: 32px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-meta, .service-grid, .faq-grid { grid-template-columns: 1fr; }
+      .photo-label { flex-direction: column; align-items: flex-start; }
+      .float-card, .contact-card { padding: 24px; }
+      .proof-row { grid-template-columns: 1fr; gap: 4px; }
+      .contact-lines a, .contact-lines span { flex-direction: column; gap: 6px; }
+      .footer-grid { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Rentmil s.r.o.">
+        <img src="https://www.rentmil.cz/wp-content/uploads/2023/11/rentmil-logo.svg" alt="Rentmil s.r.o.">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#bazeny">Bazény</a>
+        <a href="#zastreseni">Zastřešení</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420601588453">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Plzeň, Lidická 1/1233/26</p>
+          <h1>Bazény v klidu.</h1>
+          <p class="lead">Od bazénových setů po zapuštěné a přelivové bazény. Rentmil s.r.o. řeší výrobu, zastřešení, servis i rady pro výběr.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420601588453">+420 601 588 453</a>
+            <a class="btn btn-secondary" href="mailto:info@rentmil.cz">Nezávazná poptávka</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní údaje">
+            <div class="meta-tile"><strong>4.6 / 5</strong><span>hodnocení zákazníků</span></div>
+            <div class="meta-tile"><strong>52</strong><span>veřejných recenzí</span></div>
+            <div class="meta-tile"><strong>2 000+</strong><span>vyrobených bazénů</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/18947394/pexels-photo-18947394.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Experienced carpenter shaping wooden frames in a traditional workshop, showcasing his skill and craftsmanship.">
+          <figcaption class="photo-label"><span>Vlastní výroba</span><span>showroom v Plzni</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="bazeny">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Bazény</p>
+            <h2>Řešení podle zahrady i provozu.</h2>
+          </div>
+          <p>Vyberete typ bazénu, materiál, technologii a způsob umístění. Rentmil pomůže s volbou, výrobou i následnou údržbou.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <h3>Bazénové sety</h3>
+            <p>Připravené sestavy, když chcete mít pohromadě bazén i potřebné příslušenství.</p>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <h3>Zapuštěné bazény</h3>
+            <p>Plastové, foliové, obdélníkové, kruhové i oválné varianty podle prostoru a stylu zahrady.</p>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <h3>Přelivové bazény</h3>
+            <p>Čistá hladina, technologie na míru a provedení pro náročnější venkovní zázemí.</p>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <h3>Opravy a servis</h3>
+            <p>Údržba bazénu, opravy, rekonstrukce a konzultace, když už bazén máte a chcete ho udržet v kondici.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="zastreseni">
+      <div class="wrap split">
+        <div class="float-card">
+          <p class="eyebrow">Zastřešení</p>
+          <h2>Nízké i vysoké řady.</h2>
+          <div class="proof-list">
+            <div class="proof-row"><strong>Alukov</strong><span>Nízké a vysoké zastřešení pro různé výšky a proporce bazénu.</span></div>
+            <div class="proof-row"><strong>Alupol</strong><span>Praktické modely v nízkém i vyšším provedení.</span></div>
+            <div class="proof-row"><strong>Modely</strong><span>Azure Compact Flat, Practic, Dream, Ravena, Parade a Wave.</span></div>
+          </div>
+        </div>
+        <figure class="split-photo">
+          <img src="https://images.pexels.com/photos/12278581/pexels-photo-12278581.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up view of stacked hardwood lumber in a carpentry workshop, showcasing woodworking materials.">
+        </figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Postup</p>
+            <h2>Od výběru po péči.</h2>
+          </div>
+          <p>Praktický postup drží pohromadě rozhodnutí o umístění, technologii, tvaru, zastřešení a servisu.</p>
+        </div>
+        <div class="timeline">
+          <div class="step">
+            <b>Krok 01</b>
+            <h3>Výběr typu</h3>
+            <p>Nadzemní, polozapuštěné nebo zapuštěné řešení podle terénu a očekávaného používání.</p>
+          </div>
+          <div class="step">
+            <b>Krok 02</b>
+            <h3>Materiál a technologie</h3>
+            <p>Plastový nebo foliový bazén, filtrace, slaná voda, protiproud nebo přelivové provedení.</p>
+          </div>
+          <div class="step">
+            <b>Krok 03</b>
+            <h3>Zastřešení a příslušenství</h3>
+            <p>Tepelné čerpadlo, bazénové příslušenství a vhodná výška zastřešení pro sezónní provoz.</p>
+          </div>
+          <div class="step">
+            <b>Krok 04</b>
+            <h3>Údržba</h3>
+            <p>Servis, opravy a rekonstrukce pro bazény, které potřebují další sezónu bez zbytečných starostí.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">Důvěra</p>
+          <h2>Výroba, showroom a praxe.</h2>
+        </div>
+        <div class="float-card">
+          <div class="big-number">2 000+</div>
+          <p class="lead">vyrobených bazénů a veřejné hodnocení 4.6 z 52 recenzí. Přijďte se podívat do showroomu v Plzni nebo rovnou pošlete poptávku.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Dílna a materiál</p>
+            <h2>Detail rozhoduje.</h2>
+          </div>
+          <p>Materiál, přesné nástroje a pečlivý detail jsou součástí výroby, která má vydržet mnoho koupacích sezón.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure class="gallery-main">
+            <img src="https://images.pexels.com/photos/6732227/pexels-photo-6732227.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A detailed shot of hands using a hammer to assemble a wooden frame on a bench.">
+          </figure>
+          <div class="gallery-stack">
+            <figure>
+              <img src="https://images.pexels.com/photos/5710849/pexels-photo-5710849.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Side view of unrecognizable male master using metal sharp circular table saw while cutting wooden detail in workshop on blurred background">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/30907881/pexels-photo-30907881.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Artisan carefully crafting wood with traditional hand tools, showcasing skill and precision.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté volby</p>
+            <h2>Na co se ptát hned.</h2>
+          </div>
+          <p>Dobrá poptávka stačí stručně: typ zahrady, požadovaný rozměr, umístění, technologie a zda řešíte i zastřešení.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Zapuštěný, nebo nadzemní?</h3>
+            <p>Záleží na terénu, rozpočtu a tom, jak má bazén působit v zahradě. Rentmil pracuje s oběma směry.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Slaná voda, filtrace, protiproud?</h3>
+            <p>Technologie vybírejte podle frekvence koupání a nároků na údržbu. V poptávce je dobré je zmínit hned.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jde řešit rekonstrukce?</h3>
+            <p>Ano, v nabídce jsou opravy a rekonstrukce bazénů i běžná údržba před další sezónou.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-layout">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Showroom v Plzni.</h2>
+          <div class="contact-lines">
+            <a href="tel:+420601588453"><small>Telefon</small><span>+420 601 588 453</span></a>
+            <a href="mailto:info@rentmil.cz"><small>E-mail</small><span>info@rentmil.cz</span></a>
+            <span><small>Adresa</small><span>Lidická 1/1233/26, 323 00 Plzeň 1-Severní Předměstí</span></span>
+          </div>
+          <p class="lead">Návštěvu showroomu si prosím potvrďte předem telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="map-shell">
+          <div id="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-band">
+        <div>
+          <p class="eyebrow">Nezávazná poptávka</p>
+          <h2>Pošlete rozměr zahrady.</h2>
+          <p>Přidejte představu o typu bazénu, zastřešení a technologiích. Rentmil s.r.o. se ozve s dalším postupem.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="mailto:info@rentmil.cz">Napsat e-mail</a>
+          <a class="btn btn-secondary" href="tel:+420601588453">Zavolat</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Rentmil s.r.o. · Lidická 1/1233/26, Plzeň</span>
+      <span>Tuto prezentační stránku připravil Webflex. <a href="https://webflex.cz/remove/gd5atkz">Odstranit stránku</a>.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.3745379, 49.7666927],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#F47A1F' })
+      .setLngLat([13.3745379, 49.7666927])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
