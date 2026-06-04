@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koupaliště biotop Brno-jih</title>
+  <meta name="description" content="Koupaliště biotop Brno-jih: první brněnský přírodní veřejný koupací biotop u Svratky, koupání bez chemie, brouzdaliště, občerstvení a sport zóna.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfa;
+      --surface: #ffffff;
+      --surface-soft: #f2f5ef;
+      --ink: #151914;
+      --muted: #677060;
+      --line: rgba(35, 54, 30, .10);
+      --accent: #8CC63F;
+      --accent-dark: #3f681c;
+      --water: #dcefed;
+      --shadow: 0 38px 110px rgba(26, 50, 21, .11);
+      --shadow-soft: 0 18px 70px rgba(26, 50, 21, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(140,198,63,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(140,198,63,.035) 1px, transparent 1px),
+        var(--bg);
+      background-size: 30px 30px, 30px 30px, auto;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,252,250,.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      text-decoration: none;
+      max-width: 360px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(21,25,20,.74);
+    }
+
+    .nav-links a { text-decoration: none; transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      gap: 10px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(63,104,28,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #10200a; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero { padding: 68px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .82fr);
+      gap: 54px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      overflow-wrap: anywhere;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); overflow-wrap: anywhere; }
+    h3 { font-size: 24px; line-height: 1.08; }
+    p { margin: 0; color: var(--muted); }
+
+    .lead {
+      max-width: 640px;
+      margin-top: 24px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: rgba(21,25,20,.74);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+
+    .hero-panel {
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      background: radial-gradient(circle at 22% 18%, #ffffff 0 16%, transparent 17%),
+        linear-gradient(145deg, var(--water), #f7fbf4 55%, #d9edc6);
+      box-shadow: var(--shadow);
+      position: relative;
+      min-width: 0;
+    }
+
+    .hero-panel:before {
+      content: "";
+      position: absolute;
+      inset: 9%;
+      border-radius: 48% 52% 54% 46%;
+      background:
+        radial-gradient(circle at 32% 42%, rgba(140,198,63,.42), transparent 20%),
+        radial-gradient(circle at 68% 58%, rgba(80,155,170,.20), transparent 24%),
+        linear-gradient(135deg, rgba(255,255,255,.9), rgba(255,255,255,.28));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 42px 95px rgba(63,104,28,.18);
+    }
+
+    .hero-panel:after {
+      content: "22°";
+      position: absolute;
+      right: 28px;
+      bottom: 24px;
+      font-family: var(--font-mono);
+      font-size: clamp(42px, 6vw, 78px);
+      font-weight: 700;
+      color: rgba(21,25,20,.14);
+    }
+
+    .floating-note {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(260px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(280px, .5fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head p:last-child { font-size: 18px; }
+
+    .surface {
+      background: rgba(255,255,255,.78);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .feature-card {
+      min-height: 260px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+
+    .feature-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .feature-card svg { width: 42px; height: 42px; color: var(--accent-dark); }
+    .feature-card p { margin-top: 18px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 26px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat strong {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(360px, .48fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .lagoon {
+      padding: 34px;
+      min-height: 420px;
+      background: linear-gradient(135deg, rgba(255,255,255,.9), rgba(242,245,239,.82));
+    }
+
+    .rows { margin-top: 34px; }
+    .row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 24px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+    .row b { font-family: var(--font-mono); color: var(--accent-dark); }
+    .row span { color: var(--muted); }
+
+    .photo-card {
+      overflow: hidden;
+      min-height: 420px;
+      position: relative;
+    }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(.96);
+    }
+    .photo-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(14px);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: minmax(0, .58fr) minmax(340px, .42fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .price-main {
+      padding: 36px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .price-main p { color: rgba(255,255,255,.72); margin-top: 20px; font-size: 18px; }
+    .price-main .eyebrow { color: var(--accent); }
+
+    .ticket-list { padding: 18px; }
+    .ticket-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px;
+      border-radius: 16px;
+      font-weight: 800;
+    }
+    .ticket-line:nth-child(odd) { background: var(--surface-soft); }
+    .ticket-line span:last-child { font-family: var(--font-mono); color: var(--accent-dark); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .42fr) minmax(0, .58fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 30px; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours-line.today {
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    .contact-links { display: grid; gap: 12px; margin-top: 28px; }
+    .contact-links a {
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: var(--surface-soft);
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s;
+    }
+    .contact-links a:hover { transform: translateY(-1px); background: #e9f2e0; }
+    .contact-links a:active { transform: translateY(1px); }
+    #map { height: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item { padding: 26px; }
+    .faq-item p { margin-top: 14px; }
+
+    .final {
+      margin-top: 28px;
+      padding: 84px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, .74fr) auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .final p { color: rgba(255,255,255,.72); }
+    .final .eyebrow { color: var(--accent); }
+    .final .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0;
+      background: #0f120e;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .footer-main strong { color: #fff; }
+    .webflex-disclaimer {
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.58);
+    }
+    .webflex-disclaimer a { color: #fff; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero-grid, .section-head, .split, .price-band, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .hero-panel { min-height: 360px; }
+      .feature-grid, .stats, .faq { grid-template-columns: 1fr; }
+      section { padding: 58px 0; }
+      .row { grid-template-columns: 1fr; gap: 6px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 42px; }
+      .wordmark { font-size: 17px; }
+      .hero-actions, .cta-actions { display: grid; }
+      .btn { width: 100%; }
+      .stat, .feature-card, .lagoon, .price-main, .contact-card, .faq-item { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="wordmark" href="#top">Koupaliště biotop Brno-jih</a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#areal">Areál</a>
+        <a href="#voda">Voda</a>
+        <a href="#vstupenky">Vstupenky</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420778726953">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Brno-jih · K Lávce 749/13</p>
+          <h1>Přírodní koupání u Svratky</h1>
+          <p class="lead">Veřejný koupací biotop s lagunou, dětským brouzdalištěm, občerstvením a zázemím pro letní den bez chemického čištění vody.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#vstupenky">Vstupenky bez čekání</a>
+            <a class="btn btn-secondary" href="#kontakt">Jak k nám</a>
+          </div>
+        </div>
+        <div class="hero-panel" aria-label="Abstraktní laguna biotopu">
+          <div class="floating-note">Voda 22 °C · areál přes 20 000 m²</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="areal">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Areál</p>
+            <h2>Klidné místo mezi ulicemi Kšírova, Hněvkovského a Sokolova.</h2>
+          </div>
+          <p>Koupaliště leží u řeky Svratky na adrese K Lávce. V areálu najdete vodní lagunu, brouzdaliště, šatny, toalety, venkovní sprchy i občerstvení se zahrádkou.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="surface feature-card">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 29c5-6 11-6 16 0s11 6 16 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M8 18c5-6 11-6 16 0s11 6 16 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <div><h3>Laguna pro plavání</h3><p>Plavecká část má 780 m² a hloubku 3 metry, neplavecká část 480 m² s hloubkou 1 až 1,5 metru.</p></div>
+          </article>
+          <article class="surface feature-card">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="16" cy="18" r="6" stroke="currentColor" stroke-width="4"/><path d="M7 38c3-8 15-8 18 0M29 15h10M34 10v10M30 31h10M35 26v10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <div><h3>Dětské brouzdaliště</h3><p>Brouzdaliště o ploše 200 m² doplňují herní prvky, klouzačka, houpačka, hříbek a pískoviště.</p></div>
+          </article>
+          <article class="surface feature-card">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M12 38V16l12-7 12 7v22" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M18 38V26h12v12M9 38h30" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <div><h3>Zázemí v areálu</h3><p>Budova s občerstvením, dvě budovy toalet, šatny s uzamykatelnými skřínkami a plně vybavená ošetřovna.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="voda">
+      <div class="wrap split">
+        <article class="surface lagoon">
+          <p class="eyebrow">Koupání bez chemie</p>
+          <h2>Čistotu drží rostliny a mikroorganismy.</h2>
+          <div class="rows">
+            <div class="row"><b>Princip</b><span>Voda v biokoupališti není ošetřována chemickými čističi.</span></div>
+            <div class="row"><b>Filtrace</b><span>Čerpadla ženou vodu do zóny, kde ji čistí kořenové systémy vodních rostlin.</span></div>
+            <div class="row"><b>Pro koho</b><span>Přírodní prostředí je šetrné pro alergiky i nejmenší plavce.</span></div>
+            <div class="row"><b>Okruh</b><span>Vodní laguna tvoří uzavřený okruh vody v rámci areálu.</span></div>
+          </div>
+        </article>
+        <aside class="surface photo-card">
+          <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          <div class="photo-caption">Světlý, klidný rytmus areálu pro den venku.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Čísla areálu</p>
+            <h2>Přehled bez hledání.</h2>
+          </div>
+          <p>Údaje vycházejí z veřejných informací areálu a kontaktních dat profilu.</p>
+        </div>
+        <div class="stats">
+          <div class="surface stat"><strong>20 000+</strong><span>m² celkové plochy areálu</span></div>
+          <div class="surface stat"><strong>86</strong><span>parkovacích míst u areálu</span></div>
+          <div class="surface stat"><strong>4,4</strong><span>hodnocení návštěvníků</span></div>
+          <div class="surface stat"><strong>1 407</strong><span>veřejných recenzí</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vstupenky">
+      <div class="wrap price-band">
+        <div class="price-main">
+          <p class="eyebrow">Vstup a sezóna</p>
+          <h2>Bez čekání u pokladny.</h2>
+          <p>Online vstupenky pomůžou vyřídit příchod rychleji. Aktuální cenu a provozní režim si ověřte přímo u koupaliště.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://biotopbrno.cz/">Otevřít vstupenky</a>
+            <a class="btn btn-secondary" href="tel:+420778726953">Zeptat se telefonicky</a>
+          </div>
+        </div>
+        <aside class="surface ticket-list" aria-label="Provozní části areálu">
+          <div class="ticket-line"><span>Biotop koupaliště</span><span>léto</span></div>
+          <div class="ticket-line"><span>Jižanský dvorek</span><span>nonstop</span></div>
+          <div class="ticket-line"><span>Sport zóna</span><span>březen až říjen</span></div>
+          <div class="ticket-line"><span>Kulturní dům</span><span>na objednávku</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Najdete nás na K Lávce.</h2>
+          </div>
+          <p>Pro informace k provozu, vstupenkám nebo objednávce parníku volejte přímo na kontaktní číslo areálu.</p>
+        </div>
+        <div class="contact-grid">
+          <aside class="surface contact-card">
+            <h3>Koupaliště biotop Brno-jih</h3>
+            <div class="rows">
+              <div class="hours-line today"><span>Dnes</span><span>otevřeno dle sezóny</span></div>
+              <div class="hours-line"><span>Adresa</span><span>K Lávce 749/13</span></div>
+              <div class="hours-line"><span>Město</span><span>619 00 Brno-jih</span></div>
+            </div>
+            <div class="contact-links">
+              <a href="tel:+420778726953">+420 778 726 953</a>
+              <a href="mailto:info@biotopbrno.cz">info@biotopbrno.cz</a>
+              <a href="https://biotopbrno.cz/">biotopbrno.cz</a>
+            </div>
+          </aside>
+          <div>
+            <div id="map" aria-label="Mapa umístění koupaliště"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Než vyrazíte</p>
+            <h2>Krátké odpovědi.</h2>
+          </div>
+          <p>Praktické informace k vodě, dětem, zázemí a parkování.</p>
+        </div>
+        <div class="faq">
+          <article class="surface faq-item"><h3>Je voda chemicky ošetřená?</h3><p>Ne. Čištění probíhá biologicky přes vodní rostliny, kořenové systémy a přírodní ekosystémy ve filtračních lagunách.</p></article>
+          <article class="surface faq-item"><h3>Je areál vhodný pro děti?</h3><p>Ano. Součástí je brouzdaliště o ploše 200 m², herní prvky a pískoviště pro nejmladší návštěvníky.</p></article>
+          <article class="surface faq-item"><h3>Kde zaparkuji?</h3><p>Parkoviště u areálu nabízí kapacitu 86 míst.</p></article>
+          <article class="surface faq-item"><h3>Je v areálu občerstvení?</h3><p>Ano. Zázemí poskytuje budova s občerstvením, teplými jídly, točenými nápoji a vlastní zahrádkou.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow">Letní den v Brně-jihu</p>
+          <h2>Vezměte plavky a přijďte.</h2>
+          <p>Koupání bez chemie, brouzdaliště pro děti, občerstvení a klidné místo u Svratky.</p>
+        </div>
+        <div class="hero-actions cta-actions">
+          <a class="btn btn-primary" href="tel:+420778726953">Zavolat</a>
+          <a class="btn btn-secondary" href="#kontakt">Zobrazit mapu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Koupaliště biotop Brno-jih</strong>
+        <span>K Lávce 749/13 · 619 00 Brno-jih · +420 778 726 953</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/cp8yzuf">webflex.cz/delete/cp8yzuf</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.620196699999997, 49.1694331],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#8CC63F' })
+      .setLngLat([16.620196699999997, 49.1694331])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
