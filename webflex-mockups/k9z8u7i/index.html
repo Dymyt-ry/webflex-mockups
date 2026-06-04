@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klimahome - klimatizace a tepelná čerpadla</title>
+  <meta name="description" content="Klimatizace, tepelná čerpadla a fotovoltaika pro domácnosti, firmy i průmyslové objekty v Plzni.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfa;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --ink: #101510;
+      --muted: #5d675d;
+      --line: rgba(32, 64, 32, 0.12);
+      --accent: #204020;
+      --accent-soft: #e7efe7;
+      --shadow: 0 28px 90px rgba(20, 35, 22, 0.10);
+      --shadow-soft: 0 18px 60px rgba(20, 35, 22, 0.08);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(32,64,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32,64,32,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 70% 10%, rgba(32,64,32,.12), transparent 34rem);
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,252,250,.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .links a, .btn, .service-row, .faq summary {
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .links a:hover { color: var(--ink); }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); background: transparent; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .72fr);
+      gap: 56px;
+      align-items: center;
+      padding: 72px 0 64px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--ink);
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .95;
+      letter-spacing: 0;
+      max-width: 720px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 64px);
+      line-height: 1;
+      max-width: 760px;
+    }
+    h3 {
+      font-size: 24px;
+      line-height: 1.12;
+      font-weight: 700;
+    }
+    p { margin: 0; color: var(--muted); }
+    .lead {
+      max-width: 650px;
+      font-size: clamp(19px, 2vw, 25px);
+      line-height: 1.28;
+      margin: 28px 0 34px;
+      color: #334033;
+    }
+
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+    .serial {
+      margin-top: 34px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .climate-panel {
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 70% 24%, rgba(255,255,255,.95), transparent 16rem),
+        linear-gradient(145deg, #ffffff 0%, #eef4ee 54%, #dce8dc 100%);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .climate-panel::before {
+      content: "";
+      position: absolute;
+      inset: 8%;
+      border-radius: 50%;
+      border: 1px solid rgba(32,64,32,.12);
+      box-shadow: inset 0 0 0 42px rgba(255,255,255,.28), 0 0 90px rgba(32,64,32,.12);
+    }
+    .unit {
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      top: 24%;
+      height: 112px;
+      background: rgba(255,255,255,.88);
+      border-radius: 22px;
+      box-shadow: 0 24px 80px rgba(32,64,32,.16);
+    }
+    .unit::after {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 24px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(32,64,32,.72), rgba(32,64,32,.08));
+    }
+    .dial {
+      position: absolute;
+      right: 12%;
+      bottom: 13%;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 700;
+      box-shadow: 0 20px 70px rgba(32,64,32,.28);
+    }
+    .panel-note {
+      position: absolute;
+      left: 10%;
+      bottom: 12%;
+      width: 190px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-soft);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    section { padding: 92px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 430px);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 42px;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .card {
+      min-height: 100%;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255,255,255,.72);
+    }
+    .card .num, .stat .num {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 26px;
+    }
+    .card p { margin-top: 16px; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .stat {
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(38px, 4vw, 58px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .quote {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 360px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 38px;
+      box-shadow: 0 30px 90px rgba(32,64,32,.18);
+    }
+    .quote p { color: rgba(255,255,255,.86); font-size: 26px; line-height: 1.24; }
+    .quote span { font-family: var(--font-mono); color: rgba(255,255,255,.72); }
+
+    .service-list {
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.74);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 80px minmax(0, 1fr) minmax(240px, .45fr);
+      gap: 28px;
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row:hover { background: #fff; transform: translateY(-1px); }
+    .service-row .code { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      counter-reset: step;
+    }
+    .step {
+      background: rgba(255,255,255,.76);
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+    .step::before {
+      counter-increment: step;
+      content: "0" counter(step);
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      margin-bottom: 42px;
+      font-weight: 700;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--surface-strong);
+      border-radius: var(--radius);
+      padding: 34px;
+      box-shadow: var(--shadow);
+    }
+    .contact-lines {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .contact-lines a, .contact-lines div {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-lines span:first-child { color: var(--muted); }
+    .contact-lines span:last-child {
+      font-family: var(--font-mono);
+      color: var(--ink);
+      text-align: right;
+    }
+    #map {
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    details {
+      background: rgba(255,255,255,.78);
+      border-radius: 22px;
+      padding: 24px 26px;
+      box-shadow: var(--shadow-soft);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 16px; }
+
+    .final {
+      padding: 74px 0 96px;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding: 44px;
+      border-radius: 34px;
+      background: #111811;
+      color: #fff;
+      box-shadow: 0 34px 110px rgba(17,24,17,.22);
+    }
+    .cta h2 { color: #fff; }
+    .cta p { color: rgba(255,255,255,.72); margin-top: 16px; max-width: 620px; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .disclaimer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero, .section-head, .trust, .contact-grid, .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 46px; }
+      .climate-panel { min-width: 0; }
+      .services, .process, .faq { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .nav { height: 68px; }
+      .logo img { max-height: 34px; }
+      section { padding: 66px 0; }
+      .hero { gap: 34px; }
+      .stats { grid-template-columns: 1fr; }
+      .card, .quote, .contact-card, .cta { padding: 24px; border-radius: 22px; }
+      .quote p { font-size: 21px; }
+      .dial { width: 124px; height: 124px; font-size: 28px; }
+      .panel-note { width: 160px; font-size: 11px; }
+      .btn { width: 100%; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Klimahome">
+        <img src="https://www.klimahome.cz/wp-content/themes/bootstrap-basic4-child/img/logo.svg" alt="Klimahome - klimatizace a tepelná čerpadla">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420606872526">+420 606 872 526</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <div class="eyebrow">Plzeň · klimatizace · tepelná čerpadla</div>
+        <h1>Klima bez kompromisů</h1>
+        <p class="lead">Instalujeme klimatizace, tepelná čerpadla a fotovoltaiku pro domácnosti, firemní prostory i průmyslové objekty.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#kontakt">Poptat řešení</a>
+          <a class="btn secondary" href="#sluzby">Prohlédnout služby</a>
+        </div>
+        <div class="serial">Pod Radyní 1772 · 326 00 Plzeň-Černice</div>
+      </div>
+      <div class="climate-panel" aria-label="Ilustrace řízení domácího klimatu">
+        <div class="unit"></div>
+        <div class="panel-note">komfort · chlazení · vytápění · energie</div>
+        <div class="dial">22°</div>
+      </div>
+    </div>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Co zajišťujeme</div>
+            <h2>Řešení pro celý rok</h2>
+          </div>
+          <p>Výběr zařízení, odborná montáž a konzultace tak, aby řešení dávalo smysl pro konkrétní dům, provoz i rozpočet.</p>
+        </div>
+        <div class="services">
+          <article class="card">
+            <div class="num">01</div>
+            <h3>Klimatizace</h3>
+            <p>Perfektní klima pro domácnost, firemní prostory i průmyslové objekty s výběrem z více značek.</p>
+          </article>
+          <article class="card">
+            <div class="num">02</div>
+            <h3>Tepelná čerpadla</h3>
+            <p>Efektivní čerpadla od prověřených výrobců, dodaná a servisovaná odborníky s praxí.</p>
+          </article>
+          <article class="card">
+            <div class="num">03</div>
+            <h3>Fotovoltaika</h3>
+            <p>Kvalitní montáž fotovoltaických systémů a odborná konzultace k návratnosti i vhodnému zapojení.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust">
+        <div class="quote">
+          <p>„Naším cílem je najít optimální řešení, které vám zajistí komfort a pohodu, a pak ho s maximální péčí zrealizujeme.“</p>
+          <span>Jakub Hostovský · majitel</span>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="num">Google</div>
+            <strong>4,7/5</strong>
+            <p>Hodnocení podle strukturovaných dat profilu.</p>
+          </div>
+          <div class="stat">
+            <div class="num">Recenze</div>
+            <strong>51</strong>
+            <p>Veřejná zákaznická hodnocení.</p>
+          </div>
+          <div class="stat">
+            <div class="num">Obor</div>
+            <strong>3</strong>
+            <p>Klimatizace, tepelná čerpadla a fotovoltaika.</p>
+          </div>
+          <div class="stat">
+            <div class="num">Lokalita</div>
+            <strong>Plzeň</strong>
+            <p>Zázemí v části Plzeň 8-Černice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Výběr podle situace</div>
+            <h2>Technika má sloužit prostoru</h2>
+          </div>
+          <p>Zákazník má vždy konečné slovo. Doporučení vychází z odborných znalostí, typu objektu a očekávaného komfortu.</p>
+        </div>
+        <div class="service-list">
+          <div class="service-row">
+            <div class="code">Dům</div>
+            <h3>Komfortní klima v každém ročním období</h3>
+            <p>Chlazení, vytápění a výroba energie v jednom promyšleném řešení.</p>
+          </div>
+          <div class="service-row">
+            <div class="code">Firma</div>
+            <h3>Stabilní prostředí pro práci i provoz</h3>
+            <p>Klimatizace pro kanceláře, prodejny a firemní prostory.</p>
+          </div>
+          <div class="service-row">
+            <div class="code">Objekt</div>
+            <h3>Výkon pro náročnější využití</h3>
+            <p>Řešení pro průmyslové objekty a větší technické požadavky.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Jak spolupráce probíhá</div>
+            <h2>Od poptávky k příjemnému klimatu</h2>
+          </div>
+          <p>Jednoduchý postup drží rozhodování přehledné: nejdřív potřeby, potom výběr technologie, montáž a následná péče.</p>
+        </div>
+        <div class="process">
+          <article class="step">
+            <h3>Poptávka</h3>
+            <p>Popíšete prostor, požadovaný komfort a typ řešení.</p>
+          </article>
+          <article class="step">
+            <h3>Doporučení</h3>
+            <p>Klimahome navrhne vhodné zařízení podle odborných znalostí.</p>
+          </article>
+          <article class="step">
+            <h3>Montáž</h3>
+            <p>Realizace proběhne s důrazem na pečlivé provedení.</p>
+          </article>
+          <article class="step">
+            <h3>Péče</h3>
+            <p>Dodané technologie jsou servisované odborníky v oboru.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než se ozvete</h2>
+          </div>
+          <p>Stručné odpovědi k nejběžnějším situacím při výběru klimatizace, čerpadla nebo fotovoltaiky.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Děláte jen domácnosti?</summary>
+            <p>Ne. Klimahome uvádí řešení pro domácnost, firemní prostory i průmyslové objekty.</p>
+          </details>
+          <details>
+            <summary>Pomůžete s výběrem značky?</summary>
+            <p>Ano. U klimatizací pracují s výběrem z více značek a doporučují vhodné řešení podle prostoru.</p>
+          </details>
+          <details>
+            <summary>Zajišťujete také tepelná čerpadla?</summary>
+            <p>Ano. Dodávají efektivní tepelná čerpadla od prověřených výrobců včetně odborného servisu.</p>
+          </details>
+          <details>
+            <summary>Řešíte fotovoltaiku?</summary>
+            <p>Ano. Součástí služeb je montáž fotovoltaických systémů a odborná konzultace.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Domluvte si konzultaci</h2>
+          </div>
+          <p>Pošlete poptávku nebo zavolejte. Základna Klimahome je v Plzni-Černicích na adrese Pod Radyní 1772.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Klimahome - klimatizace a tepelná čerpadla</h3>
+            <div class="contact-lines">
+              <a href="tel:+420606872526"><span>Telefon</span><span>+420 606 872 526</span></a>
+              <a href="mailto:info@klimahome.cz"><span>E-mail</span><span>info@klimahome.cz</span></a>
+              <div><span>Adresa</span><span>Pod Radyní 1772, 326 00 Plzeň</span></div>
+              <a href="https://www.klimahome.cz/kontakt/"><span>Web</span><span>klimahome.cz</span></a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa sídla Klimahome v Plzni"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <div class="eyebrow">Klimahome Plzeň</div>
+          <h2>Začněte vhodným řešením</h2>
+          <p>Klimatizace, tepelné čerpadlo nebo fotovoltaika pro prostor, kde se chcete cítit příjemně v každém ročním období.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420606872526">Zavolat</a>
+          <a class="btn secondary" href="mailto:info@klimahome.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      <span>Nezávazný prezentační návrh připravilo studio Webflex pro interní posouzení firmy Klimahome.</span>
+      <a href="https://webflex.cz/delete/k9z8u7i">Odstranit tuto stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.4397158, 49.684942],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#204020' })
+      .setLngLat([13.4397158, 49.684942])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
