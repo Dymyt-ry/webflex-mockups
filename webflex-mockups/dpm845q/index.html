@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Výstaviště Praha - Bazén</title>
+  <meta name="description" content="Plavecký bazén Na Výstavišti v Praze 7: šest drah, vyhřívaná voda, finská sauna, biosauna, otevírací doba a kontakt na recepci.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfb;
+      --surface: rgba(255,255,255,0.82);
+      --surface-strong: #ffffff;
+      --ink: #12201f;
+      --muted: #657170;
+      --soft: #edf2f0;
+      --accent: #004040;
+      --accent-2: #fd1d11;
+      --line: rgba(0,64,64,0.11);
+      --shadow: 0 34px 90px rgba(0,64,64,0.10);
+      --shadow-soft: 0 18px 60px rgba(18,32,31,0.08);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.7,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,64,64,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,64,64,0.018) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(0,64,64,0.08), transparent 28rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,252,251,0.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .logo img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(18,32,31,0.78);
+    }
+    .nav-links a,
+    .btn,
+    .maplibregl-ctrl button {
+      transition: transform 190ms var(--ease), border-color 190ms var(--ease), background 190ms var(--ease), color 190ms var(--ease), box-shadow 190ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-1px); }
+    .nav-links a:focus-visible,
+    .btn:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+      border-radius: 10px;
+    }
+    .btn:active,
+    .nav-links a:active { transform: translateY(1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 16px 32px rgba(0,64,64,0.18);
+    }
+    .btn-primary:hover { background: #005454; transform: translateY(-1px); }
+    .btn-outline {
+      color: var(--ink);
+      border-color: currentColor;
+      background: transparent;
+    }
+    .btn-outline:hover { background: rgba(0,64,64,0.06); transform: translateY(-1px); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 52px 0 76px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(420px, 44%);
+      align-items: center;
+      gap: 54px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 20px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-2);
+    }
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      max-width: 650px;
+      margin: 26px 0 0;
+      font-size: clamp(18px, 2vw, 23px);
+      color: var(--muted);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 34px;
+    }
+    .hero-note {
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .photo-frame {
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.04);
+    }
+    .floating-card {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(310px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
+    }
+    .floating-card strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .floating-card span { color: var(--muted); font-size: 14px; }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, .7fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.8vw, 64px);
+      line-height: .98;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .info-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .info-card,
+    .service-panel,
+    .price-card,
+    .contact-card,
+    .notice,
+    details {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+    }
+    .info-card {
+      padding: 22px;
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .big {
+      display: block;
+      margin-top: 16px;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 50px);
+      line-height: .9;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .info-card p { margin: 16px 0 0; color: var(--muted); }
+
+    .service-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(0, 1fr);
+      gap: 34px;
+      padding: 28px;
+      align-items: center;
+    }
+    .service-panel + .service-panel { margin-top: 18px; }
+    .service-media {
+      aspect-ratio: 16 / 10;
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+    .service-media img { width: 100%; height: 100%; object-fit: cover; }
+    .row-list {
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .row-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .row-list strong { color: var(--ink); }
+    .mono { font-family: var(--font-mono); }
+
+    .notice {
+      padding: 26px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 26px;
+      align-items: center;
+      background: #f7efec;
+      color: #341a16;
+      box-shadow: 0 24px 70px rgba(253,29,17,0.08);
+    }
+    .notice strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 1;
+      hyphens: none;
+    }
+    .notice p { margin: 8px 0 0; color: rgba(52,26,22,.74); }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-card {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 280px;
+    }
+    .price {
+      font-family: var(--font-display);
+      font-size: clamp(52px, 7vw, 86px);
+      line-height: .9;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .price small { font-family: var(--font-mono); font-size: 18px; color: var(--muted); }
+    .rules {
+      display: grid;
+      gap: 12px;
+    }
+    .rule {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 18px;
+    }
+    .rule span:first-child { font-family: var(--font-mono); color: var(--accent); }
+    .rule span:last-child { color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .stats .info-card { min-height: 210px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .gallery img {
+      width: 100%;
+      height: 310px;
+      object-fit: cover;
+    }
+    .gallery figcaption {
+      padding: 16px 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .faq-list {
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      padding: 0 22px;
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 21px 0;
+      font-weight: 800;
+    }
+    details p {
+      margin: 0;
+      padding: 0 0 22px;
+      color: var(--muted);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 28px; }
+    .hours {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+    .hours td {
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .hours td:last-child { text-align: right; color: var(--accent); font-weight: 700; }
+    .today td {
+      color: var(--accent-2);
+    }
+    #map {
+      height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .final-cta {
+      padding: 78px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+    .final-cta .shell {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final-cta h2 { color: #fff; max-width: 800px; }
+    .final-cta p { margin: 14px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .final-cta .btn-primary { background: #fff; color: var(--accent); box-shadow: none; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.48); }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.12); }
+    .cta-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+    footer {
+      padding: 26px 0;
+      color: var(--muted);
+      font-size: 13px;
+      background: #f3f6f4;
+    }
+    footer .shell {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid,
+      .service-panel,
+      .pricing-grid,
+      .gallery,
+      .contact-grid,
+      .final-cta .shell,
+      .section-head {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; }
+      .photo-frame { order: -1; }
+      .info-strip,
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .cta-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      section { padding: 58px 0; }
+      .nav { min-height: 68px; }
+      .hero { padding: 28px 0 54px; }
+      .hero-grid { gap: 30px; }
+      h1 { font-size: clamp(40px, 13vw, 58px); }
+      h2 { font-size: clamp(31px, 10vw, 46px); }
+      .info-strip,
+      .stats { grid-template-columns: 1fr; }
+      .notice { grid-template-columns: 1fr; }
+      .rule { grid-template-columns: 1fr; gap: 4px; }
+      .service-panel,
+      .price-card,
+      .contact-card { padding: 20px; }
+      .hero-actions .btn,
+      .cta-actions .btn { width: 100%; }
+      .gallery img { height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="logo" href="#top" aria-label="Výstaviště Praha - Bazén">
+        <img src="https://navystavisti.cz/media/images/praha_logo-300x300.height-60.png" alt="Výstaviště Praha - Bazén">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#provoz">Provoz</a>
+        <a href="#bazeny">Bazén a sauny</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420778727978">Zavolat recepci</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">Praha 7 · plavecký bazén</p>
+          <h1>Skočte do vody</h1>
+          <p class="lead">Vyhřívaný bazén Na Výstavišti, šest plaveckých drah, výhled na pyramidu a park. Po plavání můžete pokračovat do finské sauny nebo biosauny.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#kontakt">Naplánovat návštěvu</a>
+            <a class="btn btn-outline" href="#cenik">Zobrazit vstupné</a>
+          </div>
+          <p class="hero-note">Poslední vstup je hodinu před koncem otevírací doby.</p>
+        </div>
+        <div class="photo-frame" aria-label="Sportovní interiér">
+          <img src="https://images.pexels.com/photos/4946389/pexels-photo-4946389.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Interior of empty light spacious basketball court with wooden floor in modern sports complex">
+          <div class="floating-card">
+            <strong>26 °C voda · 28 °C vzduch</strong>
+            <span>Příjemná teplota pro kondiční plavání i odpočinek během celého roku.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Dnes v provozu</h2>
+          <p>Rozpis drah a saun se může měnit podle aktuální obsazenosti. Recepce vám potvrdí stav na telefonu.</p>
+        </div>
+        <div class="info-strip">
+          <article class="info-card">
+            <span class="kicker">Po-Pá</span>
+            <span class="big">07:00-21:30</span>
+            <p>Vystoupení z vody ve 21:00.</p>
+          </article>
+          <article class="info-card">
+            <span class="kicker">So-Ne</span>
+            <span class="big">10:00-20:00</span>
+            <p>Vystoupení z vody v 19:30.</p>
+          </article>
+          <article class="info-card">
+            <span class="kicker">Vstup</span>
+            <span class="big">60 min.</span>
+            <p>Čipový náramek dostanete při platbě na recepci.</p>
+          </article>
+          <article class="info-card">
+            <span class="kicker">Parkování</span>
+            <span class="big">P2</span>
+            <p>Kousek naproti hotelu Expo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="notice">
+          <div>
+            <strong>Plánovaná údržba</strong>
+            <p>V termínu 30. 6. 2026-12. 7. 2026 bude bazén mimo provoz. Otevřeno bude opět od 13. 7. 2026.</p>
+          </div>
+          <a class="btn btn-outline" href="tel:+420778727978">Ověřit provoz</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="bazeny">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Bazén a sauny</h2>
+          <p>Přijďte na kondiční plavání, odpočinek v teplé vodě nebo saunování bez rezervace během otevírací doby.</p>
+        </div>
+        <article class="service-panel">
+          <div class="service-media">
+            <img src="https://images.pexels.com/photos/11036674/pexels-photo-11036674.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious and well-equipped Pilates studio featuring reformers and other fitness equipment.">
+          </div>
+          <div>
+            <p class="eyebrow">Šest plaveckých drah</p>
+            <h2>Voda pro trénink i klid</h2>
+            <ul class="row-list">
+              <li><strong>Teplota vody</strong><span class="mono">26 °C</span></li>
+              <li><strong>Teplota vzduchu</strong><span class="mono">28 °C</span></li>
+              <li><strong>Výhled</strong><span>Pyramida a okolní park</span></li>
+            </ul>
+          </div>
+        </article>
+        <article class="service-panel">
+          <div class="service-media">
+            <img src="https://images.pexels.com/photos/6739958/pexels-photo-6739958.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern gym with equipment, punching bags, and open space for workouts.">
+          </div>
+          <div>
+            <p class="eyebrow">Finská sauna a biosauna</p>
+            <h2>Teplo po plavání</h2>
+            <ul class="row-list">
+              <li><strong>Finská sauna</strong><span class="mono">80-90 °C · 10-20 %</span></li>
+              <li><strong>Biosauna</strong><span class="mono">50-60 °C · 30-60 %</span></li>
+              <li><strong>Kapacita</strong><span class="mono">12 osob</span></li>
+              <li><strong>Prostěradlo</strong><span>Zapůjčení zdarma</span></li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Ceník a platba</h2>
+          <p>Jednorázové vstupné zaplatíte na pokladně hotově nebo kartou. Záloha za čipový náramek se nevybírá.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-card">
+            <div>
+              <span class="kicker">Jednorázový vstup</span>
+              <div class="price">155 Kč <small>/ 60 min.</small></div>
+            </div>
+            <a class="btn btn-primary" href="tel:+420778727978">Zeptat se recepce</a>
+          </article>
+          <article class="price-card">
+            <div class="rules">
+              <div class="rule"><span>Platba</span><span>Na pokladně lze platit hotově i kartou.</span></div>
+              <div class="rule"><span>Náramek</span><span>Čipový náramek mějte během návštěvy stále u sebe.</span></div>
+              <div class="rule"><span>Ztráta</span><span>Při ztrátě náramku je účtován poplatek 500 Kč.</span></div>
+              <div class="rule"><span>Vstup</span><span>Poslední vstup je hodinu před koncem otevírací doby.</span></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <h2>Na Výstavišti</h2>
+          <p>Bazén je hned za vjezdem do areálu, v docházkové vzdálenosti od parkoviště P2 a okolního parku.</p>
+        </div>
+        <div class="stats">
+          <article class="info-card">
+            <span class="kicker">Hodnocení</span>
+            <span class="big">4,0</span>
+            <p>Podle 503 recenzí.</p>
+          </article>
+          <article class="info-card">
+            <span class="kicker">Drahy</span>
+            <span class="big">6</span>
+            <p>Pro kondiční plavání i pravidelný trénink.</p>
+          </article>
+          <article class="info-card">
+            <span class="kicker">Sauny</span>
+            <span class="big">2</span>
+            <p>Suchá finská sauna a biosauna společné pro ženy i muže.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/11036670/pexels-photo-11036670.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright pilates studio with reformer machines and natural light ambiance.">
+            <figcaption>Vzdušný sportovní prostor pro pravidelný pohyb.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/8611244/pexels-photo-8611244.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A clean and empty boxing gym with punching bags and a ring, ready for training.">
+            <figcaption>Klidné zázemí areálu po celý týden.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <h2>Časté dotazy</h2>
+          <p>Praktické informace před cestou na recepci bazénu.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Musím si saunu rezervovat?</summary>
+            <p>Rezervace není potřeba. Stačí přijít během otevírací doby, kterou si můžete ověřit v rozpisu nebo na recepci.</p>
+          </details>
+          <details>
+            <summary>Je sauna vhodná i pro děti a seniory?</summary>
+            <p>Biosauna má příjemnější prostředí s teplotou 50-60 °C a vlhkostí 30-60 %, proto ji mohou využít i děti a senioři.</p>
+          </details>
+          <details>
+            <summary>Kde bazén najdu?</summary>
+            <p>Bazén je hned za vjezdem do areálu Výstaviště. Zaparkovat můžete na parkovišti P2 naproti hotelu Expo.</p>
+          </details>
+          <details>
+            <summary>Kdy je poslední vstup?</summary>
+            <p>Poslední vstup je hodinu před koncem otevírací doby. Ve všední dny se z vody vystupuje ve 21:00, o víkendu v 19:30.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Kontakt a cesta</h2>
+          <p>Recepce bazénu vám potvrdí aktuální provoz, obsazenost drah i informace k saunám.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="contact-card">
+            <p class="eyebrow">Recepce bazénu</p>
+            <h2>Výstaviště Praha - Bazén</h2>
+            <ul class="row-list">
+              <li><strong>Telefon</strong><a class="mono" href="tel:+420778727978">+420 778 727 978</a></li>
+              <li><strong>E-mail</strong><a href="mailto:jana.dvorakova@navystavisti.cz">jana.dvorakova@navystavisti.cz</a></li>
+              <li><strong>Adresa</strong><span>Výstaviště, 170 00 Praha 7-Bubeneč</span></li>
+            </ul>
+            <table class="hours" aria-label="Otevírací doba">
+              <tr class="today"><td>Po-Pá</td><td>07:00-21:30</td></tr>
+              <tr><td>So-Ne</td><td>10:00-20:00</td></tr>
+              <tr><td>Vystoupení z vody</td><td>21:00 / 19:30</td></tr>
+            </table>
+          </article>
+          <div id="map" aria-label="Mapa Výstaviště Praha - Bazén"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="shell">
+        <div>
+          <h2>Přijďte si zaplavat</h2>
+          <p>Ověřte si provoz recepce a vydejte se do bazénu hned za vjezdem do areálu Výstaviště.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="tel:+420778727978">Zavolat recepci</a>
+          <a class="btn btn-outline" href="mailto:jana.dvorakova@navystavisti.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <span>Neoficiální prezentační stránka vytvořená studiem Webflex pro účely obchodní komunikace.</span>
+      <a href="https://webflex.cz/delete/dpm845q" rel="nofollow">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.431144, 50.1085536],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004040' })
+      .setLngLat([14.431144, 50.1085536])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
