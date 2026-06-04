@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Animáčci plavecká škola</title>
+  <meta name="description" content="Rodinná plavecká škola v Brně zaměřená na prožitek, zábavu a bezpečnost u vody.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #1b1714;
+      --muted: #6d625a;
+      --soft: #ece8e4;
+      --accent: #602000;
+      --accent-2: #2f7468;
+      --water: #d8ecef;
+      --shadow: 0 26px 80px rgba(55, 42, 32, .11);
+      --shadow-soft: 0 18px 52px rgba(55, 42, 32, .08);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(27,23,20,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(27,23,20,.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(47,116,104,.18), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); font-size: 18px; }
+    h1, h2, h3 { margin: 0; letter-spacing: 0; hyphens: none; }
+    h1, h2 { font-family: var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; line-height: .94; }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.7vw, 68px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, color .2s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: #421600; }
+    .btn.secondary { border: 1px solid currentColor; color: var(--ink); }
+    .btn.secondary:hover { background: rgba(96,32,0,.08); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.76);
+      border-bottom: 1px solid rgba(27,23,20,.06);
+    }
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { max-height: 44px; width: auto; object-fit: contain; }
+    .links { display: flex; align-items: center; gap: 26px; font-weight: 700; color: #3c332d; }
+    .links a { transition: color .2s; }
+    .links a:hover { color: var(--accent); }
+
+    .hero { padding: 78px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      align-items: center;
+      gap: 52px;
+    }
+    .hero-copy { display: grid; gap: 28px; }
+    .hero-copy p { max-width: 610px; font-size: 22px; color: #51463e; }
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+    .hero-card {
+      position: relative;
+      min-height: 520px;
+      aspect-ratio: 4 / 3;
+      border-radius: 40px;
+      background: linear-gradient(140deg, #fff 0%, #eef7f7 48%, #f4e8df 100%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 36px;
+      display: grid;
+      align-content: end;
+    }
+    .bubble {
+      position: absolute;
+      border-radius: 999px;
+      background: rgba(47,116,104,.16);
+      filter: blur(.2px);
+    }
+    .b1 { width: 210px; height: 210px; top: 48px; left: 52px; }
+    .b2 { width: 150px; height: 150px; right: 58px; top: 104px; background: rgba(96,32,0,.12); }
+    .b3 { width: 310px; height: 310px; right: -82px; bottom: -68px; background: rgba(216,236,239,.9); }
+    .wave {
+      position: absolute;
+      inset: 90px 28px auto;
+      height: 180px;
+      opacity: .76;
+    }
+    .mini-panel {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: end;
+      padding: 26px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+    }
+    .mini-panel strong { display: block; font-size: 28px; line-height: 1.05; }
+    .mini-panel span { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+    .rating { font-family: var(--font-mono); font-size: 38px; font-weight: 700; color: var(--accent); }
+
+    section { padding: 76px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(280px, .45fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px 1fr minmax(180px, .34fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px 32px;
+      border-bottom: 1px solid rgba(27,23,20,.07);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .service-row p { font-size: 16px; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat, .note, .step, .faq-item {
+      background: var(--surface-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat { padding: 30px; min-height: 168px; display: grid; align-content: space-between; }
+    .stat strong { font-family: var(--font-mono); font-size: 46px; color: var(--accent); line-height: 1; }
+    .stat span { font-weight: 800; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .note { padding: 38px; display: grid; gap: 24px; align-content: start; }
+    .note h2 { font-size: clamp(32px, 4vw, 56px); }
+    .timeline { display: grid; gap: 14px; }
+    .step { padding: 24px; display: grid; grid-template-columns: 58px 1fr; gap: 18px; align-items: start; }
+    .step .num { width: 42px; height: 42px; border-radius: 50%; background: var(--water); display: grid; place-items: center; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .75fr) minmax(420px, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 34px;
+      border-radius: var(--radius);
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      gap: 22px;
+    }
+    .contact-line {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(27,23,20,.07);
+    }
+    .contact-line:last-child { border-bottom: 0; padding-bottom: 0; }
+    .contact-line span { font-family: var(--font-mono); font-size: 12px; color: var(--accent); text-transform: uppercase; }
+    .contact-line strong { font-size: 22px; line-height: 1.15; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 28px; display: grid; gap: 12px; }
+    .faq-item h3 { font-size: 22px; }
+
+    .cta {
+      margin: 40px auto 82px;
+      padding: 44px;
+      border-radius: 36px;
+      background: #201814;
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 28px;
+      box-shadow: var(--shadow);
+    }
+    .cta h2 { color: #fff; font-size: clamp(34px, 5vw, 70px); }
+    .cta p { color: rgba(255,255,255,.76); max-width: 620px; }
+    .cta .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .cta .btn.secondary:hover { background: rgba(255,255,255,.08); }
+
+    footer {
+      padding: 30px 0 44px;
+      color: #756a62;
+      font-size: 13px;
+    }
+    .disclaimer {
+      padding-top: 18px;
+      border-top: 1px solid rgba(27,23,20,.1);
+    }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .info-grid, .cta { grid-template-columns: 1fr; }
+      .hero-card { min-height: 420px; }
+      .trust, .faq { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .cta { padding: 32px 24px; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .nav { height: 68px; }
+      .logo img { max-height: 38px; }
+      .hero { padding-top: 46px; }
+      section { padding: 54px 0; }
+      .hero-copy p { font-size: 19px; }
+      .actions { align-items: stretch; }
+      .btn { width: 100%; }
+      .hero-card { border-radius: 28px; padding: 20px; min-height: 340px; }
+      .mini-panel { grid-template-columns: 1fr; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Animáčci plavecká škola">
+        <img src="https://www.animacci.cz/wp-content/uploads/2022/02/plavacek_text_kruh_3cm.png" alt="Animáčci plavecká škola">
+      </a>
+      <nav class="links" aria-label="Hlavní navigace">
+        <a href="#kurzy">Kurzy</a>
+        <a href="#prubeh">Průběh</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420733383831">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Brno-Královo Pole · Kociánka 93/2</span>
+          <h1>Plavání s radostí</h1>
+          <p>Rodinná plavecká škola s tradicí zaměřená na prožitek, zábavu a bezpečnost u vody. Probíhá zapisování do II. pololetí 2025/2026.</p>
+          <div class="actions">
+            <a class="btn primary" href="mailto:skola@animacci.cz">Registrace do kurzů</a>
+            <a class="btn secondary" href="#kontakt">Kde plaveme</a>
+          </div>
+        </div>
+        <div class="hero-card" aria-label="Vodní ilustrace">
+          <span class="bubble b1"></span>
+          <span class="bubble b2"></span>
+          <span class="bubble b3"></span>
+          <svg class="wave" viewBox="0 0 620 180" fill="none" aria-hidden="true">
+            <path d="M8 94C73 32 139 32 204 94C269 156 335 156 400 94C465 32 531 32 612 94" stroke="#2f7468" stroke-width="18" stroke-linecap="round"/>
+            <path d="M8 136C73 74 139 74 204 136C269 198 335 198 400 136C465 74 531 74 612 136" stroke="#602000" stroke-width="10" stroke-linecap="round" opacity=".38"/>
+          </svg>
+          <div class="mini-panel">
+            <div>
+              <span>Začátek pololetí</span>
+              <strong>2. února 2026</strong>
+            </div>
+            <div class="rating">5.0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kurzy">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Plavání 2025/2026</span>
+            <h2>Kurzy a programy</h2>
+          </div>
+          <p>Animáčci vedou děti k jistotě ve vodě postupně: přes hravý kontakt s vodou, bezpečné návyky a pravidelný trénink.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Plavání pro děti</h3>
+              <p>Pravidelné lekce s důrazem na klid, hravost a bezpečné zvládání vody.</p>
+            </div>
+            <strong>Registrace do kurzů</strong>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Příměstské tábory</h3>
+              <p>Program pro děti, který propojuje pohyb, vodu a společné zážitky.</p>
+            </div>
+            <strong>Sezónní termíny</strong>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>Rodičovské vouchery</h3>
+              <p>Možnost využít podporu rodin pro dětské plavecké aktivity.</p>
+            </div>
+            <strong>Podklady k platbě</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust">
+        <div class="stat">
+          <strong>5.0</strong>
+          <span>Hodnocení na Googlu</span>
+          <p>Podle dostupného firemního profilu.</p>
+        </div>
+        <div class="stat">
+          <strong>2</strong>
+          <span>Veřejné reference</span>
+          <p>Zpětná vazba od rodičů pomáhá držet osobní přístup.</p>
+        </div>
+        <div class="stat">
+          <strong>2025/26</strong>
+          <span>Aktuální pololetí</span>
+          <p>Zápis do II. pololetí je otevřený.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="prubeh">
+      <div class="wrap split">
+        <div class="note">
+          <span class="eyebrow">Jak to probíhá</span>
+          <h2>Od prvního kontaktu k lekci</h2>
+          <p>Vše začíná výběrem programu a potvrzením místa. Praktické informace k platbě, stornu a náhradám dostanete před kurzem přehledně pohromadě.</p>
+          <a class="btn secondary" href="mailto:skola@animacci.cz">Napsat škole</a>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <span class="num">1</span>
+            <div>
+              <h3>Vyberete kurz</h3>
+              <p>Podle věku dítěte, termínu a místa, kde se vám dobře dojíždí.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">2</span>
+            <div>
+              <h3>Potvrdíte registraci</h3>
+              <p>Škola naváže e-mailem a doplní potřebné informace k účasti.</p>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">3</span>
+            <div>
+              <h3>Začnete plavat</h3>
+              <p>II. pololetí 2025/2026 začíná 2. února 2026.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Kontakt</span>
+            <h2>Kde nás najdete</h2>
+          </div>
+          <p>Pro registrace, dotazy k náhradám nebo informace k táborům se ozvěte telefonicky nebo e-mailem.</p>
+        </div>
+        <div class="info-grid">
+          <div class="contact-card">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Kociánka 93/2, 612 00 Brno-Královo Pole</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <strong><a href="tel:+420733383831">+420 733 383 831</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <strong><a href="mailto:skola@animacci.cz">skola@animacci.cz</a></strong>
+            </div>
+            <div class="contact-line">
+              <span>Web</span>
+              <strong><a href="https://www.animacci.cz/kontaky/">animacci.cz/kontaky</a></strong>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa s polohou Animáčci plavecká škola"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Prakticky</span>
+            <h2>Časté dotazy</h2>
+          </div>
+          <p>Nejdůležitější témata před přihlášením do kurzu.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item">
+            <h3>Kdy začíná II. pololetí?</h3>
+            <p>Podle zveřejněných informací začíná 2. února 2026.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jak se přihlásit?</h3>
+            <p>Použijte registraci do kurzů nebo napište na e-mail školy.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Řeší škola náhrady?</h3>
+            <p>Ano, informace k platbě, stornu a náhradám jsou součástí podmínek školy.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Jsou k dispozici tábory?</h3>
+            <p>Škola uvádí příměstské tábory jako samostatnou programovou kategorii.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap cta">
+      <div>
+        <span class="eyebrow">Registrace</span>
+        <h2>Začněte plavat v únoru</h2>
+        <p>Ozvěte se škole a ověřte volné místo v II. pololetí 2025/2026.</p>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="mailto:skola@animacci.cz">Poslat e-mail</a>
+        <a class="btn secondary" href="tel:+420733383831">Zavolat</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      Webflex připravil tuto nezávaznou vizuální ukázku pro Animáčci plavecká škola. Nejde o oficiální web provozovatele. Pokud si nepřejete stránku zobrazovat, můžete ji odstranit zde:
+      <a href="https://webflex.cz/delete/rmur3cb">https://webflex.cz/delete/rmur3cb</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.6062551, 49.2260305],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#602000' })
+      .setLngLat([16.6062551, 49.2260305])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
