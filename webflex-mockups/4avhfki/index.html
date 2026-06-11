@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>YoFyz | Jóga a fyzioterapie Olomouc</title>
+  <meta name="description" content="YoFyz v Olomouci propojuje jógu, fyzioterapii, masáže, workshopy, BICOM péči a online lekce pro zdravá záda.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --surface-soft: #f2f0ed;
+      --ink: #171714;
+      --muted: rgba(23, 23, 20, .62);
+      --faint: rgba(23, 23, 20, .09);
+      --accent: #D99AAF;
+      --accent-deep: #9a536c;
+      --sage: #C0C0A0;
+      --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(20px, 4vw, 64px);
+      --section: clamp(76px, 10vw, 138px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --shadow: 0 36px 110px rgba(96, 79, 72, .10);
+      --shadow-soft: 0 22px 72px rgba(96, 79, 72, .075);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(23,23,20,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,20,.018) 1px, transparent 1px),
+        radial-gradient(circle at 84% 8%, rgba(217,154,175,.26), transparent 31%),
+        radial-gradient(circle at 10% 42%, rgba(192,192,160,.22), transparent 26%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .03;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    p { color: var(--muted); text-wrap: pretty; hyphens: auto; }
+    h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0; text-wrap: balance; hyphens: none; }
+    h1, h2 { overflow-wrap: anywhere; }
+    .container { width: min(100% - (var(--gutter) * 2), 1240px); margin-inline: auto; }
+    .wide { width: min(100% - (var(--gutter) * 2), 1420px); margin-inline: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform .18s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 38px rgba(154,83,108,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, .gallery-tile:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #171714; }
+    .btn.secondary { color: var(--ink); border-color: currentColor; background: transparent; }
+    .arrow { font-family: var(--font-mono); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(18px);
+      background: rgba(251,251,250,.82);
+      border-bottom: 1px solid var(--faint);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      gap: 28px;
+    }
+    .brand img {
+      width: auto;
+      max-width: min(190px, 44vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .links { display: flex; align-items: center; gap: 28px; color: var(--muted); font-weight: 800; font-size: 14px; }
+    .links a { transition: color .2s var(--ease); }
+    .links a:hover { color: var(--ink); }
+
+    .hero { padding: clamp(48px, 7vw, 98px) 0 var(--section); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(40%, 1.02fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 88px);
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      text-transform: uppercase;
+    }
+    .hero-copy { margin-top: 28px; max-width: 620px; color: var(--muted); font-size: clamp(17px, 1.45vw, 21px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+    }
+    .meta-chip {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-chip strong { display: block; font-family: var(--font-mono); font-size: 13px; }
+    .meta-chip span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--surface-soft);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 44%, rgba(23,23,20,.25));
+    }
+    .floating-note {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      z-index: 2;
+      max-width: 330px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(96,79,72,.13);
+      font-weight: 800;
+    }
+    .floating-note span { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    section { padding: calc(var(--section) * .72) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(280px, .55fr);
+      gap: clamp(32px, 6vw, 76px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5vw, 64px);
+    }
+    h2 {
+      margin-top: 14px;
+      font-size: clamp(34px, 4.8vw, 68px);
+      line-height: .98;
+      text-transform: uppercase;
+    }
+    .section-head p { font-size: 18px; }
+
+    .service-list { display: grid; gap: 12px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) minmax(160px, auto);
+      gap: 24px;
+      align-items: center;
+      padding: clamp(20px, 3vw, 34px);
+      border-radius: 24px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+      transition: transform .2s var(--ease), background .2s var(--ease);
+    }
+    .service-row:hover { transform: translateY(-1px); background: #fff; }
+    .num { font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+    .service-row h3 { font-size: clamp(20px, 2vw, 28px); line-height: 1.1; }
+    .service-row p { margin-top: 6px; font-size: 16px; }
+    .pill { justify-self: end; font-family: var(--font-mono); font-size: 12px; padding: 10px 12px; border-radius: 999px; background: rgba(217,154,175,.18); color: var(--ink); white-space: nowrap; }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .74fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .stat-card, .quote-card, .care-card, .price-card, .contact-card, .faq-card {
+      background: var(--surface-strong);
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      padding: clamp(26px, 4vw, 40px);
+    }
+    .stat-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 360px; }
+    .stat-number { font-family: var(--font-display); font-size: clamp(76px, 11vw, 150px); line-height: .85; overflow-wrap: anywhere; }
+    .stat-card p { margin-top: 18px; }
+    .quote-card { display: grid; gap: 24px; }
+    .quote-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 22px; }
+    .quote { color: var(--ink); font-size: clamp(25px, 3vw, 40px); line-height: 1.14; font-weight: 800; }
+
+    .care-split {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .care-card { display: grid; align-content: space-between; gap: 34px; min-height: 430px; }
+    .care-card h3 { font-size: clamp(26px, 3vw, 42px); line-height: 1.02; }
+    .care-points { display: grid; gap: 14px; }
+    .care-points div { display: flex; justify-content: space-between; gap: 18px; padding-top: 14px; border-top: 1px solid var(--faint); }
+    .care-points span:last-child { font-family: var(--font-mono); color: var(--accent-deep); text-align: right; }
+    .image-panel { border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); background: var(--surface-soft); }
+    .image-panel img { width: 100%; height: 100%; min-height: 430px; object-fit: cover; }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .price-card { min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+    .price-card h3 { font-size: clamp(22px, 2.4vw, 32px); line-height: 1.05; }
+    .price-card .mono { margin-top: 22px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery-tile {
+      position: relative;
+      min-height: 320px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .gallery-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .gallery-tile:active { transform: translateY(1px); }
+    .gallery-tile img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-tile:first-child { min-height: 420px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(420px, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { display: grid; align-content: start; gap: 22px; }
+    .info-list { display: grid; gap: 0; }
+    .info-item { display: flex; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--faint); }
+    .info-item span:first-child { color: var(--muted); }
+    .info-item span:last-child, .info-item a { font-family: var(--font-mono); text-align: right; }
+    #map { height: 420px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); }
+
+    .faq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+    .faq-card { min-height: 190px; box-shadow: var(--shadow-soft); }
+    .faq-card p { margin-top: 12px; font-size: 16px; }
+
+    .final {
+      margin: 40px auto 92px;
+      padding: clamp(34px, 6vw, 62px);
+      border-radius: 36px;
+      background: #171714;
+      color: #fff;
+      box-shadow: 0 40px 100px rgba(23,23,20,.18);
+    }
+    .final h2 { color: #fff; max-width: 860px; }
+    .final p { color: rgba(255,255,255,.72); max-width: 650px; margin-top: 18px; }
+    .final .btn.secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+
+    footer { padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .disclaimer { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--faint); font-size: 13px; line-height: 1.6; }
+    .disclaimer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 920px) {
+      .links { display: none; }
+      .hero-grid, .section-head, .trust-grid, .care-split, .contact-grid { grid-template-columns: 1fr; }
+      .hero-photo { order: -1; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .pill { justify-self: start; }
+      .price-grid, .gallery-strip, .faq-grid { grid-template-columns: 1fr; }
+      .gallery-tile, .gallery-tile:first-child { min-height: 300px; }
+      .image-panel img { min-height: 320px; }
+    }
+    @media (max-width: 620px) {
+      :root { --gutter: 18px; }
+      .nav { min-height: 68px; }
+      .hero { padding-top: 34px; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+      .hero-photo, .stat-card, .quote-card, .care-card, .price-card, .contact-card, .faq-card, .final { border-radius: 24px; }
+      .info-item { display: grid; gap: 6px; }
+      .info-item span:last-child, .info-item a { text-align: left; }
+      #map { height: 340px; border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav container" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="YoFyz - jóga a fyzioterapie Olomouc">
+        <img src="https://yofyz.cz/wp-content/uploads/2019/12/YOFYZ_FAVICON-171x171.png" alt="YoFyz - jóga a fyzioterapie Olomouc">
+      </a>
+      <div class="links">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Individuální péče</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn primary" href="tel:+420608442859">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero wide">
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">Olomouc · Hodolany</div>
+          <h1>Pohyb, dech a klid</h1>
+          <p class="hero-copy">Jógové centrum v Olomouci pro pravidelné lekce, fyzioterapii, masáže, workshopy i online cvičení pro zdravá záda.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#kontakt">Domluvit návštěvu <span class="arrow">→</span></a>
+            <a class="btn secondary" href="mailto:info@yofyz.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-chip"><strong>5,0 / 5</strong><span>hodnocení od 20 klientů</span></div>
+            <div class="meta-chip"><strong>Masarykova tř.</strong><span>822/44, Olomouc</span></div>
+            <div class="meta-chip"><strong>+420 608 442 859</strong><span>telefon pro objednání</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo" aria-label="Klidné studio pro pohybovou praxi">
+          <img src="https://images.pexels.com/photos/11036670/pexels-photo-11036670.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright pilates studio with reformer machines and natural light ambiance.">
+          <figcaption class="floating-note">Prostor pro praxi i individuální péči <span>jóga · fyzioterapie · masáže</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="sluzby" class="container">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Nabídka centra</div>
+          <h2>Vyberte si rytmus, který Vám sedí</h2>
+        </div>
+        <p>YoFyz spojuje skupinové lekce, osobní konzultace a relaxační péči pod jednou střechou v Hodolanech.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <span class="num">01</span>
+          <div><h3>Jóga a pravidelné lekce</h3><p>Popisy lekcí, první hodina jógy a pravidelný rozvrh pro začátečníky i pokročilé.</p></div>
+          <span class="pill">rozvrh lekcí</span>
+        </article>
+        <article class="service-row">
+          <span class="num">02</span>
+          <div><h3>Fyzioterapie a konzultace</h3><p>Podpora zdravého pohybu, lepšího držení těla, práce s dechem a celkové tělesné pohody.</p></div>
+          <span class="pill">Mgr. Radka Holická</span>
+        </article>
+        <article class="service-row">
+          <span class="num">03</span>
+          <div><h3>Masáže, BICOM a péče</h3><p>Čas pro uvolnění, regeneraci a kvalitní individuální péči v klidném prostředí centra.</p></div>
+          <span class="pill">relaxace</span>
+        </article>
+        <article class="service-row">
+          <span class="num">04</span>
+          <div><h3>Workshopy, akce a online lekce</h3><p>Tematická setkání, online cvičení pro zdravá záda a možnost pronájmu prostor.</p></div>
+          <span class="pill">akce centra</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="trust-grid">
+        <article class="stat-card">
+          <div>
+            <div class="eyebrow">Hodnocení</div>
+            <div class="stat-number">5,0</div>
+          </div>
+          <p>Průměrné Google hodnocení z 20 recenzí. Důvěra stojí na osobním přístupu, klidném prostředí a péči, která respektuje tělo.</p>
+        </article>
+        <article class="quote-card">
+          <img src="https://images.pexels.com/photos/11036674/pexels-photo-11036674.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious and well-equipped Pilates studio featuring reformers and other fitness equipment.">
+          <p class="quote">„Jóga není o tom, dotknout se palců u nohou, je o tom, co se naučíte cestou dolů.“</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pece" class="container">
+      <div class="care-split">
+        <article class="care-card">
+          <div>
+            <div class="eyebrow">Individuální péče</div>
+            <h3>Fyzioterapie, dech a vědomý pohyb</h3>
+          </div>
+          <p>Individuální konzultace vychází ze zkušeností fyzioterapeutky, lektorky jógy a práce s dechem. Cílem je podpora zdravého pohybu a psychické pohody.</p>
+          <div class="care-points">
+            <div><span>držení těla</span><span>osobně</span></div>
+            <div><span>práce s dechem</span><span>vědomě</span></div>
+            <div><span>zdravá záda</span><span>online i v centru</span></div>
+          </div>
+        </article>
+        <div class="image-panel">
+          <img src="https://images.pexels.com/photos/18499504/pexels-photo-18499504.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A contemporary Pilates studio equipped with multiple wooden reformers for fitness training.">
+        </div>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Ceník a rezervace</div>
+          <h2>Vyberte službu, termín doladíme spolu</h2>
+        </div>
+        <p>Konkrétní ceny a volné termíny najdete v ceníku a rezervacích centra. Pro individuální péči je nejlepší krátce zavolat nebo napsat.</p>
+      </div>
+      <div class="price-grid">
+        <article class="price-card">
+          <h3>Pravidelné lekce jógy</h3>
+          <p>Skupinová praxe podle aktuálního rozvrhu lekcí.</p>
+          <span class="mono">rozvrh · rezervace</span>
+        </article>
+        <article class="price-card">
+          <h3>Individuální konzultace</h3>
+          <p>Péče zaměřená na pohyb, dech, držení těla a osobní potřeby.</p>
+          <span class="mono">domluva termínu</span>
+        </article>
+        <article class="price-card">
+          <h3>Workshopy a akce</h3>
+          <p>Jednorázové programy, tematická setkání a další akce v centru.</p>
+          <span class="mono">aktuální nabídka</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="wide">
+      <div class="container section-head">
+        <div>
+          <div class="eyebrow">Atmosféra</div>
+          <h2>Klidný prostor pro tělo i hlavu</h2>
+        </div>
+        <p>Světlé, soustředěné prostředí dává prostor pravidelnosti, regeneraci i prvnímu kroku na podložce.</p>
+      </div>
+      <div class="gallery-strip">
+        <a class="gallery-tile" href="#kontakt" aria-label="Kontaktovat YoFyz"><img src="https://images.pexels.com/photos/6739958/pexels-photo-6739958.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A modern gym with equipment, punching bags, and open space for workouts."></a>
+        <a class="gallery-tile" href="#kontakt" aria-label="Kontaktovat YoFyz"><img src="https://images.pexels.com/photos/4946389/pexels-photo-4946389.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Interior of empty light spacious basketball court with wooden floor in modern sports complex"></a>
+        <a class="gallery-tile" href="#kontakt" aria-label="Kontaktovat YoFyz"><img src="https://images.pexels.com/photos/25596892/pexels-photo-25596892.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright and spacious gym interior featuring modern green exercise machines in Yalova."></a>
+      </div>
+    </section>
+
+    <section id="kontakt" class="container">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Kontakt</div>
+          <h2>YoFyz najdete na Masarykově třídě</h2>
+        </div>
+        <p>Zavolejte, napište nebo se podívejte na mapu. Centrum je v Hodolanech na adrese Masarykova tř. 822/44.</p>
+      </div>
+      <div class="contact-grid">
+        <article class="contact-card">
+          <h3>Domluva návštěvy</h3>
+          <div class="info-list">
+            <div class="info-item"><span>Telefon</span><a href="tel:+420608442859">+420 608 442 859</a></div>
+            <div class="info-item"><span>E-mail</span><a href="mailto:info@yofyz.cz">info@yofyz.cz</a></div>
+            <div class="info-item"><span>Adresa</span><span>44, Masarykova tř. 822, Hodolany, 779 00 Olomouc-Olomouc 9</span></div>
+            <div class="info-item"><span>Web</span><a href="https://yofyz.cz/kontakt/">yofyz.cz/kontakt</a></div>
+          </div>
+        </article>
+        <div id="map" aria-label="Mapa centra YoFyz v Olomouci"></div>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Než přijdete</div>
+          <h2>Časté otázky</h2>
+        </div>
+        <p>Krátké odpovědi pro první návštěvu a výběr vhodné péče.</p>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-card"><h3>Jdu na jógu poprvé. Vadí to?</h3><p>Nevadí. V centru najdete informace k první hodině jógy a lektorky Vám pomohou vybrat vhodnou lekci.</p></article>
+        <article class="faq-card"><h3>Je možné cvičit online?</h3><p>Ano, YoFyz nabízí také online lekce jógy pro zdravá záda.</p></article>
+        <article class="faq-card"><h3>Řešíte i individuální potíže?</h3><p>Ano, individuální konzultace se zaměřují na zdravý pohyb, držení těla, dech a celkovou pohodu.</p></article>
+        <article class="faq-card"><h3>Najdu u Vás i relaxaci?</h3><p>Ano, součástí nabídky jsou masáže, BICOM a další péče pro regeneraci.</p></article>
+      </div>
+    </section>
+
+    <section class="final container">
+      <div class="eyebrow">Rezervace a dotazy</div>
+      <h2>Přijďte se nadechnout do YoFyz</h2>
+      <p>Vyberte si pravidelnou lekci, individuální konzultaci nebo workshop. Pro domluvu termínu stačí zavolat nebo napsat.</p>
+      <div class="final-actions">
+        <a class="btn primary" href="tel:+420608442859">+420 608 442 859</a>
+        <a class="btn secondary" href="mailto:info@yofyz.cz">info@yofyz.cz</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container">
+    <div class="footer-grid">
+      <span>© 2026 YoFyz - jóga a fyzioterapie Olomouc</span>
+      <span>Masarykova tř. 822/44 · Hodolany</span>
+    </div>
+    <div class="disclaimer">
+      Tento nezávazný podklad připravil Webflex jako náhled možné prezentace. Nejste-li správným příjemcem nebo si nepřejete podobné oslovení, můžete záznam odstranit na <a href="https://webflex.cz/remove/4avhfki">webflex.cz/remove/4avhfki</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [17.2734622, 49.5935543],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#D99AAF' })
+      .setLngLat([17.2734622, 49.5935543])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
