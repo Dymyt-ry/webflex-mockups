@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stomatologické centrum Anděl</title>
+  <meta name="description" content="Komplexní stomatologická péče pro celou rodinu na Smíchově, tři minuty od metra Anděl.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: rgba(255,255,255,.82);
+      --surface-strong: #ffffff;
+      --ink: #171821;
+      --muted: #666979;
+      --soft: #eef0f7;
+      --line: rgba(23,24,33,.09);
+      --accent: #6060A0;
+      --accent-dark: #494982;
+      --accent-soft: rgba(96,96,160,.13);
+      --shadow: 0 28px 90px rgba(42,44,70,.11);
+      --shadow-soft: 0 18px 60px rgba(42,44,70,.075);
+      --font-display: "Archivo Black", "Arial Black", sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(96,96,160,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(96,96,160,.026) 1px, transparent 1px),
+        radial-gradient(circle at 12% 5%, rgba(96,96,160,.11), transparent 34rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .skip { position: absolute; left: -999px; top: 12px; padding: 10px 14px; background: var(--ink); color: white; z-index: 20; }
+    .skip:focus { left: 12px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(251,251,253,.78);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+      max-width: 280px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .navlinks { display: flex; align-items: center; gap: 26px; color: var(--muted); font-size: 15px; font-weight: 700; }
+    .navlinks a, .btn, .icon-link, .faq summary {
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .navlinks a:hover { color: var(--ink); transform: translateY(-1px); }
+    .navlinks a:active, .btn:active, .icon-link:active { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      border-radius: 999px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .btn.primary { color: white; background: var(--accent); box-shadow: 0 16px 34px rgba(96,96,160,.24); }
+    .btn.primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+    .btn.secondary { color: var(--ink); border: 1px solid currentColor; background: transparent; }
+    .btn.secondary:hover { background: white; transform: translateY(-1px); }
+
+    .hero { padding: 70px 0 58px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .98fr) minmax(420px, .86fr);
+      align-items: center;
+      gap: 56px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: .04em;
+      margin-bottom: 22px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 8px var(--accent-soft); }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      letter-spacing: 0;
+      margin: 0;
+      max-width: 720px;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .lead {
+      margin: 26px 0 0;
+      max-width: 650px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+    .hero-note { margin-top: 24px; display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-weight: 700; }
+    .hero-note span { font-family: var(--font-mono); color: var(--ink); }
+    .photo-card {
+      aspect-ratio: 4 / 3;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--soft);
+      box-shadow: var(--shadow);
+      position: relative;
+      min-width: 0;
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .floating {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: min(330px, calc(100% - 48px));
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-soft);
+    }
+    .floating strong { display: block; font-family: var(--font-display); font-size: 26px; line-height: 1; }
+    .floating span { display: block; margin-top: 7px; color: var(--muted); font-weight: 700; }
+
+    section { padding: 72px 0; }
+    .section-head { display: grid; grid-template-columns: .72fr 1fr; gap: 48px; align-items: end; margin-bottom: 34px; }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 58px);
+      line-height: .98;
+      margin: 0;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 19px; max-width: 660px; }
+
+    .service-list {
+      display: grid;
+      background: var(--surface);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 230px;
+      gap: 26px;
+      align-items: center;
+      padding: 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+    .service-row h3 { margin: 0; font-size: 26px; line-height: 1.1; }
+    .service-row p { margin: 7px 0 0; color: var(--muted); font-size: 17px; }
+    .tag { justify-self: end; padding: 9px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat {
+      min-height: 180px;
+      padding: 26px;
+      border-radius: 26px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat strong { font-family: var(--font-mono); font-size: clamp(32px, 5vw, 62px); line-height: 1; color: var(--accent); }
+    .stat span { color: var(--muted); font-weight: 700; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1fr);
+      gap: 42px;
+      align-items: center;
+    }
+    .split-photo { aspect-ratio: 16 / 10; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); background: var(--soft); }
+    .split-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .timeline { display: grid; gap: 16px; }
+    .step {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step b { font-family: var(--font-mono); color: var(--accent); }
+    .step h3 { margin: 0 0 6px; font-size: 22px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .price-card, .insurance-card {
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      padding: 30px;
+    }
+    .price-card strong { font-family: var(--font-display); font-size: clamp(34px, 5vw, 70px); line-height: .95; display: block; overflow-wrap: anywhere; hyphens: none; }
+    .price-card p, .insurance-card p { color: var(--muted); margin: 14px 0 0; font-size: 18px; }
+    .insurance-card ul { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .insurance-card li { display: flex; justify-content: space-between; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); font-weight: 800; }
+    .insurance-card li span { font-family: var(--font-mono); color: var(--accent); font-size: 13px; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure { margin: 0; border-radius: 26px; overflow: hidden; background: white; box-shadow: var(--shadow-soft); }
+    .gallery img { width: 100%; height: 270px; object-fit: cover; }
+    .gallery figcaption { padding: 16px 18px 18px; color: var(--muted); font-weight: 700; min-height: 74px; }
+
+    .faq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .faq details { background: var(--surface-strong); border-radius: 22px; box-shadow: var(--shadow-soft); padding: 20px 22px; }
+    .faq summary { cursor: pointer; font-weight: 900; font-size: 19px; }
+    .faq summary:hover { color: var(--accent); }
+    .faq p { margin: 14px 0 0; color: var(--muted); }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-line { display: grid; gap: 5px; padding: 17px 0; border-bottom: 1px solid var(--line); }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span { color: var(--muted); font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .contact-line a, .contact-line strong { font-size: 20px; font-weight: 900; }
+    #map { height: 420px; border-radius: 28px; overflow: hidden; box-shadow: var(--shadow-soft); }
+
+    .final {
+      margin: 34px auto 80px;
+      padding: 42px;
+      border-radius: 34px;
+      background: var(--ink);
+      color: white;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final h2 { color: white; max-width: 720px; }
+    .final p { margin: 12px 0 0; color: rgba(255,255,255,.7); font-size: 18px; }
+    .final .btn.secondary { color: white; border-color: rgba(255,255,255,.45); }
+    .final .btn.secondary:hover { background: rgba(255,255,255,.1); }
+
+    footer {
+      padding: 30px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    footer .disclaimer { max-width: 860px; }
+    footer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 920px) {
+      .navlinks { display: none; }
+      .hero-grid, .section-head, .split, .price-band, .contact-grid, .final { grid-template-columns: 1fr; }
+      .hero-grid { gap: 34px; }
+      .stats, .gallery, .faq-grid { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; gap: 10px; }
+      .tag { justify-self: start; }
+      section { padding: 54px 0; }
+      .final { margin-bottom: 54px; padding: 28px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 42px; }
+      h1 { font-size: clamp(40px, 13vw, 58px); }
+      .btn { width: 100%; }
+      .photo-card, .split-photo { border-radius: 22px; }
+      .floating { position: static; width: auto; border-radius: 0; }
+      .gallery img { height: 230px; }
+      #map { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Přejít na obsah</a>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="wordmark" href="#">Stomatologické centrum Anděl</a>
+      <div class="navlinks">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Průběh péče</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420245501340">Zavolat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker"><span class="dot"></span> Smíchov · tři minuty od metra Anděl</div>
+          <h1>Zubní péče na Andělu</h1>
+          <p class="lead">Komplexní stomatologie pro celou rodinu se zaměřením na prevenci, estetiku a pohodlí pacienta v centru Prahy 5.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420245501340">Objednat telefonicky</a>
+            <a class="btn secondary" href="mailto:info@stomatologieandel.cz">Napsat e-mail</a>
+          </div>
+          <div class="hero-note">
+            <div><span>4.6 / 5</span> na Googlu</div>
+            <div><span>152</span> recenzí</div>
+          </div>
+        </div>
+        <div class="photo-card">
+          <img src="https://images.pexels.com/photos/5355920/pexels-photo-5355920.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Bright and clean dental clinic interior showcasing a dental chair and equipment.">
+          <div class="floating">
+            <strong>Prevence i estetika</strong>
+            <span>Preventivní prohlídky, dentální hygiena, implantáty, RTG a laboratorní zázemí.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Péče pro celý úsměv</h2>
+          <p>Vyberete si podle aktuální potřeby: pravidelná kontrola, důkladná dentální hygiena, estetické ošetření nebo dlouhodobé řešení chybějícího zubu.</p>
+        </div>
+        <div class="service-list">
+          <article class="service-row">
+            <div class="num">01</div>
+            <div><h3>Rodinná péče</h3><p>Preventivní prohlídky a ošetření pro dospělé i děti s klidným, srozumitelným postupem.</p></div>
+            <div class="tag">pro celou rodinu</div>
+          </article>
+          <article class="service-row">
+            <div class="num">02</div>
+            <div><h3>Dentální hygiena</h3><p>Pravidelná péče o zuby a dásně jako základ zdravého úsměvu a dlouhodobé prevence.</p></div>
+            <div class="tag">prevence</div>
+          </article>
+          <article class="service-row">
+            <div class="num">03</div>
+            <div><h3>Zubní implantáty</h3><p>Trvalé řešení náhrady chybějících zubů s plánem ošetření podle stavu chrupu.</p></div>
+            <div class="tag">konzultace</div>
+          </article>
+          <article class="service-row">
+            <div class="num">04</div>
+            <div><h3>RTG a laboratoř</h3><p>Diagnostika a návazné zázemí pro přesnější domluvu dalšího postupu na jednom místě.</p></div>
+            <div class="tag">na klinice</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Důvěra pacientů">
+      <div class="wrap stats">
+        <div class="stat"><strong>4.6</strong><span>Hodnocení pacientů na Googlu</span></div>
+        <div class="stat"><strong>152</strong><span>Veřejných recenzí podle profilu kliniky</span></div>
+        <div class="stat"><strong>3 min</strong><span>Od stanice metra Anděl pěšky</span></div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap split">
+        <div class="split-photo">
+          <img src="https://images.pexels.com/photos/19976607/pexels-photo-19976607.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Dentist performing a dental checkup with advanced equipment in a contemporary clinic.">
+        </div>
+        <div>
+          <div class="kicker"><span class="dot"></span> Jak probíhá návštěva</div>
+          <h2>Jasně, klidně, bez spěchu</h2>
+          <div class="timeline">
+            <div class="step"><b>01</b><div><h3>Domluva termínu</h3><p>Zavoláte nebo napíšete e-mail, recepce vám pomůže vybrat vhodnou návštěvu.</p></div></div>
+            <div class="step"><b>02</b><div><h3>Vyšetření a vysvětlení</h3><p>Lékař s vámi projde stav chrupu, možnosti péče a doporučený postup.</p></div></div>
+            <div class="step"><b>03</b><div><h3>Ošetření a prevence</h3><p>Podle potřeby naváže dentální hygiena, léčba, estetika nebo implantologická konzultace.</p></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap price-band">
+        <div class="price-card">
+          <div class="kicker"><span class="dot"></span> Ceník služeb</div>
+          <strong>Přehledné ceny</strong>
+          <p>Konkrétní částka závisí na typu ošetření a rozsahu péče. Recepce vám pomůže s orientací v ceníku a možnostech návštěvy.</p>
+        </div>
+        <div class="insurance-card">
+          <h2>Partner pojišťoven</h2>
+          <p>Klinika uvádí spolupráci se smluvními pojišťovnami. Podrobnosti si ověříte při objednání.</p>
+          <ul>
+            <li>Preventivní péče <span>dotaz na recepci</span></li>
+            <li>Dentální hygiena <span>podle ceníku</span></li>
+            <li>Implantáty <span>individuálně</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí kliniky">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Klidné klinické prostředí</h2>
+          <p>Čisté ordinace, diagnostika a zázemí pro návštěvy, které mají být věcné, srozumitelné a co nejpohodlnější.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/4269268/pexels-photo-4269268.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Stylish and modern dentist office with dental chair and equipment in a well-lit setting.">
+            <figcaption>Ordinace připravená pro běžnou stomatologickou péči.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/5355841/pexels-photo-5355841.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A dentist performs a checkup on a patient in a well-equipped dental clinic.">
+            <figcaption>Kontrola, prevence a navazující doporučení.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/6627725/pexels-photo-6627725.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of dental tools and accessories in a clinic setting, showcasing a modern and clean environment.">
+            <figcaption>Detailní práce s hygienou a vybavením.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Časté dotazy</h2>
+          <p>Krátké odpovědi k objednání, dostupnosti a typům péče, které pacienti řeší nejčastěji.</p>
+        </div>
+        <div class="faq-grid">
+          <details open>
+            <summary>Kde kliniku najdu?</summary>
+            <p>Na adrese Radlická 2000/3, Smíchov, 150 00 Praha 5, přibližně tři minuty od stanice metra Anděl.</p>
+          </details>
+          <details>
+            <summary>Jak se objednám?</summary>
+            <p>Pro objednání zavolejte na +420 245 501 340. Dotaz můžete poslat také na info@stomatologieandel.cz.</p>
+          </details>
+          <details>
+            <summary>Pečujete i o děti?</summary>
+            <p>Ano, rodinná stomatologická péče je uvedená jako jedna z hlavních služeb centra.</p>
+          </details>
+          <details>
+            <summary>Řešíte dentální hygienu?</summary>
+            <p>Ano, dentální hygiena patří mezi hlavní služby a pomáhá udržet zdravé zuby i dásně.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Kontakt a cesta</h2>
+          <p>Objednejte se telefonicky, napište e-mail nebo se podívejte na polohu kliniky u Anděla.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-line"><span>Telefon</span><a href="tel:+420245501340">+420 245 501 340</a></div>
+            <div class="contact-line"><span>E-mail</span><a href="mailto:info@stomatologieandel.cz">info@stomatologieandel.cz</a></div>
+            <div class="contact-line"><span>Adresa</span><strong>Radlická 2000/3, Smíchov, 150 00 Praha 5</strong></div>
+            <div class="contact-line"><span>Dostupnost</span><strong>3 minuty od metra Anděl</strong></div>
+          </div>
+          <div id="map" aria-label="Mapa polohy Stomatologického centra Anděl"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap final">
+      <div>
+        <h2>Domluvte si návštěvu</h2>
+        <p>Recepce vám pomůže s výběrem termínu i správného typu péče.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn primary" href="tel:+420245501340">Zavolat</a>
+        <a class="btn secondary" href="mailto:info@stomatologieandel.cz">Napsat</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap disclaimer">
+      Webflex připravil tuto soukromou stránku pro Stomatologické centrum Anděl. Pokud si ji nepřejete zobrazovat, můžete ji odstranit na adrese
+      <a href="https://www.webflex.cz/delete/gyp6ea7">https://www.webflex.cz/delete/gyp6ea7</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.4019322, 50.068959899999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#6060A0' })
+      .setLngLat([14.4019322, 50.068959899999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
