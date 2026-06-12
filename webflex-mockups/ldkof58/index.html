@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nemocnice PRIVAMED Plzeň</title>
+  <meta name="description" content="Nemocnice PRIVAMED v Plzni: ambulance, oddělení, urgentní příjem, lékárna, kontakty a informace pro pacienty i návštěvníky.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-soft: #f0f1f6;
+      --ink: #000020;
+      --muted: #62667a;
+      --line: rgba(0, 0, 32, .09);
+      --accent: #D7155A;
+      --accent-dark: #9f0e42;
+      --shadow: 0 36px 110px rgba(0, 0, 32, .10);
+      --shadow-soft: 0 22px 70px rgba(0, 0, 32, .075);
+      --radius: 24px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0,0,32,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,32,.025) 1px, transparent 1px),
+        radial-gradient(circle at 82% 8%, rgba(215,21,90,.10), transparent 28%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251,251,253,.84);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(254px, 54vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      color: rgba(0,0,32,.70);
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1), transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(215,21,90,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible,
+    a:focus-visible,
+    button:focus-visible,
+    summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+    .btn-secondary:hover { background: rgba(0,0,32,.04); box-shadow: none; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .97;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.5vw, 64px); }
+    h3 { font-size: 28px; }
+    p { hyphens: auto; }
+
+    .hero { padding: 66px 0 82px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(430px, .76fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: rgba(0,0,32,.72);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 32px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow-soft);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hero-note::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,32,.02), rgba(0,0,32,.44));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(290px, .42fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .quick-card,
+    .surface,
+    .fact-strip,
+    .timeline,
+    .contact-card,
+    .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .quick-card {
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s, background .22s;
+    }
+    .quick-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); background: #fff; }
+    .quick-card:active { transform: translateY(1px); }
+    .quick-card .num { color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+    .quick-card p { margin: 16px 0 0; color: var(--muted); }
+
+    .department-list {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .dept-row {
+      display: grid;
+      grid-template-columns: 90px minmax(190px, .8fr) minmax(0, 1fr) 140px;
+      gap: 20px;
+      align-items: center;
+      min-height: 82px;
+      padding: 0 26px;
+      border-top: 1px solid var(--line);
+      transition: background .2s cubic-bezier(.2,.8,.2,1), transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .dept-row:first-child { border-top: 0; }
+    .dept-row:hover { background: #faf2f6; transform: translateY(-1px); }
+    .dept-row:active { transform: translateY(1px); }
+    .dept-code { color: var(--accent); font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+    .dept-name { font-size: 23px; font-weight: 800; }
+    .dept-note { color: var(--muted); }
+    .dept-link { color: var(--accent); font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-align: right; text-transform: uppercase; }
+
+    .trust-layout {
+      display: grid;
+      grid-template-columns: minmax(310px, .72fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .rating-panel {
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 34px;
+      border-radius: 30px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .rating-panel strong {
+      font-family: var(--font-display);
+      font-size: clamp(88px, 14vw, 176px);
+      line-height: .8;
+    }
+    .rating-panel span { color: rgba(255,255,255,.72); }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .fact {
+      min-height: 207px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.84);
+      box-shadow: var(--shadow-soft);
+    }
+    .fact strong {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1;
+    }
+    .fact span { color: var(--muted); font-weight: 650; }
+
+    .patient-flow {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(350px, .42fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .timeline {
+      border-radius: 30px;
+      padding: 14px 32px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 22px;
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+    }
+    .step:first-child { border-top: 0; }
+    .step b { color: var(--accent); font-family: var(--font-mono); font-size: 13px; }
+    .step h3 { font-family: var(--font-body); font-size: 23px; font-weight: 850; line-height: 1.1; }
+    .step p { margin: 9px 0 0; color: var(--muted); }
+    .side-photo {
+      min-height: 100%;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+    .side-photo img { width: 100%; height: 100%; min-height: 420px; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .52fr) minmax(0, .8fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .contact-card {
+      padding: 34px;
+      border-radius: 30px;
+    }
+    .contact-line {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .contact-line:first-of-type { margin-top: 22px; }
+    .contact-line label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .contact-line a,
+    .contact-line span {
+      font-size: 22px;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+      text-decoration: none;
+    }
+    .contact-line a:hover { color: var(--accent); }
+    #map {
+      height: 420px;
+      min-height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item {
+      min-height: 210px;
+      padding: 26px;
+      border-radius: var(--radius);
+    }
+    .faq-item h3 { font-family: var(--font-body); font-size: 22px; font-weight: 850; line-height: 1.12; }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 76px 0;
+      background: var(--ink);
+      color: #fff;
+    }
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .final p { max-width: 620px; margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 19px; }
+    .final .btn-primary { background: #fff; color: var(--ink); border-color: #fff; }
+    .final .btn-primary:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .final .btn-secondary { color: #fff; border: 1px solid rgba(255,255,255,.45); }
+    .final .btn-secondary:hover { background: rgba(255,255,255,.09); }
+
+    footer {
+      padding: 30px 0;
+      background: #050514;
+      color: rgba(255,255,255,.78);
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 26px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a { text-decoration: none; }
+    .footer-links a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .notice {
+      padding: 16px 0 18px;
+      background: #02020b;
+      color: rgba(255,255,255,.52);
+      font-size: 11px;
+      text-align: center;
+    }
+    .notice a { color: rgba(255,255,255,.78); text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .trust-layout,
+      .patient-flow,
+      .contact-grid,
+      .final-grid { grid-template-columns: 1fr; }
+      .quick-grid,
+      .facts,
+      .faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero-photo { aspect-ratio: 16 / 10; }
+      .final-grid { justify-items: start; }
+    }
+
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-grid { gap: 32px; }
+      .quick-grid,
+      .facts,
+      .faq-grid { grid-template-columns: 1fr; }
+      .dept-row {
+        grid-template-columns: 1fr;
+        gap: 7px;
+        padding: 22px;
+      }
+      .dept-link { text-align: left; }
+      .photo-label { flex-direction: column; align-items: start; }
+      .rating-panel { min-height: 320px; }
+      .contact-card { padding: 26px; }
+      #map { min-height: 360px; }
+      .final .hero-actions { width: 100%; }
+      .final .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Nemocnice PRIVAMED">
+        <img src="https://www.privamed.cz/template/_web/logoAlt.svg" alt="Nemocnice PRIVAMED">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#oddeleni">Oddělení</a>
+        <a href="#pacienti">Pro pacienty</a>
+        <a href="#kontakt">Kontakty</a>
+        <a href="tel:+420377182111">+420 377 182 111</a>
+      </nav>
+      <a class="btn btn-primary" href="#kontakt">Objednat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Plzeň · Kotíkovská 927/19</p>
+          <h1>Špičková zdravotní péče</h1>
+          <p class="lead">Nemocnice PRIVAMED v Plzni poskytuje ambulantní, lůžkovou i návaznou péči v zázemí rodinné nemocnice skupiny PRIVAMED.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420377182111">Zavolat recepci</a>
+            <a class="btn btn-secondary" href="#oddeleni">Najít oddělení</a>
+          </div>
+          <div class="hero-note">NON-STOP linka · informace@privamed.cz</div>
+        </div>
+        <figure class="hero-photo" aria-label="Klidné nemocniční prostředí">
+          <img src="https://images.pexels.com/photos/12733104/pexels-photo-12733104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Minimalist design with ceramic pots on a wooden shelf by a window.">
+          <figcaption class="photo-label">
+            <span>Nemocnice PRIVAMED</span>
+            <span>K Jezu / Kotíkovská</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="hledate">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Nejčastěji hledáte</p>
+            <h2 id="hledate">Rychlá cesta k péči</h2>
+          </div>
+          <p>Vybrané ambulance, centra a služby, které pacienti PRIVAMEDu hledají nejčastěji.</p>
+        </div>
+        <div class="quick-grid">
+          <a class="quick-card" href="#oddeleni">
+            <span class="num">01</span>
+            <div><h3>Chirurgie a ortopedie</h3><p>Centrum jednodenní chirurgie a ortopedie.</p></div>
+          </a>
+          <a class="quick-card" href="#oddeleni">
+            <span class="num">02</span>
+            <div><h3>Gastroenterologie</h3><p>Ambulantní vyšetření a návazná nemocniční péče.</p></div>
+          </a>
+          <a class="quick-card" href="#oddeleni">
+            <span class="num">03</span>
+            <div><h3>Mamo centrum</h3><p>Pracoviště pro pacientky v areálu nemocnice.</p></div>
+          </a>
+          <a class="quick-card" href="#kontakt">
+            <span class="num">04</span>
+            <div><h3>Lékárna</h3><p>Součást služeb pro pacienty a návštěvníky.</p></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="oddeleni" aria-labelledby="oddeleni-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Oddělení Nemocnice PRIVAMED</p>
+            <h2 id="oddeleni-title">Ambulance, centra, oddělení</h2>
+          </div>
+          <p>Přehled hlavních pracovišť v Plzni. Pro objednání a bližší informace použijte kontaktní linku nemocnice.</p>
+        </div>
+        <div class="department-list">
+          <div class="dept-row">
+            <span class="dept-code">URG</span>
+            <span class="dept-name">Urgentní příjem</span>
+            <span class="dept-note">První místo pro akutní zdravotní situace.</span>
+            <span class="dept-link">Kontakt</span>
+          </div>
+          <div class="dept-row">
+            <span class="dept-code">INT</span>
+            <span class="dept-name">Interní oddělení</span>
+            <span class="dept-note">Interní péče, intervenční kardiologie a dialyzační centrum.</span>
+            <span class="dept-link">Detail</span>
+          </div>
+          <div class="dept-row">
+            <span class="dept-code">NEU</span>
+            <span class="dept-name">Neurologie</span>
+            <span class="dept-note">Neurologické oddělení a centrum neurofyzio terapie.</span>
+            <span class="dept-link">Detail</span>
+          </div>
+          <div class="dept-row">
+            <span class="dept-code">RAD</span>
+            <span class="dept-name">Radiodiagnostika</span>
+            <span class="dept-note">Radiodiagnostické oddělení, kostní denzitometrie a laboratoře.</span>
+            <span class="dept-link">Detail</span>
+          </div>
+          <div class="dept-row">
+            <span class="dept-code">NÁV</span>
+            <span class="dept-name">Návazná péče</span>
+            <span class="dept-note">Rehabilitační oddělení a centrum návazné péče.</span>
+            <span class="dept-link">Detail</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="duvera">
+      <div class="wrap">
+        <div class="trust-layout">
+          <div class="rating-panel">
+            <div>
+              <p class="eyebrow" style="color:#fff;">Hodnocení pacientů</p>
+              <strong>3,2</strong>
+            </div>
+            <span>Google hodnocení z 279 recenzí.</span>
+          </div>
+          <div>
+            <div class="section-head" style="grid-template-columns:1fr; margin-bottom:20px;">
+              <div>
+                <p class="eyebrow">Věděli jste že</p>
+                <h2 id="duvera">Péče ve velkém měřítku</h2>
+              </div>
+            </div>
+            <div class="facts">
+              <div class="fact"><strong>420+</strong><span>lůžek v nemocnici</span></div>
+              <div class="fact"><strong>10 000+</strong><span>hospitalizací za rok</span></div>
+              <div class="fact"><strong>120 000+</strong><span>ambulantních vyšetření za rok</span></div>
+              <div class="fact"><strong>700+</strong><span>spokojených zaměstnanců</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pacienti" aria-labelledby="pacienti-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Pro pacienty a návštěvníky</p>
+            <h2 id="pacienti-title">Když přicházíte do areálu</h2>
+          </div>
+          <p>Nemocnice sídlí v Kotíkovské ulici v Plzni. Před cestou si ověřte dopravní režim, oddělení a kontaktní místo.</p>
+        </div>
+        <div class="patient-flow">
+          <div class="timeline">
+            <div class="step">
+              <b>01</b>
+              <div><h3>Vyberte pracoviště</h3><p>Ambulance, oddělení, mamo centrum, laboratoře i lékárnu najdete v přehledu služeb nemocnice.</p></div>
+            </div>
+            <div class="step">
+              <b>02</b>
+              <div><h3>Kontaktujte recepci</h3><p>Pro objednání a obecné informace volejte +420 377 182 111 nebo pište na informace@privamed.cz.</p></div>
+            </div>
+            <div class="step">
+              <b>03</b>
+              <div><h3>Doražte na Kotíkovskou</h3><p>Adresa nemocnice je Kotíkovská 927/19, 323 00 Plzeň 1-Severní Předměstí.</p></div>
+            </div>
+          </div>
+          <figure class="side-photo">
+            <img src="https://images.pexels.com/photos/5677665/pexels-photo-5677665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="An arm extends to a glass on a windowsill with soft curtains. Ambient light filters through.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" aria-labelledby="kontakt-title">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakty</p>
+            <h2 id="kontakt-title">Nemocnice v Plzni</h2>
+          </div>
+          <p>Hlavní telefon, e-mail a adresa areálu Nemocnice PRIVAMED.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Recepce a informace</h3>
+            <div class="contact-line">
+              <label>Telefon</label>
+              <a href="tel:+420377182111">+420 377 182 111</a>
+            </div>
+            <div class="contact-line">
+              <label>E-mail</label>
+              <a href="mailto:informace@privamed.cz">informace@privamed.cz</a>
+            </div>
+            <div class="contact-line">
+              <label>Adresa</label>
+              <span>Kotíkovská 927/19, 323 00 Plzeň 1-Severní Předměstí</span>
+            </div>
+            <div class="contact-line">
+              <label>Skupina</label>
+              <span>Součást PRIVAMED Group</span>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění Nemocnice PRIVAMED"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="otazky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prakticky</p>
+            <h2 id="otazky">Časté situace</h2>
+          </div>
+          <p>Krátké odpovědi pro pacienty, kteří hledají správný kontakt nebo pracoviště.</p>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3>Kam volat pro objednání?</h3>
+            <p>Použijte hlavní telefon +420 377 182 111. Recepce vás nasměruje na příslušnou ambulanci nebo oddělení.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Kde najdu mamo centrum?</h3>
+            <p>Mamo centrum patří mezi pracoviště PRIVAMEDu v areálu nemocnice v Plzni.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Je v areálu lékárna?</h3>
+            <p>Ano, lékárna je uvedena mezi nejčastěji hledanými službami nemocnice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap final-grid">
+        <div>
+          <p class="eyebrow" style="color:#fff;">Nemocnice PRIVAMED</p>
+          <h2 id="final-title">Potřebujete péči nebo kontakt?</h2>
+          <p>Volejte recepci nemocnice, napište e-mail nebo si otevřete mapu areálu v Kotíkovské ulici.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420377182111">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:informace@privamed.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <strong>Nemocnice PRIVAMED</strong>
+      <div class="footer-links">
+        <a href="#oddeleni">Oddělení</a>
+        <a href="#pacienti">Pro pacienty</a>
+        <a href="#kontakt">Kontakty</a>
+      </div>
+      <span class="mono">© 1995-2026</span>
+    </div>
+    <div class="notice">
+      Tuto neveřejnou prezentační stránku připravil Webflex jako individuální obchodní podklad. Pokud si nepřejete její zobrazení, můžete ji odstranit zde: <a href="https://webflex.cz/delete/ldkof58">webflex.cz/delete/ldkof58</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.359357399999999, 49.7652776],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#D7155A' })
+      .setLngLat([13.359357399999999, 49.7652776])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
