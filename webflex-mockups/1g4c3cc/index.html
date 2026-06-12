@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ordinace Pro Malá Zvířata MVDr. Tomáš Weidenhöfer</title>
+  <meta name="description" content="Veterinární péče v Brně-Starém Lískovci. Objednání, akutní případy po telefonické domluvě, ordinační hodiny a kontakt na recepci.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfb;
+      --surface: #ffffff;
+      --surface-2: #f2f5f9;
+      --ink: #111318;
+      --muted: #5f6673;
+      --line: #d9e0ea;
+      --line-strong: #aeb9ca;
+      --accent: #5E7EB8;
+      --accent-dark: #315a9f;
+      --ok: #276b50;
+      --warn: #9c5a1d;
+      --shadow: 0 24px 80px rgba(33, 48, 76, .12);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.45;
+      background:
+        linear-gradient(rgba(94,126,184,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(94,126,184,.045) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px, 24px 24px, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(251,251,251,.88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: min(315px, 58vw);
+      max-height: 46px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a { text-decoration: none; color: rgba(17,19,24,.72); transition: color .2s cubic-bezier(.2,.8,.2,1); }
+    .nav-links a:hover { color: var(--accent-dark); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, color .2s, box-shadow .2s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(49,90,159,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { background: transparent; color: var(--ink); border-color: currentColor; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      line-height: .98;
+      hyphens: none;
+      overflow-wrap: anywhere;
+      text-transform: uppercase;
+    }
+
+    .hero { padding: 62px 0 56px; border-bottom: 1px solid var(--line); }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(380px, .62fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 22px 0 0;
+      font-size: clamp(18px, 2vw, 23px);
+      color: rgba(17,19,24,.72);
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .serial {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 34px;
+      padding: 9px 11px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.75);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .hours-panel {
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--surface-2);
+    }
+
+    .panel-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+
+    .status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ok);
+    }
+
+    .schedule-table, .price-table, .service-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    td.time, td.price, .mono {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    tr.today td {
+      background: rgba(94,126,184,.10);
+      border-color: rgba(94,126,184,.38);
+    }
+
+    .note {
+      margin: 0;
+      padding: 16px 18px;
+      color: var(--muted);
+      font-size: 15px;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    section { padding: 72px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px minmax(0, .86fr) minmax(280px, .48fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    .num {
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 8vw, 112px);
+      font-weight: 700;
+      line-height: .78;
+      color: rgba(94,126,184,.22);
+    }
+
+    h2 { font-size: clamp(32px, 4.5vw, 64px); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; hyphens: auto; }
+
+    .service-table td:first-child { font-weight: 800; width: 28%; }
+    .service-table td:last-child { color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .75fr) minmax(360px, .55fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .rules-card, .trust-card, .contact-card, .faq-card {
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+    }
+
+    .rules-card { padding: 26px; }
+    .rule-list { display: grid; gap: 0; margin-top: 18px; border-top: 1px solid var(--line); }
+    .rule {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 18px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .rule strong { font-family: var(--font-mono); color: var(--accent-dark); }
+    .rule p { margin: 0; color: var(--muted); }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .photo-card {
+      position: relative;
+      min-height: 190px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--surface-2);
+    }
+
+    .photo-card img { width: 100%; height: 100%; min-height: 190px; object-fit: cover; filter: saturate(.82) contrast(1.03); }
+    .photo-card span {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      padding: 7px 9px;
+      background: rgba(255,255,255,.88);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+
+    .trust-card {
+      min-height: 170px;
+      padding: 24px;
+      border-width: 0 1px 0 0;
+    }
+    .trust-card:last-child { border-right: 0; }
+    .trust-card .big {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 700;
+      color: var(--accent-dark);
+      line-height: 1;
+    }
+    .trust-card p { margin: 12px 0 0; color: var(--muted); }
+
+    .price-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .price-table th { position: sticky; top: 74px; z-index: 3; }
+    .price-table td:first-child { font-weight: 800; min-width: 260px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, .55fr) minmax(0, .9fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card { padding: 0; }
+    .contact-row {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 18px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-row:last-child { border-bottom: 0; }
+    .contact-row strong { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--muted); }
+    .contact-row a { font-weight: 800; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    #map {
+      height: 420px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--surface-2);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+    .faq-card { padding: 22px; }
+    .faq-card h3 {
+      font-family: var(--font-body);
+      text-transform: none;
+      line-height: 1.2;
+      font-size: 21px;
+      font-weight: 800;
+    }
+    .faq-card p { margin: 10px 0 0; color: var(--muted); }
+
+    .cta {
+      padding: 46px 0 64px;
+    }
+    .cta-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 30px;
+      background: var(--ink);
+      color: #fff;
+      border: 1px solid var(--ink);
+    }
+    .cta-box h2 { font-size: clamp(30px, 4vw, 56px); }
+    .cta-box p { margin: 10px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .cta-box .btn-outline { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      background: var(--surface);
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .footer-grid a { color: var(--accent-dark); font-weight: 800; }
+
+    @media (max-width: 940px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .split, .contact-grid, .section-head, .cta-box { grid-template-columns: 1fr; }
+      .section-head { gap: 12px; }
+      .trust-grid, .faq-grid { grid-template-columns: 1fr; }
+      .trust-card { border-width: 0 0 1px 0; }
+      .trust-card:last-child { border-bottom: 0; }
+      .price-table th { top: 74px; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding-top: 34px; }
+      .nav { min-height: 68px; }
+      .nav .btn { display: none; }
+      th, td { padding: 12px 10px; }
+      .contact-row, .rule { grid-template-columns: 1fr; gap: 6px; }
+      .hero-actions .btn, .cta-box .btn { width: 100%; }
+      section { padding: 54px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Ordinace Pro Malá Zvířata MVDr. Tomáš Weidenhöfer">
+        <img src="https://veterinabrno.cz/app/uploads/2016/10/logo-abclinic.svg_.png" alt="Ordinace Pro Malá Zvířata MVDr. Tomáš Weidenhöfer">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420547242126">Zavolat recepci</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Centrum veterinární péče │ Brno, Starý Lískovec</p>
+          <h1>Péče v laskavých rukách</h1>
+          <p class="lead">Profesionální veterinární péče pro malé pacienty, chovatele i referující veterináře. Každé ošetření si prosím domluvte předem telefonicky.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420547242126">+420 547 242 126</a>
+            <a class="btn btn-outline" href="mailto:recepce@veterinabrno.cz">recepce@veterinabrno.cz</a>
+          </div>
+          <div class="serial">Jemelkova 42, Brno-Starý Lískovec · objednávkový režim</div>
+        </div>
+
+        <aside class="hours-panel" aria-label="Ordinační hodiny">
+          <div class="panel-top">
+            <div class="panel-title">Provoz dnes</div>
+            <div class="status">Pátek · 8-19</div>
+          </div>
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Den</th>
+                <th>Režim</th>
+                <th>Čas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Pondělí-čtvrtek</td>
+                <td>Na objednání</td>
+                <td class="time">8-19</td>
+              </tr>
+              <tr class="today">
+                <td>Pátek</td>
+                <td>Na objednání</td>
+                <td class="time">8-19</td>
+              </tr>
+              <tr>
+                <td>Sobota-neděle</td>
+                <td>Pohotovost po domluvě</td>
+                <td class="time">8-21</td>
+              </tr>
+              <tr>
+                <td>Denně mimo ordinaci</td>
+                <td>Pohotovost</td>
+                <td class="time">8-21</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">Akutní případy nahlaste předem telefonicky. V době pohotovosti nemusí být lékař přítomen.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <h2>Pro koho tu jsme</h2>
+          <p>Struktura péče vychází z provozu ordinace: běžní pacienti, chovatelé a referující veterináři mají jasně oddělené potřeby i objednání.</p>
+        </div>
+        <table class="service-table">
+          <thead>
+            <tr>
+              <th>Skupina</th>
+              <th>Co řešíte</th>
+              <th>Jak postupovat</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pro pacienty</td>
+              <td>Široké spektrum zdravotních potíží u malých zvířat.</td>
+              <td>Zavolejte na recepci a domluvte termín vyšetření.</td>
+            </tr>
+            <tr>
+              <td>Pro chovatele</td>
+              <td>Kompletní i specializovaná vyšetření specifických plemen.</td>
+              <td>Připravte prosím informace o plemeni, věku a aktuálních potížích.</td>
+            </tr>
+            <tr>
+              <td>Pro veterináře</td>
+              <td>Specializovaný zákrok nebo vyšetření referovaného pacienta.</td>
+              <td>Kontaktujte recepci a předejte dostupnou dokumentaci.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="wrap split">
+        <div class="rules-card">
+          <p class="eyebrow">Objednávkový režim provozu</p>
+          <h2>Nejdřív telefon</h2>
+          <div class="rule-list">
+            <div class="rule">
+              <strong>01</strong>
+              <p>Každé ošetření si prosím předem objednejte u recepce.</p>
+            </div>
+            <div class="rule">
+              <strong>02</strong>
+              <p>Akutní stav nahlaste telefonicky ještě před příjezdem do ordinace.</p>
+            </div>
+            <div class="rule">
+              <strong>03</strong>
+              <p>Pohotovost o víkendech, svátcích a mimo ordinační hodiny probíhá po domluvě.</p>
+            </div>
+          </div>
+        </div>
+        <div class="photo-strip" aria-label="Péče v ordinaci">
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/7468978/pexels-photo-7468978.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A professional veterinarian in mask examines a dog indoors during a checkup.">
+            <span>Vyšetření pacienta</span>
+          </figure>
+          <figure class="photo-card">
+            <img src="https://images.pexels.com/photos/7470634/pexels-photo-7470634.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A veterinarian wearing a mask examines a dog indoors, focusing on patient care.">
+            <span>Klidná domluva postupu</span>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <h2>Důležité údaje</h2>
+          <p>Kontakty a provozní informace jsou uvedené tak, aby šly rychle přečíst při cestě na vyšetření.</p>
+        </div>
+        <div class="trust-grid">
+          <div class="trust-card">
+            <span class="big">5/5</span>
+            <p>Hodnocení podle dostupného záznamu Google.</p>
+          </div>
+          <div class="trust-card">
+            <span class="big">1</span>
+            <p>Veřejně uvedená recenze v dodaných datech.</p>
+          </div>
+          <div class="trust-card">
+            <span class="big">8-21</span>
+            <p>Čas pohotovosti uváděný pro víkendy, svátky a mimo ordinační hodiny.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <h2>Přehled režimů</h2>
+          <p>Viditelné rozlišení běžné ordinace a pohotovosti pomáhá zvolit správný kontakt i očekávání před návštěvou.</p>
+        </div>
+        <div class="price-wrap">
+          <table class="price-table">
+            <thead>
+              <tr>
+                <th>Situace</th>
+                <th>Kdy</th>
+                <th>Co udělat</th>
+                <th>Poznámka</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Běžné vyšetření</td>
+                <td class="time">Po-pá · 8-19</td>
+                <td>Objednat se na recepci.</td>
+                <td>Ordinace pracuje v objednávkovém režimu.</td>
+              </tr>
+              <tr>
+                <td>Akutní potíže</td>
+                <td class="time">Telefonicky předem</td>
+                <td>Zavolat a popsat stav zvířete.</td>
+                <td>Recepce upřesní další postup.</td>
+              </tr>
+              <tr>
+                <td>Pohotovost</td>
+                <td class="time">8-21</td>
+                <td>Nejdřív zavolat.</td>
+                <td>Pohotovostní příplatek podle náročnosti výkonu.</td>
+              </tr>
+              <tr>
+                <td>Referovaný pacient</td>
+                <td class="time">Po domluvě</td>
+                <td>Předat podklady přes recepci.</td>
+                <td>Určeno pro veterináře se specializovaným případem.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <h2>Kontakt a adresa</h2>
+          <p>Ordinace sídlí v Brně-Starém Lískovci na adrese Jemelkova 42. Před návštěvou volejte recepci.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-row">
+              <strong>Telefon</strong>
+              <a href="tel:+420547242126">+420 547 242 126</a>
+            </div>
+            <div class="contact-row">
+              <strong>E-mail</strong>
+              <a href="mailto:recepce@veterinabrno.cz">recepce@veterinabrno.cz</a>
+            </div>
+            <div class="contact-row">
+              <strong>Adresa</strong>
+              <span>Jemelkova 42, 625 00 Brno-Starý Lískovec</span>
+            </div>
+            <div class="contact-row">
+              <strong>Web</strong>
+              <a href="https://veterinabrno.cz/">veterinabrno.cz</a>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa: Jemelkova 42, Brno-Starý Lískovec"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <h2>Časté dotazy</h2>
+          <p>Nejdůležitější provozní odpovědi před prvním telefonátem nebo akutní cestou do ordinace.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-card">
+            <h3>Mohu přijít bez objednání?</h3>
+            <p>Prosíme, nejdřív zavolejte. Objednávkový režim se vztahuje i na akutní případy.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Jak funguje víkendová pohotovost?</h3>
+            <p>V sobotu, neděli a ve státní svátky je pohotovost v čase 8-21 po telefonické domluvě.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Řešíte i pacienty od jiných veterinářů?</h3>
+            <p>Ano, referující veterináři mohou kontaktovat ordinaci kvůli specializovanému zákroku nebo vyšetření.</p>
+          </article>
+          <article class="faq-card">
+            <h3>Kam mám poslat dotaz?</h3>
+            <p>Pro běžnou komunikaci použijte e-mail recepce@veterinabrno.cz nebo telefon recepce.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-box">
+        <div>
+          <h2>Domluvte ošetření předem</h2>
+          <p>Recepce vám pomůže zvolit termín, pohotovostní postup nebo přípravu podkladů pro vyšetření.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420547242126">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:recepce@veterinabrno.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <span>Nezávislá prezentační stránka připravená týmem Webflex pro posouzení vizuálního směru.</span>
+      <a href="https://app.webflex.cz/delete/1g4c3cc">Odstranit stránku</a>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [16.557167, 49.1676558],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#5E7EB8' })
+      .setLngLat([16.557167, 49.1676558])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
