@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Optika Eva - měření zraku a brýle v Praze</title>
+  <meta name="description" content="Optika Eva v Praze: měření zraku, brýle, kontaktní čočky, doplňky, dárkové poukazy a dvě pobočky na Vinohradech a v Podolí.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-blue: #eef7fd;
+      --ink: #121820;
+      --muted: #65717c;
+      --line: rgba(18, 24, 32, .08);
+      --accent: #40A0E0;
+      --accent-dark: #287bb4;
+      --shadow: 0 38px 100px rgba(41, 114, 157, .12);
+      --shadow-soft: 0 24px 74px rgba(18, 24, 32, .08);
+      --radius: 28px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(64,160,224,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(64,160,224,.024) 1px, transparent 1px),
+        radial-gradient(circle at 82% 12%, rgba(64,160,224,.13), transparent 28%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 25px; line-height: 1.04; }
+    p { hyphens: auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 253, .82);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .logo img {
+      width: min(260px, 54vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      color: rgba(18, 24, 32, .72);
+      text-decoration: none;
+      transition: color .2s cubic-bezier(.2,.8,.2,1), transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .nav-links a:hover { color: var(--accent-dark); transform: translateY(-1px); }
+    .nav-links a:active { transform: translateY(1px); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 34px rgba(64,160,224,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    .hero { padding: 68px 0 88px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .76fr);
+      gap: 52px;
+      align-items: center;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: rgba(18, 24, 32, .74);
+      font-size: clamp(19px, 2vw, 24px);
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 690px;
+      margin-top: 42px;
+    }
+
+    .meta-tile, .soft-card, .service-card, .hours-card, .map-card, .faq-item, .branch-card {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(16px);
+    }
+
+    .meta-tile {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 22px;
+    }
+
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-dark);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 700; }
+
+    .lens-panel {
+      position: relative;
+      min-height: 470px;
+      border-radius: 36px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,.95) 0 18%, rgba(64,160,224,.20) 19% 33%, rgba(255,255,255,.84) 34% 35%, transparent 36%),
+        linear-gradient(145deg, #ffffff, #edf7fd 62%, #dff1fb);
+      box-shadow: var(--shadow);
+    }
+
+    .lens-panel::before,
+    .lens-panel::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(40,123,180,.28);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .lens-panel::before { width: 330px; height: 330px; left: 44px; top: 70px; }
+    .lens-panel::after { width: 330px; height: 330px; right: 44px; top: 70px; }
+
+    .bridge {
+      position: absolute;
+      left: 50%;
+      top: 236px;
+      width: 72px;
+      height: 34px;
+      border-top: 9px solid rgba(40,123,180,.76);
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+
+    .lens-copy {
+      position: absolute;
+      left: 28px;
+      right: 28px;
+      bottom: 28px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 84px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .service-card {
+      min-height: 250px;
+      border-radius: var(--radius);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s, background .22s;
+    }
+
+    .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); background: var(--surface-strong); }
+    .service-card .num { color: var(--accent-dark); font-family: var(--font-mono); font-weight: 700; }
+    .service-card p { margin: 16px 0 0; color: var(--muted); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(360px, .72fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .soft-card {
+      border-radius: 34px;
+      padding: clamp(28px, 4vw, 42px);
+    }
+
+    .soft-card.blue {
+      background: linear-gradient(145deg, var(--accent), #267db8);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .soft-card.blue .eyebrow { color: rgba(255,255,255,.76); }
+    .soft-card.blue p { color: rgba(255,255,255,.82); }
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4.2vw, 58px);
+      line-height: .96;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      hyphens: none;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 14px;
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      display: flex;
+      gap: 12px;
+      color: rgba(255,255,255,.88);
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      margin-top: 8px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: #fff;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .trust-item {
+      min-height: 160px;
+      padding: 28px;
+      border-radius: 28px;
+      background: var(--surface-blue);
+    }
+
+    .trust-item strong {
+      display: block;
+      color: var(--accent-dark);
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .trust-item span { display: block; margin-top: 10px; color: var(--muted); font-weight: 800; }
+
+    .rows {
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .row:last-child { border-bottom: 0; }
+    .row b { color: var(--accent-dark); font-family: var(--font-mono); }
+    .row p { margin: 0; color: var(--muted); }
+
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .branch-card {
+      min-height: 320px;
+      border-radius: 32px;
+      padding: 30px;
+      display: grid;
+      align-content: space-between;
+      gap: 24px;
+    }
+
+    .branch-card address {
+      color: var(--muted);
+      font-style: normal;
+      font-size: 18px;
+    }
+
+    .hours-table { display: grid; gap: 10px; margin-top: 18px; }
+    .hours-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .hours-line.today { color: var(--accent-dark); font-weight: 700; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .52fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hours-card, .map-card {
+      border-radius: 34px;
+      padding: 30px;
+    }
+
+    .hours-card h2 { font-size: clamp(32px, 4vw, 56px); margin-bottom: 22px; }
+    .contact-links { display: grid; gap: 10px; margin-top: 22px; }
+    .contact-links a {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--surface-blue);
+      color: var(--ink);
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, color .22s;
+    }
+
+    .contact-links a:hover { transform: translateY(-1px); background: var(--accent); color: #fff; }
+    .contact-links a:active { transform: translateY(1px); }
+    #map { height: 420px; border-radius: 18px; overflow: hidden; }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .faq-item {
+      border-radius: 28px;
+      padding: 26px;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s;
+    }
+
+    .faq-item:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final { padding-bottom: 38px; }
+    .cta {
+      min-height: 350px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 34px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 64px);
+      border-radius: 38px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .cta h2 { max-width: 780px; font-size: clamp(38px, 5vw, 76px); }
+    .cta p { max-width: 610px; color: rgba(255,255,255,.78); font-size: 19px; }
+    .cta .eyebrow { color: rgba(255,255,255,.66); }
+    .cta .btn-primary { background: var(--accent); color: #fff; }
+    .cta .btn-secondary { color: #fff; border-color: rgba(255,255,255,.45); }
+
+    footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding-bottom: 22px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .webflex-disclaimer {
+      max-width: 880px;
+      color: rgba(101,113,124,.86);
+      font-size: 12px;
+    }
+
+    .webflex-disclaimer a { text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero-grid, .section-head, .split, .contact-grid, .cta { grid-template-columns: 1fr; }
+      .lens-panel { min-height: 420px; }
+      .service-grid, .trust-strip, .faq, .branches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .row { grid-template-columns: 1fr; gap: 8px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-meta, .service-grid, .trust-strip, .faq, .branches { grid-template-columns: 1fr; }
+      .hero-actions, .cta-actions { display: grid; }
+      .btn { width: 100%; }
+      .soft-card, .hours-card, .map-card, .branch-card { padding: 24px; }
+      .lens-panel { min-height: 360px; }
+      .lens-panel::before, .lens-panel::after { width: 230px; height: 230px; top: 70px; }
+      .lens-panel::before { left: 20px; }
+      .lens-panel::after { right: 20px; }
+      .bridge { top: 178px; }
+      .footer-main { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#top" aria-label="Optika Eva">
+        <img src="https://optika-eva.cz/ws/media-library/1d80babf679ab924fc144b5a7b614e79/puvodni-logo-obracene-kopie.png" alt="Optika Eva">
+      </a>
+      <div class="nav-links">
+        <a href="#sluzby">Služby</a>
+        <a href="#pobocky">Pobočky</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420274822111">274 822 111</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 3 · Vinohradská 156/2222</p>
+          <h1>Optika Eva Vinohrady</h1>
+          <p class="lead">Rodinná optika s více než 20 lety praxe v oční optice a optometrii. Měření zraku, brýle, kontaktní čočky a doplňky na dvou pražských pobočkách.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420274822111">Objednat telefonicky</a>
+            <a class="btn btn-secondary" href="#pobocky">Vybrat pobočku</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile"><strong>4,7</strong><span>hodnocení zákazníků</span></div>
+            <div class="meta-tile"><strong>48</strong><span>veřejných recenzí</span></div>
+            <div class="meta-tile"><strong>9-19</strong><span>Vinohradská po-pá</span></div>
+          </div>
+        </div>
+        <div class="lens-panel" aria-label="Brýle a měření zraku">
+          <span class="bridge" aria-hidden="true"></span>
+          <svg width="100%" height="100%" viewBox="0 0 560 470" role="img" aria-label="Abstraktní kresba brýlí">
+            <circle cx="168" cy="206" r="112" fill="none" stroke="rgba(40,123,180,.58)" stroke-width="14"/>
+            <circle cx="392" cy="206" r="112" fill="none" stroke="rgba(40,123,180,.58)" stroke-width="14"/>
+            <path d="M281 210c18-26 44-26 62 0" fill="none" stroke="rgba(18,24,32,.78)" stroke-width="10" stroke-linecap="round"/>
+            <path d="M56 190c-28-8-42-20-48-38" fill="none" stroke="rgba(18,24,32,.44)" stroke-width="9" stroke-linecap="round"/>
+            <path d="M504 190c28-8 42-20 48-38" fill="none" stroke="rgba(18,24,32,.44)" stroke-width="9" stroke-linecap="round"/>
+            <path d="M137 156l74 96M359 156l74 96" stroke="rgba(255,255,255,.72)" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+          <div class="lens-copy"><span>Měření zraku</span><span>Brýle · čočky · doplňky</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Co u nás vyřídíte</p>
+            <h2>Péče o zrak na jednom místě.</h2>
+          </div>
+          <p>Důraz je na odborné vyšetření zraku, zkušenosti s kontaktními čočkami a výběr brýlí i doplňků od renomovaných značek.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="num">01</span>
+            <div><h3>Měření zraku</h3><p>Odborné a vysoce profesionální vyšetření zraku na pobočce.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">02</span>
+            <div><h3>Brýle</h3><p>Výběr brýlí, obrub a řešení pro každodenní vidění.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">03</span>
+            <div><h3>Kontaktní čočky</h3><p>Dlouholeté zkušenosti s aplikací kontaktních čoček.</p></div>
+          </article>
+          <article class="service-card">
+            <span class="num">04</span>
+            <div><h3>Doplňky</h3><p>Zboží renomovaných a věhlasných značek výrobců brýlí a doplňků.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <article class="soft-card blue">
+          <p class="eyebrow">Rodinná firma</p>
+          <div class="quote">Praxe, přístroje, klidný výběr.</div>
+          <ul class="check-list">
+            <li><span class="dot"></span><span>Více než 20 let praxe v oční optice a optometrii.</span></li>
+            <li><span class="dot"></span><span>Nové technologické přístroje i metody v oboru.</span></li>
+            <li><span class="dot"></span><span>Dárkové poukazy a možnost uplatnění benefitů.</span></li>
+          </ul>
+        </article>
+        <article class="soft-card">
+          <p class="eyebrow">Objednání</p>
+          <h2>Když termín nesedí.</h2>
+          <p class="lead" style="font-size:20px">Nevyhovuje Vám termín v rezervačním systému? Objednat se můžete i telefonicky na vybranou pobočku.</p>
+          <div class="trust-strip">
+            <div class="trust-item"><strong>4,7</strong><span>hodnocení</span></div>
+            <div class="trust-item"><strong>48</strong><span>recenzí</span></div>
+            <div class="trust-item"><strong>2</strong><span>pražské pobočky</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Jak návštěva probíhá</p>
+            <h2>Od měření po výběr.</h2>
+          </div>
+          <p>Stručný rytmus návštěvy optiky podle služeb, které Optika Eva uvádí pro zákazníky.</p>
+        </div>
+        <div class="rows">
+          <div class="row"><b>01</b><p>Vyberete si pobočku na Vinohradské nebo Na Dolinách.</p><strong>Pobočka</strong></div>
+          <div class="row"><b>02</b><p>Domluvíte si měření zraku nebo aplikaci kontaktních čoček.</p><strong>Termín</strong></div>
+          <div class="row"><b>03</b><p>Na místě vyberete brýle, čočky nebo doplňky podle potřeby.</p><strong>Výběr</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pobocky">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Dvě adresy</p>
+            <h2>Vinohrady a Podolí.</h2>
+          </div>
+          <p>Kontaktujte přímo pobočku, která je pro Vás nejblíž. Vinohradská má otevřeno také v sobotu dopoledne.</p>
+        </div>
+        <div class="branches">
+          <article class="branch-card">
+            <div>
+              <h3>Vinohradská</h3>
+              <address>Vinohradská 156/2222<br>130 00 Praha 3</address>
+              <div class="hours-table">
+                <div class="hours-line today"><span>Po-pá</span><span>9:00-19:00</span></div>
+                <div class="hours-line"><span>So</span><span>9:00-12:00</span></div>
+                <div class="hours-line"><span>Ne</span><span>Zavřeno</span></div>
+              </div>
+            </div>
+            <div class="contact-links">
+              <a href="tel:+420274822111">+420 274 822 111</a>
+              <a href="tel:+420777899952">+420 777 899 952</a>
+            </div>
+          </article>
+          <article class="branch-card">
+            <div>
+              <h3>Na Dolinách</h3>
+              <address>Na Dolinách 16/826<br>140 00 Praha 4 - Podolí</address>
+              <div class="hours-table">
+                <div class="hours-line"><span>Po-pá</span><span>9:00-18:00</span></div>
+                <div class="hours-line"><span>Čt</span><span>9:00-19:00</span></div>
+                <div class="hours-line"><span>So-ne</span><span>Zavřeno</span></div>
+              </div>
+            </div>
+            <div class="contact-links">
+              <a href="tel:+420241431291">+420 241 431 291</a>
+              <a href="tel:+420777809953">+420 777 809 953</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <aside class="hours-card">
+          <p class="eyebrow">Kontakt Vinohradská</p>
+          <h2>Objednejte se</h2>
+          <div class="hours-table">
+            <div class="hours-line today"><span>Pondělí-pátek</span><span>9:00-19:00</span></div>
+            <div class="hours-line"><span>Sobota</span><span>9:00-12:00</span></div>
+            <div class="hours-line"><span>Neděle</span><span>Zavřeno</span></div>
+          </div>
+          <p><strong>Adresa:</strong><br>156, Vinohradská 2222, 130 00 Praha 3-Vinohrady</p>
+          <div class="contact-links">
+            <a href="tel:+420274822111">+420 274 822 111</a>
+            <a href="mailto:info@optika-eva.cz">info@optika-eva.cz</a>
+          </div>
+        </aside>
+        <div class="map-card">
+          <div id="map" aria-label="Mapa pobočky Optika Eva Vinohradská"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Než dorazíte.</h2>
+          </div>
+          <p>Odpovědi k objednání, pobočkám a službám podle informací Optiky Eva.</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item"><h3>Mohu se objednat telefonicky?</h3><p>Ano. Pokud Vám nevyhovuje termín v rezervačním systému, zavolejte na vybranou pobočku.</p></article>
+          <article class="faq-item"><h3>Nabízíte kontaktní čočky?</h3><p>Ano. Optika Eva uvádí dlouholeté zkušenosti s aplikací kontaktních čoček.</p></article>
+          <article class="faq-item"><h3>Máte dárkové poukazy?</h3><p>Ano, u Optiky Eva je možné zakoupit dárkové poukazy.</p></article>
+          <article class="faq-item"><h3>Lze uplatnit benefity?</h3><p>Ano, podle informací optiky je možné uplatnit vybrané benefity přímo na pobočce.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <p class="eyebrow">Měření zraku</p>
+          <h2>Začněte termínem.</h2>
+          <p>Zavolejte na pobočku Vinohradská nebo napište e-mail. Tým Optiky Eva Vám pomůže s měřením zraku, brýlemi i kontaktními čočkami.</p>
+        </div>
+        <div class="hero-actions cta-actions">
+          <a class="btn btn-primary" href="tel:+420274822111">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:info@optika-eva.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Optika Eva</strong>
+        <span>Vinohradská 156/2222 · Praha 3 · +420 274 822 111</span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/sdrd0lt">webflex.cz/delete/sdrd0lt</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.464427599999999, 50.0778174],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#40A0E0' })
+      .setLngLat([14.464427599999999, 50.0778174])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
