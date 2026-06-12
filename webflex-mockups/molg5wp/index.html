@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARS Clinic | Estetická medicína ve Vinohradech</title>
+  <meta name="description" content="ARS Clinic ve Vinohradech kombinuje estetickou medicínu a umění. Procedury, konzultace a rezervace termínu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-strong: #ffffff;
+      --ink: #151515;
+      --muted: #68635f;
+      --soft: #efebe6;
+      --accent: #E0C0A0;
+      --accent-ink: #2b2118;
+      --line: rgba(21, 21, 21, .08);
+      --shadow: 0 28px 90px rgba(28, 24, 20, .08);
+      --shadow-soft: 0 18px 70px rgba(28, 24, 20, .06);
+      --font-display: "Archivo Black", Arial Black, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(21,21,21,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21,21,21,.018) 1px, transparent 1px),
+        radial-gradient(circle at 14% 8%, rgba(224, 192, 160, .22), transparent 32%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); letter-spacing: .01em; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(24px);
+      background: rgba(251, 251, 250, .78);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .logo img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: rgba(21, 21, 21, .72);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .nav-links a { text-decoration: none; transition: color .2s var(--ease); }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(28,24,20,.1); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-secondary { border: 1px solid currentColor; color: var(--ink); background: rgba(255,255,255,.34); }
+
+    .hero {
+      padding: 70px 0 82px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .85fr);
+      gap: 54px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 22px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(224,192,160,.18);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .95;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    .lead {
+      max-width: 640px;
+      margin: 28px 0 0;
+      color: rgba(21,21,21,.72);
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.35;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 46px;
+      max-width: 660px;
+    }
+    .meta-card {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-card strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+    .meta-card span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .hero-photo {
+      position: relative;
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--soft);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(.98);
+    }
+    .hero-photo::after {
+      content: "Italská 1219/2 · Vinohrady";
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-head h2 { font-size: clamp(34px, 5vw, 64px); text-transform: uppercase; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 19px; }
+
+    .services-list {
+      border-radius: 34px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) 180px;
+      gap: 28px;
+      align-items: center;
+      padding: 30px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .service-row h3 { font-size: clamp(24px, 3vw, 38px); text-transform: uppercase; }
+    .service-row p { margin: 8px 0 0; color: var(--muted); max-width: 720px; }
+    .tag {
+      justify-self: end;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(224,192,160,.24);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(380px, .8fr) minmax(0, 1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .panel {
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+      padding: 34px;
+    }
+    .panel h2 { font-size: clamp(32px, 4vw, 58px); text-transform: uppercase; }
+    .panel p { color: var(--muted); margin: 20px 0 0; }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 28px;
+      align-items: stretch;
+    }
+    .trust-item {
+      min-height: 142px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.74);
+      padding: 22px;
+    }
+    .trust-item strong {
+      font-family: var(--font-mono);
+      font-size: 30px;
+    }
+    .trust-item span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .photo-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-stack figure {
+      margin: 0;
+      min-height: 280px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--soft);
+    }
+    .photo-stack figure:first-child { grid-row: span 2; }
+    .photo-stack img { width: 100%; height: 100%; object-fit: cover; }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 250px;
+      padding: 26px;
+      border-radius: 30px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step b { font-family: var(--font-mono); color: var(--muted); }
+    .step h3 { margin-top: 40px; font-size: 24px; line-height: 1.05; text-transform: uppercase; }
+    .step p { margin: 14px 0 0; color: var(--muted); font-size: 15px; }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(320px, .45fr);
+      gap: 18px;
+      align-items: stretch;
+      border-radius: 38px;
+      padding: 18px;
+      background: #171615;
+      color: #fff;
+      box-shadow: 0 32px 110px rgba(0,0,0,.14);
+    }
+    .price-copy { padding: 34px; }
+    .price-copy h2 { font-size: clamp(34px, 5vw, 68px); text-transform: uppercase; }
+    .price-copy p { color: rgba(255,255,255,.68); max-width: 660px; font-size: 19px; }
+    .price-card {
+      border-radius: 28px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 300px;
+    }
+    .price-card span { font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; font-size: 12px; }
+    .price-card strong { font-family: var(--font-display); font-size: clamp(44px, 6vw, 76px); line-height: .9; overflow-wrap: anywhere; }
+    .price-card small { font-size: 15px; line-height: 1.35; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, .9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border-radius: 34px;
+      padding: 32px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .contact-card h2 { font-size: clamp(34px, 4vw, 58px); text-transform: uppercase; }
+    .contact-lines { margin-top: 26px; display: grid; gap: 14px; }
+    .contact-lines a, .contact-lines span {
+      display: block;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .contact-lines small {
+      display: block;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    #map {
+      height: 420px;
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .55fr 1fr;
+      gap: 46px;
+    }
+    .faq h2 { font-size: clamp(34px, 5vw, 62px); text-transform: uppercase; }
+    .qa {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .qa:first-child { padding-top: 0; }
+    .qa h3 { font-family: var(--font-body); font-size: 22px; line-height: 1.2; }
+    .qa p { margin: 10px 0 0; color: var(--muted); }
+
+    .final {
+      padding: 42px 0 82px;
+    }
+    .final-card {
+      border-radius: 40px;
+      padding: clamp(34px, 7vw, 76px);
+      background: var(--accent);
+      color: var(--accent-ink);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .final-card h2 { font-size: clamp(38px, 6vw, 80px); text-transform: uppercase; }
+    .final-card p { margin: 18px 0 0; max-width: 680px; }
+    .final-card .btn-secondary { background: transparent; color: var(--accent-ink); }
+
+    footer {
+      padding: 36px 0;
+      color: rgba(21,21,21,.58);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .credits a, .disclaimer a { text-underline-offset: 3px; }
+    .disclaimer { max-width: 760px; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .split, .price-band, .contact-grid, .faq, .final-card {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid { gap: 34px; }
+      .hero-photo { width: 100%; }
+      .process { grid-template-columns: repeat(2, 1fr); }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .tag { justify-self: start; }
+      .nav-links a:not(.btn) { display: none; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 42px; }
+      .hero-meta, .trust-grid, .process, .photo-stack { grid-template-columns: 1fr; }
+      .panel, .contact-card, .price-copy { padding: 24px; }
+      .nav { min-height: 68px; }
+      .logo img { max-height: 34px; }
+      .btn { width: 100%; }
+      .nav .btn { width: auto; padding-inline: 14px; }
+      section { padding: 62px 0; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="logo" href="#" aria-label="ARS Clinic domů">
+        <img src="https://images.squarespace-cdn.com/content/v1/617c41ea80128e2ac59c8937/a719f26f-766d-441e-ba57-8f5f4bcb7030/Logo+ARS%401x.png?format=1500w" alt="ARS Clinic">
+      </a>
+      <div class="nav-links">
+        <a href="#procedury">Procedury</a>
+        <a href="#pece">Péče</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420773997088">Rezervovat</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Estetická medicína · Vinohrady</p>
+          <h1>Krása jako umění</h1>
+          <p class="lead">ARS Clinic kombinuje estetickou medicínu, globální zkušenosti a individuální přístup pro přirozený výsledek.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420773997088">Rezervovat termín</a>
+            <a class="btn btn-secondary" href="#procedury">Zobrazit procedury</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé informace">
+            <div class="meta-card"><strong>4.8</strong><span>hodnocení na Googlu</span></div>
+            <div class="meta-card"><strong>288</strong><span>recenzí klientů</span></div>
+            <div class="meta-card"><strong>Praha 2</strong><span>Italská 1219/2</span></div>
+          </div>
+        </div>
+        <figure class="hero-photo">
+          <img src="https://images.pexels.com/photos/5793684/pexels-photo-5793684.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A woman receives shoulder therapy from a therapist in a serene room with natural light.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="procedury">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Procedury</h2>
+          <p>Výběr ošetření vychází z cílů klienta, stavu pokožky a očekávaného výsledku. Důraz je na bezpečné techniky a komfort během návštěvy.</p>
+        </div>
+        <div class="services-list">
+          <article class="service-row">
+            <span class="num">01</span>
+            <div>
+              <h3>Zvětšení rtů</h3>
+              <p>Estetické ošetření zaměřené na přirozený tvar, proporci a citlivě vedený výsledek.</p>
+            </div>
+            <span class="tag">od 6900 Kč</span>
+          </article>
+          <article class="service-row">
+            <span class="num">02</span>
+            <div>
+              <h3>Ultherapy PRIME</h3>
+              <p>Neinvazivní lifting nové generace s fokusovaným ultrazvukem, který cílí hlubší vrstvy pokožky bez narušení povrchu.</p>
+            </div>
+            <span class="tag">novinka</span>
+          </article>
+          <article class="service-row">
+            <span class="num">03</span>
+            <div>
+              <h3>HELEO4</h3>
+              <p>Biorevitalizační a regenerační terapie se světelnou fotodynamickou stimulací pro kvalitu a sjednocení pleti.</p>
+            </div>
+            <span class="tag">regenerace</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap split">
+        <div class="panel">
+          <p class="eyebrow">Proč ARS Clinic</p>
+          <h2>Péče vedená detailem</h2>
+          <p>Tým profesionálů průběžně rozvíjí kvalifikaci, sleduje světové metody a volí techniky podle individuálních potřeb klienta.</p>
+          <div class="trust-grid">
+            <div class="trust-item"><strong>01</strong><span>bezpečné a dostupné postupy</span></div>
+            <div class="trust-item"><strong>02</strong><span>komfort během i po návštěvě</span></div>
+            <div class="trust-item"><strong>03</strong><span>krásný a přirozený výsledek</span></div>
+          </div>
+        </div>
+        <div class="photo-stack" aria-label="Atmosféra péče">
+          <figure><img src="https://images.pexels.com/photos/5793695/pexels-photo-5793695.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A physiotherapist provides treatment to a client in a bright, modern clinic setting."></figure>
+          <figure><img src="https://images.pexels.com/photos/5793788/pexels-photo-5793788.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Physical therapist stretches a woman's arm in a sunny room."></figure>
+          <figure><img src="https://images.pexels.com/photos/5793651/pexels-photo-5793651.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A physiotherapist assessing a client's posture in a bright, modern clinic."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Návštěva</h2>
+          <p>Od první konzultace po péči po ošetření je postup vedený jasně, klidně a s ohledem na Vaše očekávání.</p>
+        </div>
+        <div class="process">
+          <article class="step"><b>01</b><div><h3>Konzultace</h3><p>Proberete své cíle, stav pleti a vhodnost konkrétní procedury.</p></div></article>
+          <article class="step"><b>02</b><div><h3>Volba postupu</h3><p>Lékař doporučí techniku a vysvětlí průběh ošetření.</p></div></article>
+          <article class="step"><b>03</b><div><h3>Ošetření</h3><p>Důraz je na komfort, přesnost a minimální zátěž pro klienta.</p></div></article>
+          <article class="step"><b>04</b><div><h3>Další péče</h3><p>Po návštěvě dostanete doporučení pro podporu výsledku.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap price-band">
+        <div class="price-copy">
+          <p class="eyebrow">Ceník procedur</p>
+          <h2>Transparentní orientace před návštěvou</h2>
+          <p>Konkrétní rozsah procedury se potvrzuje při konzultaci. U vybraných ošetření pracuje ARS Clinic s dostupnou vstupní cenou.</p>
+        </div>
+        <div class="price-card">
+          <span>Zvětšení rtů</span>
+          <strong>od 6900 Kč</strong>
+          <small>Uvedená cena pochází z informací ARS Clinic. Přesný postup doporučí lékař při konzultaci.</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap faq">
+        <div>
+          <p class="eyebrow">Časté otázky</p>
+          <h2>Než dorazíte</h2>
+        </div>
+        <div>
+          <article class="qa">
+            <h3>Jak si mám vybrat proceduru?</h3>
+            <p>Stačí přijít s cílem nebo oblastí, kterou chcete řešit. Vhodný postup se volí individuálně při konzultaci.</p>
+          </article>
+          <article class="qa">
+            <h3>Je možné rezervovat termín online?</h3>
+            <p>ARS Clinic uvádí online rezervaci. Pro rychlý kontakt můžete zavolat na telefon uvedený níže.</p>
+          </article>
+          <article class="qa">
+            <h3>Kde kliniku najdu?</h3>
+            <p>Adresa je Italská 1219/2, Vinohrady, 120 00 Praha 2, v docházkové vzdálenosti od centra Vinohrad.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>ARS Clinic</h2>
+          <div class="contact-lines">
+            <div><small>Telefon</small><a href="tel:+420773997088">+420 773 997 088</a></div>
+            <div><small>E-mail</small><a href="mailto:info@arsclinic.cz">info@arsclinic.cz</a></div>
+            <div><small>Adresa</small><span>Italská 1219/2, Vinohrady, 120 00 Praha 2</span></div>
+            <div><small>Hodnocení</small><span class="mono">4.8 / 288 recenzí</span></div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa s polohou ARS Clinic"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap final-card">
+        <div>
+          <h2>Rezervujte si termín</h2>
+          <p>Domluvte si konzultaci v ARS Clinic a získejte doporučení vhodného estetického ošetření.</p>
+        </div>
+        <a class="btn btn-secondary" href="tel:+420773997088">Zavolat na kliniku</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div class="credits">Fotografie: <a href="https://www.pexels.com/@yankrukov" rel="nofollow">Yan Krukau / Pexels</a></div>
+      <div class="disclaimer">Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Pokud si nepřejete, aby byla dále dostupná, můžete ji odstranit zde: <a href="https://webflex.cz/delete/molg5wp" rel="nofollow">webflex.cz/delete/molg5wp</a>.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.435144500000002, 50.0761524],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#E0C0A0' })
+      .setLngLat([14.435144500000002, 50.0761524])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
