@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokrývačství Jiří Kopáček | Dolany</title>
+  <meta name="description" content="Pokrývačské, klempířské a tesařské práce v Dolanech a okolí. Kontakt: +420 777 696 344.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --panel: #17191e;
+      --panel-2: #202229;
+      --ink: #f7f4ef;
+      --muted: #b8b0a8;
+      --line: rgba(247, 244, 239, .18);
+      --line-strong: rgba(247, 244, 239, .34);
+      --accent: #D71920;
+      --accent-dark: #a90f15;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.75'/%3E%3C/svg%3E");
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; color: var(--muted); font-size: 18px; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      line-height: .96;
+      hyphens: none;
+    }
+    h1, .display { overflow-wrap: anywhere; }
+    h1 { font-size: clamp(40px, 6vw, 88px); max-width: 720px; }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); overflow-wrap: anywhere; }
+    h3 { font-size: 22px; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+    .eyebrow {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: .08em;
+      color: var(--ink);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16,17,20,.88);
+      backdrop-filter: blur(14px);
+    }
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 44px;
+      width: auto;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .navlinks a { transition: color .2s var(--ease); }
+    .navlinks a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn-outline:hover { border-color: #fff; background: rgba(255,255,255,.08); }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      align-items: center;
+      padding: 56px 0 72px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .94fr) minmax(420px, .86fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .hero-copy {
+      display: grid;
+      gap: 26px;
+      max-width: 720px;
+    }
+    .lead { font-size: clamp(19px, 2vw, 25px); max-width: 620px; color: #ddd7d0; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.84) contrast(1.08);
+    }
+    .job-tag {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .spec-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .spec {
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      min-height: 104px;
+    }
+    .spec:last-child { border-right: 0; }
+    .spec b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .spec span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    section { padding: 88px 0; border-bottom: 1px solid var(--line); }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+      margin-bottom: 36px;
+    }
+    .num {
+      font-family: var(--font-display);
+      color: var(--accent);
+      font-size: 52px;
+      line-height: .9;
+    }
+    .service-table {
+      border-top: 1px solid var(--line-strong);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.6fr auto;
+      gap: 28px;
+      align-items: center;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row p { max-width: 620px; }
+    .code {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 30px;
+    }
+    .panel.red {
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      align-content: space-between;
+      min-height: 360px;
+    }
+    .panel.red p { color: rgba(255,255,255,.86); }
+    .rating {
+      font-family: var(--font-display);
+      font-size: clamp(76px, 11vw, 148px);
+      line-height: .82;
+      color: #fff;
+      overflow-wrap: anywhere;
+    }
+    .quality-list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .quality-list div {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 18px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery figure {
+      margin: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      overflow: hidden;
+      min-height: 100%;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      object-fit: cover;
+      filter: saturate(.86) contrast(1.05);
+      transition: transform .35s var(--ease);
+    }
+    .gallery figure:hover img { transform: scale(1.025); }
+    .gallery-small {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 18px;
+    }
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+      border: 1px solid var(--line-strong);
+    }
+    .step {
+      padding: 26px;
+      min-height: 220px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      align-content: space-between;
+      gap: 22px;
+      background: var(--panel);
+    }
+    .step:last-child { border-right: 0; }
+    .step .mono { color: var(--accent); font-size: 13px; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 28px;
+      display: grid;
+      gap: 24px;
+      align-content: start;
+    }
+    .contact-line {
+      display: grid;
+      gap: 6px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line a {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+    #map {
+      height: 420px;
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      background: var(--panel-2);
+    }
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line-strong);
+      border: 1px solid var(--line-strong);
+    }
+    .faq article {
+      background: var(--panel);
+      padding: 26px;
+      min-height: 210px;
+    }
+    .faq h3 { margin-bottom: 16px; }
+    .cta {
+      padding: 76px 0;
+      background: var(--accent);
+      color: #fff;
+      border-bottom: 0;
+    }
+    .cta .wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .cta p { color: rgba(255,255,255,.86); margin-top: 12px; max-width: 680px; }
+    .cta .btn-primary { background: #fff; color: #111; }
+    .cta .btn-primary:hover { background: #f0ece7; }
+    .footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 13px;
+      background: #0a0b0d;
+    }
+    .footer .wrap { display: grid; gap: 12px; }
+    .credits { font-size: 12px; color: #8e8780; }
+    .credits a { text-decoration: underline; text-underline-offset: 3px; }
+    .disclaimer {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      font-size: 12px;
+      color: #9c958e;
+    }
+
+    @media (max-width: 940px) {
+      .navlinks { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid, .split, .contact-grid, .gallery { grid-template-columns: 1fr; }
+      .hero-photo { min-width: 0; }
+      .spec-strip, .process, .faq { grid-template-columns: 1fr; }
+      .spec, .step { border-right: 0; border-bottom: 1px solid var(--line); }
+      .spec:last-child, .step:last-child { border-bottom: 0; }
+      .service-row { grid-template-columns: 1fr; gap: 14px; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .cta .wrap { grid-template-columns: 1fr; }
+      .gallery-small { grid-template-rows: auto; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(var(--max), calc(100% - 28px)); }
+      section { padding: 64px 0; }
+      .nav { height: 66px; }
+      .brand img { max-height: 36px; }
+      .hero-grid { gap: 32px; }
+      .panel, .contact-card, .step, .faq article { padding: 22px; }
+      .hero-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Pokrývačství Jiří Kopáček">
+        <img src="https://pokryvacstvijirikopacek.cz/ws/media-library/0fa34c897c7542d0852c53bf5234e1ac/2.png" alt="Pokrývačství Jiří Kopáček">
+      </a>
+      <div class="navlinks">
+        <a href="#prace">Práce</a>
+        <a href="#postup">Postup</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn btn-primary" href="tel:+420777696344">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Dolany 43 / střechy / klempířina / tesařina</div>
+          <h1>Střecha bez slabých míst</h1>
+          <p class="lead">Pokrývačské, klempířské a tesařské práce pro domy, chalupy i hospodářské stavby v Dolanech a okolí.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420777696344">+420 777 696 344</a>
+            <a class="btn btn-outline" href="mailto:kopacekjirka@seznam.cz">Napsat e-mail</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/33944130/pexels-photo-33944130.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Two construction workers installing roof tiles on a building under a clear blue sky.">
+          <div class="job-tag">Pokrývačská práce / detail / výška</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="spec-strip" aria-label="Základní údaje">
+      <div class="spec"><b>5,0</b><span>hodnocení Google</span></div>
+      <div class="spec"><b>4</b><span>recenze zákazníků</span></div>
+      <div class="spec"><b>43</b><span>Dolany, sídlo</span></div>
+    </div>
+
+    <section id="prace">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">01</div>
+          <div>
+            <div class="eyebrow">Rozsah prací</div>
+            <h2>Řemeslo od krovu po plech</h2>
+          </div>
+        </div>
+        <div class="service-table">
+          <article class="service-row">
+            <h3>Pokrývačské práce</h3>
+            <p>Pokládka a opravy střešních krytin, řešení detailů kolem hřebene, úžlabí, prostupů a okrajů střechy.</p>
+            <span class="code">ROOF-01</span>
+          </article>
+          <article class="service-row">
+            <h3>Klempířské práce</h3>
+            <p>Okapy, oplechování, lemování a prvky, které odvádějí vodu mimo konstrukci a drží střechu čistě zakončenou.</p>
+            <span class="code">METAL-02</span>
+          </article>
+          <article class="service-row">
+            <h3>Tesařské práce</h3>
+            <p>Práce se dřevem na střešních konstrukcích, podkladech a navazujících částech, kde musí sedět přesnost i nosnost.</p>
+            <span class="code">WOOD-03</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="panel red">
+          <div>
+            <div class="eyebrow">Důvěra</div>
+            <div class="rating">5,0</div>
+          </div>
+          <p>Veřejné hodnocení Google z dostupných firemních údajů. Čtyři zákaznické recenze potvrzují pečlivost a spolehlivost práce.</p>
+        </div>
+        <div class="panel">
+          <div class="eyebrow">Co drží kvalitu</div>
+          <div class="quality-list">
+            <div><span class="code">01</span><p>Pečlivá kontrola detailů, kde se nejčastěji objevuje zatékání.</p></div>
+            <div><span class="code">02</span><p>Jasná domluva nad požadavkem před začátkem práce.</p></div>
+            <div><span class="code">03</span><p>Výběr řešení podle stavu střechy, ne podle univerzální šablony.</p></div>
+            <div><span class="code">04</span><p>Fotografie hotové práce k nahlédnutí před sjednáním zakázky.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Fotografie práce">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">02</div>
+          <div>
+            <div class="eyebrow">Materiál a detail</div>
+            <h2>Střecha se pozná zblízka</h2>
+          </div>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="https://images.pexels.com/photos/37677394/pexels-photo-37677394.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Skilled roofer installing asphalt shingles, ensuring quality home renovation.">
+          </figure>
+          <div class="gallery-small">
+            <figure>
+              <img src="https://images.pexels.com/photos/31762405/pexels-photo-31762405.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Roofer in a cherry picker conducting maintenance on a red brick building with a tiled roof.">
+            </figure>
+            <figure>
+              <img src="https://images.pexels.com/photos/18349121/pexels-photo-18349121.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up shot of vintage clay roof tiles with visible moss, showcasing texture and age.">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="postup">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">03</div>
+          <div>
+            <div class="eyebrow">Postup zakázky</div>
+            <h2>Od požadavku k hotové střeše</h2>
+          </div>
+        </div>
+        <div class="process">
+          <article class="step">
+            <span class="mono">KROK 01</span>
+            <div><h3>Zadání</h3><p>Zavoláte nebo napíšete, co potřebujete řešit a kde se stavba nachází.</p></div>
+          </article>
+          <article class="step">
+            <span class="mono">KROK 02</span>
+            <div><h3>Kontrola</h3><p>Upřesní se rozsah prací, přístup ke střeše a důležité detaily.</p></div>
+          </article>
+          <article class="step">
+            <span class="mono">KROK 03</span>
+            <div><h3>Domluva</h3><p>Potvrdí se vhodné řešení, termín a návaznost pokrývačské, klempířské nebo tesařské části.</p></div>
+          </article>
+          <article class="step">
+            <span class="mono">KROK 04</span>
+            <div><h3>Realizace</h3><p>Práce proběhne s důrazem na čisté zakončení a funkční detail.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">04</div>
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Dolany 43</h2>
+          </div>
+        </div>
+        <div class="contact-grid">
+          <aside class="contact-card">
+            <div class="contact-line">
+              <span class="eyebrow">Telefon</span>
+              <a href="tel:+420777696344">+420 777 696 344</a>
+            </div>
+            <div class="contact-line">
+              <span class="eyebrow">E-mail</span>
+              <a href="mailto:kopacekjirka@seznam.cz">kopacekjirka@seznam.cz</a>
+            </div>
+            <div class="contact-line">
+              <span class="eyebrow">Adresa</span>
+              <p>Dolany 43, 533 45 Dolany</p>
+            </div>
+            <a class="btn btn-primary" href="tel:+420777696344">Probrat požadavek</a>
+          </aside>
+          <div id="map" aria-label="Mapa: Dolany 43"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="num">05</div>
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než zavoláte</h2>
+          </div>
+        </div>
+        <div class="faq">
+          <article>
+            <h3>Co mám připravit?</h3>
+            <p>Stačí adresa, stručný popis požadavku a ideálně fotografie střechy nebo místa, kde je problém.</p>
+          </article>
+          <article>
+            <h3>Děláte i klempířinu?</h3>
+            <p>Ano. Součástí práce jsou pokrývačské, klempířské i tesařské činnosti podle konkrétní zakázky.</p>
+          </article>
+          <article>
+            <h3>Jak se domluvit?</h3>
+            <p>Pro domluvu volejte na číslo +420 777 696 344, případně napište e-mail.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap">
+        <div>
+          <h2>Potřebujete práci na střeše?</h2>
+          <p>Ozvěte se s požadavkem. Pokrývačství Jiří Kopáček sídlí v Dolanech a řeší střechy, klempířské prvky i tesařské návaznosti.</p>
+        </div>
+        <a class="btn btn-primary" href="tel:+420777696344">Zavolat</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div>© 2026 Pokrývačství Jiří Kopáček</div>
+      <div class="credits">
+        Foto: <a href="https://www.pexels.com/@guvo59">Gundula Vogel</a>,
+        <a href="https://www.pexels.com/@rstephens">Ryan Stephens</a>,
+        <a href="https://www.pexels.com/@1433506698">女子 正真</a>,
+        <a href="https://www.pexels.com/@jan-van-der-wolf-11680885">Jan van der Wolf</a>.
+      </div>
+      <div class="disclaimer">
+        Tuto nezávaznou vizualizaci připravil Webflex. Pokud si nepřejete její další zobrazení, smažete ji zde:
+        <a href="https://webflex.cz/remove/kn6x4eb">https://webflex.cz/remove/kn6x4eb</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [15.6906828, 50.1075379],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/liberty'
+    });
+    new maplibregl.Marker({ color: '#D71920' })
+      .setLngLat([15.6906828, 50.1075379])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
