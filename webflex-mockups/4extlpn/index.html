@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Poliklinika Bory | Ambulantní péče v Plzni</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcfd;
+      --surface: #ffffff;
+      --surface-2: #f2f5f7;
+      --ink: #07111d;
+      --muted: #5a6570;
+      --soft: #87919c;
+      --line: #d9e0e7;
+      --line-strong: #aeb9c5;
+      --accent: #002040;
+      --accent-2: #245c85;
+      --accent-soft: #e7eef5;
+      --ok: #0b6b4f;
+      --warn: #9c2c1c;
+      --font-display: "Archivo", system-ui, sans-serif;
+      --font-body: "Inter Tight", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --gutter: clamp(18px, 4vw, 56px);
+      --section: clamp(64px, 9vw, 116px);
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(0, 32, 64, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 32, 64, .025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); hyphens: none; text-wrap: balance; }
+    p { color: var(--muted); text-wrap: pretty; }
+    button, input { font: inherit; }
+
+    .container { max-width: 1340px; margin: 0 auto; padding: 0 var(--gutter); }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 252, 253, .92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 190px;
+    }
+    .brand img {
+      width: auto;
+      max-width: 236px;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 4px;
+    }
+    .navlinks a,
+    .mini-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .navlinks a:hover,
+    .mini-link:hover { color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
+    .navlinks a:focus-visible,
+    .mini-link:focus-visible,
+    .btn:focus-visible,
+    .dept-row:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .navlinks a:active,
+    .mini-link:active,
+    .btn:active,
+    .dept-row:active { transform: translateY(1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 11px 16px;
+      border: 1px solid transparent;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+    }
+    .btn:hover { background: #123b64; transform: translateY(-1px); }
+    .btn.outline {
+      background: transparent;
+      color: var(--ink);
+      border-color: currentColor;
+    }
+    .btn.outline:hover { background: var(--surface-2); color: var(--accent); }
+
+    .hero {
+      padding: clamp(42px, 6vw, 78px) 0 var(--section);
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .68fr);
+      align-items: center;
+      gap: clamp(32px, 5vw, 72px);
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    .kicker::before { content: ""; width: 28px; height: 2px; background: var(--accent); }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .96;
+      letter-spacing: 0;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+    .lead {
+      max-width: 680px;
+      margin-top: 22px;
+      font-size: clamp(18px, 2vw, 23px);
+      color: #263443;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 18px 50px rgba(7, 17, 29, .08);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--accent);
+      color: #fff;
+    }
+    .card-head strong {
+      font-family: var(--font-display);
+      font-size: 18px;
+    }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .today-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,.45);
+      padding: 5px 8px;
+    }
+    .hours-table, .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .hours-table td,
+    .matrix th,
+    .matrix td {
+      border: 1px solid var(--line);
+      padding: 12px 14px;
+      vertical-align: top;
+    }
+    .hours-table tr.is-today td {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+    }
+    .hours-table td:first-child,
+    .matrix th {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .hours-note {
+      padding: 14px 18px 18px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    section { padding: var(--section) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(280px, 420px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .section-no {
+      font-family: var(--font-mono);
+      font-size: clamp(38px, 7vw, 94px);
+      line-height: .85;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h2 {
+      font-size: clamp(30px, 4.2vw, 58px);
+      line-height: 1;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+    .section-head p { font-size: 17px; }
+
+    .dept-table {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .dept-row {
+      display: grid;
+      grid-template-columns: 76px minmax(230px, .9fr) minmax(260px, 1.1fr) 150px;
+      min-height: 76px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      transition: background .2s var(--ease), transform .2s var(--ease);
+    }
+    .dept-row:last-child { border-bottom: 0; }
+    .dept-row:hover { background: var(--accent-soft); transform: translateY(-1px); }
+    .dept-row > * {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+    }
+    .dept-row > *:last-child { border-right: 0; justify-content: flex-end; }
+    .dept-code { font-family: var(--font-mono); font-size: 12px; color: var(--soft); font-weight: 700; }
+    .dept-name { font-family: var(--font-display); font-size: 20px; line-height: 1.08; font-weight: 800; }
+    .dept-desc { color: var(--muted); }
+    .dept-action { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: stretch;
+    }
+    .fact {
+      min-height: 188px;
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .fact:nth-child(2n) { border-right: 0; }
+    .fact:nth-last-child(-n+2) { border-bottom: 0; }
+    .fact b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1;
+      color: var(--accent);
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+    .fact span { color: var(--muted); }
+    .copy-panel {
+      padding: clamp(28px, 5vw, 56px);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 20px;
+    }
+    .copy-panel h3 {
+      font-size: clamp(28px, 3.6vw, 48px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    .inline-list {
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+    }
+    .inline-list div {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 14px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .inline-list strong { color: var(--accent); font-family: var(--font-mono); }
+
+    .matrix-wrap {
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+    }
+    .matrix {
+      min-width: 860px;
+    }
+    .matrix thead th {
+      position: sticky;
+      top: 72px;
+      z-index: 3;
+      background: var(--accent);
+      color: #fff;
+      text-align: left;
+      border-color: rgba(255,255,255,.18);
+    }
+    .matrix td:first-child {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--ink);
+    }
+    .matrix td { color: var(--muted); }
+    .matrix .tag {
+      display: inline-flex;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 5px 7px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr;
+      gap: 14px;
+    }
+    .photo {
+      position: relative;
+      min-height: 260px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+    .photo:first-child { min-height: 430px; grid-row: span 2; }
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.78) contrast(1.04);
+      transition: transform .45s var(--ease), filter .45s var(--ease);
+    }
+    .photo:hover img { transform: scale(1.035); filter: saturate(.92) contrast(1.08); }
+    .photo span {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      padding: 7px 9px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .7fr) minmax(0, 1.3fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+    .contact-item {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--soft);
+      margin-bottom: 6px;
+    }
+    .contact-item a,
+    .contact-item strong {
+      font-family: var(--font-display);
+      font-size: clamp(21px, 2vw, 30px);
+      line-height: 1.05;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+    }
+
+    .cta {
+      background: var(--accent);
+      color: #fff;
+      padding: clamp(42px, 7vw, 76px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .cta h2 { color: #fff; max-width: 780px; }
+    .cta p { color: rgba(255,255,255,.78); margin-top: 12px; max-width: 660px; }
+    .cta .btn { background: #fff; color: var(--accent); }
+    .cta .btn:hover { background: #e8eef5; }
+
+    .footer {
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      background: #fff;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .footer a { color: var(--accent); font-weight: 800; }
+
+    @media (max-width: 980px) {
+      .navlinks { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .contact-grid,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+      .copy-panel { border-left: 0; border-top: 1px solid var(--line); }
+      .gallery { grid-template-columns: 1fr 1fr; }
+      .photo:first-child { grid-column: span 2; }
+      .dept-row { grid-template-columns: 58px 1fr; }
+      .dept-row > * { min-height: 58px; }
+      .dept-desc, .dept-action { grid-column: 2; border-top: 1px solid var(--line); }
+      .dept-row > *:nth-child(2n) { border-right: 0; }
+      .dept-row > *:last-child { justify-content: flex-start; }
+    }
+    @media (max-width: 620px) {
+      .nav { min-height: 66px; }
+      .brand img { max-width: 196px; max-height: 38px; }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .facts, .gallery { grid-template-columns: 1fr; }
+      .fact, .fact:nth-child(2n), .fact:nth-last-child(-n+2) {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .fact:last-child { border-bottom: 0; }
+      .photo:first-child { grid-column: auto; min-height: 300px; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Poliklinika Bory">
+        <img src="https://poliklinikabory.cz/wp-content/uploads/2025/05/Logo_PoliklinikaBory.png" alt="Poliklinika Bory">
+      </a>
+      <nav class="navlinks" aria-label="Hlavní navigace">
+        <a href="#ordinace">Ordinace</a>
+        <a href="#informace">Informace</a>
+        <a href="#provoz">Provoz</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn" href="tel:+420373723111">Zavolat recepci</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="kicker">Čechova 44 · Plzeň-Bory</div>
+          <h1>Ambulantní péče na Borech</h1>
+          <p class="lead">Poliklinika Bory sdružuje praktické lékaře, odborné ambulance, stomatologii, rehabilitaci, radiologii, laboratoř a lékárnu pro pacienty z Plzně i okolí.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#ordinace">Vybrat ordinaci</a>
+            <a class="btn outline" href="#kontakt">Navigace a kontakt</a>
+          </div>
+        </div>
+        <aside class="status-card" aria-label="Provozní informace">
+          <div class="card-head">
+            <strong>Provoz ordinací</strong>
+            <span class="today-pill">Pátek 12. 6.</span>
+          </div>
+          <table class="hours-table">
+            <tbody>
+              <tr><td>Po</td><td>Dle vybrané ordinace</td></tr>
+              <tr><td>Út</td><td>Dle vybrané ordinace</td></tr>
+              <tr><td>St</td><td>Dle vybrané ordinace</td></tr>
+              <tr><td>Čt</td><td>Dle vybrané ordinace</td></tr>
+              <tr class="is-today"><td>Pá</td><td>Dle vybrané ordinace</td></tr>
+            </tbody>
+          </table>
+          <p class="hours-note">Konkrétní ordinační časy a objednání řešte přímo s příslušnou ambulancí. Ústředna: <span class="mono">+420 373 723 111</span>.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="ordinace">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">01</div>
+          <h2>Ordinace a pracoviště</h2>
+          <p>Rychlý rozcestník podle oboru. Všechny položky vycházejí z veřejně uvedených pracovišť Polikliniky Bory.</p>
+        </div>
+        <div class="dept-table">
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A01</span>
+            <span class="dept-name">Praktické lékařství</span>
+            <span class="dept-desc">Pro dospělé, děti a dorost.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A02</span>
+            <span class="dept-name">Stomatologie</span>
+            <span class="dept-desc">Zubní péče v budově polikliniky.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A03</span>
+            <span class="dept-name">Gynekologie a interna</span>
+            <span class="dept-desc">Interna, diabetologie, obezitologie a revmatologie.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A04</span>
+            <span class="dept-name">Chirurgie a ortopedie</span>
+            <span class="dept-desc">Odborné ambulance pro pohybový aparát a chirurgickou péči.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A05</span>
+            <span class="dept-name">ORL, oční a plicní</span>
+            <span class="dept-desc">Ušní, nosní a krční ordinace, oční oddělení a plicní oddělení.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A06</span>
+            <span class="dept-name">Radiologie, sonografie, laboratoř</span>
+            <span class="dept-desc">Diagnostická pracoviště a biochemická laboratoř.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A07</span>
+            <span class="dept-name">Rehabilitace a psychologie</span>
+            <span class="dept-desc">Rehabilitace, klinická psychologie a psychiatrie.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+          <a class="dept-row" href="#kontakt">
+            <span class="dept-code">A08</span>
+            <span class="dept-name">Lékárna a e-shop</span>
+            <span class="dept-desc">Lékárenské služby v areálu polikliniky.</span>
+            <span class="dept-action">Kontakt</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="informace">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">02</div>
+          <h2>Péče pro Plzeň a okolí</h2>
+          <p>Ambulantní zdravotnické zařízení pro městskou část Plzeň-Bory, další části Plzně a pacienty z okolních okresů.</p>
+        </div>
+        <div class="split">
+          <div class="facts">
+            <div class="fact"><b>3,5</b><span>Hodnocení Google podle veřejného profilu.</span></div>
+            <div class="fact"><b>67</b><span>Veřejně uvedených recenzí pacientů.</span></div>
+            <div class="fact"><b>44</b><span>Adresa v Čechově ulici v Plzni.</span></div>
+            <div class="fact"><b>C 4562</b><span>Vložka v obchodním rejstříku Krajského soudu v Plzni.</span></div>
+          </div>
+          <div class="copy-panel">
+            <h3>Jedna budova, více odborností.</h3>
+            <p>V poliklinice sídlí Poliklinika Bory spol. s r.o. i další nestátní zdravotnická zařízení. Pacient si vybírá konkrétní ordinaci podle oboru a následně řeší objednání přímo s pracovištěm.</p>
+            <div class="inline-list">
+              <div><strong>01</strong><span>Ambulantní péče v základních lékařských oborech.</span></div>
+              <div><strong>02</strong><span>Specializované ambulance včetně alergologie, endokrinologie, urologie a dalších oborů.</span></div>
+              <div><strong>03</strong><span>Dostupnost MHD: tramvaj 4, autobus 29, trolejbus 16.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="provoz">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">03</div>
+          <h2>Provozní přehled</h2>
+          <p>Tabulkový souhrn pro návštěvu budovy, volbu ordinace a základní kontakt na polikliniku.</p>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Agenda</th>
+                <th>Kam směřovat</th>
+                <th>Co připravit</th>
+                <th>Kontakt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Výběr ordinace</td>
+                <td>Seznam pracovišť podle oboru</td>
+                <td>Obor péče, případně doporučení</td>
+                <td><span class="tag">Ústředna</span></td>
+              </tr>
+              <tr>
+                <td>Objednání</td>
+                <td>Příslušná ambulance</td>
+                <td>Jméno, datum narození, důvod návštěvy</td>
+                <td><span class="tag">Dle ordinace</span></td>
+              </tr>
+              <tr>
+                <td>Cesta MHD</td>
+                <td>Čechova 44, Plzeň 3</td>
+                <td>Tramvaj 4, autobus 29, trolejbus 16</td>
+                <td><span class="tag">Navigace</span></td>
+              </tr>
+              <tr>
+                <td>Správa polikliniky</td>
+                <td>Poliklinika Bory spol. s r.o.</td>
+                <td>IČO 49787632, DS qnwtx35</td>
+                <td><span class="tag">info@</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Prostředí ordinací">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">04</div>
+          <h2>Zdravotnické prostředí</h2>
+          <p>Ukázka prostředí ambulancí pomáhá pacientům rychle rozpoznat zdravotnické pracoviště a připravit se na návštěvu.</p>
+        </div>
+        <div class="gallery">
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/19976607/pexels-photo-19976607.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Dentist performing a dental checkup with advanced equipment in a contemporary clinic.">
+            <span>Ambulance</span>
+          </figure>
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/19976573/pexels-photo-19976573.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A female dentist in green scrubs performing a dental procedure on a patient in a modern clinic.">
+            <span>Ošetření</span>
+          </figure>
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/19976601/pexels-photo-19976601.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Dentist performing a checkup in a modern clinic, utilizing advanced tools and technology.">
+            <span>Kontrola</span>
+          </figure>
+          <figure class="photo">
+            <img src="https://images.pexels.com/photos/6627838/pexels-photo-6627838.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of dental tools with a blurred dentist in scrubs in the background.">
+            <span>Vybavení</span>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-no">05</div>
+          <h2>Kontakt a příjezd</h2>
+          <p>Poliklinika je v Plzni na Borech. Pro navigaci použijte adresu Čechova 44, 301 00 Plzeň 3.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-item">
+              <span class="label">Telefon</span>
+              <a href="tel:+420373723111">+420 373 723 111</a>
+            </div>
+            <div class="contact-item">
+              <span class="label">E-mail</span>
+              <a href="mailto:info@poliklinikabory.cz">info@poliklinikabory.cz</a>
+            </div>
+            <div class="contact-item">
+              <span class="label">Adresa</span>
+              <strong>Čechova 44<br>301 00 Plzeň 3</strong>
+            </div>
+            <div class="contact-item">
+              <span class="label">MHD</span>
+              <p>Tramvaj číslo 4, autobus číslo 29, trolejbus číslo 16.</p>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa Polikliniky Bory"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Potřebujete se spojit s ordinací?</h2>
+            <p>Začněte na ústředně nebo vyberte obor v rozcestníku. Pro akutní stav volejte tísňovou linku.</p>
+          </div>
+          <a class="btn" href="tel:+420373723111">Volat +420 373 723 111</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        Prezentační stránku připravil Webflex. Nejste-li oprávněným příjemcem, můžete ji odstranit zde:
+        <a href="https://webflex.cz/delete/4extlpn">https://webflex.cz/delete/4extlpn</a>
+      </div>
+      <div class="mono">TOKEN 4extlpn</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [13.373074800000001, 49.7300894],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#002040' })
+      .setLngLat([13.373074800000001, 49.7300894])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
