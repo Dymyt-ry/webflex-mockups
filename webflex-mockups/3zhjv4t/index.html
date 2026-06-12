@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kosmetické studio JANABELLA</title>
+  <meta name="description" content="Kosmetické studio JANABELLA ve Vršovicích. Přírodní kosmetika Phyt's, ošetření pleti, vizážistika, epilace a prodlužování řas.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101113;
+      --bg-soft: #17181b;
+      --panel: rgba(255,255,255,.055);
+      --panel-strong: rgba(255,255,255,.085);
+      --ink: #f7f4ef;
+      --muted: rgba(247,244,239,.72);
+      --soft: rgba(247,244,239,.12);
+      --accent: #604020;
+      --accent-bright: #c9a27b;
+      --shadow: 0 28px 90px rgba(0,0,0,.28);
+      --radius: 8px;
+      --font-display: "Archivo Black", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 78% 12%, rgba(96,64,32,.28), transparent 30rem),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--ink);
+      line-height: 1.55;
+      text-rendering: geometricPrecision;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    p { margin: 0; color: var(--muted); hyphens: auto; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); line-height: .95; letter-spacing: 0; hyphens: none; }
+    h1, .display { overflow-wrap: anywhere; }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(16,17,19,.78);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand img {
+      max-height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
+    .links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: rgba(247,244,239,.76);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .links a { transition: color .2s var(--ease); }
+    .links a:hover { color: var(--ink); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1px solid transparent;
+      transition: transform .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+    .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 18px 45px rgba(96,64,32,.38); }
+    .btn.primary:hover { background: #744e29; }
+    .btn.outline { border-color: rgba(255,255,255,.45); color: #fff; }
+    .btn.outline:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.68); }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(40%, 1.05fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 86px);
+      padding: clamp(54px, 8vw, 108px) 0 78px;
+    }
+    .kicker {
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+    }
+    .lead {
+      max-width: 620px;
+      margin-top: 24px;
+      font-size: clamp(17px, 1.5vw, 21px);
+      color: rgba(247,244,239,.76);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hero-card {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+    .hero-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.88) contrast(1.02); }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(16,17,19,.72));
+      z-index: 1;
+    }
+    .photo-note {
+      position: absolute;
+      left: 22px;
+      bottom: 20px;
+      z-index: 2;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+    }
+
+    section { padding: clamp(64px, 8vw, 110px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .55fr);
+      gap: 48px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head h2 { font-size: clamp(34px, 4.2vw, 64px); overflow-wrap: anywhere; }
+    .section-head p { font-size: 17px; }
+
+    .service-list {
+      display: grid;
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 130px minmax(0, .85fr) minmax(260px, .65fr);
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .num { font-family: var(--font-mono); color: var(--accent-bright); font-weight: 700; }
+    .service-row h3 { font-size: clamp(23px, 2vw, 34px); font-family: var(--font-body); font-weight: 800; line-height: 1.05; }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .stat, .surface {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 28px;
+      min-height: 100%;
+      box-shadow: var(--shadow);
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .stat span {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 36px;
+      align-items: stretch;
+    }
+    .split .surface { display: flex; flex-direction: column; justify-content: space-between; gap: 36px; }
+    .surface h2 { font-size: clamp(32px, 4vw, 58px); }
+    .quote {
+      font-size: clamp(20px, 2vw, 28px);
+      color: var(--ink);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      min-height: 100%;
+    }
+    .gallery figure {
+      margin: 0;
+      min-height: 260px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.82); }
+    .gallery figure:first-child { grid-row: span 2; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step {
+      background: rgba(255,255,255,.045);
+      border-radius: var(--radius);
+      padding: 24px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .22s var(--ease), background .22s var(--ease);
+    }
+    .step:hover { transform: translateY(-3px); background: rgba(255,255,255,.07); }
+    .step b { font-family: var(--font-mono); color: var(--accent-bright); font-size: 13px; }
+    .step h3 { font-family: var(--font-body); font-size: 20px; line-height: 1.15; margin-top: 18px; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .contact-card {
+      background: var(--panel-strong);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    .contact-card h2 { font-size: clamp(32px, 4vw, 58px); margin-bottom: 24px; }
+    .contact-lines { display: grid; gap: 16px; }
+    .contact-line {
+      padding: 16px 0;
+      border-top: 1px solid rgba(255,255,255,.09);
+    }
+    .contact-line span {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent-bright);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+    .contact-line a, .contact-line strong { font-size: 18px; font-weight: 800; color: var(--ink); }
+    #map {
+      height: 420px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: var(--panel);
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    details {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      transition: background .2s var(--ease), transform .2s var(--ease);
+    }
+    details:hover { background: rgba(255,255,255,.075); transform: translateY(-1px); }
+    details:active { transform: translateY(1px); }
+    summary {
+      cursor: pointer;
+      font-weight: 800;
+      color: var(--ink);
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p { margin-top: 12px; }
+
+    .final {
+      padding-bottom: 48px;
+    }
+    .cta-strip {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(96,64,32,.92), rgba(96,64,32,.58));
+      border-radius: var(--radius);
+      padding: clamp(28px, 5vw, 56px);
+      box-shadow: var(--shadow);
+    }
+    .cta-strip h2 { font-size: clamp(34px, 5vw, 72px); overflow-wrap: anywhere; }
+    .cta-strip p { color: rgba(255,255,255,.82); margin-top: 12px; }
+
+    .wf-disclaimer {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 22px 0 28px;
+      color: rgba(247,244,239,.56);
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .wf-disclaimer a { color: rgba(247,244,239,.76); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .links { display: none; }
+      .hero, .section-head, .split, .contact-grid, .cta-strip { grid-template-columns: 1fr; }
+      .hero { padding-top: 42px; }
+      .service-row { grid-template-columns: 1fr; gap: 12px; }
+      .trust, .steps, .faq { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+      .gallery figure:first-child { grid-row: auto; }
+      .cta-strip .btn { justify-self: start; }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      .brand img { max-height: 34px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .stat, .surface, .contact-card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="shell nav" aria-label="Hlavní navigace">
+      <a class="brand" href="#top" aria-label="Kosmetické studio JANABELLA">
+        <img src="https://084b59ad08.clvaw-cdnwnd.com/e7ab63275b9c319735e05aa832106d12/200000040-45c1146b98/Sn%C3%ADmek%20obrazovky%202018-01-23%20v%C2%A016.27.59.png?ph=084b59ad08" alt="Kosmetické studio JANABELLA">
+      </a>
+      <div class="links">
+        <a href="#sluzby">Služby</a>
+        <a href="#pece">Péče</a>
+        <a href="#kontakt">Kontakt</a>
+      </div>
+      <a class="btn outline" href="tel:+420776844203">Zavolat</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="shell hero" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Praha 10 · Vršovice</div>
+        <h1 id="hero-title">Přírodní péče o pleť</h1>
+        <p class="lead">Kosmetické studio JANABELLA pracuje s francouzskou 100% přírodní kosmetikou Phyt’s a volí ošetření podle aktuálního stavu Vaší pleti.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="tel:+420776844203">Objednat termín</a>
+          <a class="btn outline" href="#sluzby">Prohlédnout služby</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+        <div class="photo-note">28. pluku 457/3 · JANABELLA</div>
+      </div>
+    </section>
+
+    <section id="sluzby" class="shell">
+      <div class="section-head">
+        <h2>Služby studia</h2>
+        <p>Ošetření je zaměřené na konkrétní potřebu pleti. Vedle kosmetiky studio nabízí i služby pro výraz, řasy a hladkou pokožku.</p>
+      </div>
+      <div class="service-list">
+        <article class="service-row">
+          <div class="num">01</div>
+          <h3>Kosmetická ošetření</h3>
+          <p>Individuální péče o pleť s produkty Phyt’s, aktivními látkami a postupem zvoleným podle aktuálního stavu pleti.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">02</div>
+          <h3>Vizážistické služby</h3>
+          <p>Líčení a úprava vzhledu pro běžný den i příležitost, kdy má být výsledek čistý, upravený a osobní.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">03</div>
+          <h3>Epilace a přístrojová péče</h3>
+          <p>Doplňkové procedury pro pokožku a pleť, které navazují na kosmetické ošetření nebo řeší samostatnou potřebu.</p>
+        </article>
+        <article class="service-row">
+          <div class="num">04</div>
+          <h3>Prodlužování řas</h3>
+          <p>Metoda řasa na řasu i objemové řasy ze syntetického hypoalergenního polymeru tvarovaného pro přilnutí k přírodní řase.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell" aria-label="Důvěra">
+      <div class="trust">
+        <div class="stat">
+          <strong>4.4</strong>
+          <span>hodnocení na Googlu</span>
+        </div>
+        <div class="stat">
+          <strong>26</strong>
+          <span>veřejných recenzí</span>
+        </div>
+        <div class="stat">
+          <strong>Phyt’s</strong>
+          <span>francouzská přírodní kosmetika</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece" class="shell">
+      <div class="split">
+        <div class="surface">
+          <div>
+            <div class="kicker">Přístup k pleti</div>
+            <h2>Na míru aktuálnímu stavu</h2>
+          </div>
+          <p class="quote">„Ošetření vždy určuji na aktuální problém či stav pleti.“</p>
+          <p>Studio staví na rovnováze mezi účinkem, přírodním původem a ohledem k pleti. Profesionální produkty Phyt’s jsou typické skleněnými ampulkami, které podporují hygienu, přesné dávkování a individuální ošetření.</p>
+        </div>
+        <div class="gallery" aria-label="Atmosféra salonu">
+          <figure>
+            <img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience.">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/7195808/pexels-photo-7195808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black chairs placed near armchairs at table in stylish beauty salon with bright illumination and shelves with various cosmetology products">
+          </figure>
+          <figure>
+            <img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="section-head">
+        <h2>Jak probíhá návštěva</h2>
+        <p>Jednoduchý průběh bez spěchu: domluva termínu, zhodnocení pleti, vybrané ošetření a doporučení domácí péče.</p>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <b>01</b>
+          <div>
+            <h3>Objednání</h3>
+            <p>Termín si domluvíte telefonicky nebo e-mailem.</p>
+          </div>
+        </article>
+        <article class="step">
+          <b>02</b>
+          <div>
+            <h3>Konzultace</h3>
+            <p>Před péčí se řeší aktuální stav pleti a Vaše potřeba.</p>
+          </div>
+        </article>
+        <article class="step">
+          <b>03</b>
+          <div>
+            <h3>Ošetření</h3>
+            <p>Postup vychází z konkrétního problému pleti a použitých aktivních látek.</p>
+          </div>
+        </article>
+        <article class="step">
+          <b>04</b>
+          <div>
+            <h3>Domácí péče</h3>
+            <p>Doporučení navazuje na profesionální ošetření ve studiu.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="section-head">
+        <h2>Časté otázky</h2>
+        <p>Krátké odpovědi k péči, produktům a objednání.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Pracuje studio s přírodní kosmetikou?</summary>
+          <p>Ano, ve studiu se používá francouzská 100% přírodní kosmetika Phyt’s.</p>
+        </details>
+        <details>
+          <summary>Je ošetření stejné pro každého?</summary>
+          <p>Ne. Ošetření se určuje podle aktuálního problému nebo stavu pleti.</p>
+        </details>
+        <details>
+          <summary>Nabízíte také řasy?</summary>
+          <p>Ano, prodlužování řas probíhá metodou řasa na řasu nebo objemovými řasami.</p>
+        </details>
+        <details>
+          <summary>Jak se objednat?</summary>
+          <p>Objednat se můžete telefonicky na čísle +420 776 844 203 nebo e-mailem na jana@janabella.cz.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="kontakt" class="shell">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="kicker">Kontakt</div>
+          <h2>Najdete nás ve Vršovicích</h2>
+          <div class="contact-lines">
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>28. pluku 457/3, 101 00 Praha 10-Vršovice</strong>
+            </div>
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420776844203">+420 776 844 203</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:jana@janabella.cz">jana@janabella.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Objednání</span>
+              <strong>Termín telefonicky nebo e-mailem</strong>
+            </div>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa studia JANABELLA"></div>
+      </div>
+    </section>
+
+    <section class="shell final">
+      <div class="cta-strip">
+        <div>
+          <h2>Domluvte si péči</h2>
+          <p>Kosmetické studio JANABELLA · 28. pluku 457/3 · Praha 10-Vršovice</p>
+        </div>
+        <a class="btn outline" href="tel:+420776844203">+420 776 844 203</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wf-disclaimer">
+    <div class="shell">
+      Tuto prezentační stránku připravilo Webflex jako neveřejnou vizualizaci. Pro odstranění použijte
+      <a href="https://webflex.cz/delete/3zhjv4t">https://webflex.cz/delete/3zhjv4t</a>.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.461027800000002, 50.0708804],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#604020' })
+      .setLngLat([14.461027800000002, 50.0708804])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
