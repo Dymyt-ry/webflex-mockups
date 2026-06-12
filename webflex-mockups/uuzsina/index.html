@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kosmetické studio Jetée | Péče o pleť v Libni</title>
+  <meta name="description" content="Kosmetické studio Jetée v Praze 8 Libni. Ošetření obličeje s kosmetikou Dr. Baumann a SkinIdent, konzultace zdarma, obočí, řasy a dárkové poukazy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --surface: rgba(255, 255, 255, .82);
+      --surface-strong: #ffffff;
+      --surface-soft: #f4f2f1;
+      --ink: #181615;
+      --muted: #706b68;
+      --quiet: #9b9390;
+      --accent: #C0A0A0;
+      --accent-ink: #4c3838;
+      --line: rgba(24, 22, 21, .08);
+      --shadow: 0 34px 90px rgba(64, 48, 48, .10);
+      --shadow-soft: 0 20px 70px rgba(64, 48, 48, .075);
+      --radius: 22px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(192,160,160,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(192,160,160,.035) 1px, transparent 1px),
+        radial-gradient(circle at 86% 12%, rgba(192,160,160,.18), transparent 34%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251,251,250,.82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img {
+      width: min(220px, 52vw);
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .nav-links a { text-decoration: none; color: rgba(24,22,21,.72); transition: color .2s ease; }
+    .nav-links a:hover { color: var(--accent-ink); }
+
+    .btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), background .22s, border-color .22s, color .22s, box-shadow .22s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(192,160,160,.25); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: #211918; }
+    .btn-secondary { border-color: currentColor; color: var(--ink); background: transparent; }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+    h2 { font-size: clamp(34px, 4.4vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { hyphens: auto; }
+
+    .hero { padding: 64px 0 86px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(420px, .78fr);
+      gap: 48px;
+      align-items: center;
+    }
+    .lead {
+      max-width: 640px;
+      margin: 24px 0 0;
+      font-size: clamp(19px, 2vw, 24px);
+      color: rgba(24,22,21,.76);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 42px;
+      max-width: 680px;
+    }
+    .meta-tile, .service-card, .care-panel, .price-table, .hours-card, .faq-item {
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+    .meta-tile {
+      min-height: 104px;
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .meta-tile strong {
+      display: block;
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 18px;
+    }
+    .meta-tile span { display: block; margin-top: 8px; color: var(--muted); font-weight: 600; }
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+    .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 42%, rgba(24,22,21,.46));
+    }
+    .photo-label {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    section { padding: 82px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(280px, .42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 36px;
+    }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .service-card {
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .service-card p { margin: 16px 0 0; color: var(--muted); font-size: 16px; }
+    .service-card .mono { margin-top: 22px; color: var(--accent-ink); font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+
+    .care-split {
+      display: grid;
+      grid-template-columns: minmax(0, .82fr) minmax(380px, .7fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+    .care-panel {
+      border-radius: 30px;
+      padding: clamp(28px, 4vw, 48px);
+    }
+    .care-panel p { max-width: 760px; color: var(--muted); font-size: 19px; }
+    .check-list { display: grid; gap: 14px; margin: 30px 0 0; padding: 0; list-style: none; }
+    .check-list li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      align-items: start;
+      color: rgba(24,22,21,.82);
+      font-weight: 650;
+    }
+    .dot {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(192,160,160,.25);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .care-photo {
+      min-height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+    .care-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .trust-item {
+      min-height: 170px;
+      padding: 28px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.62);
+      box-shadow: var(--shadow-soft);
+    }
+    .trust-item strong {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 28px;
+    }
+    .trust-item span { color: var(--muted); font-weight: 650; }
+
+    .price-table {
+      overflow: hidden;
+      border-radius: 30px;
+    }
+    .price-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 120px 130px;
+      gap: 18px;
+      align-items: center;
+      padding: 22px 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .price-row:last-child { border-bottom: 0; }
+    .price-name strong { display: block; font-size: 19px; }
+    .price-name span { display: block; margin-top: 5px; color: var(--muted); }
+    .time, .price {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-ink);
+      white-space: nowrap;
+    }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 280px;
+      overflow: hidden;
+      border-radius: 26px;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+    .gallery-strip figure:nth-child(2) { transform: translateY(32px); }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hours-card {
+      border-radius: 30px;
+      padding: 30px;
+    }
+    .contact-line {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 18px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-line:last-child { border-bottom: 0; }
+    .contact-line span:first-child {
+      color: var(--quiet);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .contact-line a { font-weight: 800; text-decoration: none; }
+    .contact-line a:hover { color: var(--accent-ink); }
+    #map {
+      height: 420px;
+      min-height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      min-height: 170px;
+      border-radius: 24px;
+      padding: 26px;
+    }
+    .faq-item p { margin: 14px 0 0; color: var(--muted); }
+
+    .final-cta {
+      padding: 72px 0 92px;
+    }
+    .cta-panel {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: clamp(30px, 5vw, 56px);
+      border-radius: 32px;
+      background: #211918;
+      color: #fff;
+      box-shadow: 0 34px 90px rgba(33,25,24,.18);
+    }
+    .cta-panel h2 { max-width: 760px; }
+    .cta-panel p { margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 18px; }
+    .cta-panel .btn-secondary { color: #fff; border-color: rgba(255,255,255,.48); }
+
+    footer {
+      padding: 38px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footer-main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .credits, .webflex-disclaimer {
+      margin-top: 18px;
+      color: var(--quiet);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .credits a, .webflex-disclaimer a { text-underline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .care-split, .section-head, .contact-grid, .cta-panel { grid-template-columns: 1fr; }
+      .hero-photo { width: 100%; }
+      .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .trust-strip, .gallery-strip { grid-template-columns: 1fr; }
+      .gallery-strip figure:nth-child(2) { transform: none; }
+      .cta-panel { justify-items: start; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .hero { padding: 42px 0 58px; }
+      section { padding: 58px 0; }
+      .hero-meta, .services-grid, .faq-grid { grid-template-columns: 1fr; }
+      .price-row { grid-template-columns: 1fr; gap: 8px; }
+      .contact-line { grid-template-columns: 1fr; gap: 6px; }
+      .photo-label { flex-direction: column; align-items: start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Kosmetické studio Jetée">
+        <img src="images/logo.png" alt="Kosmetické studio Jetée">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#pece">Péče</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn btn-primary" href="tel:+420721209100">Objednat se</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Praha 8 Libeň · Menclova 2479/10</p>
+          <h1>Péče pro zdravou pleť</h1>
+          <p class="lead">Dopřejte si ošetření obličeje a těla s kosmetikou Dr. Baumann a SkinIdent v klidném zákoutí libeňského ramene Vltavy.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420721209100">Zavolat do studia</a>
+            <a class="btn btn-secondary" href="#cenik">Zobrazit ceník</a>
+          </div>
+          <div class="hero-meta" aria-label="Základní informace">
+            <div class="meta-tile">
+              <strong>Po-Pá</strong>
+              <span>8:00-17:00</span>
+            </div>
+            <div class="meta-tile">
+              <strong>5,0</strong>
+              <span>hodnocení z 10 recenzí</span>
+            </div>
+            <div class="meta-tile">
+              <strong>0 Kč</strong>
+              <span>vstupní konzultace</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/7750114/pexels-photo-7750114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Explore a spacious and contemporary beauty salon interior featuring sleek design, mirrors, and luxurious seating.">
+          <div class="photo-label">
+            <span>Studio Jetée</span>
+            <span>Dr. Baumann · SkinIdent</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Ošetření obličeje</p>
+            <h2>Pleť, která dostane přesně to, co potřebuje.</h2>
+          </div>
+          <p>Nabídka je zaměřená na zdraví, vitalitu a podporu přirozené krásy pokožky. Vše začíná konzultací a výběrem vhodné péče.</p>
+        </div>
+        <div class="services-grid">
+          <article class="service-card">
+            <div>
+              <h3>První kosmetika</h3>
+              <p>Vhodný začátek pro každého, kdo chce pravidelnou péči uchopit správně.</p>
+            </div>
+            <span class="mono">45 min · 1100 Kč</span>
+          </article>
+          <article class="service-card">
+            <div>
+              <h3>Hloubkové čištění</h3>
+              <p>Ošetření zaměřené na černé tečky a čistější, klidnější vzhled pleti.</p>
+            </div>
+            <span class="mono">60 min · 1600 Kč</span>
+          </article>
+          <article class="service-card">
+            <div>
+              <h3>Hydratace pleti</h3>
+              <p>Ošetření pro všechny věkové skupiny, když pleť potřebuje dodat vláhu.</p>
+            </div>
+            <span class="mono">85 min · 1900 Kč</span>
+          </article>
+          <article class="service-card">
+            <div>
+              <h3>Omlazující péče</h3>
+              <p>Péče pro pleť, na které se podepsal čas a potřebuje cílenou podporu.</p>
+            </div>
+            <span class="mono">100 min · 2100 Kč</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap care-split">
+        <article class="care-panel">
+          <p class="eyebrow">Dr. Baumann · SkinIdent</p>
+          <h2>Kompatibilita na prvním místě.</h2>
+          <p>Kosmetika Dr. Baumann a řada SkinIdent staví na složkách identických s pletí a vitamínech. Péče se vyhýbá dermatologickým alergenům, jako jsou parfémy, esenciální oleje, vůně a konzervační látky.</p>
+          <ul class="check-list">
+            <li><span class="dot">01</span><span>Složky, které se přirozeně vyskytují v lidské pokožce.</span></li>
+            <li><span class="dot">02</span><span>Důraz na dlouhodobou účinnost každodenní péče o pleť.</span></li>
+            <li><span class="dot">03</span><span>Podpora přirozené krásy bez zbytečné zátěže pro pokožku.</span></li>
+          </ul>
+        </article>
+        <div class="care-photo">
+          <img src="https://images.pexels.com/photos/7195808/pexels-photo-7195808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Black chairs placed near armchairs at table in stylish beauty salon with bright illumination and shelves with various cosmetology products">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="trust-strip">
+          <div class="trust-item">
+            <strong>5,0</strong>
+            <span>Hodnocení podle dostupných recenzí.</span>
+          </div>
+          <div class="trust-item">
+            <strong>10</strong>
+            <span>Recenzí u profilu studia.</span>
+          </div>
+          <div class="trust-item">
+            <strong>Palmovka</strong>
+            <span>Snadná dostupnost metrem a parkování zdarma podle informací studia.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cenik">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Základní ceník</p>
+            <h2>Ošetření a doplňkové služby.</h2>
+          </div>
+          <p>Časy a ceny vycházejí z aktuálně uvedené nabídky studia. Při objednání si prosím ověřte vhodný typ péče.</p>
+        </div>
+        <div class="price-table">
+          <div class="price-row">
+            <div class="price-name"><strong>Vstupní konzultace</strong><span>Úvodní doporučení péče.</span></div>
+            <span class="time">podle domluvy</span>
+            <span class="price">zdarma</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Moje první kosmetika</strong><span>Je správný čas začít chodit na kosmetiku?</span></div>
+            <span class="time">45 min</span>
+            <span class="price">1100 Kč</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Hloubkové čištění černých teček</strong><span>Pomoc pro zdravější pleť bez černých teček.</span></div>
+            <span class="time">60 min</span>
+            <span class="price">1600 Kč</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Hydratační ošetření</strong><span>Dejte své pleti napít.</span></div>
+            <span class="time">85 min</span>
+            <span class="price">1900 Kč</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Omlazující ošetření pleti</strong><span>Řešení pro pleť poznamenanou časem.</span></div>
+            <span class="time">100 min</span>
+            <span class="price">2100 Kč</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Úprava a barvení obočí</strong><span>Zdarma při kompletním ošetření.</span></div>
+            <span class="time">30 min</span>
+            <span class="price">400 Kč</span>
+          </div>
+          <div class="price-row">
+            <div class="price-name"><strong>Barvení řas</strong><span>S 50% slevou při kompletním ošetření.</span></div>
+            <span class="time">30 min</span>
+            <span class="price">400 Kč</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Atmosféra studia">
+      <div class="wrap gallery-strip">
+        <figure><img src="https://images.pexels.com/photos/13068380/pexels-photo-13068380.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Sleek modern nail salon interior with stylish design and treatment station."></figure>
+        <figure><img src="https://images.pexels.com/photos/7750116/pexels-photo-7750116.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Spacious salon interior with leather seating, marble floor, and decorative lighting, offering a stylish ambiance."></figure>
+        <figure><img src="https://images.pexels.com/photos/13068377/pexels-photo-13068377.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Chic modern beauty salon with black and white decor, offering a luxury experience."></figure>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Kontakt</p>
+            <h2>Najdete nás v Libni.</h2>
+          </div>
+          <p>Studio je v klidném zákoutí u libeňského ramene Vltavy. Pro termín volejte nebo napište e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <article class="hours-card">
+            <div class="contact-line">
+              <span>Telefon</span>
+              <a href="tel:+420721209100">+420 721 209 100</a>
+            </div>
+            <div class="contact-line">
+              <span>E-mail</span>
+              <a href="mailto:studio@jetee.cz">studio@jetee.cz</a>
+            </div>
+            <div class="contact-line">
+              <span>Adresa</span>
+              <strong>Menclova 2479/10, 180 00 Praha 8-Libeň</strong>
+            </div>
+            <div class="contact-line">
+              <span>Otevřeno</span>
+              <strong>Po-Pá 8:00-17:00</strong>
+            </div>
+            <div class="contact-line">
+              <span>Navíc</span>
+              <strong>Dárkové poukazy podle domluvy</strong>
+            </div>
+          </article>
+          <div id="map" aria-label="Mapa: Kosmetické studio Jetée"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté dotazy</p>
+            <h2>Před návštěvou.</h2>
+          </div>
+          <p>Krátké odpovědi k objednání, péči a doplňkovým službám.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h3>Jak si vyberu ošetření?</h3>
+            <p>Začněte vstupní konzultací. Ve studiu společně určíte typ péče podle potřeb pleti.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Je možné upravit obočí?</h3>
+            <p>Ano. Úprava a barvení obočí je v nabídce a při kompletním ošetření je zdarma.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Nabízíte barvení řas?</h3>
+            <p>Ano, barvení řas trvá 30 minut. Při kompletním ošetření platí uvedená sleva 50 %.</p>
+          </article>
+          <article class="faq-item">
+            <h3>Lze pořídit poukaz?</h3>
+            <p>Ano, studio uvádí možnost dárkových poukazů. Nejlépe je domluvit se telefonicky.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap cta-panel">
+        <div>
+          <p class="eyebrow">Kosmetické studio Jetée</p>
+          <h2>Domluvte si termín péče.</h2>
+          <p>Miriam Korenková se těší na Vaši milou návštěvu.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="tel:+420721209100">Zavolat</a>
+          <a class="btn btn-secondary" href="mailto:studio@jetee.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <strong>Kosmetické studio Jetée</strong>
+        <span>Menclova 2479/10, Praha 8-Libeň · +420 721 209 100</span>
+      </div>
+      <div class="credits">Fotografie: <a href="https://www.pexels.com/@artbovich" rel="nofollow">Max Vakhtbovych / Pexels</a>.</div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/uuzsina">webflex.cz/delete/uuzsina</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.465379699999998, 50.1067915],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A0A0' })
+      .setLngLat([14.465379699999998, 50.1067915])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
