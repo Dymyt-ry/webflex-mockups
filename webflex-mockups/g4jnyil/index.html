@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kosmet(y)ka Derma Studio | Kosmetické studio a e-shop</title>
+  <meta name="description" content="Kosmet(y)ka Derma Studio v Praze 6-Bubenči: diagnostika pleti, kosmetické procedury, omlazení, červené světlo, vizážistika a e-shop s péčí o pleť.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #101114;
+      --bg-2: #16181c;
+      --surface: rgba(255,255,255,.075);
+      --surface-strong: rgba(255,255,255,.115);
+      --ink: #f8f4ee;
+      --muted: rgba(248,244,238,.68);
+      --quiet: rgba(248,244,238,.48);
+      --line: rgba(248,244,238,.12);
+      --accent: #C0A080;
+      --accent-ink: #17120f;
+      --shadow: 0 34px 120px rgba(0,0,0,.32);
+      --soft-shadow: 0 26px 90px rgba(192,160,128,.075);
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(248,244,238,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(248,244,238,.018) 1px, transparent 1px),
+        radial-gradient(circle at 76% 4%, rgba(192,160,128,.18), transparent 30%),
+        radial-gradient(circle at 18% 42%, rgba(255,255,255,.055), transparent 26%),
+        var(--bg);
+      background-size: 28px 28px, 28px 28px, auto, auto, auto;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      hyphens: none;
+    }
+    h1 {
+      max-width: 700px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .94;
+      overflow-wrap: anywhere;
+    }
+    h2 {
+      font-size: clamp(34px, 4.2vw, 64px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+    h3 { font-size: 22px; line-height: 1.1; }
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+      hyphens: auto;
+    }
+    .mono { font-family: var(--font-mono); }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(16,17,20,.74);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+    .logo img {
+      width: auto;
+      max-height: 44px;
+      object-fit: contain;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav-links a,
+    .btn,
+    .product-link,
+    .maplibregl-ctrl button {
+      transition: transform .22s var(--ease), background .22s var(--ease), border-color .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease), opacity .22s var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:focus-visible,
+    .btn:focus-visible,
+    .product-link:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 38px rgba(192,160,128,.16); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.secondary { border: 1px solid rgba(255,255,255,.45); color: #fff; background: transparent; }
+    .btn.secondary:hover { border-color: rgba(255,255,255,.75); background: rgba(255,255,255,.06); }
+
+    section { padding: 92px 0; }
+    .hero { padding: 70px 0 92px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .96fr) minmax(420px, .84fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .hero-copy { max-width: 720px; }
+    .hero-copy .eyebrow { margin-bottom: 22px; }
+    .lead {
+      max-width: 650px;
+      margin-top: 26px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: rgba(248,244,238,.76);
+    }
+    .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
+    .hero-panel {
+      aspect-ratio: 4 / 3;
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-panel img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(.96); }
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(16,17,20,.72));
+    }
+    .hero-badge {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      display: grid;
+      gap: 8px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(16,17,20,.72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,.13);
+    }
+    .hero-badge strong { font-size: 18px; }
+    .hero-badge span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 34px;
+      max-width: 650px;
+    }
+    .quick-stat {
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+    }
+    .quick-stat strong {
+      display: block;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 18px;
+    }
+    .quick-stat span { color: var(--muted); font-size: 13px; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(280px, .58fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+    .service-table {
+      display: grid;
+      overflow: hidden;
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .service-row {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr) 190px;
+      gap: 24px;
+      align-items: center;
+      min-height: 104px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .service-row:last-child { border-bottom: 0; }
+    .service-row .mono { color: var(--accent); font-size: 13px; font-weight: 700; }
+    .service-row p { font-size: 15px; }
+    .chip {
+      justify-self: end;
+      padding: 10px 13px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(192,160,128,.18);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      border: 1px solid rgba(192,160,128,.28);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: .86fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    .stat-card,
+    .surface-card,
+    .contact-card,
+    .product-card,
+    .step,
+    .faq-item {
+      background: var(--surface);
+      border-radius: 30px;
+      box-shadow: var(--soft-shadow);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .stat-card { padding: 34px; display: flex; flex-direction: column; justify-content: space-between; min-height: 420px; }
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: clamp(74px, 11vw, 148px);
+      line-height: .82;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+    }
+    .surface-card { padding: 30px; }
+    .surface-card img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border-radius: 22px;
+      margin-bottom: 24px;
+      filter: saturate(.8);
+    }
+    .quote {
+      color: var(--ink);
+      font-size: clamp(24px, 2.8vw, 38px);
+      line-height: 1.14;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 230px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step .mono { color: var(--accent); font-size: 13px; }
+    .step strong { display: block; font-size: 20px; line-height: 1.25; margin-bottom: 12px; }
+    .step p { font-size: 15px; }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .product-card {
+      min-height: 250px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .product-card .tag { color: var(--accent); font-size: 12px; font-family: var(--font-mono); }
+    .product-card h3 { margin-top: 18px; font-size: 20px; }
+    .price {
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .product-link { margin-top: 18px; color: var(--accent); font-weight: 800; display: inline-flex; }
+    .product-link:hover { transform: translateY(-1px); color: var(--ink); }
+    .product-link:active { transform: translateY(1px); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .gallery img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      filter: saturate(.75) contrast(.96);
+    }
+    .gallery-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .gallery .wide { aspect-ratio: 16 / 10; }
+    .gallery-stack img { aspect-ratio: 16 / 10; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .76fr) minmax(420px, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+    .contact-card { padding: 32px; }
+    .info-list { margin-top: 24px; display: grid; gap: 0; }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .info-item strong,
+    .info-item a,
+    .info-item span:last-child {
+      color: var(--ink);
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    #map {
+      height: 420px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .faq-item { padding: 26px; }
+    .faq-item h3 { font-size: 20px; margin-bottom: 12px; }
+
+    .final {
+      padding: 82px 0 96px;
+    }
+    .cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: center;
+      padding: 38px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(192,160,128,.24), rgba(255,255,255,.07));
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(192,160,128,.18);
+    }
+    .cta h2 { font-size: clamp(32px, 4.4vw, 66px); }
+    .cta-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 32px 0 42px;
+      color: var(--quiet);
+      font-size: 13px;
+    }
+    .footer .wrap {
+      display: grid;
+      gap: 18px;
+    }
+    .credits { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .footer a { color: rgba(248,244,238,.72); text-decoration: underline; text-underline-offset: 3px; }
+    .webflex-disclaimer { line-height: 1.55; }
+
+    @media (max-width: 980px) {
+      .nav-links a { display: none; }
+      .hero-grid,
+      .section-head,
+      .split,
+      .gallery,
+      .contact-grid,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+      .hero-panel { max-width: 680px; }
+      .steps,
+      .products,
+      .faq-list,
+      .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .cta-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 66px 0; }
+      .hero { padding-top: 46px; }
+      .logo img { max-height: 36px; }
+      .nav-inner { min-height: 68px; }
+      .hero-grid { gap: 34px; }
+      .hero-panel { border-radius: 24px; }
+      .quick-stats,
+      .steps,
+      .products,
+      .faq-list {
+        grid-template-columns: 1fr;
+      }
+      .service-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .chip { justify-self: start; }
+      .contact-card,
+      .surface-card,
+      .stat-card,
+      .cta { padding: 24px; border-radius: 24px; }
+      .info-item { display: grid; gap: 8px; }
+      .info-item strong,
+      .info-item a,
+      .info-item span:last-child { text-align: left; }
+      .btn { width: 100%; }
+      .cta-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="logo" href="#top" aria-label="Kosmet(y)ka Derma Studio">
+        <img src="https://cdn.myshoptet.com/usr/www.dermastudio.org/user/logos/logo_web-1.png" alt="Kosmet(y)ka Derma Studio">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#eshop">E-shop</a>
+        <a href="#kontakt">Kontakt</a>
+        <a class="btn primary" href="tel:+420793919100">Zavolat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Praha 6-Bubeneč · Derma studio</div>
+          <h1>Péče o pleť s klidem</h1>
+          <p class="lead">Kosmetické studio a e-shop pro první diagnostiku pleti, pravidelnou péči, omlazení, regeneraci i domácí rituál s vybranými produkty.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="tel:+420793919100">Objednat termín</a>
+            <a class="btn secondary" href="#eshop">Prohlédnout e-shop</a>
+          </div>
+          <div class="quick-stats" aria-label="Základní údaje">
+            <div class="quick-stat"><strong>5,0</strong><span>hodnocení Google</span></div>
+            <div class="quick-stat"><strong>24</strong><span>recenzí klientů</span></div>
+            <div class="quick-stat"><strong>Praha 6</strong><span>Charlese de Gaulla 800/3</span></div>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+          <div class="hero-badge">
+            <strong>Studio, rezervace i domácí péče</strong>
+            <span>recepce@dermastudio.org · +420 793 919 100</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Služby</div>
+            <h2>Vyberte podle stavu pleti.</h2>
+          </div>
+          <p>Začít můžete diagnostikou, konkrétním problémem, omlazením nebo pravidelnou péčí. V nabídce je také relax a terapie červeným světlem.</p>
+        </div>
+        <div class="service-table">
+          <div class="service-row">
+            <span class="mono">01</span>
+            <div>
+              <h3>Jdu poprvé / potřebuji diagnostiku pleti</h3>
+              <p>Vhodné, když chcete porozumět aktuálním potřebám pleti a zvolit navazující péči.</p>
+            </div>
+            <span class="chip">Rezervace</span>
+          </div>
+          <div class="service-row">
+            <span class="mono">02</span>
+            <div>
+              <h3>Chci řešit problém pleti</h3>
+              <p>Cílená návštěva pro pleť, která potřebuje klid, rovnováhu nebo intenzivnější podporu.</p>
+            </div>
+            <span class="chip">Konzultace</span>
+          </div>
+          <div class="service-row">
+            <span class="mono">03</span>
+            <div>
+              <h3>Omlazení pleti a regenerace</h3>
+              <p>Procedury zaměřené na pružnost, hydrataci, jemné linky a podporu kožní bariéry.</p>
+            </div>
+            <span class="chip">Procedury</span>
+          </div>
+          <div class="service-row">
+            <span class="mono">04</span>
+            <div>
+              <h3>Pravidelná péče, červené světlo a vizážistika</h3>
+              <p>Pravidelný režim, relaxační terapie červeným světlem a líčení pro konkrétní příležitost.</p>
+            </div>
+            <span class="chip">Studio</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap split">
+        <div class="stat-card">
+          <div>
+            <div class="eyebrow">Důvěra</div>
+            <div class="stat-number">5,0</div>
+          </div>
+          <p>Hodnocení na Googlu vychází z 24 recenzí. Studio najdete v Bubenči na adrese Charlese de Gaulla 800/3.</p>
+        </div>
+        <div class="surface-card">
+          <img src="https://images.pexels.com/photos/6969971/pexels-photo-6969971.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding a cardboard box, ideal for delivery service concepts.">
+          <div class="quote">Kosmetické služby a produkty pro péči doma drží jeden společný směr.</div>
+          <p>Na jednom místě najdete osobní návštěvu studia, rezervaci termínu, galerii, blog i e-shop s produkty pro každodenní péči o pleť.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Průběh návštěvy</div>
+            <h2>Od potřeby k rituálu.</h2>
+          </div>
+          <p>Postup je jednoduchý: vyberete oblast, domluvíte termín a po návštěvě můžete navázat domácí péčí z e-shopu.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="mono">01 / Pleť</span>
+            <div><strong>Popíšete, co chcete řešit.</strong><p>První návštěva může začít diagnostikou pleti.</p></div>
+          </div>
+          <div class="step">
+            <span class="mono">02 / Termín</span>
+            <div><strong>Zvolíte rezervaci.</strong><p>Recepce je dostupná na telefonu a e-mailu.</p></div>
+          </div>
+          <div class="step">
+            <span class="mono">03 / Studio</span>
+            <div><strong>Procedura podle cíle.</strong><p>Regenerace, omlazení, pravidelná péče nebo červené světlo.</p></div>
+          </div>
+          <div class="step">
+            <span class="mono">04 / Doma</span>
+            <div><strong>Navazující rutina.</strong><p>Produkty v e-shopu pomohou udržet péči mezi návštěvami.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="eshop">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">E-shop</div>
+            <h2>Novinky pro domácí péči.</h2>
+          </div>
+          <p>Výběr produktů z aktuální nabídky: boostery, krémy, séra i čištění pleti. Ceny jsou uvedené podle dostupného výpisu e-shopu.</p>
+        </div>
+        <div class="products">
+          <article class="product-card">
+            <div>
+              <span class="tag">NOVINKA · TIP</span>
+              <h3>FutureCode Booster 30 ml</h3>
+            </div>
+            <div><div class="price">2 750 Kč / ks</div><a class="product-link" href="https://www.dermastudio.org/">Do e-shopu</a></div>
+          </article>
+          <article class="product-card">
+            <div>
+              <span class="tag">NOVINKA · TIP</span>
+              <h3>Pro-Collagen Banking Water Cream 50 ml</h3>
+            </div>
+            <div><div class="price">2 190 Kč / ks</div><a class="product-link" href="https://www.dermastudio.org/">Do e-shopu</a></div>
+          </article>
+          <article class="product-card">
+            <div>
+              <span class="tag">NOVINKA · TIP</span>
+              <h3>Dynamic Skin Sculptor 150 ml</h3>
+            </div>
+            <div><div class="price">2 690 Kč / ks</div><a class="product-link" href="https://www.dermastudio.org/">Do e-shopu</a></div>
+          </article>
+          <article class="product-card">
+            <div>
+              <span class="tag">NOVINKA</span>
+              <h3>Magnetic Afterglow Cleanser 150 ml</h3>
+            </div>
+            <div><div class="price">1 340 Kč / ks</div><a class="product-link" href="https://www.dermastudio.org/">Do e-shopu</a></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap gallery">
+        <img class="wide" src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+        <div class="gallery-stack">
+          <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+          <div class="surface-card">
+            <div class="eyebrow">Galerie · Blog · Kontakt</div>
+            <h2>Studio pro péči v souvislostech.</h2>
+            <p>Prohlédněte si galerii, přečtěte si články nebo rovnou napište recepci. Návštěva studia a výběr domácí péče se mohou doplňovat.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Kontakt</div>
+            <h2>Kosmet(y)ka Derma Studio</h2>
+          </div>
+          <p>Studio najdete v Praze 6-Bubenči. Pro termín volejte recepci nebo napište e-mail.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">
+            <h3>Recepce a adresa</h3>
+            <div class="info-list">
+              <div class="info-item"><span>Telefon</span><a href="tel:+420793919100">+420 793 919 100</a></div>
+              <div class="info-item"><span>E-mail</span><a href="mailto:recepce@dermastudio.org">recepce@dermastudio.org</a></div>
+              <div class="info-item"><span>Adresa</span><strong>Charlese de Gaulla 800/3, 160 00 Praha 6-Bubeneč</strong></div>
+              <div class="info-item"><span>Web</span><a href="https://www.dermastudio.org/">dermastudio.org</a></div>
+            </div>
+          </div>
+          <div id="map" aria-label="Mapa umístění Kosmet(y)ka Derma Studio"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Časté dotazy</div>
+            <h2>Než se objednáte.</h2>
+          </div>
+          <p>Krátké odpovědi k orientaci ve službách studia a e-shopu.</p>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3>Je první návštěva vhodná i bez vybrané procedury?</h3>
+            <p>Ano. V nabídce je kategorie „Jdu poprvé / potřebuji diagnostiku pleti“, která pomůže zvolit další krok.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Mohu řešit konkrétní problém pleti?</h3>
+            <p>Ano. Služby počítají i s návštěvou zaměřenou na problém pleti a navazující doporučení péče.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Je součástí nabídky relax?</h3>
+            <p>Ano. Ve službách je uvedený relax a terapie červeným světlem.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Lze objednat produkty online?</h3>
+            <p>Ano. Studio provozuje e-shop s kosmetikou a produkty pro domácí péči.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap cta">
+        <div>
+          <div class="eyebrow">Rezervace</div>
+          <h2>Domluvte si péči o pleť.</h2>
+        </div>
+        <div class="cta-actions">
+          <a class="btn primary" href="tel:+420793919100">+420 793 919 100</a>
+          <a class="btn secondary" href="mailto:recepce@dermastudio.org">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="credits">
+        <span>Fotografie: <a href="https://www.pexels.com/@mibernaa">Berna</a></span>
+        <span><a href="https://www.pexels.com/@ron-lach">Ron Lach</a></span>
+        <span><a href="https://www.pexels.com/@karola-g">www.kaboompics.com</a></span>
+        <span><a href="https://www.pexels.com/@mikhail-nilov">Mikhail Nilov</a></span>
+      </div>
+      <div class="webflex-disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/g4jnyil">webflex.cz/delete/g4jnyil</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.400328399999998, 50.102337999999996],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#C0A080' })
+      .setLngLat([14.400328399999998, 50.102337999999996])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
