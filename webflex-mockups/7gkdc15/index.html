@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fokus optik | Karlín</title>
+  <meta name="description" content="Fokus optik v Karlíně. Měření zraku, dioptrické a sluneční brýle, kontaktní čočky a odborná péče na adrese 35, Karlín, Praha 8.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbfcff;
+      --surface: #ffffff;
+      --surface-soft: #eef4fb;
+      --ink: #111827;
+      --muted: #667085;
+      --line: rgba(0, 64, 128, .10);
+      --accent: #004080;
+      --accent-strong: #002f63;
+      --accent-soft: rgba(0, 64, 128, .10);
+      --shadow: 0 36px 100px rgba(0, 34, 79, .10);
+      --shadow-soft: 0 22px 70px rgba(0, 34, 79, .075);
+      --radius: 8px;
+      --font-display: "Archivo Black", Impact, sans-serif;
+      --font-body: "Inter Tight", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(0,64,128,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,64,128,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.55;
+      text-rendering: geometricPrecision;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(18px);
+      background: rgba(251, 252, 255, .84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo img {
+      width: auto;
+      max-width: min(230px, 45vw);
+      max-height: 42px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .nav-links a,
+    .text-link,
+    .photo-card,
+    .service-row,
+    .btn {
+      transition: transform 190ms var(--ease), background 190ms var(--ease), border-color 190ms var(--ease), color 190ms var(--ease), box-shadow 190ms var(--ease);
+    }
+
+    .nav-links a:hover,
+    .text-link:hover { color: var(--accent); transform: translateY(-1px); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .btn:focus-visible,
+    a:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn:active,
+    .photo-card:active,
+    .service-row:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 18px 45px rgba(0,64,128,.18); }
+    .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+    .btn-outline { color: var(--ink); border-color: currentColor; background: transparent; }
+    .btn-outline:hover { background: var(--surface-soft); transform: translateY(-1px); }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 58px 0 74px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(430px, .82fr);
+      gap: 56px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      line-height: .96;
+      letter-spacing: 0;
+      hyphens: none;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 88px);
+      text-transform: uppercase;
+    }
+
+    h2 { font-size: clamp(34px, 4.6vw, 64px); }
+    h3 { font-size: 24px; line-height: 1.05; }
+    p { margin: 0; }
+    .lead {
+      max-width: 640px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(19px, 2vw, 23px);
+      line-height: 1.42;
+      hyphens: auto;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 38px;
+    }
+
+    .meta-tile,
+    .floating-panel,
+    .service-row,
+    .trust-panel,
+    .price-card,
+    .faq-item,
+    .contact-card {
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .meta-tile {
+      min-height: 106px;
+      padding: 18px;
+      border-radius: var(--radius);
+    }
+
+    .meta-tile strong {
+      display: block;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 19px;
+    }
+
+    .meta-tile span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hero-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--surface-soft);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .floating-panel {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+      padding: 18px;
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+
+    .floating-panel b { display: block; font-size: 18px; }
+    .floating-panel span { color: var(--muted); font-size: 14px; font-weight: 700; }
+    .floating-panel code {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    section { padding: 88px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(280px, .55fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 38px;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.5;
+      hyphens: auto;
+    }
+
+    .services-list { display: grid; gap: 14px; }
+    .service-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(220px, .38fr);
+      gap: 22px;
+      align-items: center;
+      min-height: 132px;
+      padding: 24px;
+      border-radius: var(--radius);
+    }
+
+    .service-row:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .service-row .num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .service-row p { color: var(--muted); font-weight: 600; }
+    .service-row .tag {
+      justify-self: end;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: .76fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .trust-panel {
+      border-radius: var(--radius);
+      padding: 34px;
+      min-height: 320px;
+    }
+
+    .rating {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .rating strong {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 7vw, 90px);
+      line-height: .9;
+    }
+
+    .rating span { color: var(--muted); font-weight: 800; }
+
+    .feature-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .photo-card {
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .photo-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .photo-card img { width: 100%; height: 210px; object-fit: cover; }
+    .photo-card div { padding: 22px; }
+    .photo-card p { margin-top: 8px; color: var(--muted); font-weight: 600; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .step {
+      min-height: 230px;
+      padding: 26px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(238,244,251,.74));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .step code {
+      display: block;
+      margin-bottom: 36px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .step p { margin-top: 12px; color: var(--muted); font-weight: 600; }
+
+    .price-band {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(340px, .58fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .price-card {
+      padding: 34px;
+      border-radius: var(--radius);
+    }
+
+    .price-card .price {
+      display: block;
+      margin: 24px 0 10px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 64px);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .offer-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 26px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .offer-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .offer-list b { color: var(--ink); }
+
+    .gallery-strip {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .gallery-strip figure {
+      margin: 0;
+      min-height: 290px;
+      overflow: hidden;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+    .gallery-strip img { width: 100%; height: 100%; object-fit: cover; }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .faq-item {
+      min-height: 168px;
+      padding: 24px;
+      border-radius: var(--radius);
+    }
+    .faq-item p { margin-top: 12px; color: var(--muted); font-weight: 600; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .55fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .contact-card {
+      padding: 32px;
+      border-radius: var(--radius);
+    }
+
+    .contact-lines {
+      display: grid;
+      gap: 16px;
+      margin-top: 26px;
+    }
+
+    .contact-lines a,
+    .contact-lines span {
+      display: block;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .contact-lines b {
+      display: block;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    #map {
+      min-height: 420px;
+      height: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      background: var(--surface-soft);
+    }
+
+    .final-cta {
+      padding: 70px 0;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .final-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .final-cta h2 { max-width: 760px; font-size: clamp(36px, 5vw, 70px); }
+    .final-cta p { margin-top: 16px; color: rgba(255,255,255,.78); font-size: 19px; font-weight: 600; }
+    .final-cta .btn-primary { background: #fff; color: var(--accent); box-shadow: none; }
+    .final-cta .btn-primary:hover { background: #e9f1fb; }
+    .final-cta .btn-outline { color: #fff; border-color: rgba(255,255,255,.55); }
+    .final-cta .btn-outline:hover { background: rgba(255,255,255,.10); }
+
+    footer {
+      padding: 42px 0;
+      background: #07111f;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      color: #fff;
+      font-weight: 800;
+    }
+    .disclaimer {
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      line-height: 1.6;
+    }
+    .disclaimer a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero { min-height: auto; }
+      .hero-grid,
+      .section-head,
+      .trust-grid,
+      .feature-split,
+      .price-band,
+      .contact-grid,
+      .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-photo { order: -1; }
+      .hero-meta,
+      .steps,
+      .faq-grid,
+      .gallery-strip { grid-template-columns: 1fr; }
+      .service-row { grid-template-columns: 1fr; }
+      .service-row .tag { justify-self: start; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      section { padding: 64px 0; }
+      .hero { padding: 34px 0 58px; }
+      .hero-grid { gap: 28px; }
+      .hero-meta { grid-template-columns: 1fr; }
+      .floating-panel { position: static; margin: 12px; }
+      .hero-photo { display: flex; flex-direction: column; height: auto; aspect-ratio: auto; }
+      .hero-photo img { aspect-ratio: 4 / 3; }
+      .final-actions { display: grid; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="#top" aria-label="Fokus optik">
+        <img src="https://auglio.com/assets/img/virtooal-logo28x20.svg" alt="Fokus optik">
+      </a>
+      <nav class="nav-links" aria-label="Hlavní navigace">
+        <a href="#sluzby">Služby</a>
+        <a href="#akce">Akce</a>
+        <a href="#pece">Péče</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a class="btn btn-primary" href="tel:+420725245942">Zavolat</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Fokus optik · Karlín</p>
+          <h1>Pro zdravý pohled</h1>
+          <p class="lead">Měření zraku, výběr dioptrických brýlí, kontaktní čočky a sluneční kolekce na jednom místě v Praze 8.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="tel:+420725245942">Objednat péči</a>
+            <a class="btn btn-outline" href="#sluzby">Projít služby</a>
+          </div>
+          <div class="hero-meta" aria-label="Rychlé údaje">
+            <div class="meta-tile"><strong>4.8</strong><span>hodnocení Google</span></div>
+            <div class="meta-tile"><strong>99</strong><span>recenzí zákazníků</span></div>
+            <div class="meta-tile"><strong>Praha 8</strong><span>Karlín, 186 00</span></div>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="https://images.pexels.com/photos/9594416/pexels-photo-9594416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A close-up of hands opening a plain brown cardboard box on a beige surface, perfect for themes of shipping or packaging.">
+          <div class="floating-panel">
+            <div>
+              <b>Brýle, čočky, péče</b>
+              <span>pobočka + online nabídka</span>
+            </div>
+            <code>+420 725 245 942</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sluzby">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Služby</p>
+            <h2>Oči nejdřív, rám až potom</h2>
+          </div>
+          <p>Výběr brýlí dává smysl až po přesných údajích o zraku. Proto jsou měření, doporučení a pohodlí při nošení součástí jedné návštěvy.</p>
+        </div>
+        <div class="services-list">
+          <a class="service-row" href="tel:+420725245942">
+            <span class="num">01</span>
+            <div>
+              <h3>Měření zraku</h3>
+              <p>Vyberete si termín a nejbližší pobočku, tým pomůže i s navazujícím výběrem brýlí.</p>
+            </div>
+            <span class="tag">objednání</span>
+          </a>
+          <a class="service-row" href="#akce">
+            <span class="num">02</span>
+            <div>
+              <h3>Dioptrické brýle</h3>
+              <p>Kompletní dioptrické brýle jsou v nabídce již od 799 Kč podle aktuálních akcí.</p>
+            </div>
+            <span class="tag">od 799 Kč</span>
+          </a>
+          <a class="service-row" href="#pece">
+            <span class="num">03</span>
+            <div>
+              <h3>Kontaktní čočky</h3>
+              <p>Specialisté pomohou s první aplikací kontaktních čoček a správným postupem při nošení.</p>
+            </div>
+            <span class="tag">aplikace</span>
+          </a>
+          <a class="service-row" href="#akce">
+            <span class="num">04</span>
+            <div>
+              <h3>Sluneční kolekce</h3>
+              <p>Nové sluneční brýle a vybrané módní značky pro každodenní nošení i výraznější styl.</p>
+            </div>
+            <span class="tag">kolekce</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="akce">
+      <div class="wrap price-band">
+        <div class="price-card">
+          <p class="eyebrow">Aktuální nabídka</p>
+          <h2>Kompletní brýle</h2>
+          <span class="price">od 799 Kč</span>
+          <p class="lead">Akce se průběžně mění. Na pobočce vám tým řekne, která kombinace obrub a skel odpovídá vašim potřebám.</p>
+        </div>
+        <div class="price-card">
+          <h3>Co lidé hledají nejčastěji</h3>
+          <ul class="offer-list">
+            <li><b>Skla do dětských brýlí</b><span>- 40 %</span></li>
+            <li><b>Dioptrické brýle</b><span>1 + 1 zdarma</span></li>
+            <li><b>Kapky Systane Complete</b><span>- 20 %</span></li>
+            <li><b>Dárkový poukaz</b><span>na pobočce</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="pece">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Péče</p>
+            <h2>Od termínu k pohodlí</h2>
+          </div>
+          <p>Krátká návštěva má jasný rytmus: zjistit potřebu, vybrat vhodné řešení a domluvit další kroky bez zbytečného přeskakování.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><code>01</code><h3>Rezervace</h3><p>Zavoláte nebo se objednáte na měření zraku.</p></div>
+          <div class="step"><code>02</code><h3>Měření</h3><p>Specialista ověří aktuální stav zraku a doporučí korekci.</p></div>
+          <div class="step"><code>03</code><h3>Výběr</h3><p>Společně zvolíte obruby, skla nebo kontaktní čočky.</p></div>
+          <div class="step"><code>04</code><h3>Doladění</h3><p>Brýle se přizpůsobí tak, aby dobře seděly při běžném nošení.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap trust-grid">
+        <div class="trust-panel">
+          <p class="eyebrow">Důvěra</p>
+          <h2>Hodnoceno zákazníky</h2>
+          <div class="rating"><strong>4.8</strong><span>z 99 recenzí</span></div>
+          <p class="lead">Lidé oceňují osobní přístup, dostupnou péči a pomoc při výběru brýlí i čoček.</p>
+        </div>
+        <div class="feature-split">
+          <a class="photo-card" href="#kontakt">
+            <img src="https://images.pexels.com/photos/27200518/pexels-photo-27200518.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Hands carefully opening a white package to reveal contents inside. Perfect for unboxing themes.">
+            <div><h3>Online nabídka</h3><p>Produkty, akce a novinky můžete projít před návštěvou pobočky.</p></div>
+          </a>
+          <a class="photo-card" href="#kontakt">
+            <img src="https://images.pexels.com/photos/6958455/pexels-photo-6958455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="A person unboxes a small item from a cardboard package filled with crinkle paper, indoors.">
+            <div><h3>Pobočka v Karlíně</h3><p>Osobní domluva, měření zraku a výběr řešení na místě.</p></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Výběr</p>
+            <h2>Brýle do běžného dne</h2>
+          </div>
+          <p>Dioptrické, sluneční i dětské brýle řeší jinou situaci. Pobočka pomůže sladit vzhled, korekci i pohodlí.</p>
+        </div>
+        <div class="gallery-strip">
+          <figure><img src="https://images.pexels.com/photos/6348046/pexels-photo-6348046.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Crop faceless woman in casual clothes sitting on carpet while wrapping parcel bag for shipping in light room"></figure>
+          <figure><img src="https://images.pexels.com/photos/9603485/pexels-photo-9603485.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding thank you labeled boxes, ideal for delivery themes."></figure>
+          <figure><img src="https://images.pexels.com/photos/6969971/pexels-photo-6969971.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Close-up of a person holding a cardboard box, ideal for delivery service concepts."></figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Časté otázky</p>
+            <h2>Než zavoláte</h2>
+          </div>
+          <p>Praktické odpovědi pro objednání měření, výběr brýlí a první kontaktní čočky.</p>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-item"><h3>Jak se objednám na měření?</h3><p>Nejjednodušší je zavolat na pobočku a domluvit si vhodný termín.</p></div>
+          <div class="faq-item"><h3>Pomůžete s čočkami?</h3><p>Ano, tým pomáhá s první aplikací kontaktních čoček i správným postupem.</p></div>
+          <div class="faq-item"><h3>Jsou dostupné dětské brýle?</h3><p>V nabídce jsou i akce na skla do dětských brýlí a řešení pro krátkozrakost.</p></div>
+          <div class="faq-item"><h3>Mohu vybrat dárek?</h3><p>V nabídce je dárkový poukaz pro blízké, kteří si chtějí vybrat sami.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt">
+      <div class="wrap contact-grid">
+        <div class="contact-card">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Karlín, Praha 8</h2>
+          <div class="contact-lines">
+            <span><b>Adresa</b>35, Karlín, 186 00 Praha 8</span>
+            <a href="tel:+420725245942"><b>Telefon</b>+420 725 245 942</a>
+            <a href="mailto:info@fokusoptik.cz"><b>E-mail</b>info@fokusoptik.cz</a>
+            <a href="https://fokusoptik.cz/"><b>Web</b>fokusoptik.cz</a>
+          </div>
+        </div>
+        <div id="map" aria-label="Mapa pobočky Fokus optik v Karlíně"></div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap final-grid">
+        <div>
+          <h2>Domluvte si měření zraku</h2>
+          <p>Fokus optik Karlín · 35, Karlín, 186 00 Praha 8</p>
+        </div>
+        <div class="hero-actions final-actions">
+          <a class="btn btn-primary" href="tel:+420725245942">Zavolat</a>
+          <a class="btn btn-outline" href="mailto:info@fokusoptik.cz">Napsat e-mail</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-main">
+        <span>Fokus optik</span>
+        <span>35, Karlín, 186 00 Praha 8 · +420 725 245 942</span>
+      </div>
+      <div class="disclaimer">
+        Tato prezentační stránka byla připravena službou Webflex jako nezávazný podklad pro provozovatele podniku. Nejste-li správná kontaktní osoba, můžete ji odstranit zde: <a href="https://webflex.cz/delete/7gkdc15">webflex.cz/delete/7gkdc15</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [14.443095399999999, 50.0922931],
+      zoom: 15,
+      pitch: 30,
+      style: 'https://tiles.openfreemap.org/styles/positron'
+    });
+    new maplibregl.Marker({ color: '#004080' })
+      .setLngLat([14.443095399999999, 50.0922931])
+      .addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
